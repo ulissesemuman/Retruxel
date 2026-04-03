@@ -1,0 +1,121 @@
+# Retruxel
+
+> Visual retro game development tool — build games for classic consoles without writing a single line of code.
+
+---
+
+<!-- Application screenshot -->
+![Retruxel Screenshot](docs/screenshot.png)
+
+---
+
+## What is Retruxel?
+
+Retruxel is a visual IDE for developing retro games, inspired by [GB Studio](https://www.gbstudio.dev/). Instead of writing C or assembly by hand, you drag and drop modules, configure parameters through a generated UI, and Retruxel handles the rest — generating C code, compiling it with the embedded toolchain, and producing a ready-to-run ROM file.
+
+No terminal. No Makefile. No toolchain setup. Just open and start building.
+
+---
+
+## ✨ Features
+
+- 🎮 **Visual game editor** — assemble your game using graphic, logic and audio modules
+- ⚙️ **Zero setup** — toolchain (SDCC, ihx2sms, SMSlib) is embedded and extracted automatically on first run
+- 🧩 **Plugin system** — extend Retruxel with your own modules via DLL plugins
+- 🔁 **Portable modules** — universal modules keep your project target-agnostic for future migration
+- 🏗️ **Auto-generated UI** — module parameters are described via `ModuleManifest`, no UI code needed
+- 📦 **One-click ROM export** — full build pipeline from project to `.sms` file with checksum
+
+---
+
+## 🎯 Supported Targets
+
+| Console | Status | Toolchain |
+|---|---|---|
+| Sega Master System | 🟢 Active | SDCC 4.5.24 + devkitSMS + SMSlib |
+| NES | 🔮 Planned | — |
+| SNES | 🔮 Planned | — |
+
+---
+
+## 🏛️ Architecture
+
+Retruxel is built on .NET / WPF and organized as a multi-project solution:
+
+| Project | Type | Role |
+|---|---|---|
+| `Retruxel` | WPF Application | Main shell — UI and navigation |
+| `Retruxel.Core` | Class Library | Interfaces, models and core services |
+| `Retruxel.SDK` | Class Library | Public interfaces for plugin developers |
+| `Retruxel.Toolchain` | Class Library | Embedded SDCC, ihx2sms and SMSlib binaries |
+| `Retruxel.Target.SMS` | Class Library | SMS-specific modules and target implementation |
+
+### Build Pipeline
+
+```
+.rtrxproject  →  CodeGenerator  →  .c / .h files  →  SDCC  →  ihx2sms  →  .sms ROM
+```
+
+### Module System
+
+Modules are the building blocks of every Retruxel project. There are three types:
+
+- **Graphic modules** — tiles, sprites, palettes, tilemaps
+- **Logic modules** — physics, input, entities, game flow
+- **Audio modules** — music and sound effects for the target sound chip
+
+Each module exposes a `ModuleManifest` that describes its parameters. The shell reads this manifest and auto-generates the configuration UI — no WPF knowledge required to write a module.
+
+Modules are distributed as DLLs. Official modules live in `/modules/`, user plugins in `/plugins/`.
+
+#### Portability categories
+
+| Category | Description |
+|---|---|
+| **Universal** | Identical JSON output on any target — fully portable |
+| **Base + Specialization** | Shared base with optional target-specific fields |
+| **Exclusive** | Target-locked — marked with a warning icon in the UI |
+
+---
+
+## 🎨 Design System
+
+Retruxel uses a custom design system called **Neo-Technical Archive** — a modern IDE aesthetic inspired by 1980s mainframe terminals.
+
+- **Style:** Architectural Brutalism + Modern Editorial Design
+- **0px border-radius** on all internal components
+- **8px grid** — no exceptions
+- Separation by tonal background shift — no divider lines
+- Typography: **Space Grotesk** (display) + **Inter** (body/code)
+
+---
+
+## 🚀 Getting Started
+
+> ⚠️ Retruxel is currently in early development. Builds are not yet available for download.
+
+1. Clone the repository
+2. Open `Retruxel.slnx` in Visual Studio 2022+
+3. Build and run the `Retruxel` project
+4. The toolchain is extracted automatically on first run
+
+---
+
+## 🧩 Writing a Plugin
+
+Retruxel plugins are standard .NET class libraries that reference `Retruxel.SDK`. Implement one of the module interfaces (`IGraphicModule`, `ILogicModule`, `IAudioModule`), drop the compiled DLL into the `/plugins/` folder, and Retruxel will discover and load it automatically.
+
+```csharp
+public class MyModule : ILogicModule
+{
+    public string ModuleId => "myplugin.mymodule";
+    public string DisplayName => "My Module";
+    // ...
+}
+```
+
+---
+
+## 📄 License
+
+This project is licensed under the MIT License. See [LICENSE](LICENSE) for details.

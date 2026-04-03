@@ -1,0 +1,179 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!-- ==================== FONTS ==================== -->
+    <FontFamily x:Key="FontDisplay">pack://application:,,,/Assets/Fonts/#Space Grotesk</FontFamily>
+    <FontFamily x:Key="FontBody">pack://application:,,,/Assets/Fonts/#Inter</FontFamily>
+
+    <!-- ==================== COLORS ==================== -->
+    <Color x:Key="ColorSurface">#FF0E0E0E</Color>
+    <Color x:Key="ColorSurfaceContainerLow">#FF131313</Color>
+    <Color x:Key="ColorSurfaceContainerHigh">#FF1E1E1E</Color>
+    <Color x:Key="ColorSurfaceContainerHighest">#FF262626</Color>
+    <Color x:Key="ColorPrimary">#FF8EFF71</Color>
+    <Color x:Key="ColorPrimaryDim">#FF2BE800</Color>
+    <Color x:Key="ColorSecondary">#FF7C3AED</Color>
+    <Color x:Key="ColorTertiary">#FF81ECFF</Color>
+    <Color x:Key="ColorOnSurface">#FFFFFFFF</Color>
+    <Color x:Key="ColorOnSurfaceVariant">#FFADAAAA</Color>
+    <Color x:Key="ColorOnPrimary">#FF000000</Color>
+    <Color x:Key="ColorError">#FFFF4444</Color>
+    <Color x:Key="ColorWarning">#FFFFAA00</Color>
+
+    <!-- ==================== BRUSHES ==================== -->
+    <SolidColorBrush x:Key="BrushSurface" Color="{StaticResource ColorSurface}"/>
+    <SolidColorBrush x:Key="BrushSurfaceContainerLow" Color="{StaticResource ColorSurfaceContainerLow}"/>
+    <SolidColorBrush x:Key="BrushSurfaceContainerHigh" Color="{StaticResource ColorSurfaceContainerHigh}"/>
+    <SolidColorBrush x:Key="BrushSurfaceContainerHighest" Color="{StaticResource ColorSurfaceContainerHighest}"/>
+    <SolidColorBrush x:Key="BrushPrimary" Color="{StaticResource ColorPrimary}"/>
+    <SolidColorBrush x:Key="BrushPrimaryDim" Color="{StaticResource ColorPrimaryDim}"/>
+    <SolidColorBrush x:Key="BrushSecondary" Color="{StaticResource ColorSecondary}"/>
+    <SolidColorBrush x:Key="BrushTertiary" Color="{StaticResource ColorTertiary}"/>
+    <SolidColorBrush x:Key="BrushOnSurface" Color="{StaticResource ColorOnSurface}"/>
+    <SolidColorBrush x:Key="BrushOnSurfaceVariant" Color="{StaticResource ColorOnSurfaceVariant}"/>
+    <SolidColorBrush x:Key="BrushOnPrimary" Color="{StaticResource ColorOnPrimary}"/>
+    <SolidColorBrush x:Key="BrushError" Color="{StaticResource ColorError}"/>
+    <SolidColorBrush x:Key="BrushWarning" Color="{StaticResource ColorWarning}"/>
+
+    <!-- Action gradient brush — 135deg green CRT effect -->
+    <LinearGradientBrush x:Key="BrushPrimaryGradient" StartPoint="0,1" EndPoint="1,0">
+        <GradientStop Color="{StaticResource ColorPrimary}" Offset="0"/>
+        <GradientStop Color="{StaticResource ColorPrimaryDim}" Offset="1"/>
+    </LinearGradientBrush>
+
+    <!-- Ghost border brush — felt, not seen -->
+    <SolidColorBrush x:Key="BrushGhostBorder" Color="#26ADAAAA"/>
+
+    <!-- ==================== TYPOGRAPHY ==================== -->
+    <Style x:Key="TextDisplay" TargetType="TextBlock">
+        <Setter Property="FontFamily" Value="{StaticResource FontDisplay}"/>
+        <Setter Property="FontWeight" Value="Bold"/>
+        <Setter Property="FontSize" Value="32"/>
+        <Setter Property="Foreground" Value="{StaticResource BrushOnSurface}"/>
+    </Style>
+
+    <Style x:Key="TextHeadline" TargetType="TextBlock">
+        <Setter Property="FontFamily" Value="{StaticResource FontDisplay}"/>
+        <Setter Property="FontWeight" Value="SemiBold"/>
+        <Setter Property="FontSize" Value="20"/>
+        <Setter Property="Foreground" Value="{StaticResource BrushOnSurface}"/>
+    </Style>
+
+    <Style x:Key="TextLabel" TargetType="TextBlock">
+        <Setter Property="FontFamily" Value="{StaticResource FontBody}"/>
+        <Setter Property="FontSize" Value="11"/>
+        <Setter Property="Foreground" Value="{StaticResource BrushOnSurfaceVariant}"/>
+    </Style>
+
+    <Style x:Key="TextBody" TargetType="TextBlock">
+        <Setter Property="FontFamily" Value="{StaticResource FontBody}"/>
+        <Setter Property="FontSize" Value="13"/>
+        <Setter Property="Foreground" Value="{StaticResource BrushOnSurfaceVariant}"/>
+        <Setter Property="LineHeight" Value="20"/>
+    </Style>
+
+    <Style x:Key="TextCode" TargetType="TextBlock">
+        <Setter Property="FontFamily" Value="Consolas"/>
+        <Setter Property="FontSize" Value="12"/>
+        <Setter Property="Foreground" Value="{StaticResource BrushPrimary}"/>
+    </Style>
+
+    <!-- ==================== BUTTONS ==================== -->
+    <Style x:Key="ButtonPrimary" TargetType="Button">
+        <Setter Property="Background" Value="{StaticResource BrushPrimaryGradient}"/>
+        <Setter Property="Foreground" Value="{StaticResource BrushOnPrimary}"/>
+        <Setter Property="FontFamily" Value="{StaticResource FontDisplay}"/>
+        <Setter Property="FontWeight" Value="Bold"/>
+        <Setter Property="FontSize" Value="13"/>
+        <Setter Property="Padding" Value="24,12"/>
+        <Setter Property="BorderThickness" Value="0"/>
+        <Setter Property="Cursor" Value="Hand"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Border Background="{TemplateBinding Background}"
+                            Padding="{TemplateBinding Padding}"
+                            CornerRadius="0">
+                        <ContentPresenter HorizontalAlignment="Center"
+                                          VerticalAlignment="Center"/>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter Property="Background" Value="{StaticResource BrushPrimaryDim}"/>
+                        </Trigger>
+                        <Trigger Property="IsPressed" Value="True">
+                            <Setter Property="Background" Value="{StaticResource BrushOnSurface}"/>
+                            <Setter Property="Foreground" Value="{StaticResource BrushSurface}"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <Style x:Key="ButtonSecondary" TargetType="Button">
+        <Setter Property="Background" Value="{StaticResource BrushSecondary}"/>
+        <Setter Property="Foreground" Value="{StaticResource BrushOnSurface}"/>
+        <Setter Property="FontFamily" Value="{StaticResource FontBody}"/>
+        <Setter Property="FontSize" Value="13"/>
+        <Setter Property="Padding" Value="16,10"/>
+        <Setter Property="BorderThickness" Value="0"/>
+        <Setter Property="Cursor" Value="Hand"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Border Background="{TemplateBinding Background}"
+                            Padding="{TemplateBinding Padding}"
+                            CornerRadius="0">
+                        <ContentPresenter HorizontalAlignment="Center"
+                                          VerticalAlignment="Center"/>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter Property="Opacity" Value="0.85"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- ==================== TOGGLE SWITCH ==================== -->
+    <Style x:Key="ToggleSwitch" TargetType="CheckBox">
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="CheckBox">
+                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                        <Border x:Name="Track" Width="36" Height="18"
+                                Background="{StaticResource BrushSurfaceContainerHighest}"
+                                CornerRadius="0">
+                            <Border x:Name="Thumb" Width="14" Height="14"
+                                    Background="{StaticResource BrushOnSurfaceVariant}"
+                                    CornerRadius="0" Margin="2,0,0,0"
+                                    HorizontalAlignment="Left" VerticalAlignment="Center"/>
+                        </Border>
+                    </StackPanel>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsChecked" Value="True">
+                            <Setter TargetName="Track" Property="Background"
+                                    Value="{StaticResource BrushPrimary}"/>
+                            <Setter TargetName="Thumb" Property="Background"
+                                    Value="{StaticResource BrushOnPrimary}"/>
+                            <Setter TargetName="Thumb" Property="HorizontalAlignment"
+                                    Value="Right"/>
+                            <Setter TargetName="Thumb" Property="Margin"
+                                    Value="0,0,2,0"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- ==================== SCROLLBAR ==================== -->
+    <Style TargetType="ScrollBar">
+        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="Width" Value="4"/>
+    </Style>
+
+</ResourceDictionary>

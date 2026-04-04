@@ -19,16 +19,11 @@ public class ModuleManifest
     public ModuleType Type { get; set; }
 
     /// <summary>
-    /// Whether this module is universal (portable across targets).
-    /// Universal modules must produce identical JSON regardless of target.
+    /// List of target IDs this module is compatible with.
+    /// Use ["all"] for modules compatible with every target.
+    /// Ex: ["sms", "gg"], ["snes"], ["all"]
     /// </summary>
-    public bool IsUniversal { get; set; }
-
-    /// <summary>
-    /// Target this module belongs to. Null if universal.
-    /// Ex: "sms", "nes", "snes"
-    /// </summary>
-    public string? TargetId { get; set; }
+    public string[] Compatibility { get; set; } = ["all"];
 
     /// <summary>
     /// List of ModuleIds this module depends on.

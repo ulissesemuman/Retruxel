@@ -19,24 +19,35 @@ public class SmsToolchain : IToolchain
     public string DisplayName => "devkitSMS + SDCC 4.5.24";
     public string Version => "4.5.24";
 
-    /// <summary>
-    /// Extracts all embedded toolchain resources to the local app data folder.
-    /// Skips extraction if binaries are already present and up to date.
-    /// </summary>
     public async Task ExtractAsync(IProgress<string> progress)
     {
         Directory.CreateDirectory(ToolchainPath);
         progress.Report("EXTRACTING: SMS toolchain binaries...");
 
         var assembly = Assembly.GetExecutingAssembly();
-        var resources = assembly.GetManifestResourceNames()
-            .Where(r => r.StartsWith("Retruxel.Target.SMS.Toolchain.Resources."));
+        var resources = assembly.GetManifestResourceNames();
 
-        foreach (var resource in resources)
+        // Debug — log all found resources
+        foreach (var r in resources)
+            progress.Report($"FOUND_RESOURCE: {r}");
+
+        foreach (var resource in resources
+            .Where(r => r.StartsWith("Retruxel.Target.SMS")))
         {
-            var fileName = resource.Replace("Retruxel.Target.SMS.Toolchain.Resources.", "");
-            var destPath = Path.Combine(ToolchainPath, fileName);
+            // Strip namespace prefix to get relative path
+            var relativePath = resource
+                .Replace("Retruxel.Target.SMS.Toolchain.Resources.", "")
+                .Replace('.', Path.DirectorySeparatorChar);
 
+            // Restore original extension — last segment after final dot
+            var parts = resource.Split('.');
+            var ext = parts[^1];
+            var nameWithoutExt = string.Join(".", parts[..^1]);
+            var fileName = nameWithoutExt
+                .Replace("Retruxel.Target.SMS.Toolchain.Resources.", "")
+                .Replace('.', Path.DirectorySeparatorChar) + "." + ext;
+
+            var destPath = Path.Combine(ToolchainPath, fileName);
             Directory.CreateDirectory(Path.GetDirectoryName(destPath)!);
 
             using var stream = assembly.GetManifestResourceStream(resource)!;
@@ -61,26 +72,72 @@ public class SmsToolchain : IToolchain
         {
             Directory.CreateDirectory(context.OutputDirectory);
 
-            // Write source files to output directory
+            // Write source files
             foreach (var file in context.SourceFiles)
             {
                 var path = Path.Combine(context.OutputDirectory, file.FileName);
                 await File.WriteAllTextAsync(path, file.Content);
             }
 
-            // Write binary assets to output directory
+            // Write binary assets
             foreach (var asset in context.Assets)
             {
                 var path = Path.Combine(context.OutputDirectory, asset.FileName);
                 await File.WriteAllBytesAsync(path, asset.Data);
             }
 
-            // Run SDCC compilation
             var sdccPath = Path.Combine(ToolchainPath, "sdcc.exe");
-            var compileSuccess = await RunProcessAsync(sdccPath,
-                BuildSdccArgs(context), context.OutputDirectory, log, progress);
+            var smslibPath = Path.Combine(ToolchainPath, "SMSlib");
+            var smslibSrcPath = Path.Combine(smslibPath, "src");
+            var crt0Path = Path.Combine(smslibPath, "crt0", "crt0_sms.rel");
+            var smslibLib = Path.Combine(smslibPath, "SMSlib.lib");
+            var z80Lib = Path.Combine(ToolchainPath, "z80.lib");
+            var peepRules = Path.Combine(smslibSrcPath, "peep-rules.txt");
 
-            if (!compileSuccess)
+            var sourceFiles = context.SourceFiles
+                .Where(f => f.FileType == GeneratedFileType.Source)
+                .ToList();
+
+            // Step 1 — Compile each .c to .rel
+            foreach (var file in sourceFiles)
+            {
+                progress.Report($"COMPILE: {file.FileName}");
+                var compileArgs = $"-mz80 --no-std-crt0 " +
+                                  $"--sdcccall 1 " +
+                                  $"-I\"{smslibSrcPath}\" " +
+                                  $"--peep-file \"{peepRules}\" " +
+                                  $"-c {file.FileName}";
+
+                var ok = await RunProcessAsync(sdccPath, compileArgs,
+                    context.OutputDirectory, log, progress);
+
+                if (!ok)
+                {
+                    result.Success = false;
+                    result.Log = log;
+                    result.FinishedAt = DateTime.Now;
+                    return result;
+                }
+            }
+
+            // Step 2 — Link all .rel files into .ihx
+            var relFiles = sourceFiles
+                .Select(f => Path.GetFileNameWithoutExtension(f.FileName) + ".rel");
+
+            var romName = "output";
+            var linkArgs = $"-mz80 --no-std-crt0 --data-loc 0xC000 " +
+                           $"--sdcccall 1 " +
+                           $"-o {romName}.ihx " +
+                           $"\"{crt0Path}\" " +
+                           $"{string.Join(" ", relFiles)} " +
+                           $"\"{smslibLib}\" " +
+                           $"\"{z80Lib}\"";
+
+            progress.Report("LINK: linking objects...");
+            var linkOk = await RunProcessAsync(sdccPath, linkArgs,
+                context.OutputDirectory, log, progress);
+
+            if (!linkOk)
             {
                 result.Success = false;
                 result.Log = log;
@@ -88,16 +145,15 @@ public class SmsToolchain : IToolchain
                 return result;
             }
 
-            // Run ihx2sms conversion
+            // Step 3 — Convert .ihx to .sms
             var ihx2smsPath = Path.Combine(ToolchainPath, "ihx2sms.exe");
-            var romName = context.BuildParameters.TryGetValue("romName", out var name)
-                ? name.ToString()! : "output";
-
-            var convertSuccess = await RunProcessAsync(ihx2smsPath,
-                $"{romName}.ihx {romName}.sms", context.OutputDirectory, log, progress);
+            progress.Report("CONVERT: generating ROM...");
+            var convertOk = await RunProcessAsync(ihx2smsPath,
+                $"{romName}.ihx {romName}.sms",
+                context.OutputDirectory, log, progress);
 
             var romPath = Path.Combine(context.OutputDirectory, $"{romName}.sms");
-            result.Success = convertSuccess && File.Exists(romPath);
+            result.Success = convertOk && File.Exists(romPath);
             result.RomPath = result.Success ? romPath : null;
             result.RomSizeBytes = result.Success ? (int)new FileInfo(romPath).Length : 0;
 
@@ -135,11 +191,21 @@ public class SmsToolchain : IToolchain
 
     private string BuildSdccArgs(BuildContext context)
     {
-        var region = context.BuildParameters.TryGetValue("region", out var r) ? r.ToString() : "NTSC";
+        var sourceFiles = context.SourceFiles
+            .Where(f => f.FileType == GeneratedFileType.Source)
+            .Select(f => f.FileName);
+
+        var smslibPath = Path.Combine(ToolchainPath, "SMSlib");
+        var smslibSrcPath = Path.Combine(smslibPath, "src");
+        var crt0Path = Path.Combine(smslibPath, "crt0", "crt0_sms.rel");
+        var smslibLib = Path.Combine(smslibPath, "SMSlib.lib");
+        var peepRules = Path.Combine(smslibSrcPath, "peep-rules.txt");
+
+        // Compile each source file to .rel first
         return $"-mz80 --no-std-crt0 --data-loc 0xC000 " +
-               $"-I\"{Path.Combine(ToolchainPath, "SMSlib", "src")}\" " +
-               $"--peep-file \"{Path.Combine(ToolchainPath, "SMSlib", "src", "peep-rules.txt")}\" " +
-               $"{string.Join(" ", context.SourceFiles.Select(f => f.FileName))}";
+               $"-I\"{smslibSrcPath}\" " +
+               $"--peep-file \"{peepRules}\" " +
+               $"-c {string.Join(" ", sourceFiles)}";
     }
 
     private async Task<bool> RunProcessAsync(string exe, string args,

@@ -51,9 +51,9 @@ public class RetruxelProject
     public Dictionary<string, string> ModuleStates { get; set; } = new();
 
     /// <summary>
-    /// Whether this project uses only universal modules.
-    /// Computed property — true only if all active modules have IsUniversal = true.
-    /// Used to determine eligibility for target migration in the future.
+    /// Indicates whether all active modules are compatible with a potential migration target.
+    /// Computed at migration time — not stored in the project file.
     /// </summary>
+    [System.Text.Json.Serialization.JsonIgnore]
     public bool IsPortable { get; set; }
 }

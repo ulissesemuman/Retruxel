@@ -11,6 +11,7 @@ public partial class WelcomeView : UserControl
 {
     private bool _isGridView = true;
     private readonly List<ITarget> _targets = [new SmsTarget()];
+    public event Action<RetruxelProject>? OnProjectCreated;
 
     public WelcomeView()
     {
@@ -181,8 +182,10 @@ public partial class WelcomeView : UserControl
 
     private void OnTargetSelected(ITarget target)
     {
-        // Will open New Project wizard
-        MessageBox.Show($"Target selected: {target.DisplayName}");
+        var dialog = new NewProjectDialog(target) { Owner = Window.GetWindow(this) };
+
+        if (dialog.ShowDialog() == true && dialog.CreatedProject is not null)
+            OnProjectCreated?.Invoke(dialog.CreatedProject);
     }
 
     private void BtnGrid_Click(object sender, RoutedEventArgs e)

@@ -1,4 +1,6 @@
-﻿namespace Retruxel.Core.Interfaces;
+﻿using Retruxel.Core.Models;
+
+namespace Retruxel.Core.Interfaces;
 
 /// <summary>
 /// Base contract for all Retruxel modules.
@@ -6,7 +8,7 @@
 /// </summary>
 public interface IModule
 {
-    /// <summary>Unique module identifier. Ex: "sms.tiles", "universal.text"</summary>
+    /// <summary>Unique module identifier. Ex: "text.display", "sms.vdp.scroll"</summary>
     string ModuleId { get; }
 
     /// <summary>Display name shown in the UI.</summary>
@@ -19,10 +21,11 @@ public interface IModule
     ModuleType Type { get; }
 
     /// <summary>
-    /// Indicates whether this module is universal (portable across targets)
-    /// or exclusive to a specific target.
+    /// List of target IDs this module is compatible with.
+    /// Use ["all"] to indicate compatibility with all targets.
+    /// Ex: ["sms", "gg"] or ["snes"] or ["all"]
     /// </summary>
-    bool IsUniversal { get; }
+    string[] Compatibility { get; }
 
     /// <summary>Serializes the current module state to the .rtrxproject file.</summary>
     string Serialize();

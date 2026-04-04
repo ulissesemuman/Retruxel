@@ -1,6 +1,8 @@
 <Solution>
   <Project Path="Retruxel.Core/Retruxel.Core.csproj" Id="57a90c60-69b1-4159-98bb-db3d8b36ed42" />
+  <Project Path="Retruxel.Modules.Universal/Retruxel.Modules.csproj" Id="216e3a13-6336-4fb2-aa10-cdac3ad84381" />
   <Project Path="Retruxel.SDK/Retruxel.SDK.csproj" Id="77d05622-a6f7-4660-927d-95faa479e4aa" />
   <Project Path="Retruxel.Target.SMS/Retruxel.Target.SMS.csproj" Id="d5b51d71-c123-45c1-a7ec-2fb4fa048e08" />
+  <Project Path="Retruxel.Tools.FontImporter/Retruxel.Tools.csproj" />
   <Project Path="Retruxel/Retruxel.csproj" />
 </Solution>

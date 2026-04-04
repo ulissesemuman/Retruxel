@@ -113,4 +113,14 @@ public class ModuleLoader
             }
         }
     }
+
+    /// <summary>
+    /// Manually registers a logic module.
+    /// Used during development before auto-discovery is fully implemented.
+    /// </summary>
+    public void RegisterLogicModule(ILogicModule module)
+    {
+        if (!_logicModules.ContainsKey(module.ModuleId))
+            _logicModules[module.ModuleId] = module;
+    }
 }

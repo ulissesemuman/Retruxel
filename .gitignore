@@ -361,3 +361,8 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+
+# Retruxel-specific
+docs/
+checkpoin.md
+.amazonq/

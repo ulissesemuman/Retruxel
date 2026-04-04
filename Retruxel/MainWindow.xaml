@@ -104,7 +104,8 @@
 
             <!-- ===== MAIN CONTENT ===== -->
             <Grid Grid.Row="1" Background="{StaticResource BrushSurface}">
-                <views:WelcomeView/>
+                <views:WelcomeView x:Name="WelcomeView"/>
+                <views:BuildConsoleView x:Name="BuildConsoleView" Visibility="Collapsed"/>
             </Grid>
 
             <!-- ===== STATUS BAR ===== -->

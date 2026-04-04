@@ -1,0 +1,130 @@
+﻿<Window x:Class="Retruxel.Views.NewProjectDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="New Project"
+        Height="520" Width="680"
+        WindowStartupLocation="CenterOwner"
+        Background="Transparent"
+        AllowsTransparency="True"
+        WindowStyle="None"
+        ResizeMode="NoResize">
+
+    <Border CornerRadius="6"
+            Background="{StaticResource BrushSurfaceContainerLow}">
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="48"/>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="72"/>
+            </Grid.RowDefinitions>
+
+            <!-- ===== TITLE BAR ===== -->
+            <Border Grid.Row="0"
+                    Background="{StaticResource BrushSurfaceContainerLow}"
+                    CornerRadius="6,6,0,0"
+                    MouseLeftButtonDown="TitleBar_MouseLeftButtonDown"
+                    Padding="24,0">
+                <Grid>
+                    <TextBlock Text="NEW PROJECT"
+                               Style="{StaticResource TextHeadline}"
+                               VerticalAlignment="Center"/>
+                    <Button Content="✕"
+                            Width="32" Height="32"
+                            Background="Transparent"
+                            Foreground="{StaticResource BrushOnSurfaceVariant}"
+                            BorderThickness="0"
+                            HorizontalAlignment="Right"
+                            Click="CloseButton_Click"
+                            Cursor="Hand"/>
+                </Grid>
+            </Border>
+
+            <!-- ===== CONTENT ===== -->
+            <StackPanel Grid.Row="1" Margin="24,16">
+
+                <!-- Project name -->
+                <TextBlock Text="PROJECT NAME"
+                           Style="{StaticResource TextLabel}"
+                           Margin="0,0,0,8"/>
+                <Border Background="{StaticResource BrushSurfaceContainerHighest}"
+                        Padding="12,0" Margin="0,0,0,24" Height="40">
+                    <TextBox x:Name="TxtProjectName"
+                             Background="Transparent"
+                             Foreground="{StaticResource BrushOnSurface}"
+                             BorderThickness="0"
+                             FontFamily="{StaticResource FontBody}"
+                             FontSize="13"
+                             VerticalAlignment="Center"
+                             Text="my_project"/>
+                </Border>
+
+                <!-- Project location -->
+                <TextBlock Text="LOCATION"
+                           Style="{StaticResource TextLabel}"
+                           Margin="0,0,0,8"/>
+                <Grid Margin="0,0,0,24">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <Border Grid.Column="0"
+                            Background="{StaticResource BrushSurfaceContainerHighest}"
+                            Padding="12,0" Height="40" Margin="0,0,8,0">
+                        <TextBox x:Name="TxtLocation"
+                                 Background="Transparent"
+                                 Foreground="{StaticResource BrushOnSurface}"
+                                 BorderThickness="0"
+                                 FontFamily="{StaticResource FontBody}"
+                                 FontSize="13"
+                                 VerticalAlignment="Center"/>
+                    </Border>
+                    <Button Grid.Column="1"
+                            Content="BROWSE"
+                            Style="{StaticResource ButtonSecondary}"
+                            Padding="16,0" Height="40"
+                            Click="BrowseButton_Click"/>
+                </Grid>
+
+                <!-- Target (read-only — set from console selection) -->
+                <TextBlock Text="TARGET"
+                           Style="{StaticResource TextLabel}"
+                           Margin="0,0,0,8"/>
+                <Border Background="{StaticResource BrushSurfaceContainerHighest}"
+                        Padding="12,0" Margin="0,0,0,24" Height="40">
+                    <TextBlock x:Name="TxtTarget"
+                               Style="{StaticResource TextBody}"
+                               Foreground="{StaticResource BrushPrimary}"
+                               VerticalAlignment="Center"/>
+                </Border>
+
+                <!-- Template selection -->
+                <TextBlock Text="TEMPLATE"
+                           Style="{StaticResource TextLabel}"
+                           Margin="0,0,0,8"/>
+                <StackPanel x:Name="TemplatesPanel"
+                            Orientation="Horizontal"/>
+
+            </StackPanel>
+
+            <!-- ===== FOOTER ===== -->
+            <Border Grid.Row="2"
+                    Background="{StaticResource BrushSurface}"
+                    CornerRadius="0,0,6,6"
+                    Padding="24,0">
+                <Grid>
+                    <Button Content="CANCEL"
+                            Style="{StaticResource ButtonSecondary}"
+                            HorizontalAlignment="Left"
+                            Padding="24,0" Height="40"
+                            Click="CloseButton_Click"/>
+                    <Button Content="CREATE PROJECT"
+                            Style="{StaticResource ButtonPrimary}"
+                            HorizontalAlignment="Right"
+                            Padding="24,0" Height="40"
+                            Click="CreateButton_Click"/>
+                </Grid>
+            </Border>
+
+        </Grid>
+    </Border>
+</Window>

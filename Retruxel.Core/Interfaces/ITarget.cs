@@ -43,4 +43,18 @@ public interface ITarget
     /// The shell auto-generates the Target Settings UI from these.
     /// </summary>
     IEnumerable<ParameterDefinition> GetSettingsDefinitions();
+
+    /// <summary>
+    /// Returns generated files for a given module.
+    /// Each target translates universal module data into target-specific C code.
+    /// Returns empty if the target has no translator for that module.
+    /// </summary>
+    IEnumerable<GeneratedFile> GenerateCodeForModule(IModule module);
+
+    /// <summary>
+    /// Generates the main entry point file for this target.
+    /// The host shell calls this after all module files are generated.
+    /// Each target knows its own required headers, init calls and ROM metadata.
+    /// </summary>
+    GeneratedFile GenerateMainFile(RetruxelProject project, IEnumerable<GeneratedFile> moduleFiles);
 }

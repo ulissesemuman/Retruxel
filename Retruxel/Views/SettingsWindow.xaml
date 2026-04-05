@@ -68,7 +68,7 @@
 
         <!-- Dropdown / ComboBox -->
         <Style TargetType="ComboBox">
-            <Setter Property="Background" Value="{StaticResource BrushSurfaceContainerHighest}"/>
+            <Setter Property="Background" Value="{StaticResource BrushSurface}"/>
             <Setter Property="Foreground" Value="{StaticResource BrushOnSurface}"/>
             <Setter Property="BorderThickness" Value="0"/>
             <Setter Property="FontFamily" Value="{StaticResource FontBody}"/>

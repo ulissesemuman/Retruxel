@@ -470,10 +470,10 @@ public partial class SceneEditorView : UserControl
             return;
         }
 
-        // Highlight selected with thicker cyan border
+        // Highlight selected with thicker yellow border
         if (element.CanvasVisual is Border cvSelected)
         {
-            cvSelected.BorderBrush = new SolidColorBrush(Color.FromRgb(0x81, 0xEC, 0xFF));
+            cvSelected.BorderBrush = new SolidColorBrush(Color.FromRgb(0xFF, 0xD7, 0x00));
             cvSelected.BorderThickness = new Thickness(2);
         }
         if (element.EventVisual is Border evSelected)

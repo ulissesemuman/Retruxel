@@ -22,7 +22,7 @@ public partial class NewProjectDialog : Window
         InitializeComponent();
         _target = target;
         TxtTarget.Text = target.DisplayName.ToUpper();
-        var settings = SettingsService.LoadAsync().Result;
+        var settings = SettingsService.Load();
         TxtLocation.Text = settings.General.LastProjectLocation;
         LoadTemplates();
     }
@@ -106,7 +106,7 @@ public partial class NewProjectDialog : Window
 
     private void BrowseButton_Click(object sender, RoutedEventArgs e)
     {
-        var settings = SettingsService.LoadAsync().Result;
+        var settings = SettingsService.Load();
         var dialog = new OpenFolderDialog
         {
             Title = "Select project location",
@@ -161,7 +161,7 @@ public partial class NewProjectDialog : Window
             _target,
             _selectedTemplate ?? _target.GetTemplates().First());
 
-        var settings = SettingsService.LoadAsync().Result;
+        var settings = SettingsService.Load();
         settings.General.LastProjectLocation = TxtLocation.Text.Trim();
         SettingsService.Save(settings);
 

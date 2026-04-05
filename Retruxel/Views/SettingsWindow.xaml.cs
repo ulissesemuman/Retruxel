@@ -173,7 +173,10 @@ public partial class SettingsWindow : Window
     // ── Window chrome ─────────────────────────────────────────────────────────
 
     private void TitleBar_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
-        => DragMove();
+    {
+        if (e.LeftButton == MouseButtonState.Pressed)
+            DragMove();
+    }
 
     private void CloseButton_Click(object sender, RoutedEventArgs e)
         => Close();

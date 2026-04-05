@@ -48,6 +48,28 @@ public static class SettingsService
     }
 
     /// <summary>
+    /// Synchronous load for use in constructors and non-async contexts.
+    /// Prefer LoadAsync when possible.
+    /// </summary>
+    public static AppSettings Load()
+    {
+        try
+        {
+            if (!File.Exists(SettingsPath))
+                return new AppSettings();
+
+            var json     = File.ReadAllText(SettingsPath);
+            var settings = JsonSerializer.Deserialize<AppSettings>(json, JsonOptions);
+            return settings ?? new AppSettings();
+        }
+        catch
+        {
+            // Corrupted or unreadable settings — return defaults silently
+            return new AppSettings();
+        }
+    }
+
+    /// <summary>
     /// Saves settings to disk.
     /// Creates the Retruxel AppData folder if it does not exist.
     /// </summary>

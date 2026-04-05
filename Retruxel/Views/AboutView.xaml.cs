@@ -100,6 +100,20 @@ public partial class AboutView : UserControl
             },
             new CreditEntry
             {
+                Name = "cc65",
+                License = "Zlib",
+                Description = "C compiler and toolchain for 6502-based systems including NES. Used to compile NES game code.",
+                Url = "cc65.github.io"
+            },
+            new CreditEntry
+            {
+                Name = "neslib",
+                License = "Zlib",
+                Description = "C library for NES programming. Provides high-level functions for graphics, sound, and input.",
+                Url = "github.com/clbr/neslib"
+            },
+            new CreditEntry
+            {
                 Name = "Space Grotesk",
                 License = "SIL OFL 1.1",
                 Description = "Display typeface used for titles and headlines throughout the Retruxel UI.",
@@ -163,6 +177,23 @@ public partial class AboutView : UserControl
             === SDCC ===
             SDCC is licensed under the GNU General Public License version 2.
             See: www.gnu.org/licenses/gpl-2.0.html
+            
+            === cc65 / neslib ===
+            Copyright (c) The cc65 and neslib authors
+            
+            This software is provided 'as-is', without any express or implied
+            warranty. In no event will the authors be held liable for any damages
+            arising from the use of this software.
+            
+            Permission is granted to anyone to use this software for any purpose,
+            including commercial applications, and to alter it and redistribute it
+            freely, subject to the following restrictions:
+            
+            1. The origin of this software must not be misrepresented; you must not
+               claim that you wrote the original software.
+            2. Altered source versions must be plainly marked as such, and must not be
+               misrepresented as being the original software.
+            3. This notice may not be removed or altered from any source distribution.
             """;
     }
 }

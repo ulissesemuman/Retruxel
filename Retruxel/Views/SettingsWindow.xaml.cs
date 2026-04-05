@@ -118,7 +118,14 @@ public partial class SettingsWindow : Window
     {
         if (_loading) return;
         if (CmbLanguage.SelectedItem is ComboBoxItem item)
-            _settings.General.Language = (string)item.Tag;
+        {
+            var selectedLanguage = (string)item.Tag;
+            _settings.General.Language = selectedLanguage;
+            
+            // Reload localization in runtime
+            var localizationPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Assets", "Localization");
+            LocalizationService.Instance.Load(selectedLanguage, localizationPath);
+        }
         AutoSave();
     }
 

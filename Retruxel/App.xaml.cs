@@ -1,4 +1,5 @@
 ﻿using System.Windows;
+using Retruxel.Core.Services;
 
 namespace Retruxel;
 
@@ -6,6 +7,13 @@ public partial class App : Application
 {
     private async void App_Startup(object sender, StartupEventArgs e)
     {
+        // Load settings
+        var settings = SettingsService.Load();
+
+        // Initialize localization
+        var localizationPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Assets", "Localization");
+        LocalizationService.Instance.Load(settings.General.Language, localizationPath);
+
         var splash = new SplashScreen();
         splash.Show();
 

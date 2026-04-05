@@ -1,6 +1,7 @@
 ﻿<UserControl x:Class="Retruxel.Views.WelcomeView"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:loc="clr-namespace:Retruxel.Localization"
              Background="{StaticResource BrushSurface}">
 
     <Grid>
@@ -15,7 +16,7 @@
                 Padding="16,24">
             <StackPanel>
                 <!-- Recent projects header -->
-                <TextBlock Text="RECENT PROJECTS"
+                <TextBlock Text="{loc:Tr Key='welcome.recent_projects'}"
                            Style="{StaticResource TextLabel}"
                            Foreground="{StaticResource BrushPrimary}"
                            Margin="0,0,0,8"/>
@@ -28,7 +29,7 @@
                         Margin="0,0,0,16"/>
 
                 <!-- New project button -->
-                <Button Content="+ NEW PROJECT"
+                <Button Content="{loc:Tr Key='welcome.new_project'}"
                         Background="{StaticResource BrushSecondary}"
                         Foreground="White"
                         BorderThickness="0"
@@ -40,7 +41,7 @@
                         Cursor="Hand"/>
 
                 <!-- Open project button -->
-                <Button Content="OPEN PROJECT"
+                <Button Content="{loc:Tr Key='welcome.open_project'}"
                         Background="{StaticResource BrushSecondary}"
                         Foreground="White"
                         BorderThickness="0"
@@ -58,11 +59,11 @@
                 <!-- Documentation at bottom -->
                 <Border Padding="12,10" Margin="0,0,0,4" Cursor="Hand"
                         MouseLeftButtonDown="Documentation_Click">
-                    <TextBlock Text="?  Documentation" Style="{StaticResource TextBody}"/>
+                    <TextBlock Text="{loc:Tr Key='welcome.documentation'}" Style="{StaticResource TextBody}"/>
                 </Border>
                 <Border Padding="12,10" Cursor="Hand"
                         MouseLeftButtonDown="About_Click">
-                    <TextBlock Text="ℹ  About" Style="{StaticResource TextBody}"/>
+                    <TextBlock Text="{loc:Tr Key='welcome.about'}" Style="{StaticResource TextBody}"/>
                 </Border>
             </StackPanel>
         </Border>
@@ -80,11 +81,11 @@
 
                 <!-- Page title -->
                 <TextBlock x:Name="PageTitle"
-                           Text="TARGET SELECTION"
+                           Text="{loc:Tr Key='welcome.title'}"
                            Style="{StaticResource TextDisplay}"
                            Margin="0,0,0,8"/>
                 <TextBlock x:Name="PageDescription"
-                           Text="Select a target platform to create a new project. Each target has specific hardware capabilities and toolchain requirements."
+                           Text="{loc:Tr Key='welcome.subtitle'}"
                            Style="{StaticResource TextBody}"
                            Margin="0,0,0,32"
                            MaxWidth="600"
@@ -103,7 +104,7 @@
                         <Border Width="24" Height="2"
                                 Background="{StaticResource BrushPrimary}"
                                 VerticalAlignment="Center" Margin="0,0,12,0"/>
-                        <TextBlock Text="AVAILABLE TARGETS"
+                        <TextBlock Text="{loc:Tr Key='welcome.available_targets'}"
                                    Style="{StaticResource TextLabel}"
                                    VerticalAlignment="Center"/>
                     </StackPanel>
@@ -144,9 +145,8 @@
                     </StackPanel>
 
                     <!-- Cards container -->
-                    <WrapPanel x:Name="TargetsPanel"
-                               Grid.Row="1"
-                               Orientation="Horizontal"/>
+                    <ContentControl x:Name="TargetsPanel"
+                                    Grid.Row="1"/>
                 </Grid>
 
                 <!-- Recent projects header -->
@@ -154,7 +154,7 @@
                     <Border Width="24" Height="2"
                             Background="{StaticResource BrushPrimary}"
                             VerticalAlignment="Center" Margin="0,0,12,0"/>
-                    <TextBlock Text="RECENT PROJECTS"
+                    <TextBlock Text="{loc:Tr Key='welcome.recent_projects'}"
                                Style="{StaticResource TextLabel}"
                                VerticalAlignment="Center"/>
                 </StackPanel>
@@ -166,19 +166,19 @@
                 <StackPanel x:Name="EmptyState" Visibility="Collapsed"
                             HorizontalAlignment="Center" VerticalAlignment="Center"
                             Margin="0,80,0,0">
-                    <TextBlock Text="RETRUXEL"
+                    <TextBlock Text="{loc:Tr Key='welcome.empty.title'}"
                                Style="{StaticResource TextDisplay}"
                                FontSize="48"
                                Foreground="{StaticResource BrushPrimary}"
                                HorizontalAlignment="Center"
                                Margin="0,0,0,8"/>
-                    <TextBlock Text="RETRO DEVELOPMENT SUITE"
+                    <TextBlock Text="{loc:Tr Key='welcome.empty.subtitle'}"
                                Style="{StaticResource TextLabel}"
                                HorizontalAlignment="Center"
                                Margin="0,0,0,40"/>
 
                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,0,0,32">
-                        <Button Content="+ NEW PROJECT"
+                        <Button Content="{loc:Tr Key='welcome.new_project'}"
                                 Background="{StaticResource BrushSecondary}"
                                 Foreground="White"
                                 BorderThickness="0"
@@ -188,7 +188,7 @@
                                 Margin="0,0,8,0"
                                 Click="NewProject_Click"
                                 Cursor="Hand"/>
-                        <Button Content="OPEN PROJECT"
+                        <Button Content="{loc:Tr Key='welcome.open_project'}"
                                 Background="{StaticResource BrushSecondary}"
                                 Foreground="White"
                                 BorderThickness="0"
@@ -202,7 +202,7 @@
                     <Border Height="1" Width="300"
                             Background="{StaticResource BrushGhostBorder}"
                             Margin="0,0,0,16"/>
-                    <TextBlock Text="── or drag a .rtrxproject file here ──"
+                    <TextBlock Text="{loc:Tr Key='welcome.empty.drag_hint'}"
                                Style="{StaticResource TextLabel}"
                                HorizontalAlignment="Center"/>
                 </StackPanel>

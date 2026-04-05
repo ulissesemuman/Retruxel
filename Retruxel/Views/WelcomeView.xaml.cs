@@ -34,7 +34,9 @@ public partial class WelcomeView : UserControl
     // Renders target cards in grid or list mode
     private void RenderTargets()
     {
-        TargetsPanel.Children.Clear();
+        Panel panel = _isGridView
+            ? new WrapPanel { Orientation = Orientation.Horizontal }
+            : new StackPanel();
 
         foreach (var target in _targets)
         {
@@ -42,8 +44,10 @@ public partial class WelcomeView : UserControl
                 ? BuildGridCard(target)
                 : BuildListCard(target);
 
-            TargetsPanel.Children.Add(card);
+            panel.Children.Add(card);
         }
+
+        TargetsPanel.Content = panel;
     }
 
     // Grid card — large card with specs
@@ -125,7 +129,8 @@ public partial class WelcomeView : UserControl
             Background = new SolidColorBrush(Color.FromRgb(0x1E, 0x1E, 0x1E)),
             Margin = new Thickness(0, 0, 0, 8),
             Padding = new Thickness(16, 12, 16, 12),
-            Cursor = System.Windows.Input.Cursors.Hand
+            Cursor = System.Windows.Input.Cursors.Hand,
+            HorizontalAlignment = HorizontalAlignment.Stretch
         };
 
         var grid = new Grid();
@@ -487,7 +492,7 @@ public partial class WelcomeView : UserControl
         {
             var placeholder = new TextBlock
             {
-                Text = "No recent projects",
+                Text = LocalizationService.Instance.Get("welcome.no_recent"),
                 Style = (Style)FindResource("TextLabel"),
                 Margin = new Thickness(0, 0, 0, 4)
             };
@@ -615,7 +620,7 @@ public partial class WelcomeView : UserControl
                 {
                     new TextBlock
                     {
-                        Text = "DROP .RTRXPROJECT FILE",
+                        Text = LocalizationService.Instance.Get("welcome.drop_overlay"),
                         FontSize = 32,
                         FontWeight = FontWeights.Bold,
                         Foreground = new SolidColorBrush(Color.FromRgb(0x8E, 0xFF, 0x71)),

@@ -3,6 +3,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
+using Retruxel.Core.Services;
 
 namespace Retruxel;
 
@@ -65,9 +66,9 @@ public partial class SplashScreen : Window
     {
         var percent = Math.Min(steps * 8, 95);
         PercentLabel.Text = $"{percent}%";
-        StatusLabel.Text = percent < 50 ? "LOADING_CORE_MODULES..." :
-                           percent < 80 ? "MAPPING_VIRTUAL_MEMORY..." :
-                                          "MOUNTING_KERNEL...";
+        StatusLabel.Text = percent < 50 ? LocalizationService.Instance.Get("splash.loading_core") :
+                           percent < 80 ? LocalizationService.Instance.Get("splash.mapping_memory") :
+                                          LocalizationService.Instance.Get("splash.mounting_kernel");
         ProgressBar.Width = ProgressBarMaxWidth * percent / 100.0;
     }
 
@@ -77,7 +78,7 @@ public partial class SplashScreen : Window
     private async Task AnimateToComplete()
     {
         PercentLabel.Text = "100%";
-        StatusLabel.Text = "SYSTEM_READY";
+        StatusLabel.Text = LocalizationService.Instance.Get("splash.ready");
         ProgressBar.Width = ProgressBarMaxWidth;
         ProgressBar.Background = (Brush)FindResource("BrushPrimary");
         await Task.Delay(600);

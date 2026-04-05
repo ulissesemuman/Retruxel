@@ -165,4 +165,10 @@
     <Folder Include="Themes\" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Content Include="Assets\Localization\*.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
 </Project>

@@ -2,6 +2,7 @@
 using Retruxel.Core.Models;
 using Retruxel.Core.Services;
 using Retruxel.Target.SMS;
+using Retruxel.Target.NES;
 using System.IO;
 using System.Windows;
 using System.Windows.Controls;
@@ -12,7 +13,7 @@ namespace Retruxel.Views;
 public partial class WelcomeView : UserControl
 {
     private bool _isGridView = true;
-    private readonly List<ITarget> _targets = [new SmsTarget()];
+    private readonly List<ITarget> _targets = [new SmsTarget(), new NesTarget()];
     private Border? _dropOverlay;
     public event Action<RetruxelProject>? OnProjectCreated;
     public event Action? OnAboutRequested;

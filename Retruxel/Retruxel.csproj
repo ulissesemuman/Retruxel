@@ -90,6 +90,7 @@
     <ProjectReference Include="..\Retruxel.Modules\Retruxel.Modules.csproj" />
     <ProjectReference Include="..\Retruxel.Target.SMS\Retruxel.Target.SMS.csproj" />
     <ProjectReference Include="..\Retruxel.Tools\Retruxel.Tools.csproj" />
+    <ProjectReference Include="..\Retruxel.Target.NES\Retruxel.Target.NES.csproj" />
   </ItemGroup>
 
   <ItemGroup>

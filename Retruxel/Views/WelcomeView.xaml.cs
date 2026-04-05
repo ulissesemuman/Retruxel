@@ -226,6 +226,20 @@ public partial class WelcomeView : UserControl
     {
         var projectName = Path.GetFileNameWithoutExtension(projectPath);
         var projectDir = Path.GetDirectoryName(projectPath) ?? "";
+        
+        // Try to load project to get target info
+        string targetLabel = "UNKNOWN";
+        try
+        {
+            var json = File.ReadAllText(projectPath);
+            var project = System.Text.Json.JsonSerializer.Deserialize<RetruxelProject>(json);
+            if (project != null)
+            {
+                var target = _targets.FirstOrDefault(t => t.TargetId == project.TargetId);
+                targetLabel = target?.TargetId.ToUpper() ?? project.TargetId.ToUpper();
+            }
+        }
+        catch { /* Ignore errors, show UNKNOWN */ }
 
         var card = new Border
         {
@@ -239,6 +253,23 @@ public partial class WelcomeView : UserControl
         };
 
         var panel = new StackPanel();
+        
+        // Target badge at top right
+        var targetBadge = new Border
+        {
+            Background = new SolidColorBrush(Color.FromRgb(0x26, 0x26, 0x26)),
+            Padding = new Thickness(8, 4, 8, 4),
+            HorizontalAlignment = HorizontalAlignment.Right,
+            Margin = new Thickness(0, 0, 0, 12),
+            Child = new TextBlock
+            {
+                Text = targetLabel,
+                FontSize = 10,
+                Foreground = new SolidColorBrush(Color.FromRgb(0x81, 0xEC, 0xFF)),
+                FontFamily = new FontFamily("Consolas")
+            }
+        };
+        panel.Children.Add(targetBadge);
 
         panel.Children.Add(new TextBlock
         {
@@ -278,6 +309,20 @@ public partial class WelcomeView : UserControl
     {
         var projectName = Path.GetFileNameWithoutExtension(projectPath);
         var projectDir = Path.GetDirectoryName(projectPath) ?? "";
+        
+        // Try to load project to get target info
+        string targetLabel = "UNKNOWN";
+        try
+        {
+            var json = File.ReadAllText(projectPath);
+            var project = System.Text.Json.JsonSerializer.Deserialize<RetruxelProject>(json);
+            if (project != null)
+            {
+                var target = _targets.FirstOrDefault(t => t.TargetId == project.TargetId);
+                targetLabel = target?.TargetId.ToUpper() ?? project.TargetId.ToUpper();
+            }
+        }
+        catch { /* Ignore errors, show UNKNOWN */ }
 
         var card = new Border
         {
@@ -288,6 +333,10 @@ public partial class WelcomeView : UserControl
             Tag = projectPath
         };
 
+        var grid = new Grid();
+        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+        
         var panel = new StackPanel();
 
         panel.Children.Add(new TextBlock
@@ -305,8 +354,27 @@ public partial class WelcomeView : UserControl
             Foreground = new SolidColorBrush(Color.FromRgb(0xAD, 0xAA, 0xAA)),
             TextTrimming = TextTrimming.CharacterEllipsis
         });
+        
+        var targetBadge = new Border
+        {
+            Background = new SolidColorBrush(Color.FromRgb(0x26, 0x26, 0x26)),
+            Padding = new Thickness(8, 4, 8, 4),
+            VerticalAlignment = VerticalAlignment.Center,
+            Child = new TextBlock
+            {
+                Text = targetLabel,
+                FontSize = 10,
+                Foreground = new SolidColorBrush(Color.FromRgb(0x81, 0xEC, 0xFF)),
+                FontFamily = new FontFamily("Consolas")
+            }
+        };
+        
+        Grid.SetColumn(panel, 0);
+        Grid.SetColumn(targetBadge, 1);
+        grid.Children.Add(panel);
+        grid.Children.Add(targetBadge);
 
-        card.Child = panel;
+        card.Child = grid;
         card.MouseLeftButtonDown += RecentProject_Click;
         return card;
     }

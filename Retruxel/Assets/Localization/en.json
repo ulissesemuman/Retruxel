@@ -1,8 +1,6 @@
 {
   "_metadata": {
-    "code": "en",
-    "displayName": "English",
-    "nativeName": "English"
+    "code": "en"
   },
   "strings": {
     "app.title": "RETRUXEL",

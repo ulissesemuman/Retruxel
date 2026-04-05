@@ -1,4 +1,5 @@
 using System.ComponentModel;
+using System.Globalization;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
@@ -43,14 +44,46 @@ public class LocalizationService : INotifyPropertyChanged
                 var json = File.ReadAllText(filePath);
                 var doc = JsonDocument.Parse(json);
 
+                string code;
+                string displayName;
+                string nativeName;
+
                 if (doc.RootElement.TryGetProperty("_metadata", out var metadata))
                 {
-                    var code = metadata.GetProperty("code").GetString() ?? "unknown";
-                    var displayName = metadata.GetProperty("displayName").GetString() ?? "Unknown";
-                    var nativeName = metadata.GetProperty("nativeName").GetString() ?? displayName;
-
-                    _availableLanguages.Add(new LanguageInfo(code, displayName, nativeName));
+                    code = metadata.GetProperty("code").GetString() ?? "unknown";
+                    
+                    // Try to get native name from CultureInfo
+                    try
+                    {
+                        var culture = CultureInfo.GetCultureInfo(code);
+                        nativeName = culture.NativeName;
+                        displayName = culture.DisplayName;
+                    }
+                    catch
+                    {
+                        // Fallback to metadata if culture not found
+                        displayName = metadata.TryGetProperty("displayName", out var dn) ? dn.GetString() ?? code : code;
+                        nativeName = metadata.TryGetProperty("nativeName", out var nn) ? nn.GetString() ?? displayName : displayName;
+                    }
                 }
+                else
+                {
+                    // Fallback: use filename as code
+                    code = Path.GetFileNameWithoutExtension(filePath);
+                    try
+                    {
+                        var culture = CultureInfo.GetCultureInfo(code);
+                        nativeName = culture.NativeName;
+                        displayName = culture.DisplayName;
+                    }
+                    catch
+                    {
+                        displayName = code;
+                        nativeName = code;
+                    }
+                }
+
+                _availableLanguages.Add(new LanguageInfo(code, displayName, nativeName));
             }
             catch { /* Skip invalid files */ }
         }

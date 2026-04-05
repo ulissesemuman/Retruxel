@@ -27,6 +27,7 @@ No terminal. No Makefile. No toolchain setup. Just open and start building.
 - 🔁 **Portable modules** — universal modules keep your project target-agnostic for future migration
 - 🏗️ **Auto-generated UI** — module parameters are described via `ModuleManifest`, no UI code needed
 - 📦 **One-click ROM export** — full build pipeline from project to `.sms` file
+- 🌍 **Multilingual** — interface available in multiple languages with runtime switching
 
 ---
 
@@ -109,9 +110,49 @@ Retruxel uses a custom design system called **Neo-Technical Archive** — a mode
 - ✅ Event system (OnStart, OnVBlank, OnInput)
 - ✅ Code generation and ROM compilation
 - ✅ Build console with real-time output
+- ✅ Internationalization (i18n) system with runtime language switching
 - 🚧 Additional modules (in progress)
 - 🚧 Plugin system (planned)
 - 🚧 Asset editors (planned)
+
+---
+
+## 🌍 Internationalization
+
+Retruxel supports multiple languages with automatic detection and runtime switching.
+
+### Supported Languages
+
+- 🇺🇸 English
+- 🇧🇷 Português (Brasil)
+
+### Adding a New Language
+
+1. Create a new JSON file in `Retruxel/Assets/Localization/` with the language code as filename (e.g., `es.json` for Spanish)
+2. Use this structure:
+
+```json
+{
+  "_metadata": {
+    "code": "es"
+  },
+  "strings": {
+    "app.title": "RETRUXEL",
+    "welcome.title": "SELECCIÓN DE TARGET",
+    ...
+  }
+}
+```
+
+3. The language will appear automatically in Settings → General → Language
+4. Language names are automatically localized using .NET `CultureInfo` based on your OS language
+
+### How It Works
+
+- Language files are discovered automatically on startup
+- Display names are pulled from the operating system (e.g., "Español" on Spanish Windows, "Spanish" on English Windows)
+- No restart required — switch languages instantly in Settings
+- Fallback to English if selected language file is missing
 
 ---
 

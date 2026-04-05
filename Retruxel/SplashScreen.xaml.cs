@@ -1,4 +1,5 @@
-﻿using System.Windows;
+﻿using System.Reflection;
+using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
@@ -12,10 +13,17 @@ public partial class SplashScreen : Window
     public SplashScreen()
     {
         InitializeComponent();
+        VersionLabel.Text = $"v{GetAppVersion()}";
     }
 
     private void Border_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
         => DragMove();
+
+    private static string GetAppVersion()
+    {
+        var version = Assembly.GetExecutingAssembly().GetName().Version;
+        return version != null ? $"{version.Major}.{version.Minor}.{version.Build}-alpha" : "0.0.0-alpha";
+    }
 
     /// <summary>
     /// Runs the initialization sequence, reporting progress to the splash screen.

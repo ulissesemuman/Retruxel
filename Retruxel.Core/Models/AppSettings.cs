@@ -40,6 +40,10 @@ public class GeneralSettings
     /// <summary>Whether to show all modules regardless of target compatibility.</summary>
     [JsonPropertyName("showAllModules")]
     public bool ShowAllModules { get; set; } = false;
+
+    /// <summary>Recent project file paths (max 5).</summary>
+    [JsonPropertyName("recentProjects")]
+    public List<string> RecentProjects { get; set; } = [];
 }
 
 // ── Appearance ────────────────────────────────────────────────────────────────
@@ -75,4 +79,12 @@ public class SmsSettings
     /// </summary>
     [JsonPropertyName("showToolchainWarnings")]
     public bool ShowToolchainWarnings { get; set; } = true;
+
+    /// <summary>Path to the SMS emulator executable (e.g., Emulicious).</summary>
+    [JsonPropertyName("emulatorPath")]
+    public string EmulatorPath { get; set; } = string.Empty;
+
+    /// <summary>Whether to automatically launch the emulator after a successful build.</summary>
+    [JsonPropertyName("launchEmulatorAfterBuild")]
+    public bool LaunchEmulatorAfterBuild { get; set; } = false;
 }

@@ -14,7 +14,7 @@ public class ProjectManager
     private const string ProjectFileExtension = ".rtrxproject";
 
     /// <summary>The currently loaded project. Null if no project is open.</summary>
-    public RetruxelProject? CurrentProject { get; private set; }
+    public RetruxelProject? CurrentProject { get; set; }
 
     /// <summary>Whether there are unsaved changes in the current project.</summary>
     public bool HasUnsavedChanges { get; private set; }
@@ -36,6 +36,8 @@ public class ProjectManager
     {
         // Create project directory
         Directory.CreateDirectory(projectPath);
+        Directory.CreateDirectory(Path.Combine(projectPath, "assets"));
+        Directory.CreateDirectory(Path.Combine(projectPath, "build"));
 
         var project = new RetruxelProject
         {
@@ -46,7 +48,15 @@ public class ProjectManager
             CreatedAt = DateTime.Now,
             ModifiedAt = DateTime.Now,
             DefaultModules = template.DefaultModules.ToList(),
-            Parameters = new Dictionary<string, object>(template.DefaultParameters)
+            Parameters = new Dictionary<string, object>(template.DefaultParameters),
+            Scenes = [
+                new SceneData
+                {
+                    SceneId = Guid.NewGuid().ToString(),
+                    SceneName = "Main",
+                    Elements = []
+                }
+            ]
         };
 
         CurrentProject = project;
@@ -114,6 +124,19 @@ public class ProjectManager
     /// </summary>
     public void MarkDirty()
     {
+        if (!HasUnsavedChanges)
+        {
+            System.Diagnostics.Debug.WriteLine($"[ProjectManager] MarkDirty called from: {Environment.StackTrace}");
+        }
         HasUnsavedChanges = true;
+    }
+
+    /// <summary>
+    /// Clears the dirty flag without saving.
+    /// Used after explicit save operations.
+    /// </summary>
+    public void ClearDirtyFlag()
+    {
+        HasUnsavedChanges = false;
     }
 }

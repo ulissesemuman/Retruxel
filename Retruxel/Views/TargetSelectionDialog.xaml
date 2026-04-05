@@ -1,0 +1,65 @@
+<Window x:Class="Retruxel.Views.TargetSelectionDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Select Target Platform"
+        Height="500" Width="700"
+        WindowStartupLocation="CenterOwner"
+        Background="Transparent"
+        AllowsTransparency="True"
+        WindowStyle="None"
+        ResizeMode="NoResize">
+
+    <Border CornerRadius="6"
+            Background="{StaticResource BrushSurfaceContainerLow}">
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="48"/>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="72"/>
+            </Grid.RowDefinitions>
+
+            <!-- ===== TITLE BAR ===== -->
+            <Border Grid.Row="0"
+                    Background="{StaticResource BrushSurfaceContainerLow}"
+                    CornerRadius="6,6,0,0"
+                    MouseLeftButtonDown="TitleBar_MouseLeftButtonDown"
+                    Padding="24,0">
+                <Grid>
+                    <TextBlock Text="SELECT TARGET PLATFORM"
+                               Style="{StaticResource TextHeadline}"
+                               VerticalAlignment="Center"/>
+                    <Button Content="✕"
+                            Width="32" Height="32"
+                            Background="Transparent"
+                            Foreground="{StaticResource BrushOnSurfaceVariant}"
+                            BorderThickness="0"
+                            HorizontalAlignment="Right"
+                            Click="Cancel_Click"
+                            Cursor="Hand"/>
+                </Grid>
+            </Border>
+
+            <!-- ===== CONTENT ===== -->
+            <Grid Grid.Row="1">
+                <StackPanel Margin="24,16">
+                    <TextBlock Text="Choose the console you want to develop for. This cannot be changed later."
+                               Style="{StaticResource TextBody}"
+                               Margin="0,0,0,24"/>
+                    <WrapPanel x:Name="TargetsPanel" Orientation="Horizontal"/>
+                </StackPanel>
+            </Grid>
+
+            <!-- ===== FOOTER ===== -->
+            <Border Grid.Row="2"
+                    Background="{StaticResource BrushSurface}"
+                    CornerRadius="0,0,6,6"
+                    Padding="24,0">
+                <Button Content="CANCEL"
+                        Style="{StaticResource ButtonSecondary}"
+                        HorizontalAlignment="Right"
+                        Padding="24,0" Height="40"
+                        Click="Cancel_Click"/>
+            </Border>
+        </Grid>
+    </Border>
+</Window>

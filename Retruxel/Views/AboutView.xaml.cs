@@ -58,6 +58,20 @@ public partial class AboutView : UserControl
         {
             new CreditEntry
             {
+                Name = "GB Studio",
+                License = "MIT",
+                Description = "Visual game creator for Game Boy. Conceptual inspiration for Retruxel's visual development approach.",
+                Url = "www.gbstudio.dev"
+            },
+            new CreditEntry
+            {
+                Name = ".NET / WPF",
+                License = "MIT",
+                Description = "Application framework and UI toolkit by Microsoft. Foundation of Retruxel's desktop application.",
+                Url = "dotnet.microsoft.com"
+            },
+            new CreditEntry
+            {
                 Name = "SDCC — Small Device C Compiler",
                 License = "GPL v2",
                 Description = "C compiler targeting Z80 and other embedded architectures. Used to compile SMS game code.",
@@ -104,6 +118,25 @@ public partial class AboutView : UserControl
     private void LoadLicenses()
     {
         TxtLicenses.Text = """
+            === GB Studio ===
+            Copyright (c) 2019-2024 Chris Maltby
+            
+            Permission is hereby granted, free of charge, to any person obtaining a copy
+            of this software and associated documentation files (the "Software"), to deal
+            in the Software without restriction, including without limitation the rights
+            to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+            copies of the Software, and to permit persons to whom the Software is
+            furnished to do so, subject to the following conditions:
+            
+            The above copyright notice and this permission notice shall be included in all
+            copies or substantial portions of the Software.
+            
+            === .NET / WPF ===
+            Copyright (c) Microsoft Corporation
+            
+            Licensed under the MIT License.
+            See: github.com/dotnet/runtime/blob/main/LICENSE.TXT
+            
             === devkitSMS / SMSlib / ihx2sms ===
             Copyright (c) 2011-2024 sverx
             

@@ -1,6 +1,8 @@
 # Retruxel
 
 > Visual retro game development tool — build games for classic consoles without writing a single line of code.
+> 
+> Inspired by [GB Studio](https://www.gbstudio.dev/)
 
 ---
 
@@ -11,7 +13,7 @@
 
 ## What is Retruxel?
 
-Retruxel is a visual IDE for developing retro games, inspired by [GB Studio](https://www.gbstudio.dev/). Instead of writing C or assembly by hand, you drag and drop modules, configure parameters through a generated UI, and Retruxel handles the rest — generating C code, compiling it with the embedded toolchain, and producing a ready-to-run ROM file.
+Retruxel is a visual IDE for developing retro games, inspired by [GB Studio](https://www.gbstudio.dev/). Instead of writing C or assembly by hand, you use a visual editor to place modules, configure parameters through an auto-generated UI, and Retruxel handles the rest — generating C code, compiling it with the embedded toolchain, and producing a ready-to-run ROM file.
 
 No terminal. No Makefile. No toolchain setup. Just open and start building.
 
@@ -19,12 +21,12 @@ No terminal. No Makefile. No toolchain setup. Just open and start building.
 
 ## ✨ Features
 
-- 🎮 **Visual game editor** — assemble your game using graphic, logic and audio modules
+- 🎮 **Visual game editor** — place modules on canvas and configure them through auto-generated UI
 - ⚙️ **Zero setup** — toolchain (SDCC, ihx2sms, SMSlib) is embedded and extracted automatically on first run
-- 🧩 **Plugin system** — extend Retruxel with your own modules via DLL plugins
+- 🧩 **Module system** — graphic, logic and audio modules as building blocks
 - 🔁 **Portable modules** — universal modules keep your project target-agnostic for future migration
 - 🏗️ **Auto-generated UI** — module parameters are described via `ModuleManifest`, no UI code needed
-- 📦 **One-click ROM export** — full build pipeline from project to `.sms` file with checksum
+- 📦 **One-click ROM export** — full build pipeline from project to `.sms` file
 
 ---
 
@@ -92,18 +94,32 @@ Retruxel uses a custom design system called **Neo-Technical Archive** — a mode
 
 ## 🚀 Getting Started
 
-> ⚠️ Retruxel is currently in early development. Builds are not yet available for download.
+> ⚠️ Retruxel is currently in early alpha development (v0.3.0-alpha). Builds are not yet available for download.
 
 1. Clone the repository
 2. Open `Retruxel.slnx` in Visual Studio 2022+
 3. Build and run the `Retruxel` project
-4. The toolchain is extracted automatically on first run
+4. The toolchain is extracted automatically on first run to `%AppData%\Retruxel\toolchain\`
+
+### Current Status
+
+- ✅ Project creation and management
+- ✅ Visual scene editor with canvas
+- ✅ Text display module (SMS)
+- ✅ Event system (OnStart, OnVBlank, OnInput)
+- ✅ Code generation and ROM compilation
+- ✅ Build console with real-time output
+- 🚧 Additional modules (in progress)
+- 🚧 Plugin system (planned)
+- 🚧 Asset editors (planned)
 
 ---
 
 ## 🧩 Writing a Plugin
 
-Retruxel plugins are standard .NET class libraries that reference `Retruxel.SDK`. Implement one of the module interfaces (`IGraphicModule`, `ILogicModule`, `IAudioModule`), drop the compiled DLL into the `/plugins/` folder, and Retruxel will discover and load it automatically.
+> 🚧 Plugin system is planned but not yet implemented.
+
+Retruxel plugins will be standard .NET class libraries that reference `Retruxel.SDK`. Implement one of the module interfaces (`IGraphicModule`, `ILogicModule`, `IAudioModule`), drop the compiled DLL into the `/plugins/` folder, and Retruxel will discover and load it automatically.
 
 ```csharp
 public class MyModule : ILogicModule

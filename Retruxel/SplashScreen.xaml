@@ -34,10 +34,7 @@
                            Style="{StaticResource TextLabel}"
                            VerticalAlignment="Center"
                            HorizontalAlignment="Left"/>
-                <TextBlock Text="SECURE_BOOT_ENABLED"
-                           Style="{StaticResource TextLabel}"
-                           VerticalAlignment="Center"
-                           HorizontalAlignment="Right"/>
+
             </Grid>
 
             <!-- ===== CENTER CONTENT ===== -->

@@ -176,4 +176,17 @@
         <Setter Property="Width" Value="4"/>
     </Style>
 
+    <!-- ==================== TEXTBOX ==================== -->
+    <Style TargetType="TextBox">
+        <Setter Property="Background" Value="{StaticResource BrushSurfaceContainerHighest}"/>
+        <Setter Property="Foreground" Value="{StaticResource BrushOnSurface}"/>
+        <Setter Property="CaretBrush" Value="{StaticResource BrushPrimary}"/>
+        <Setter Property="SelectionBrush" Value="{StaticResource BrushPrimary}"/>
+        <Setter Property="SelectionOpacity" Value="0.3"/>
+        <Setter Property="BorderThickness" Value="0"/>
+        <Setter Property="FontFamily" Value="{StaticResource FontBody}"/>
+        <Setter Property="FontSize" Value="13"/>
+        <Setter Property="Padding" Value="8,6"/>
+    </Style>
+
 </ResourceDictionary>

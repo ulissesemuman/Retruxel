@@ -1,6 +1,7 @@
-﻿using Retruxel.Core.Interfaces;
+using Retruxel.Core.Interfaces;
 using Retruxel.Core.Models;
 using Retruxel.Modules.Text;
+using System.Text.Json;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -12,11 +13,15 @@ public partial class SceneEditorView : UserControl
 {
     private RetruxelProject? _project;
     private ITarget? _target;
+    private SceneData? _currentScene;
     private readonly List<SceneElement> _elements = [];
     private SceneElement? _selectedElement;
     private bool _isDragging;
     private Point _dragOffset;
     private SceneElement? _draggedElement;
+    private Retruxel.Core.Services.ProjectManager? _projectManager;
+    private bool _isUpdatingUI;
+    private bool _isLoadingProject;
 
     public event Action<RetruxelProject>? OnGenerateRomRequested;
 
@@ -25,6 +30,11 @@ public partial class SceneEditorView : UserControl
         InitializeComponent();
         KeyDown += SceneEditorView_KeyDown;
         Focusable = true;
+    }
+
+    public void SetProjectManager(Retruxel.Core.Services.ProjectManager manager)
+    {
+        _projectManager = manager;
     }
 
     private void SceneEditorView_KeyDown(object sender, KeyEventArgs e)
@@ -49,16 +59,23 @@ public partial class SceneEditorView : UserControl
         SceneCanvas.Children.Clear();
         _selectedElement = null;
         
-        TxtSceneName.Text = project.Name;
+        // Get or create main scene
+        _currentScene = project.Scenes.FirstOrDefault();
+        if (_currentScene is null)
+        {
+            _currentScene = new SceneData
+            {
+                SceneId = Guid.NewGuid().ToString(),
+                SceneName = "Main",
+                Elements = []
+            };
+            project.Scenes.Add(_currentScene);
+        }
+        
+        TxtSceneName.Text = _currentScene.SceneName;
         LoadModulePalette(target);
         LoadEvents();
-        
-        // Load existing module states from project
-        if (project.ModuleStates.Count > 0)
-        {
-            // TODO: Restore elements from saved project
-            // For now, start with empty scene
-        }
+        LoadFromProject();
     }
 
     // ===== MODULE PALETTE =====
@@ -366,6 +383,7 @@ public partial class SceneEditorView : UserControl
         SceneElement? existingElement = null)
     {
         var element = existingElement ?? CreateSceneElement(moduleId, 0, 0);
+        element.Trigger = trigger;
 
         if (existingElement is null)
             _elements.Add(element);
@@ -387,7 +405,10 @@ public partial class SceneEditorView : UserControl
         }
 
         SelectElement(element);
-        SyncProjectModules();
+        
+        // Only mark dirty if this is a new element, not during load
+        if (existingElement is null)
+            SyncProjectModules();
     }
 
     private Border BuildEventAction(SceneElement element)
@@ -482,7 +503,10 @@ public partial class SceneEditorView : UserControl
 
         TxtNoSelection.Visibility = Visibility.Collapsed;
         PropertiesPanel.Visibility = Visibility.Visible;
-        BuildPropertiesPanel(element);
+        
+        // Don't build properties panel during project load
+        if (!_isLoadingProject)
+            BuildPropertiesPanel(element);
         
         // Ensure keyboard focus for Delete key
         Focus();
@@ -490,9 +514,14 @@ public partial class SceneEditorView : UserControl
 
     private void BuildPropertiesPanel(SceneElement element)
     {
+        _isUpdatingUI = true;
         PropertiesPanel.Children.Clear();
 
-        if (element.Module is not TextDisplayModule textModule) return;
+        if (element.Module is not TextDisplayModule textModule)
+        {
+            _isUpdatingUI = false;
+            return;
+        }
 
         // Module name
         PropertiesPanel.Children.Add(new TextBlock
@@ -536,6 +565,8 @@ public partial class SceneEditorView : UserControl
             UpdateElementLabel(element);
             SyncProjectModules();
         });
+        
+        _isUpdatingUI = false;
     }
 
     private void AddPropertyField(string label, string value, Action<string> onChange)
@@ -566,7 +597,17 @@ public partial class SceneEditorView : UserControl
             VerticalAlignment = VerticalAlignment.Center
         };
 
-        textBox.TextChanged += (s, e) => onChange(textBox.Text);
+        // Auto-focus on TEXT field
+        if (label == "TEXT")
+        {
+            textBox.Loaded += (s, e) => textBox.Focus();
+        }
+
+        textBox.TextChanged += (s, e) =>
+        {
+            if (!_isUpdatingUI)
+                onChange(textBox.Text);
+        };
         input.Child = textBox;
         PropertiesPanel.Children.Add(input);
     }
@@ -638,18 +679,26 @@ public partial class SceneEditorView : UserControl
     /// </summary>
     private void SyncProjectModules()
     {
-        if (_project is null) return;
+        if (_project is null || _currentScene is null) return;
+
+        _currentScene.Elements = _elements.Select(e => new SceneElementData
+        {
+            ElementId = e.ElementId,
+            ModuleId = e.ModuleId,
+            TileX = e.TileX,
+            TileY = e.TileY,
+            Trigger = e.Trigger,
+            ModuleState = e.Module is Retruxel.Core.Interfaces.IModule module
+                ? module.Serialize()
+                : string.Empty
+        }).ToList();
 
         _project.DefaultModules = _elements
             .Select(e => e.ModuleId)
             .Distinct()
             .ToList();
-
-        _project.ModuleStates = _elements
-            .Where(e => e.Module is Retruxel.Core.Interfaces.IModule)
-            .ToDictionary(
-                e => e.ElementId,
-                e => ((Retruxel.Core.Interfaces.IModule)e.Module!).Serialize());
+        
+        _projectManager?.MarkDirty();
     }
 
     private void GenerateRom_Click(object sender, RoutedEventArgs e)
@@ -657,6 +706,82 @@ public partial class SceneEditorView : UserControl
         SyncProjectModules();
         if (_project is not null)
             OnGenerateRomRequested?.Invoke(_project);
+    }
+
+    /// <summary>
+    /// Loads scene elements from the project and reconstructs the UI.
+    /// </summary>
+    private void LoadFromProject()
+    {
+        if (_currentScene is null || _currentScene.Elements.Count == 0)
+            return;
+
+        _isLoadingProject = true;
+
+        foreach (var elementData in _currentScene.Elements)
+        {
+            try
+            {
+                var module = DeserializeModule(elementData.ModuleId, elementData.ModuleState);
+                if (module is null) continue;
+
+                var element = new SceneElement
+                {
+                    ElementId = elementData.ElementId,
+                    ModuleId = elementData.ModuleId,
+                    Module = module,
+                    TileX = elementData.TileX,
+                    TileY = elementData.TileY,
+                    Trigger = elementData.Trigger
+                };
+
+                // Sync module coordinates with element coordinates
+                if (module is TextDisplayModule textModule)
+                {
+                    textModule.X = elementData.TileX;
+                    textModule.Y = elementData.TileY;
+                }
+
+                _elements.Add(element);
+
+                // Add to canvas if it has position
+                if (elementData.TileX >= 0 && elementData.TileY >= 0)
+                {
+                    var visual = BuildCanvasElement(element);
+                    Canvas.SetLeft(visual, element.TileX * 8);
+                    Canvas.SetTop(visual, element.TileY * 8);
+                    SceneCanvas.Children.Add(visual);
+                }
+
+                // Add to event panel
+                if (!string.IsNullOrEmpty(elementData.Trigger))
+                {
+                    AddModuleToEvent(elementData.Trigger, elementData.ModuleId, element);
+                }
+            }
+            catch
+            {
+                // Skip corrupted elements
+            }
+        }
+        
+        _isLoadingProject = false;
+    }
+
+    /// <summary>
+    /// Deserializes a module from its JSON state.
+    /// </summary>
+    private object? DeserializeModule(string moduleId, string moduleState)
+    {
+        if (moduleId == "text.display")
+        {
+            var module = new TextDisplayModule();
+            if (!string.IsNullOrEmpty(moduleState))
+                module.Deserialize(moduleState);
+            return module;
+        }
+        
+        return null;
     }
 }
 
@@ -670,6 +795,7 @@ public class SceneElement
     public object? Module { get; set; }
     public int TileX { get; set; }
     public int TileY { get; set; }
+    public string Trigger { get; set; } = "OnStart";
     public UIElement? CanvasVisual { get; set; }
     public UIElement? EventVisual { get; set; }
 

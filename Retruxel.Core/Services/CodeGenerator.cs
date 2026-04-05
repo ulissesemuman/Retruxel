@@ -25,6 +25,7 @@ public class CodeGenerator
     /// </summary>
     public async Task<BuildContext> GenerateAsync(
         RetruxelProject project,
+        string outputDirectory,
         IProgress<string>? progress = null)
     {
         var sourceFiles = new List<GeneratedFile>();
@@ -32,38 +33,39 @@ public class CodeGenerator
 
         progress?.Report("INIT: Starting code generation...");
 
-        // Group module instances by ModuleId
+        // Collect all module instances from scenes
         var instancesByModule = new Dictionary<string, List<IModule>>();
 
-        foreach (var (elementId, serializedData) in project.ModuleStates)
+        foreach (var scene in project.Scenes)
         {
-            var moduleId = project.DefaultModules.FirstOrDefault() ?? "unknown";
-            
-            progress?.Report($"PROC: Loading element {elementId.Substring(0, 8)}...");
-
-            IModule? moduleTemplate = null;
-
-            if (_moduleLoader.GraphicModules.TryGetValue(moduleId, out var gm))
-                moduleTemplate = gm;
-            else if (_moduleLoader.LogicModules.TryGetValue(moduleId, out var lm))
-                moduleTemplate = lm;
-            else if (_moduleLoader.AudioModules.TryGetValue(moduleId, out var am))
-                moduleTemplate = am;
-
-            if (moduleTemplate is null)
+            foreach (var elementData in scene.Elements)
             {
-                progress?.Report($"WARN: Module {moduleId} not found — skipping.");
-                continue;
+                progress?.Report($"PROC: Loading element {elementData.ElementId.Substring(0, 8)}...");
+
+                IModule? moduleTemplate = null;
+
+                if (_moduleLoader.GraphicModules.TryGetValue(elementData.ModuleId, out var gm))
+                    moduleTemplate = gm;
+                else if (_moduleLoader.LogicModules.TryGetValue(elementData.ModuleId, out var lm))
+                    moduleTemplate = lm;
+                else if (_moduleLoader.AudioModules.TryGetValue(elementData.ModuleId, out var am))
+                    moduleTemplate = am;
+
+                if (moduleTemplate is null)
+                {
+                    progress?.Report($"WARN: Module {elementData.ModuleId} not found — skipping.");
+                    continue;
+                }
+
+                var moduleType = moduleTemplate.GetType();
+                var module = (IModule)Activator.CreateInstance(moduleType)!;
+                module.Deserialize(elementData.ModuleState);
+
+                if (!instancesByModule.ContainsKey(elementData.ModuleId))
+                    instancesByModule[elementData.ModuleId] = new List<IModule>();
+                
+                instancesByModule[elementData.ModuleId].Add(module);
             }
-
-            var moduleType = moduleTemplate.GetType();
-            var module = (IModule)Activator.CreateInstance(moduleType)!;
-            module.Deserialize(serializedData);
-
-            if (!instancesByModule.ContainsKey(moduleId))
-                instancesByModule[moduleId] = new List<IModule>();
-            
-            instancesByModule[moduleId].Add(module);
         }
 
         // Generate code for each module type (passing all instances)
@@ -94,16 +96,12 @@ public class CodeGenerator
         progress?.Report($"INFO: {sourceFiles.Count} source files generated.");
         progress?.Report($"INFO: {assets.Count} assets generated.");
 
-        var outputDir = Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-            "Retruxel", "builds", Guid.NewGuid().ToString());
-
         return new BuildContext
         {
             TargetId = project.TargetId,
             SourceFiles = sourceFiles,
             Assets = assets,
-            OutputDirectory = outputDir,
+            OutputDirectory = outputDirectory,
             BuildParameters = project.Parameters
                 .Where(p => p.Key.StartsWith("target."))
                 .ToDictionary(p => p.Key.Replace("target.", ""), p => p.Value)

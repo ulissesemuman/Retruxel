@@ -37,6 +37,7 @@
 
             <!-- ===== TITLE BAR ===== -->
             <Border Grid.Row="0"
+                    x:Name="TitleBar"
                     Background="{StaticResource BrushSurfaceContainerLow}"
                     CornerRadius="6,6,0,0"
                     MouseLeftButtonDown="TitleBar_MouseLeftButtonDown">
@@ -50,6 +51,20 @@
                     <!-- Logo + name -->
                     <StackPanel Grid.Column="0" Orientation="Horizontal"
                                 VerticalAlignment="Center" Margin="16,0">
+                        <!-- Home button (visible only when project is open) -->
+                        <Button x:Name="BtnHome"
+                                Content="←"
+                                Width="32" Height="32"
+                                Background="Transparent"
+                                Foreground="{StaticResource BrushOnSurfaceVariant}"
+                                BorderThickness="0"
+                                FontSize="18"
+                                FontWeight="Bold"
+                                Click="HomeButton_Click"
+                                Cursor="Hand"
+                                Visibility="Collapsed"
+                                Margin="0,0,12,0"
+                                ToolTip="Back to Welcome"/>
                         <TextBlock Text="RETRUXEL"
                                    Style="{StaticResource TextHeadline}"
                                    Foreground="{StaticResource BrushPrimary}"
@@ -68,12 +83,23 @@
                     <!-- Window controls -->
                     <StackPanel Grid.Column="2" Orientation="Horizontal"
                                 VerticalAlignment="Center" Margin="8,0">
-                        <TextBlock Text="SETTINGS" Style="{StaticResource TextLabel}"
-                                   VerticalAlignment="Center" Margin="0,0,24,0"
-                                   Cursor="Hand"/>
-                        <Button Content="GENERATE ROM"
+                        <Button Content="&#xE713;"
+                                Width="32" Height="32"
+                                Background="Transparent"
+                                Foreground="{StaticResource BrushOnSurfaceVariant}"
+                                BorderThickness="0"
+                                FontFamily="Segoe MDL2 Assets"
+                                FontSize="16"
+                                VerticalAlignment="Center"
+                                Margin="0,0,16,0"
+                                Click="SettingsButton_Click"
+                                Cursor="Hand"
+                                ToolTip="Settings"/>
+                        <Button x:Name="BtnGenerateRom"
+                                Content="GENERATE ROM"
                                 Style="{StaticResource ButtonPrimary}"
-                                Padding="16,8" Margin="0,0,8,0"/>
+                                Padding="16,8" Margin="0,0,8,0"
+                                Visibility="Collapsed"/>
                         <!-- Minimize -->
                         <Button Width="32" Height="32"
                                 Content="─"
@@ -118,7 +144,7 @@
                       Panel.ZIndex="10">
 
                     <!-- Semi-transparent backdrop -->
-                    <Border Background="#CC000000"/>
+                    <Border Background="#CC000000" IsHitTestVisible="True"/>
 
                     <!-- Overlay content container -->
                     <Border x:Name="OverlayContent"
@@ -133,9 +159,12 @@
 
                             <!-- Overlay title bar with close button -->
                             <Border Grid.Row="0"
-                        Background="{StaticResource BrushSurfaceContainerHighest}"
-                        CornerRadius="6,6,0,0"
-                        Padding="16,0">
+                                    x:Name="OverlayTitleBar"
+                                    Background="{StaticResource BrushSurfaceContainerHighest}"
+                                    CornerRadius="6,6,0,0"
+                                    Padding="16,0"
+                                    MouseLeftButtonDown="OverlayTitleBar_MouseLeftButtonDown"
+                                    Cursor="SizeAll">
                                 <Grid>
                                     <TextBlock x:Name="OverlayTitle"
                                    Style="{StaticResource TextLabel}"
@@ -162,6 +191,7 @@
 
             <!-- ===== STATUS BAR ===== -->
             <Border Grid.Row="2"
+                    x:Name="StatusBar"
                     Background="{StaticResource BrushSurfaceContainerLow}"
                     CornerRadius="0,0,6,6"
                     Padding="16,0">
@@ -178,7 +208,7 @@
                     </StackPanel>
 
                     <TextBlock Grid.Column="2"
-                               Text="v1.0.0-alpha"
+                               x:Name="TxtVersion"
                                Style="{StaticResource TextLabel}"/>
                 </Grid>
             </Border>

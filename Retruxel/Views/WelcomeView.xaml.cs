@@ -1,6 +1,8 @@
 ﻿using Retruxel.Core.Interfaces;
 using Retruxel.Core.Models;
+using Retruxel.Core.Services;
 using Retruxel.Target.SMS;
+using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
@@ -11,6 +13,7 @@ public partial class WelcomeView : UserControl
 {
     private bool _isGridView = true;
     private readonly List<ITarget> _targets = [new SmsTarget()];
+    private Border? _dropOverlay;
     public event Action<RetruxelProject>? OnProjectCreated;
     public event Action? OnAboutRequested;
 
@@ -22,14 +25,15 @@ public partial class WelcomeView : UserControl
 
     private void OnLoaded(object sender, RoutedEventArgs e)
     {
-        RenderConsoles();
+        RenderTargets();
         RenderRecentProjects();
+        RenderSidebarRecentProjects();
     }
 
-    // Renders console cards in grid or list mode
-    private void RenderConsoles()
+    // Renders target cards in grid or list mode
+    private void RenderTargets()
     {
-        ConsolesPanel.Children.Clear();
+        TargetsPanel.Children.Clear();
 
         foreach (var target in _targets)
         {
@@ -37,7 +41,7 @@ public partial class WelcomeView : UserControl
                 ? BuildGridCard(target)
                 : BuildListCard(target);
 
-            ConsolesPanel.Children.Add(card);
+            TargetsPanel.Children.Add(card);
         }
     }
 
@@ -171,14 +175,160 @@ public partial class WelcomeView : UserControl
 
     private void RenderRecentProjects()
     {
-        // Placeholder — will load from ProjectManager
-        var placeholder = new TextBlock
+        RecentProjectsPanel.Children.Clear();
+        
+        var settings = SettingsService.Load();
+        var recentProjects = settings.General.RecentProjects
+            .Where(File.Exists)
+            .ToList();
+
+        if (recentProjects.Count == 0)
         {
-            Text = "No recent projects.",
-            Style = (Style)FindResource("TextBody"),
-            Margin = new Thickness(0, 8, 0, 0)
+            // Show empty state - hide targets and show centered welcome
+            PageTitle.Visibility = Visibility.Collapsed;
+            PageDescription.Visibility = Visibility.Collapsed;
+            TargetHeader.Visibility = Visibility.Collapsed;
+            TargetCardsSection.Visibility = Visibility.Collapsed;
+            RecentProjectsHeader.Visibility = Visibility.Collapsed;
+            EmptyState.Visibility = Visibility.Visible;
+            return;
+        }
+
+        // Show recent projects and targets
+        PageTitle.Visibility = Visibility.Visible;
+        PageDescription.Visibility = Visibility.Visible;
+        TargetHeader.Visibility = Visibility.Visible;
+        TargetCardsSection.Visibility = Visibility.Visible;
+        RecentProjectsHeader.Visibility = Visibility.Visible;
+        EmptyState.Visibility = Visibility.Collapsed;
+
+        // Use WrapPanel for grid mode, StackPanel for list mode
+        if (_isGridView)
+        {
+            var wrapPanel = new WrapPanel { Orientation = Orientation.Horizontal };
+            foreach (var projectPath in recentProjects)
+            {
+                wrapPanel.Children.Add(BuildRecentProjectGridCard(projectPath));
+            }
+            RecentProjectsPanel.Children.Add(wrapPanel);
+        }
+        else
+        {
+            foreach (var projectPath in recentProjects)
+            {
+                RecentProjectsPanel.Children.Add(BuildRecentProjectListCard(projectPath));
+            }
+        }
+    }
+
+    private Border BuildRecentProjectGridCard(string projectPath)
+    {
+        var projectName = Path.GetFileNameWithoutExtension(projectPath);
+        var projectDir = Path.GetDirectoryName(projectPath) ?? "";
+
+        var card = new Border
+        {
+            Width = 220,
+            Height = 200,
+            Background = new SolidColorBrush(Color.FromRgb(0x1E, 0x1E, 0x1E)),
+            Margin = new Thickness(0, 0, 16, 16),
+            Cursor = System.Windows.Input.Cursors.Hand,
+            Padding = new Thickness(16),
+            Tag = projectPath
         };
-        RecentProjectsPanel.Children.Add(placeholder);
+
+        var panel = new StackPanel();
+
+        panel.Children.Add(new TextBlock
+        {
+            Text = projectName.ToUpper(),
+            FontSize = 14,
+            FontWeight = FontWeights.Bold,
+            Foreground = Brushes.White,
+            TextWrapping = TextWrapping.Wrap,
+            Margin = new Thickness(0, 0, 0, 8)
+        });
+
+        panel.Children.Add(new TextBlock
+        {
+            Text = projectDir,
+            FontSize = 10,
+            Foreground = new SolidColorBrush(Color.FromRgb(0xAD, 0xAA, 0xAA)),
+            TextTrimming = TextTrimming.CharacterEllipsis,
+            TextWrapping = TextWrapping.Wrap
+        });
+
+        // Bottom accent line
+        var accent = new Border
+        {
+            Height = 3,
+            Background = new SolidColorBrush(Color.FromRgb(0x81, 0xEC, 0xFF)),
+            Margin = new Thickness(-16, 0, -16, -16),
+            VerticalAlignment = VerticalAlignment.Bottom
+        };
+        panel.Children.Add(accent);
+
+        card.Child = panel;
+        card.MouseLeftButtonDown += RecentProject_Click;
+        return card;
+    }
+
+    private Border BuildRecentProjectListCard(string projectPath)
+    {
+        var projectName = Path.GetFileNameWithoutExtension(projectPath);
+        var projectDir = Path.GetDirectoryName(projectPath) ?? "";
+
+        var card = new Border
+        {
+            Background = new SolidColorBrush(Color.FromRgb(0x1E, 0x1E, 0x1E)),
+            Padding = new Thickness(12, 8, 12, 8),
+            Margin = new Thickness(0, 0, 0, 8),
+            Cursor = System.Windows.Input.Cursors.Hand,
+            Tag = projectPath
+        };
+
+        var panel = new StackPanel();
+
+        panel.Children.Add(new TextBlock
+        {
+            Text = projectName.ToUpper(),
+            FontSize = 12,
+            FontWeight = FontWeights.Bold,
+            Foreground = Brushes.White
+        });
+
+        panel.Children.Add(new TextBlock
+        {
+            Text = projectDir,
+            FontSize = 10,
+            Foreground = new SolidColorBrush(Color.FromRgb(0xAD, 0xAA, 0xAA)),
+            TextTrimming = TextTrimming.CharacterEllipsis
+        });
+
+        card.Child = panel;
+        card.MouseLeftButtonDown += RecentProject_Click;
+        return card;
+    }
+
+    private async void RecentProject_Click(object sender, System.Windows.Input.MouseButtonEventArgs e)
+    {
+        if (sender is not Border card || card.Tag is not string projectPath)
+            return;
+
+        try
+        {
+            var manager = new ProjectManager();
+            var project = await manager.LoadAsync(projectPath);
+            OnProjectCreated?.Invoke(project);
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(
+                $"Failed to load project:\n{ex.Message}",
+                "Retruxel",
+                MessageBoxButton.OK,
+                MessageBoxImage.Error);
+        }
     }
 
     private void OnTargetSelected(ITarget target)
@@ -196,7 +346,8 @@ public partial class WelcomeView : UserControl
         BtnGrid.Foreground = new SolidColorBrush(Color.FromRgb(0x8E, 0xFF, 0x71));
         BtnList.Background = new SolidColorBrush(Color.FromRgb(0x1E, 0x1E, 0x1E));
         BtnList.Foreground = new SolidColorBrush(Color.FromRgb(0xAD, 0xAA, 0xAA));
-        RenderConsoles();
+        RenderTargets();
+        RenderRecentProjects();
     }
 
     private void BtnList_Click(object sender, RoutedEventArgs e)
@@ -206,9 +357,235 @@ public partial class WelcomeView : UserControl
         BtnList.Foreground = new SolidColorBrush(Color.FromRgb(0x8E, 0xFF, 0x71));
         BtnGrid.Background = new SolidColorBrush(Color.FromRgb(0x1E, 0x1E, 0x1E));
         BtnGrid.Foreground = new SolidColorBrush(Color.FromRgb(0xAD, 0xAA, 0xAA));
-        RenderConsoles();
+        RenderTargets();
+        RenderRecentProjects();
     }
 
     private void Documentation_Click(object sender, System.Windows.Input.MouseButtonEventArgs e)
         => OnAboutRequested?.Invoke();
+
+    private void About_Click(object sender, System.Windows.Input.MouseButtonEventArgs e)
+        => OnAboutRequested?.Invoke();
+
+    private void NewProject_Click(object sender, RoutedEventArgs e)
+    {
+        // Open target selection dialog
+        var dialog = new TargetSelectionDialog { Owner = Window.GetWindow(this) };
+        if (dialog.ShowDialog() == true && dialog.SelectedTarget != null)
+        {
+            OnTargetSelected(dialog.SelectedTarget);
+        }
+    }
+
+    private async void OpenProject_Click(object sender, RoutedEventArgs e)
+    {
+        var dialog = new Microsoft.Win32.OpenFileDialog
+        {
+            Filter = "Retruxel Project (*.rtrxproject)|*.rtrxproject",
+            Title = "Open Retruxel Project"
+        };
+
+        if (dialog.ShowDialog() == true)
+        {
+            try
+            {
+                var manager = new ProjectManager();
+                var project = await manager.LoadAsync(dialog.FileName);
+                OnProjectCreated?.Invoke(project);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(
+                    $"Failed to load project:\n{ex.Message}",
+                    "Retruxel",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Error);
+            }
+        }
+    }
+
+    private void RenderSidebarRecentProjects()
+    {
+        SidebarRecentProjects.Children.Clear();
+        
+        var settings = SettingsService.Load();
+        var recentProjects = settings.General.RecentProjects
+            .Where(File.Exists)
+            .Take(3) // Max 3 in sidebar
+            .ToList();
+
+        if (recentProjects.Count == 0)
+        {
+            var placeholder = new TextBlock
+            {
+                Text = "No recent projects",
+                Style = (Style)FindResource("TextLabel"),
+                Margin = new Thickness(0, 0, 0, 4)
+            };
+            SidebarRecentProjects.Children.Add(placeholder);
+            return;
+        }
+
+        foreach (var projectPath in recentProjects)
+        {
+            var projectName = Path.GetFileNameWithoutExtension(projectPath);
+            
+            var item = new Border
+            {
+                Padding = new Thickness(8, 6, 8, 6),
+                Margin = new Thickness(0, 0, 0, 4),
+                Cursor = System.Windows.Input.Cursors.Hand,
+                Tag = projectPath,
+                Background = System.Windows.Media.Brushes.Transparent
+            };
+
+            var text = new TextBlock
+            {
+                Text = projectName,
+                Style = (Style)FindResource("TextBody"),
+                Foreground = new SolidColorBrush(Color.FromRgb(0xAD, 0xAA, 0xAA)),
+                TextTrimming = TextTrimming.CharacterEllipsis
+            };
+
+            item.Child = text;
+            item.MouseLeftButtonDown += RecentProject_Click;
+            
+            // Hover effect
+            item.MouseEnter += (s, e) =>
+            {
+                item.Background = new SolidColorBrush(Color.FromRgb(0x1E, 0x1E, 0x1E));
+                text.Foreground = new SolidColorBrush(Color.FromRgb(0xFF, 0xFF, 0xFF));
+            };
+            item.MouseLeave += (s, e) =>
+            {
+                item.Background = System.Windows.Media.Brushes.Transparent;
+                text.Foreground = new SolidColorBrush(Color.FromRgb(0xAD, 0xAA, 0xAA));
+            };
+
+            SidebarRecentProjects.Children.Add(item);
+        }
+    }
+
+    /// <summary>
+    /// Refreshes the recent projects list. Called when returning from SceneEditor.
+    /// </summary>
+    public void RefreshRecentProjects()
+    {
+        RenderRecentProjects();
+        RenderSidebarRecentProjects();
+    }
+
+    private void MainContent_DragEnter(object sender, DragEventArgs e)
+    {
+        if (e.Data.GetDataPresent(DataFormats.FileDrop))
+        {
+            var files = (string[])e.Data.GetData(DataFormats.FileDrop);
+            if (files.Length == 1 && Path.GetExtension(files[0]).Equals(".rtrxproject", StringComparison.OrdinalIgnoreCase))
+            {
+                e.Effects = DragDropEffects.Copy;
+                ShowDropOverlay();
+                return;
+            }
+        }
+        e.Effects = DragDropEffects.None;
+    }
+
+    private void MainContent_DragLeave(object sender, DragEventArgs e)
+    {
+        HideDropOverlay();
+    }
+
+    private async void MainContent_Drop(object sender, DragEventArgs e)
+    {
+        HideDropOverlay();
+
+        if (!e.Data.GetDataPresent(DataFormats.FileDrop))
+            return;
+
+        var files = (string[])e.Data.GetData(DataFormats.FileDrop);
+        if (files.Length != 1)
+            return;
+
+        var filePath = files[0];
+        if (!Path.GetExtension(filePath).Equals(".rtrxproject", StringComparison.OrdinalIgnoreCase))
+            return;
+
+        try
+        {
+            var manager = new ProjectManager();
+            var project = await manager.LoadAsync(filePath);
+            OnProjectCreated?.Invoke(project);
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(
+                $"Failed to load project:\n{ex.Message}",
+                "Retruxel",
+                MessageBoxButton.OK,
+                MessageBoxImage.Error);
+        }
+    }
+
+    private void ShowDropOverlay()
+    {
+        if (_dropOverlay != null)
+            return;
+
+        var mainWindow = Window.GetWindow(this);
+        if (mainWindow?.Content is not Grid rootGrid)
+            return;
+
+        _dropOverlay = new Border
+        {
+            Background = new SolidColorBrush(Color.FromArgb(230, 0x0E, 0x0E, 0x0E)),
+            Child = new StackPanel
+            {
+                HorizontalAlignment = HorizontalAlignment.Center,
+                VerticalAlignment = VerticalAlignment.Center,
+                Children =
+                {
+                    new TextBlock
+                    {
+                        Text = "DROP .RTRXPROJECT FILE",
+                        FontSize = 32,
+                        FontWeight = FontWeights.Bold,
+                        Foreground = new SolidColorBrush(Color.FromRgb(0x8E, 0xFF, 0x71)),
+                        HorizontalAlignment = HorizontalAlignment.Center,
+                        Margin = new Thickness(0, 0, 0, 16)
+                    },
+                    new Border
+                    {
+                        Width = 200,
+                        Height = 200,
+                        BorderBrush = new SolidColorBrush(Color.FromRgb(0x8E, 0xFF, 0x71)),
+                        BorderThickness = new Thickness(3),
+                        Child = new TextBlock
+                        {
+                            Text = "↓",
+                            FontSize = 120,
+                            Foreground = new SolidColorBrush(Color.FromRgb(0x8E, 0xFF, 0x71)),
+                            HorizontalAlignment = HorizontalAlignment.Center,
+                            VerticalAlignment = VerticalAlignment.Center
+                        }
+                    }
+                }
+            },
+            IsHitTestVisible = false
+        };
+
+        rootGrid.Children.Add(_dropOverlay);
+    }
+
+    private void HideDropOverlay()
+    {
+        if (_dropOverlay == null)
+            return;
+
+        var mainWindow = Window.GetWindow(this);
+        if (mainWindow?.Content is Grid rootGrid)
+        {
+            rootGrid.Children.Remove(_dropOverlay);
+        }
+        _dropOverlay = null;
+    }
 }

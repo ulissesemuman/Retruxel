@@ -446,6 +446,55 @@
                                     </Grid>
                                 </Border>
 
+                                <TextBlock Text="EMULATOR"
+                                           Style="{StaticResource TextLabel}"
+                                           Foreground="{StaticResource BrushPrimary}"
+                                           Margin="0,16,0,8"/>
+                                <Border Style="{StaticResource SettingRow}">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                        </Grid.ColumnDefinitions>
+                                        <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                                            <TextBlock Text="Emulator path"
+                                                       Style="{StaticResource TextBody}"
+                                                       Foreground="{StaticResource BrushOnSurface}"/>
+                                            <TextBlock x:Name="TxtSmsEmulatorPath"
+                                                       Text="Not configured"
+                                                       Style="{StaticResource TextLabel}"
+                                                       TextTrimming="CharacterEllipsis"/>
+                                        </StackPanel>
+                                        <Button x:Name="BtnBrowseSmsEmulator"
+                                                Grid.Column="1"
+                                                Content="BROWSE"
+                                                Style="{StaticResource ButtonPrimary}"
+                                                Padding="16,0" Height="32"
+                                                Click="BtnBrowseSmsEmulator_Click"/>
+                                    </Grid>
+                                </Border>
+                                <Border Style="{StaticResource SettingRow}">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                        </Grid.ColumnDefinitions>
+                                        <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                                            <TextBlock Text="Launch emulator after build"
+                                                       Style="{StaticResource TextBody}"
+                                                       Foreground="{StaticResource BrushOnSurface}"/>
+                                            <TextBlock Text="Automatically opens the ROM in the emulator after a successful build"
+                                                       Style="{StaticResource TextLabel}"/>
+                                        </StackPanel>
+                                        <CheckBox x:Name="ChkSmsLaunchEmulator"
+                                                  Grid.Column="1"
+                                                  Style="{StaticResource ToggleSwitch}"
+                                                  VerticalAlignment="Center"
+                                                  Checked="ChkSmsLaunchEmulator_Changed"
+                                                  Unchecked="ChkSmsLaunchEmulator_Changed"/>
+                                    </Grid>
+                                </Border>
+
                             </StackPanel>
                         </ScrollViewer>
                     </Grid>

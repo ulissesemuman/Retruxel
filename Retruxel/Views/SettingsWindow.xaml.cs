@@ -1,9 +1,11 @@
 using Retruxel.Core.Models;
 using Retruxel.Core.Services;
+using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
+using Microsoft.Win32;
 
 namespace Retruxel.Views;
 
@@ -51,6 +53,12 @@ public partial class SettingsWindow : Window
 
         // SMS
         ChkSmsShowWarnings.IsChecked = _settings.Targets.Sms.ShowToolchainWarnings;
+        ChkSmsLaunchEmulator.IsChecked = _settings.Targets.Sms.LaunchEmulatorAfterBuild;
+        
+        // Update SMS emulator path display
+        TxtSmsEmulatorPath.Text = string.IsNullOrEmpty(_settings.Targets.Sms.EmulatorPath)
+            ? "Not configured"
+            : _settings.Targets.Sms.EmulatorPath;
     }
 
     // ── Navigation ────────────────────────────────────────────────────────────
@@ -136,6 +144,32 @@ public partial class SettingsWindow : Window
         AutoSave();
     }
 
+    private void BtnBrowseSmsEmulator_Click(object sender, RoutedEventArgs e)
+    {
+        var dialog = new OpenFileDialog
+        {
+            Title = "Select SMS Emulator Executable",
+            Filter = "Executable Files (*.exe)|*.exe|All Files (*.*)|*.*",
+            InitialDirectory = string.IsNullOrEmpty(_settings.Targets.Sms.EmulatorPath)
+                ? Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles)
+                : Path.GetDirectoryName(_settings.Targets.Sms.EmulatorPath)
+        };
+
+        if (dialog.ShowDialog() == true)
+        {
+            _settings.Targets.Sms.EmulatorPath = dialog.FileName;
+            TxtSmsEmulatorPath.Text = dialog.FileName;
+            AutoSave();
+        }
+    }
+
+    private void ChkSmsLaunchEmulator_Changed(object sender, RoutedEventArgs e)
+    {
+        if (_loading) return;
+        _settings.Targets.Sms.LaunchEmulatorAfterBuild = ChkSmsLaunchEmulator.IsChecked == true;
+        AutoSave();
+    }
+
     // ── Auto-save ─────────────────────────────────────────────────────────────
 
     private void AutoSave()
@@ -174,7 +208,7 @@ public partial class SettingsWindow : Window
 
     private void TitleBar_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
     {
-        if (e.LeftButton == MouseButtonState.Pressed)
+        if (e.ChangedButton == MouseButton.Left && e.ButtonState == MouseButtonState.Pressed)
             DragMove();
     }
 

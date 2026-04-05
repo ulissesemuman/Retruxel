@@ -14,45 +14,56 @@
                 Background="{StaticResource BrushSurfaceContainerLow}"
                 Padding="16,24">
             <StackPanel>
-                <TextBlock Text="PROJECT LIBRARY"
+                <!-- Recent projects header -->
+                <TextBlock Text="RECENT PROJECTS"
                            Style="{StaticResource TextLabel}"
                            Foreground="{StaticResource BrushPrimary}"
-                           Margin="0,0,0,4"/>
-                <TextBlock Text="v1.0.0-alpha"
-                           Style="{StaticResource TextLabel}"
-                           Margin="0,0,0,32"/>
+                           Margin="0,0,0,8"/>
 
-                <!-- Nav items -->
-                <Border Background="{StaticResource BrushSurfaceContainerHighest}"
-                        Padding="12,10" Margin="0,0,0,4" Cursor="Hand">
-                    <TextBlock Text="📁  Assets" Style="{StaticResource TextBody}"
-                               Foreground="{StaticResource BrushOnSurface}"/>
-                </Border>
-                <Border Padding="12,10" Margin="0,0,0,4" Cursor="Hand">
-                    <TextBlock Text="⬛  Blocks" Style="{StaticResource TextBody}"/>
-                </Border>
-                <Border Padding="12,10" Margin="0,0,0,4" Cursor="Hand">
-                    <TextBlock Text="⚙  Logic" Style="{StaticResource TextBody}"/>
-                </Border>
-                <Border Padding="12,10" Margin="0,0,0,4" Cursor="Hand">
-                    <TextBlock Text="?  Documentation" Style="{StaticResource TextBody}"
-                       MouseLeftButtonDown="Documentation_Click"/>
-                </Border>                
+                <!-- Recent projects mini list (max 3) -->
+                <StackPanel x:Name="SidebarRecentProjects" Margin="0,0,0,16"/>
 
-                <!-- Spacer -->
+                <!-- Separator -->
                 <Border Height="1" Background="{StaticResource BrushGhostBorder}"
-                        Margin="0,16,0,16"/>
+                        Margin="0,0,0,16"/>
 
-                <!-- New asset button -->
-                <Button Content="+ New Asset"
-                        Style="{StaticResource ButtonSecondary}"
-                        HorizontalAlignment="Stretch"/>
+                <!-- New project button -->
+                <Button Content="+ NEW PROJECT"
+                        Background="{StaticResource BrushSecondary}"
+                        Foreground="White"
+                        BorderThickness="0"
+                        Padding="12,10"
+                        FontWeight="SemiBold"
+                        HorizontalAlignment="Stretch"
+                        Margin="0,0,0,8"
+                        Click="NewProject_Click"
+                        Cursor="Hand"/>
+
+                <!-- Open project button -->
+                <Button Content="OPEN PROJECT"
+                        Background="{StaticResource BrushSecondary}"
+                        Foreground="White"
+                        BorderThickness="0"
+                        Padding="12,10"
+                        FontWeight="SemiBold"
+                        HorizontalAlignment="Stretch"
+                        Margin="0,0,0,16"
+                        Click="OpenProject_Click"
+                        Cursor="Hand"/>
+
+                <!-- Separator -->
+                <Border Height="1" Background="{StaticResource BrushGhostBorder}"
+                        Margin="0,0,0,16"/>
 
                 <!-- Documentation at bottom -->
-                <TextBlock Text="? Documentation"
-                           Style="{StaticResource TextBody}"
-                           Cursor="Hand"
-                           Margin="0,16,0,0"/>
+                <Border Padding="12,10" Margin="0,0,0,4" Cursor="Hand"
+                        MouseLeftButtonDown="Documentation_Click">
+                    <TextBlock Text="?  Documentation" Style="{StaticResource TextBody}"/>
+                </Border>
+                <Border Padding="12,10" Cursor="Hand"
+                        MouseLeftButtonDown="About_Click">
+                    <TextBlock Text="ℹ  About" Style="{StaticResource TextBody}"/>
+                </Border>
             </StackPanel>
         </Border>
 
@@ -60,22 +71,28 @@
         <ScrollViewer Grid.Column="1"
                       VerticalScrollBarVisibility="Auto"
                       HorizontalScrollBarVisibility="Disabled"
-                      Padding="40,32">
+                      Padding="40,32"
+                      AllowDrop="True"
+                      Drop="MainContent_Drop"
+                      DragEnter="MainContent_DragEnter"
+                      DragLeave="MainContent_DragLeave">
             <StackPanel>
 
                 <!-- Page title -->
-                <TextBlock Text="SYSTEM DASHBOARD"
+                <TextBlock x:Name="PageTitle"
+                           Text="TARGET SELECTION"
                            Style="{StaticResource TextDisplay}"
                            Margin="0,0,0,8"/>
-                <TextBlock Text="Initialize target hardware parameters and access local build archives. Select a core architecture to begin assembly."
+                <TextBlock x:Name="PageDescription"
+                           Text="Select a target platform to create a new project. Each target has specific hardware capabilities and toolchain requirements."
                            Style="{StaticResource TextBody}"
                            Margin="0,0,0,32"
                            MaxWidth="600"
                            HorizontalAlignment="Left"
                            TextWrapping="Wrap"/>
 
-                <!-- Console selection header -->
-                <Grid Margin="0,0,0,16">
+                <!-- Target selection header -->
+                <Grid x:Name="TargetHeader" Margin="0,0,0,16">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="Auto"/>
                         <ColumnDefinition Width="*"/>
@@ -86,19 +103,19 @@
                         <Border Width="24" Height="2"
                                 Background="{StaticResource BrushPrimary}"
                                 VerticalAlignment="Center" Margin="0,0,12,0"/>
-                        <TextBlock Text="CONSOLE SELECTION"
+                        <TextBlock Text="AVAILABLE TARGETS"
                                    Style="{StaticResource TextLabel}"
                                    VerticalAlignment="Center"/>
                     </StackPanel>
 
                     <TextBlock Grid.Column="2"
-                               Text="AVAILABLE_CORES: 01"
+                               Text="COUNT: 01"
                                Style="{StaticResource TextLabel}"
                                VerticalAlignment="Center"/>
                 </Grid>
 
-                <!-- View toggle + Console cards -->
-                <Grid Margin="0,0,0,32">
+                <!-- View toggle + Target cards -->
+                <Grid x:Name="TargetCardsSection" Margin="0,0,0,32">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="Auto"/>
@@ -127,13 +144,13 @@
                     </StackPanel>
 
                     <!-- Cards container -->
-                    <WrapPanel x:Name="ConsolesPanel"
+                    <WrapPanel x:Name="TargetsPanel"
                                Grid.Row="1"
                                Orientation="Horizontal"/>
                 </Grid>
 
                 <!-- Recent projects header -->
-                <StackPanel Orientation="Horizontal" Margin="0,0,0,16">
+                <StackPanel x:Name="RecentProjectsHeader" Orientation="Horizontal" Margin="0,0,0,16">
                     <Border Width="24" Height="2"
                             Background="{StaticResource BrushPrimary}"
                             VerticalAlignment="Center" Margin="0,0,12,0"/>
@@ -144,6 +161,51 @@
 
                 <!-- Recent projects list -->
                 <StackPanel x:Name="RecentProjectsPanel"/>
+
+                <!-- Empty state (shown when no recent projects) -->
+                <StackPanel x:Name="EmptyState" Visibility="Collapsed"
+                            HorizontalAlignment="Center" VerticalAlignment="Center"
+                            Margin="0,80,0,0">
+                    <TextBlock Text="RETRUXEL"
+                               Style="{StaticResource TextDisplay}"
+                               FontSize="48"
+                               Foreground="{StaticResource BrushPrimary}"
+                               HorizontalAlignment="Center"
+                               Margin="0,0,0,8"/>
+                    <TextBlock Text="RETRO DEVELOPMENT SUITE"
+                               Style="{StaticResource TextLabel}"
+                               HorizontalAlignment="Center"
+                               Margin="0,0,0,40"/>
+
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,0,0,32">
+                        <Button Content="+ NEW PROJECT"
+                                Background="{StaticResource BrushSecondary}"
+                                Foreground="White"
+                                BorderThickness="0"
+                                Padding="24,16"
+                                FontSize="14"
+                                FontWeight="SemiBold"
+                                Margin="0,0,8,0"
+                                Click="NewProject_Click"
+                                Cursor="Hand"/>
+                        <Button Content="OPEN PROJECT"
+                                Background="{StaticResource BrushSecondary}"
+                                Foreground="White"
+                                BorderThickness="0"
+                                Padding="24,16"
+                                FontSize="14"
+                                FontWeight="SemiBold"
+                                Click="OpenProject_Click"
+                                Cursor="Hand"/>
+                    </StackPanel>
+
+                    <Border Height="1" Width="300"
+                            Background="{StaticResource BrushGhostBorder}"
+                            Margin="0,0,0,16"/>
+                    <TextBlock Text="── or drag a .rtrxproject file here ──"
+                               Style="{StaticResource TextLabel}"
+                               HorizontalAlignment="Center"/>
+                </StackPanel>
 
             </StackPanel>
         </ScrollViewer>

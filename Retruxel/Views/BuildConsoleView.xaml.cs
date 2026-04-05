@@ -2,6 +2,7 @@ using Microsoft.Win32;
 using Retruxel.Core.Models;
 using Retruxel.Core.Services;
 using Retruxel.Target.SMS;
+using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
 using System.Windows;
@@ -41,22 +42,25 @@ public partial class BuildConsoleView : UserControl
         var target = new SmsTarget();
         var moduleLoader = new ModuleLoader(AppDomain.CurrentDomain.BaseDirectory);
 
-        // Only register module templates if there are instances to process
-        if (project.ModuleStates.Count > 0)
+        // Register module templates for deserialization
+        foreach (var moduleId in project.DefaultModules.Distinct())
         {
-            foreach (var moduleId in project.DefaultModules.Distinct())
+            if (moduleId == "text.display")
             {
-                if (moduleId == "text.display")
-                {
-                    var template = new Retruxel.Modules.Text.TextDisplayModule();
-                    moduleLoader.RegisterLogicModule(template);
-                }
+                var template = new Retruxel.Modules.Text.TextDisplayModule();
+                moduleLoader.RegisterLogicModule(template);
             }
+            // Add more module types here as they are implemented
         }
 
         var progress = new Progress<string>(msg => Dispatcher.Invoke(() => AppendLog(msg)));
         var codeGen = new CodeGenerator(moduleLoader, target);
-        var context = await codeGen.GenerateAsync(project, progress);
+        
+        // Build to project's build folder
+        var outputDir = Path.Combine(project.ProjectPath, "build");
+        Directory.CreateDirectory(outputDir);
+        
+        var context = await codeGen.GenerateAsync(project, outputDir, progress);
 
         var toolchain = target.GetToolchain();
 
@@ -68,23 +72,61 @@ public partial class BuildConsoleView : UserControl
 
         if (_lastResult.Success)
         {
-            // Copy ROM to project directory
-            if (!string.IsNullOrEmpty(project.ProjectPath) && _lastResult.RomPath != null)
+            // ROM is already in the build folder, just log it
+            if (_lastResult.RomPath != null)
             {
-                var destRomPath = Path.Combine(project.ProjectPath, $"{project.Name}.sms");
-                File.Copy(_lastResult.RomPath, destRomPath, overwrite: true);
-                AppendLog($"SAVED: {destRomPath}");
+                AppendLog($"SAVED: {_lastResult.RomPath}");
             }
 
             SetStatus("BUILD SUCCESSFUL", true);
             ShowVerification(_lastResult);
             ShowMemoryStats(_lastResult);
             AppendLog($"SUCCESS: ROM generated — {_lastResult.RomSizeBytes / 1024}KB", true);
+
+            // Launch emulator if configured
+            await LaunchEmulatorIfConfiguredAsync(_lastResult.RomPath);
         }
         else
         {
             SetStatus("BUILD FAILED", false, isError: true);
             AppendLog("ERROR: Build failed. Check log for details.", isError: true);
+        }
+    }
+
+    private async Task LaunchEmulatorIfConfiguredAsync(string? romPath)
+    {
+        if (romPath is null) return;
+
+        var settings = await SettingsService.LoadAsync();
+        
+        if (!settings.Targets.Sms.LaunchEmulatorAfterBuild)
+            return;
+
+        if (string.IsNullOrEmpty(settings.Targets.Sms.EmulatorPath))
+        {
+            AppendLog("WARN: Emulator path not configured. Set it in Settings → Master System.");
+            return;
+        }
+
+        if (!File.Exists(settings.Targets.Sms.EmulatorPath))
+        {
+            AppendLog($"ERROR: Emulator not found at {settings.Targets.Sms.EmulatorPath}", isError: true);
+            return;
+        }
+
+        try
+        {
+            Process.Start(new ProcessStartInfo
+            {
+                FileName = settings.Targets.Sms.EmulatorPath,
+                Arguments = $"\"{romPath}\"",
+                UseShellExecute = true
+            });
+            AppendLog($"LAUNCH: Opening ROM in emulator...");
+        }
+        catch (Exception ex)
+        {
+            AppendLog($"ERROR: Failed to launch emulator — {ex.Message}", isError: true);
         }
     }
 

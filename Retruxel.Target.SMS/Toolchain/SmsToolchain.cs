@@ -77,19 +77,21 @@ public class SmsToolchain : IToolchain
 
         try
         {
-            Directory.CreateDirectory(context.OutputDirectory);
+            // Create src folder inside build directory
+            var srcDirectory = Path.Combine(context.OutputDirectory, "src");
+            Directory.CreateDirectory(srcDirectory);
 
-            // Write source files
+            // Write source files to src folder
             foreach (var file in context.SourceFiles)
             {
-                var path = Path.Combine(context.OutputDirectory, file.FileName);
+                var path = Path.Combine(srcDirectory, file.FileName);
                 await File.WriteAllTextAsync(path, file.Content);
             }
 
-            // Write binary assets
+            // Write binary assets to src folder
             foreach (var asset in context.Assets)
             {
-                var path = Path.Combine(context.OutputDirectory, asset.FileName);
+                var path = Path.Combine(srcDirectory, asset.FileName);
                 await File.WriteAllBytesAsync(path, asset.Data);
             }
 
@@ -117,7 +119,7 @@ public class SmsToolchain : IToolchain
                                   $"-c {file.FileName}";
 
                 var ok = await RunProcessAsync(sdccPath, compileArgs,
-                    context.OutputDirectory, log, progress, suppressWarnings);
+                    srcDirectory, log, progress, suppressWarnings);
 
                 if (!ok)
                 {
@@ -143,7 +145,7 @@ public class SmsToolchain : IToolchain
 
             progress.Report("LINK: linking objects...");
             var linkOk = await RunProcessAsync(sdccPath, linkArgs,
-                context.OutputDirectory, log, progress, suppressWarnings);
+                srcDirectory, log, progress, suppressWarnings);
 
             if (!linkOk)
             {
@@ -153,14 +155,15 @@ public class SmsToolchain : IToolchain
                 return result;
             }
 
-            // Step 3 — Convert .ihx to .sms
+            // Step 3 — Convert .ihx to .sms (ROM goes to build root)
             var ihx2smsPath = Path.Combine(ToolchainPath, "ihx2sms.exe");
+            var ihxPath = Path.Combine(srcDirectory, $"{romName}.ihx");
+            var romPath = Path.Combine(context.OutputDirectory, $"{romName}.sms");
+            
             progress.Report("CONVERT: generating ROM...");
             var convertOk = await RunProcessAsync(ihx2smsPath,
-                $"{romName}.ihx {romName}.sms",
+                $"\"{ihxPath}\" \"{romPath}\"",
                 context.OutputDirectory, log, progress, suppressWarnings);
-
-            var romPath = Path.Combine(context.OutputDirectory, $"{romName}.sms");
             result.Success = convertOk && File.Exists(romPath);
             result.RomPath = result.Success ? romPath : null;
             result.RomSizeBytes = result.Success ? (int)new FileInfo(romPath).Length : 0;

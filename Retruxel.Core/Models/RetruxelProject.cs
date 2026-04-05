@@ -38,6 +38,11 @@ public class RetruxelProject
     public List<string> DefaultModules { get; set; } = [];
 
     /// <summary>
+    /// Scenes in the project with all elements and their states.
+    /// </summary>
+    public List<SceneData> Scenes { get; set; } = [];
+
+    /// <summary>
     /// All module and target settings serialized as key-value pairs.
     /// Key format: "ModuleId.ParameterName" or "target.ParameterName"
     /// Ex: { "sms.physics.gravityStrength": 8, "target.region": "PAL" }
@@ -47,6 +52,7 @@ public class RetruxelProject
     /// <summary>
     /// Serialized module states.
     /// Key is ModuleId, value is the raw JSON returned by IModule.Serialize().
+    /// DEPRECATED: Use Scenes instead. Kept for backward compatibility.
     /// </summary>
     public Dictionary<string, string> ModuleStates { get; set; } = new();
 

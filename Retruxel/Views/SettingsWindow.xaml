@@ -268,10 +268,7 @@
                                             <ComboBox x:Name="CmbLanguage"
                                                       Grid.Column="1"
                                                       VerticalAlignment="Center"
-                                                      SelectionChanged="CmbLanguage_Changed">
-                                                <ComboBoxItem Content="English" Tag="en"/>
-                                                <ComboBoxItem Content="Português (BR)" Tag="pt-BR"/>
-                                            </ComboBox>
+                                                      SelectionChanged="CmbLanguage_Changed"/>
                                         </Grid>
                                     </Border>
 

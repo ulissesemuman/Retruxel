@@ -36,8 +36,26 @@ public partial class SettingsWindow : Window
     private async void OnLoaded(object sender, RoutedEventArgs e)
     {
         _settings = await SettingsService.LoadAsync();
+        PopulateLanguageCombo();
         ApplySettingsToUi();
         _loading = false;
+    }
+
+    // ── Populate language combo dynamically ──────────────────────────────────
+
+    private void PopulateLanguageCombo()
+    {
+        CmbLanguage.Items.Clear();
+
+        foreach (var lang in LocalizationService.Instance.AvailableLanguages)
+        {
+            var item = new ComboBoxItem
+            {
+                Content = lang.NativeName,
+                Tag = lang.Code
+            };
+            CmbLanguage.Items.Add(item);
+        }
     }
 
     // ── Apply loaded settings to controls ────────────────────────────────────

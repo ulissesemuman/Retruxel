@@ -13,6 +13,7 @@ public partial class App : Application
 
         // Initialize localization
         var localizationPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Assets", "Localization");
+        LocalizationService.Instance.DiscoverLanguages(localizationPath);
         LocalizationService.Instance.Load(settings.General.Language, localizationPath);
 
         var splash = new SplashScreen();

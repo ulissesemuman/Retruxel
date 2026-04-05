@@ -1,5 +1,6 @@
 ﻿using Retruxel.Core.Interfaces;
 using Retruxel.Core.Models;
+using System.IO;
 using System.Text.Json;
 
 namespace Retruxel.Core.Services;
@@ -25,6 +26,7 @@ public class ProjectManager
 
     /// <summary>
     /// Creates a new project from a target and template.
+    /// Creates the project directory if it doesn't exist.
     /// </summary>
     public RetruxelProject CreateProject(
         string name,
@@ -32,6 +34,9 @@ public class ProjectManager
         ITarget target,
         ProjectTemplate template)
     {
+        // Create project directory
+        Directory.CreateDirectory(projectPath);
+
         var project = new RetruxelProject
         {
             Name = name,

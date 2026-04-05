@@ -28,7 +28,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Retruxel.Core\Retruxel.Core.csproj" />
-    <ProjectReference Include="..\Retruxel.Modules.Universal\Retruxel.Modules.csproj" />
+    <ProjectReference Include="..\Retruxel.Modules\Retruxel.Modules.csproj" />
   </ItemGroup>
 
 </Project>

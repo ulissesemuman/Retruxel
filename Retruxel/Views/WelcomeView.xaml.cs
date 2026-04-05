@@ -12,6 +12,7 @@ public partial class WelcomeView : UserControl
     private bool _isGridView = true;
     private readonly List<ITarget> _targets = [new SmsTarget()];
     public event Action<RetruxelProject>? OnProjectCreated;
+    public event Action? OnAboutRequested;
 
     public WelcomeView()
     {
@@ -207,4 +208,7 @@ public partial class WelcomeView : UserControl
         BtnGrid.Foreground = new SolidColorBrush(Color.FromRgb(0xAD, 0xAA, 0xAA));
         RenderConsoles();
     }
+
+    private void Documentation_Click(object sender, System.Windows.Input.MouseButtonEventArgs e)
+        => OnAboutRequested?.Invoke();
 }

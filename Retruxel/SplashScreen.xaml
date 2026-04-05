@@ -7,10 +7,12 @@
         Background="Transparent"
         AllowsTransparency="True"
         WindowStyle="None"
-        ResizeMode="NoResize">
+        ResizeMode="NoResize"
+        Icon="pack://application:,,,/Assets/icon.ico">
 
     <Border CornerRadius="6"
-            ClipToBounds="True">
+            ClipToBounds="True"
+            MouseLeftButtonDown="Border_MouseLeftButtonDown">
 
         <Border.Background>
             <ImageBrush ImageSource="pack://application:,,,/Assets/Images/Splash/background.png"

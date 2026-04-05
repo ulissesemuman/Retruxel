@@ -1,5 +1,6 @@
 ﻿using Retruxel.Core.Interfaces;
 using Retruxel.Core.Models;
+using Retruxel.Core.Services;
 using System.Diagnostics;
 using System.Reflection;
 
@@ -28,8 +29,10 @@ public class SmsToolchain : IToolchain
         var resources = assembly.GetManifestResourceNames();
 
         // Debug — log all found resources
+#if DEBUG
         foreach (var r in resources)
             progress.Report($"FOUND_RESOURCE: {r}");
+#endif
 
         foreach (var resource in resources
             .Where(r => r.StartsWith("Retruxel.Target.SMS")))
@@ -68,6 +71,10 @@ public class SmsToolchain : IToolchain
         var result = new BuildResult { StartedAt = DateTime.Now };
         var log = new List<BuildLogEntry>();
 
+        // Load settings to check if warnings should be suppressed
+        var settings = await SettingsService.LoadAsync();
+        var suppressWarnings = !settings.Targets.Sms.ShowToolchainWarnings;
+
         try
         {
             Directory.CreateDirectory(context.OutputDirectory);
@@ -104,12 +111,13 @@ public class SmsToolchain : IToolchain
                 progress.Report($"COMPILE: {file.FileName}");
                 var compileArgs = $"-mz80 --no-std-crt0 " +
                                   $"--sdcccall 1 " +
+                                  (suppressWarnings ? "--disable-warning 336 " : "") +
                                   $"-I\"{smslibSrcPath}\" " +
                                   $"--peep-file \"{peepRules}\" " +
                                   $"-c {file.FileName}";
 
                 var ok = await RunProcessAsync(sdccPath, compileArgs,
-                    context.OutputDirectory, log, progress);
+                    context.OutputDirectory, log, progress, suppressWarnings);
 
                 if (!ok)
                 {
@@ -135,7 +143,7 @@ public class SmsToolchain : IToolchain
 
             progress.Report("LINK: linking objects...");
             var linkOk = await RunProcessAsync(sdccPath, linkArgs,
-                context.OutputDirectory, log, progress);
+                context.OutputDirectory, log, progress, suppressWarnings);
 
             if (!linkOk)
             {
@@ -150,7 +158,7 @@ public class SmsToolchain : IToolchain
             progress.Report("CONVERT: generating ROM...");
             var convertOk = await RunProcessAsync(ihx2smsPath,
                 $"{romName}.ihx {romName}.sms",
-                context.OutputDirectory, log, progress);
+                context.OutputDirectory, log, progress, suppressWarnings);
 
             var romPath = Path.Combine(context.OutputDirectory, $"{romName}.sms");
             result.Success = convertOk && File.Exists(romPath);
@@ -209,7 +217,7 @@ public class SmsToolchain : IToolchain
     }
 
     private async Task<bool> RunProcessAsync(string exe, string args,
-        string workingDir, List<BuildLogEntry> log, IProgress<string> progress)
+        string workingDir, List<BuildLogEntry> log, IProgress<string> progress, bool suppressWarnings = false)
     {
         var psi = new ProcessStartInfo(exe, args)
         {
@@ -232,6 +240,12 @@ public class SmsToolchain : IToolchain
         process.ErrorDataReceived += (_, e) =>
         {
             if (e.Data is null) return;
+            
+            // Suppress warnings if configured
+            var isWarning = e.Data.Contains("warning", StringComparison.OrdinalIgnoreCase);
+            if (suppressWarnings && isWarning)
+                return;
+            
             var level = e.Data.Contains("error") ? BuildLogLevel.Error : BuildLogLevel.Warning;
             log.Add(new BuildLogEntry { Level = level, Message = e.Data });
             progress.Report(e.Data);

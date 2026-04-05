@@ -138,11 +138,11 @@
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
                     <StackPanel Grid.Column="0">
-                        <TextBlock Text="STANDARD ROM (.sms)"
+                        <TextBlock Text="EXPORT ROM (.sms)"
                                    Style="{StaticResource TextBody}"
                                    Foreground="{StaticResource BrushOnSurface}"
                                    FontWeight="Bold"/>
-                        <TextBlock Text="For emulators and flash carts"
+                        <TextBlock Text="Save to custom location"
                                    Style="{StaticResource TextLabel}"/>
                     </StackPanel>
                     <TextBlock Grid.Column="1" Text="↓"

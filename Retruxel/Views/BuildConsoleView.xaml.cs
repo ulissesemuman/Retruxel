@@ -1,4 +1,4 @@
-﻿using Microsoft.Win32;
+using Microsoft.Win32;
 using Retruxel.Core.Models;
 using Retruxel.Core.Services;
 using Retruxel.Target.SMS;
@@ -35,23 +35,24 @@ public partial class BuildConsoleView : UserControl
         SetStatus("BUILDING...", false);
         TxtDescription.Text = $"Compiling project '{project.Name}' for target {project.TargetId.ToUpper()}.";
 
+        // Reset static counters before build
+        Retruxel.Target.SMS.Modules.Text.SmsTextDisplayCodeGen.ResetCounter();
+
         var target = new SmsTarget();
         var moduleLoader = new ModuleLoader(AppDomain.CurrentDomain.BaseDirectory);
 
-        // Register text.display module directly
-        var textModule = new Retruxel.Modules.Text.TextDisplayModule
+        // Only register module templates if there are instances to process
+        if (project.ModuleStates.Count > 0)
         {
-            X = 5,
-            Y = 10,
-            Text = "HELLO WORLD"
-        };
-
-        // Temporarily inject module state into project
-        project.DefaultModules = ["text.display"];
-        project.ModuleStates["text.display"] = textModule.Serialize();
-
-        // Register manually until ModuleLoader auto-discovers from /modules folder
-        moduleLoader.RegisterLogicModule(textModule);
+            foreach (var moduleId in project.DefaultModules.Distinct())
+            {
+                if (moduleId == "text.display")
+                {
+                    var template = new Retruxel.Modules.Text.TextDisplayModule();
+                    moduleLoader.RegisterLogicModule(template);
+                }
+            }
+        }
 
         var progress = new Progress<string>(msg => Dispatcher.Invoke(() => AppendLog(msg)));
         var codeGen = new CodeGenerator(moduleLoader, target);
@@ -67,6 +68,14 @@ public partial class BuildConsoleView : UserControl
 
         if (_lastResult.Success)
         {
+            // Copy ROM to project directory
+            if (!string.IsNullOrEmpty(project.ProjectPath) && _lastResult.RomPath != null)
+            {
+                var destRomPath = Path.Combine(project.ProjectPath, $"{project.Name}.sms");
+                File.Copy(_lastResult.RomPath, destRomPath, overwrite: true);
+                AppendLog($"SAVED: {destRomPath}");
+            }
+
             SetStatus("BUILD SUCCESSFUL", true);
             ShowVerification(_lastResult);
             ShowMemoryStats(_lastResult);

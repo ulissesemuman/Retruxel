@@ -34,6 +34,10 @@
                 <Border Padding="12,10" Margin="0,0,0,4" Cursor="Hand">
                     <TextBlock Text="⚙  Logic" Style="{StaticResource TextBody}"/>
                 </Border>
+                <Border Padding="12,10" Margin="0,0,0,4" Cursor="Hand">
+                    <TextBlock Text="?  Documentation" Style="{StaticResource TextBody}"
+                       MouseLeftButtonDown="Documentation_Click"/>
+                </Border>                
 
                 <!-- Spacer -->
                 <Border Height="1" Background="{StaticResource BrushGhostBorder}"

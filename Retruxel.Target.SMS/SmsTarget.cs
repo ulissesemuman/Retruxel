@@ -18,22 +18,68 @@ public class SmsTarget : ITarget
 
     public TargetSpecs Specs => new()
     {
-        ScreenWidth = 256,
+        // Screen
+        ScreenWidth  = 256,
         ScreenHeight = 192,
-        TotalColors = 64,
-        ColorsPerTile = 4,
-        SpritesPerScanline = 8,
-        MaxSpritesOnScreen = 64,
-        TileWidth = 8,
-        TileHeight = 8,
-        RamBytes = 8192,
+
+        // Tiles
+        TileWidth      = 8,
+        TileHeight     = 8,
+        MaxTilesInVram = 448,
+
+        // Colors & Palettes
+        // SMS VDP: 2 bits per channel (R, G, B) → 4 levels per channel → 64 total colors
+        TotalColors                = 64,
+        ColorDepthBitsPerChannel   = 2,
+        ColorsPerTile              = 4,
+        ColorsPerPalette           = 16,
+        SimultaneousPalettes       = 2,
+        BgPalettes                 = 2,   // both palettes available for BG tiles
+        SpritePalettes             = 2,   // both palettes available for sprites
+
+        // Sprites
+        SpritesPerScanline          = 8,
+        MaxSpritesOnScreen          = 64,
+        SpriteWidth                 = 8,
+        SpriteHeight                = 8,
+        SupportsDoubleHeightSprites = true,   // 8×16 mode via VDP register
+
+        // Memory
+        RamBytes    = 8192,
         RomMaxBytes = 524288,
-        CPU = "Zilog Z80",
+
+        // CPU
+        CPU        = "Zilog Z80",
         CpuClockHz = 3546893,
-        SoundChip = "SN76489",
-        SoundToneChannels = 3,
+
+        // Sound
+        SoundChip          = "SN76489",
+        SoundToneChannels  = 3,
         SoundNoiseChannels = 1
     };
+
+    // Hardware palette 
+
+    /// <summary>
+    /// The SMS VDP produces colors from 2-bit RGB values.
+    /// Each channel has 4 possible levels: 0, 85, 170, 255 (0x00, 0x55, 0xAA, 0xFF).
+    /// All 4×4×4 = 64 combinations are valid hardware colors.
+    /// </summary>
+    public IReadOnlyList<HardwareColor> GetHardwarePalette()
+    {
+        byte[] levels = [0, 85, 170, 255];
+
+        var palette = new List<HardwareColor>(64);
+
+        foreach (var r in levels)
+            foreach (var g in levels)
+                foreach (var b in levels)
+                    palette.Add(new HardwareColor(r, g, b));
+
+        return palette;
+    }
+
+    // Toolchain & modules
 
     public IToolchain GetToolchain() => new SmsToolchain();
 
@@ -43,11 +89,13 @@ public class SmsTarget : ITarget
         return [];
     }
 
+    // Templates
+
     public IEnumerable<ProjectTemplate> GetTemplates() =>
     [
         new ProjectTemplate
         {
-            TemplateId = "sms.blank",
+            TemplateId  = "sms.blank",
             DisplayName = "Blank Project",
             Description = "Empty SMS project with no pre-configured modules.",
             DefaultModules = []
@@ -68,35 +116,39 @@ public class SmsTarget : ITarget
         }
     ];
 
+    // Settings
+
     public IEnumerable<ParameterDefinition> GetSettingsDefinitions() =>
     [
         new ParameterDefinition
         {
-            Name = "region",
-            DisplayName = "Region",
-            Description = "Target region. Affects VBlank timing.",
-            Type = ParameterType.Enum,
+            Name         = "region",
+            DisplayName  = "Region",
+            Description  = "Target region. Affects VBlank timing.",
+            Type         = ParameterType.Enum,
             DefaultValue = "NTSC",
-            EnumOptions = new() { { "NTSC", "NTSC" }, { "PAL", "PAL" } }
+            EnumOptions  = new() { { "NTSC", "NTSC" }, { "PAL", "PAL" } }
         },
         new ParameterDefinition
         {
-            Name = "romSize",
-            DisplayName = "ROM Size",
-            Description = "Maximum ROM size in KB.",
-            Type = ParameterType.Enum,
+            Name         = "romSize",
+            DisplayName  = "ROM Size",
+            Description  = "Maximum ROM size in KB.",
+            Type         = ParameterType.Enum,
             DefaultValue = "32",
-            EnumOptions = new() { { "32KB", "32" }, { "128KB", "128" }, { "256KB", "256" }, { "512KB", "512" } }
+            EnumOptions  = new() { { "32KB", "32" }, { "128KB", "128" }, { "256KB", "256" }, { "512KB", "512" } }
         },
         new ParameterDefinition
         {
-            Name = "fmSound",
-            DisplayName = "FM Sound Unit",
-            Description = "Enable FM sound support (Japan only).",
-            Type = ParameterType.Bool,
+            Name         = "fmSound",
+            DisplayName  = "FM Sound Unit",
+            Description  = "Enable FM sound support (Japan only).",
+            Type         = ParameterType.Bool,
             DefaultValue = false
         }
     ];
+
+    // Code generation
 
     /// <summary>
     /// Translates universal module data into SMS-specific C code.

@@ -22,6 +22,20 @@ public interface ITarget
     TargetSpecs Specs { get; }
 
     /// <summary>
+    /// Returns the complete list of colors this hardware can physically display.
+    ///
+    /// Each target implements this as appropriate:
+    ///   - Calculable palettes (SMS, SNES): generated mathematically from ColorDepthBitsPerChannel
+    ///   - Fixed palettes (NES): returned as a hardcoded list of the PPU's actual output colors
+    ///
+    /// Used by:
+    ///   - The color reduction tool (maps any image to the nearest hardware colors)
+    ///   - The palette editor (shows only valid colors for this target)
+    ///   - The tile editor (validates color choices against hardware limits)
+    /// </summary>
+    IReadOnlyList<HardwareColor> GetHardwarePalette();
+
+    /// <summary>
     /// Returns the toolchain responsible for compiling projects for this target.
     /// </summary>
     IToolchain GetToolchain();

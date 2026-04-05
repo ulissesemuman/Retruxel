@@ -1,0 +1,144 @@
+﻿using System.Diagnostics;
+using System.Reflection;
+using System.Windows.Controls;
+using System.Windows.Input;
+
+namespace Retruxel.Views;
+
+public partial class AboutView : UserControl
+{
+    public AboutView()
+    {
+        InitializeComponent();
+        Loaded += OnLoaded;
+    }
+
+    private void OnLoaded(object sender, System.Windows.RoutedEventArgs e)
+    {
+        var assembly = Assembly.GetExecutingAssembly();
+        var version = assembly.GetName().Version;
+        
+        // Format: 0.2.0-alpha (using only Major.Minor.Build + manual suffix)
+        TxtVersion.Text = version != null 
+            ? $"{version.Major}.{version.Minor}.{version.Build}-alpha"
+            : "dev";
+
+        LoadCredits();
+        LoadLicenses();
+    }
+
+    private void DeveloperLink_Click(object sender, MouseButtonEventArgs e)
+        => OpenUrl("https://github.com/ulissesemuman");
+
+    private void ProjectLink_Click(object sender, MouseButtonEventArgs e)
+        => OpenUrl("https://github.com/ulissesemuman/Retruxel");
+
+    private void CreditLink_Click(object sender, MouseButtonEventArgs e)
+    {
+        if (sender is TextBlock tb && tb.Tag is string url)
+            OpenUrl($"https://{url}");
+    }
+
+    private void OpenUrl(string url)
+    {
+        try
+        {
+            Process.Start(new ProcessStartInfo
+            {
+                FileName = url,
+                UseShellExecute = true
+            });
+        }
+        catch { /* Silently fail if browser can't open */ }
+    }
+
+    private void LoadCredits()
+    {
+        CreditsPanel.ItemsSource = new[]
+        {
+            new CreditEntry
+            {
+                Name = "SDCC — Small Device C Compiler",
+                License = "GPL v2",
+                Description = "C compiler targeting Z80 and other embedded architectures. Used to compile SMS game code.",
+                Url = "sdcc.sourceforge.net"
+            },
+            new CreditEntry
+            {
+                Name = "devkitSMS",
+                License = "MIT",
+                Description = "Development kit and libraries for Sega Master System homebrew programming in C.",
+                Url = "github.com/sverx/devkitSMS"
+            },
+            new CreditEntry
+            {
+                Name = "SMSlib",
+                License = "MIT",
+                Description = "C library for SMS/Game Gear programming. Part of devkitSMS by sverx.",
+                Url = "github.com/sverx/devkitSMS/tree/master/SMSlib"
+            },
+            new CreditEntry
+            {
+                Name = "ihx2sms",
+                License = "MIT",
+                Description = "Converts SDCC .ihx output into a valid Sega Master System ROM file. Part of devkitSMS.",
+                Url = "github.com/sverx/devkitSMS/tree/master/ihx2sms"
+            },
+            new CreditEntry
+            {
+                Name = "Space Grotesk",
+                License = "SIL OFL 1.1",
+                Description = "Display typeface used for titles and headlines throughout the Retruxel UI.",
+                Url = "fonts.google.com/specimen/Space+Grotesk"
+            },
+            new CreditEntry
+            {
+                Name = "Inter",
+                License = "SIL OFL 1.1",
+                Description = "Body and label typeface used for readable text throughout the Retruxel UI.",
+                Url = "fonts.google.com/specimen/Inter"
+            }
+        };
+    }
+
+    private void LoadLicenses()
+    {
+        TxtLicenses.Text = """
+            === devkitSMS / SMSlib / ihx2sms ===
+            Copyright (c) 2011-2024 sverx
+            
+            Permission is hereby granted, free of charge, to any person obtaining a copy
+            of this software and associated documentation files (the "Software"), to deal
+            in the Software without restriction, including without limitation the rights
+            to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+            copies of the Software, and to permit persons to whom the Software is
+            furnished to do so, subject to the following conditions:
+            
+            The above copyright notice and this permission notice shall be included in all
+            copies or substantial portions of the Software.
+            
+            THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+            IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+            FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+            
+            === Space Grotesk / Inter ===
+            Copyright (c) The respective authors
+            
+            These fonts are licensed under the SIL Open Font License, Version 1.1.
+            This license is available with a FAQ at: scripts.sil.org/OFL
+            
+            === SDCC ===
+            SDCC is licensed under the GNU General Public License version 2.
+            See: www.gnu.org/licenses/gpl-2.0.html
+            """;
+    }
+}
+
+/// <summary>Represents a third-party credit entry shown in the About view.</summary>
+public class CreditEntry
+{
+    public string Name { get; set; } = string.Empty;
+    public string License { get; set; } = string.Empty;
+    public string Description { get; set; } = string.Empty;
+    public string Url { get; set; } = string.Empty;
+}

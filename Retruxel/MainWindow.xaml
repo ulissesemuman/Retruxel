@@ -9,7 +9,8 @@
         Background="Transparent"
         AllowsTransparency="True"
         WindowStyle="None"
-        ResizeMode="CanResizeWithGrip">
+        ResizeMode="CanResizeWithGrip"
+        Icon="pack://application:,,,/Assets/icon.ico">
 
     <Window.Resources>
         <!-- Drop shadow effect for the window -->
@@ -104,8 +105,59 @@
 
             <!-- ===== MAIN CONTENT ===== -->
             <Grid Grid.Row="1" Background="{StaticResource BrushSurface}">
-                <views:WelcomeView x:Name="WelcomeView"/>
-                <views:BuildConsoleView x:Name="BuildConsoleView" Visibility="Collapsed"/>
+
+                <!-- Base layer — always present -->
+                <Grid>
+                    <views:WelcomeView x:Name="WelcomeView"/>
+                    <views:SceneEditorView x:Name="SceneEditorView" Visibility="Collapsed"/>
+                </Grid>
+
+                <!-- Overlay layer — shown on top when needed -->
+                <Grid x:Name="OverlayLayer" 
+                      Visibility="Collapsed"
+                      Panel.ZIndex="10">
+
+                    <!-- Semi-transparent backdrop -->
+                    <Border Background="#CC000000"/>
+
+                    <!-- Overlay content container -->
+                    <Border x:Name="OverlayContent"
+                Background="{StaticResource BrushSurfaceContainerLow}"
+                Margin="40"
+                CornerRadius="6">
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="40"/>
+                                <RowDefinition Height="*"/>
+                            </Grid.RowDefinitions>
+
+                            <!-- Overlay title bar with close button -->
+                            <Border Grid.Row="0"
+                        Background="{StaticResource BrushSurfaceContainerHighest}"
+                        CornerRadius="6,6,0,0"
+                        Padding="16,0">
+                                <Grid>
+                                    <TextBlock x:Name="OverlayTitle"
+                                   Style="{StaticResource TextLabel}"
+                                   VerticalAlignment="Center"/>
+                                    <Button Content="✕"
+                                Width="32" Height="32"
+                                Background="Transparent"
+                                Foreground="{StaticResource BrushOnSurfaceVariant}"
+                                BorderThickness="0"
+                                HorizontalAlignment="Right"
+                                Click="CloseOverlay_Click"
+                                Cursor="Hand"/>
+                                </Grid>
+                            </Border>
+
+                            <!-- Dynamic overlay content -->
+                            <ContentPresenter Grid.Row="1"
+                                  x:Name="OverlayContentPresenter"/>
+                        </Grid>
+                    </Border>
+                </Grid>
+
             </Grid>
 
             <!-- ===== STATUS BAR ===== -->

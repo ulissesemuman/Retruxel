@@ -2,11 +2,12 @@
 using Retruxel.Core.Interfaces;
 using Retruxel.Core.Models;
 using Retruxel.Core.Services;
+
+using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
-using System.IO;
 
 namespace Retruxel.Views;
 
@@ -21,9 +22,8 @@ public partial class NewProjectDialog : Window
         InitializeComponent();
         _target = target;
         TxtTarget.Text = target.DisplayName.ToUpper();
-        TxtLocation.Text = Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments),
-            "Retruxel");
+        var settings = SettingsService.LoadAsync().Result;
+        TxtLocation.Text = settings.General.LastProjectLocation;
         LoadTemplates();
     }
 
@@ -106,13 +106,19 @@ public partial class NewProjectDialog : Window
 
     private void BrowseButton_Click(object sender, RoutedEventArgs e)
     {
+        var settings = SettingsService.LoadAsync().Result;
         var dialog = new OpenFolderDialog
         {
-            Title = "Select project location"
+            Title = "Select project location",
+            InitialDirectory = settings.General.LastProjectLocation
         };
 
         if (dialog.ShowDialog() == true)
+        {
             TxtLocation.Text = dialog.FolderName;
+            settings.General.LastProjectLocation = dialog.FolderName;
+            SettingsService.Save(settings);
+        }
     }
 
     private void CreateButton_Click(object sender, RoutedEventArgs e)
@@ -131,12 +137,33 @@ public partial class NewProjectDialog : Window
             return;
         }
 
+        var projectName = TxtProjectName.Text.Trim();
+        var baseLocation = TxtLocation.Text.Trim();
+        var projectPath = Path.Combine(baseLocation, projectName);
+
+        // Check if project folder already exists
+        if (Directory.Exists(projectPath))
+        {
+            var result = MessageBox.Show(
+                $"A folder named '{projectName}' already exists in this location.\n\nDo you want to use it anyway?",
+                "Retruxel",
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Warning);
+
+            if (result != MessageBoxResult.Yes)
+                return;
+        }
+
         var manager = new ProjectManager();
         CreatedProject = manager.CreateProject(
-            TxtProjectName.Text.Trim(),
-            TxtLocation.Text.Trim(),
+            projectName,
+            projectPath,
             _target,
             _selectedTemplate ?? _target.GetTemplates().First());
+
+        var settings = SettingsService.LoadAsync().Result;
+        settings.General.LastProjectLocation = TxtLocation.Text.Trim();
+        SettingsService.Save(settings);
 
         DialogResult = true;
         Close();

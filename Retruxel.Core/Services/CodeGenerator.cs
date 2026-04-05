@@ -1,4 +1,4 @@
-﻿using Retruxel.Core.Interfaces;
+using Retruxel.Core.Interfaces;
 using Retruxel.Core.Models;
 
 namespace Retruxel.Core.Services;
@@ -32,39 +32,59 @@ public class CodeGenerator
 
         progress?.Report("INIT: Starting code generation...");
 
-        foreach (var moduleId in project.DefaultModules)
+        // Group module instances by ModuleId
+        var instancesByModule = new Dictionary<string, List<IModule>>();
+
+        foreach (var (elementId, serializedData) in project.ModuleStates)
         {
-            progress?.Report($"PROC: Generating module {moduleId}...");
+            var moduleId = project.DefaultModules.FirstOrDefault() ?? "unknown";
+            
+            progress?.Report($"PROC: Loading element {elementId.Substring(0, 8)}...");
 
-            IModule? module = null;
+            IModule? moduleTemplate = null;
 
-            // Resolve module from loader
             if (_moduleLoader.GraphicModules.TryGetValue(moduleId, out var gm))
-                module = gm;
+                moduleTemplate = gm;
             else if (_moduleLoader.LogicModules.TryGetValue(moduleId, out var lm))
-                module = lm;
+                moduleTemplate = lm;
             else if (_moduleLoader.AudioModules.TryGetValue(moduleId, out var am))
-                module = am;
+                moduleTemplate = am;
 
-            if (module is null)
+            if (moduleTemplate is null)
             {
                 progress?.Report($"WARN: Module {moduleId} not found — skipping.");
                 continue;
             }
 
-            // Delegate code generation to target translator
-            var generatedFiles = _target.GenerateCodeForModule(module).ToList();
+            var moduleType = moduleTemplate.GetType();
+            var module = (IModule)Activator.CreateInstance(moduleType)!;
+            module.Deserialize(serializedData);
 
-            if (generatedFiles.Count == 0)
-                progress?.Report($"WARN: No translator for {moduleId} in target '{_target.TargetId}' — skipping.");
+            if (!instancesByModule.ContainsKey(moduleId))
+                instancesByModule[moduleId] = new List<IModule>();
+            
+            instancesByModule[moduleId].Add(module);
+        }
 
-            sourceFiles.AddRange(generatedFiles);
+        // Generate code for each module type (passing all instances)
+        foreach (var (moduleId, instances) in instancesByModule)
+        {
+            progress?.Report($"PROC: Generating code for {instances.Count} {moduleId} instance(s)...");
 
-            // Graphic and audio modules also produce binary assets
-            if (module is IGraphicModule gfxModule)
-                assets.AddRange(gfxModule.GenerateAssets());
-            else if (module is IAudioModule audioModule)
-                assets.AddRange(audioModule.GenerateAssets());
+            foreach (var module in instances)
+            {
+                var generatedFiles = _target.GenerateCodeForModule(module).ToList();
+
+                if (generatedFiles.Count == 0)
+                    progress?.Report($"WARN: No translator for {moduleId} in target '{_target.TargetId}' — skipping.");
+
+                sourceFiles.AddRange(generatedFiles);
+
+                if (module is IGraphicModule gfxModule)
+                    assets.AddRange(gfxModule.GenerateAssets());
+                else if (module is IAudioModule audioModule)
+                    assets.AddRange(audioModule.GenerateAssets());
+            }
         }
 
         // Generate target-specific main entry point

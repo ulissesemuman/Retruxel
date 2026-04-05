@@ -1,5 +1,6 @@
 ﻿using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
 using System.Windows.Media;
 
 namespace Retruxel;
@@ -12,6 +13,9 @@ public partial class SplashScreen : Window
     {
         InitializeComponent();
     }
+
+    private void Border_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+        => DragMove();
 
     /// <summary>
     /// Runs the initialization sequence, reporting progress to the splash screen.

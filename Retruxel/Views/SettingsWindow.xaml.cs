@@ -69,10 +69,7 @@ public partial class SettingsWindow : Window
             accent.Visibility = isActive ? Visibility.Visible : Visibility.Collapsed;
 
             // Active nav item — white text; inactive — variant
-            var label = nav.FindName("") as TextBlock
-                ?? nav.Child as StackPanel is null
-                ? FindTextBlockIn(nav)
-                : null;
+            var label = FindTextBlockIn(nav);
 
             if (label is not null)
                 label.Foreground = isActive

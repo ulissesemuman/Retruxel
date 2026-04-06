@@ -1,7 +1,6 @@
 using Retruxel.Core.Interfaces;
 using Retruxel.Core.Models;
 using Retruxel.Target.NES.Modules.Text;
-using Retruxel.Target.NES.Toolchain;
 
 namespace Retruxel.Target.NES;
 
@@ -99,7 +98,11 @@ public class NesTarget : ITarget
 
     // ── Toolchain & modules ───────────────────────────────────────────────────
 
-    public IToolchain GetToolchain() => new NesToolchain();
+    public IToolchain GetToolchain()
+    {
+        var builder = Toolchain.ToolchainOrchestrator.GetBuilder(TargetId);
+        return new NesToolchainAdapter(builder);
+    }
 
     public IEnumerable<IModule> GetBuiltinModules() => [];
 

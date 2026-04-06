@@ -5,7 +5,6 @@ using Retruxel.Target.SMS.Modules.Text;
 using Retruxel.Target.SMS.Modules.Enemy;
 using Retruxel.Target.SMS.Modules.Entity;
 using Retruxel.Target.SMS.Modules.Scroll;
-using Retruxel.Target.SMS.Toolchain;
 
 namespace Retruxel.Target.SMS;
 
@@ -87,7 +86,11 @@ public class SmsTarget : ITarget
 
     // Toolchain & modules
 
-    public IToolchain GetToolchain() => new SmsToolchain();
+    public IToolchain GetToolchain()
+    {
+        var builder = Toolchain.ToolchainOrchestrator.GetBuilder(TargetId);
+        return new SmsToolchainAdapter(builder);
+    }
 
     public IEnumerable<IModule> GetBuiltinModules()
     {

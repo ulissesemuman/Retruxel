@@ -1,0 +1,42 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Retruxel.Core\Retruxel.Core.csproj" />
+  </ItemGroup>
+
+  <!-- SDCC Compiler -->
+  <ItemGroup>
+    <EmbeddedResource Include="Compilers\Sdcc\Resources\bin\sdcc.exe" />
+    <EmbeddedResource Include="Compilers\Sdcc\Resources\lib\z80\z80.lib" />
+  </ItemGroup>
+
+  <!-- cc65 Compiler -->
+  <ItemGroup>
+    <EmbeddedResource Include="Compilers\Cc65\Resources\bin\*.exe" />
+  </ItemGroup>
+
+  <!-- Sega 8-bit SDK -->
+  <ItemGroup>
+    <EmbeddedResource Include="SDKs\Sega8Bit\Resources\include\*.h" />
+    <EmbeddedResource Include="SDKs\Sega8Bit\Resources\lib\*.lib" />
+    <EmbeddedResource Include="SDKs\Sega8Bit\Resources\lib\*.rel" />
+  </ItemGroup>
+
+  <!-- NES SDK -->
+  <ItemGroup>
+    <EmbeddedResource Include="SDKs\Nes\Resources\include\*" />
+    <EmbeddedResource Include="SDKs\Nes\Resources\lib\*" />
+  </ItemGroup>
+
+  <!-- Sega Utils -->
+  <ItemGroup>
+    <EmbeddedResource Include="Utils\Sega\Resources\bin\*.exe" />
+  </ItemGroup>
+
+</Project>

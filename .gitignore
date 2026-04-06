@@ -366,6 +366,7 @@ FodyWeavers.xsd
 docs/
 checkpoin.md
 resumo.txt
+installer/
 .amazonq/
 .bbbamazonq/
 /*.zip

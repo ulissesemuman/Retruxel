@@ -1,0 +1,178 @@
+name: Create Release with Installer
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  release:
+    runs-on: windows-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+    
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '8.0.x'
+    
+    - name: Extract version from csproj
+      id: version
+      shell: pwsh
+      run: |
+        [xml]$csproj = Get-Content "Retruxel/Retruxel.csproj"
+        $version = $csproj.Project.PropertyGroup.Version
+        echo "VERSION=$version" >> $env:GITHUB_OUTPUT
+        echo "Version: $version"
+    
+    - name: Check if tag exists
+      id: check_tag
+      shell: pwsh
+      run: |
+        $version = "${{ steps.version.outputs.VERSION }}"
+        $tagExists = git tag -l "v$version"
+        if ($tagExists) {
+          echo "TAG_EXISTS=true" >> $env:GITHUB_OUTPUT
+          echo "Tag v$version already exists, skipping release"
+        } else {
+          echo "TAG_EXISTS=false" >> $env:GITHUB_OUTPUT
+          echo "Tag v$version does not exist, proceeding with release"
+        }
+    
+    - name: Restore dependencies
+      if: steps.check_tag.outputs.TAG_EXISTS == 'false'
+      run: dotnet restore Retruxel.slnx
+    
+    - name: Build
+      if: steps.check_tag.outputs.TAG_EXISTS == 'false'
+      run: dotnet build Retruxel.slnx --configuration Release --no-restore
+    
+    - name: Publish
+      if: steps.check_tag.outputs.TAG_EXISTS == 'false'
+      run: dotnet publish Retruxel/Retruxel.csproj --configuration Release --output ./publish --no-build
+    
+    - name: Create Portable ZIP
+      if: steps.check_tag.outputs.TAG_EXISTS == 'false'
+      shell: pwsh
+      run: |
+        $version = "${{ steps.version.outputs.VERSION }}"
+        Compress-Archive -Path ./publish/* -DestinationPath "Retruxel-$version-portable.zip"
+    
+    - name: Update Inno Setup script version
+      if: steps.check_tag.outputs.TAG_EXISTS == 'false'
+      shell: pwsh
+      run: |
+        $version = "${{ steps.version.outputs.VERSION }}"
+        $content = Get-Content "installer.iss" -Raw
+        $content = $content -replace '#define MyAppVersion ".*"', "#define MyAppVersion `"$version`""
+        $content | Set-Content "installer.iss" -NoNewline
+    
+    - name: Install Inno Setup
+      if: steps.check_tag.outputs.TAG_EXISTS == 'false'
+      shell: pwsh
+      run: |
+        choco install innosetup -y
+    
+    - name: Build Installer
+      if: steps.check_tag.outputs.TAG_EXISTS == 'false'
+      shell: pwsh
+      run: |
+        & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" installer.iss
+    
+    - name: Generate changelog
+      if: steps.check_tag.outputs.TAG_EXISTS == 'false'
+      id: changelog
+      shell: pwsh
+      run: |
+        $version = "${{ steps.version.outputs.VERSION }}"
+        
+        $latestTag = git describe --tags --abbrev=0 2>$null
+        
+        if ($latestTag) {
+          $commits = git log "$latestTag..HEAD" --pretty=format:"%s" --no-merges
+        } else {
+          $commits = git log --pretty=format:"%s" --no-merges
+        }
+        
+        $features = @()
+        $fixes = @()
+        $chores = @()
+        $docs = @()
+        
+        foreach ($commit in $commits) {
+          if ($commit -match "^feat(\(.+\))?:") {
+            $features += $commit -replace "^feat(\(.+\))?: ", "- "
+          } elseif ($commit -match "^fix(\(.+\))?:") {
+            $fixes += $commit -replace "^fix(\(.+\))?: ", "- "
+          } elseif ($commit -match "^docs(\(.+\))?:") {
+            $docs += $commit -replace "^docs(\(.+\))?: ", "- "
+          } elseif ($commit -match "^chore(\(.+\))?:") {
+            $chores += $commit -replace "^chore(\(.+\))?: ", "- "
+          } else {
+            $chores += "- $commit"
+          }
+        }
+        
+        $changelog = "## Retruxel $version`n`n"
+        $changelog += "> Visual retro game development tool — build games for classic consoles without writing a single line of code.`n`n"
+        
+        if ($features.Count -gt 0) {
+          $changelog += "### ✨ New Features`n`n"
+          $changelog += ($features -join "`n") + "`n`n"
+        }
+        
+        if ($fixes.Count -gt 0) {
+          $changelog += "### 🐛 Bug Fixes`n`n"
+          $changelog += ($fixes -join "`n") + "`n`n"
+        }
+        
+        if ($docs.Count -gt 0) {
+          $changelog += "### 📚 Documentation`n`n"
+          $changelog += ($docs -join "`n") + "`n`n"
+        }
+        
+        if ($chores.Count -gt 0) {
+          $changelog += "### 🔧 Maintenance`n`n"
+          $changelog += ($chores -join "`n") + "`n`n"
+        }
+        
+        $changelog += "---`n`n"
+        $changelog += "### 📦 Installation`n`n"
+        $changelog += "**Installer (Recommended):**`n"
+        $changelog += "1. Download ``Retruxel-$version-setup.exe```n"
+        $changelog += "2. Run the installer`n"
+        $changelog += "3. Follow the installation wizard`n`n"
+        $changelog += "**Portable Version (ZIP):**`n"
+        $changelog += "1. Download ``Retruxel-$version-portable.zip```n"
+        $changelog += "2. Extract to any folder`n"
+        $changelog += "3. Run ``Retruxel.exe```n`n"
+        $changelog += "The toolchain will be extracted automatically on first run to ``%AppData%\Retruxel\toolchain\```n`n"
+        $changelog += "### 🎯 Supported Targets`n`n"
+        $changelog += "- 🟢 Sega Master System (Active)`n"
+        $changelog += "- 🟢 Nintendo NES (Active)`n"
+        $changelog += "- 🟡 Sega Game Gear (Scaffolding)`n"
+        $changelog += "- 🟡 Sega SG-1000 (Scaffolding)`n"
+        $changelog += "- 🟡 ColecoVision (Scaffolding)`n"
+        
+        $changelog | Out-File -FilePath changelog.md -Encoding utf8
+        
+        echo "Changelog generated successfully"
+    
+    - name: Create Release
+      if: steps.check_tag.outputs.TAG_EXISTS == 'false'
+      uses: softprops/action-gh-release@v1
+      with:
+        tag_name: v${{ steps.version.outputs.VERSION }}
+        name: Retruxel v${{ steps.version.outputs.VERSION }}
+        body_path: changelog.md
+        files: |
+          Retruxel-${{ steps.version.outputs.VERSION }}-portable.zip
+          installer/Retruxel-${{ steps.version.outputs.VERSION }}-setup.exe
+        draft: false
+        prerelease: ${{ contains(steps.version.outputs.VERSION, 'alpha') || contains(steps.version.outputs.VERSION, 'beta') }}
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

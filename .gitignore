@@ -366,3 +366,5 @@ FodyWeavers.xsd
 docs/
 checkpoin.md
 .amazonq/
+.bbbamazonq/
+/*.zip

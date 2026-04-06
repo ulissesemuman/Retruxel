@@ -365,6 +365,7 @@ FodyWeavers.xsd
 # Retruxel-specific
 docs/
 checkpoin.md
+resumo.txt
 .amazonq/
 .bbbamazonq/
 /*.zip

@@ -95,6 +95,11 @@ public class TargetSpecs
     /// <summary>CPU clock speed in Hz. Ex: 3546893 (SMS PAL)</summary>
     public int CpuClockHz { get; set; }
 
+    // Manufacturer
+
+    /// <summary>Console manufacturer. Ex: "Sega", "Nintendo", "Coleco"</summary>
+    public string Manufacturer { get; set; } = string.Empty;
+
     // Sound
 
     /// <summary>Sound chip name. Ex: "SN76489", "2A03", "SPC700"</summary>

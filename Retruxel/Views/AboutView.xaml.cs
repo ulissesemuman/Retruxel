@@ -11,6 +11,23 @@ public partial class AboutView : UserControl
     {
         InitializeComponent();
         Loaded += OnLoaded;
+        ApplyLocalization();
+    }
+
+    private void ApplyLocalization()
+    {
+        var loc = Retruxel.Core.Services.LocalizationService.Instance;
+        TxtVersionLabel.Text = loc.Get("about.version");
+        TxtDeveloperLabel.Text = loc.Get("about.developer");
+        TxtProjectLabel.Text = loc.Get("about.project");
+        TxtBuildLabel.Text = loc.Get("about.build");
+        TxtSupportedTargets.Text = loc.Get("about.supported_targets");
+        TxtTargetSms.Text = loc.Get("about.target.sms");
+        TxtMoreTargets.Text = loc.Get("about.more_targets");
+        TxtCreditsTitle.Text = loc.Get("about.credits.title");
+        TxtCreditsSubtitle.Text = loc.Get("about.credits.subtitle");
+        TxtLicensesTitle.Text = loc.Get("about.licenses.title");
+        TxtLicensesSubtitle.Text = loc.Get("about.licenses.subtitle");
     }
 
     private void OnLoaded(object sender, System.Windows.RoutedEventArgs e)
@@ -125,6 +142,13 @@ public partial class AboutView : UserControl
                 License = "SIL OFL 1.1",
                 Description = "Body and label typeface used for readable text throughout the Retruxel UI.",
                 Url = "fonts.google.com/specimen/Inter"
+            },
+            new CreditEntry
+            {
+                Name = "SkiaSharp",
+                License = "MIT",
+                Description = "Cross-platform 2D graphics API for .NET. Used for font rasterization and glyph rendering in the Tile Editor.",
+                Url = "github.com/mono/SkiaSharp"
             }
         };
     }
@@ -173,6 +197,23 @@ public partial class AboutView : UserControl
             
             These fonts are licensed under the SIL Open Font License, Version 1.1.
             This license is available with a FAQ at: scripts.sil.org/OFL
+            
+            === SkiaSharp ===
+            Copyright (c) 2015-2024 Xamarin, Microsoft Corporation, and contributors
+            
+            Permission is hereby granted, free of charge, to any person obtaining a copy
+            of this software and associated documentation files (the "Software"), to deal
+            in the Software without restriction, including without limitation the rights
+            to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+            copies of the Software, and to permit persons to whom the Software is
+            furnished to do so, subject to the following conditions:
+            
+            The above copyright notice and this permission notice shall be included in all
+            copies or substantial portions of the Software.
+            
+            THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+            IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+            FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
             
             === SDCC ===
             SDCC is licensed under the GNU General Public License version 2.

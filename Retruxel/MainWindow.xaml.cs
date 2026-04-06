@@ -87,7 +87,18 @@ public partial class MainWindow : Window
     /// </summary>
     private async void OnProjectCreated(RetruxelProject project)
     {
-        var target = new Retruxel.Target.SMS.SmsTarget();
+        var target = Services.TargetRegistry.GetTargetById(project.TargetId);
+        if (target is null)
+        {
+            MessageBox.Show($"Target '{project.TargetId}' not found.", "Retruxel", MessageBoxButton.OK, MessageBoxImage.Error);
+            return;
+        }
+        
+        // Initialize ModuleLoader
+        var basePath = AppDomain.CurrentDomain.BaseDirectory;
+        var moduleLoader = new ModuleLoader(basePath);
+        moduleLoader.RegisterBuiltinModules(target);
+        moduleLoader.LoadCompatible(target.TargetId);
         
         _projectManager.CurrentProject = project;
         
@@ -96,6 +107,7 @@ public partial class MainWindow : Window
         SceneEditorView.Visibility = Visibility.Visible;
         BtnHome.Visibility = Visibility.Visible;
         SceneEditorView.SetProjectManager(_projectManager);
+        SceneEditorView.SetModuleLoader(moduleLoader);
         SceneEditorView.Initialize(project, target);
         
         // Save after initialization

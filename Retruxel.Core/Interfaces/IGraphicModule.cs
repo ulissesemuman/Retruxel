@@ -11,6 +11,12 @@ namespace Retruxel.Core.Interfaces;
 public interface IGraphicModule : IModule
 {
     /// <summary>
+    /// Returns the module manifest describing configurable parameters.
+    /// The shell uses this to auto-generate the configuration UI.
+    /// </summary>
+    ModuleManifest GetManifest();
+
+    /// <summary>
     /// Returns the ViewModel for this module's visual editor.
     /// The shell is responsible for binding this ViewModel to a WPF View.
     /// This keeps WPF dependencies out of Retruxel.Core.

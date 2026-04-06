@@ -2,6 +2,9 @@
 using Retruxel.Core.Models;
 using Retruxel.Modules.Text;
 using Retruxel.Target.SMS.Modules.Text;
+using Retruxel.Target.SMS.Modules.Enemy;
+using Retruxel.Target.SMS.Modules.Entity;
+using Retruxel.Target.SMS.Modules.Scroll;
 using Retruxel.Target.SMS.Toolchain;
 
 namespace Retruxel.Target.SMS;
@@ -51,6 +54,9 @@ public class SmsTarget : ITarget
         // CPU
         CPU        = "Zilog Z80",
         CpuClockHz = 3546893,
+
+        // Manufacturer
+        Manufacturer = "Sega",
 
         // Sound
         SoundChip          = "SN76489",
@@ -160,31 +166,92 @@ public class SmsTarget : ITarget
         switch (module.ModuleId)
         {
             case "text.display":
-                var textModule = (TextDisplayModule)module;
-                var codeGen = new SmsTextDisplayCodeGen(textModule);
-
-                // Validate hardware limits — warnings returned as comments in generated code
-                var errors = codeGen.Validate().ToList();
-                var files = new List<GeneratedFile>
                 {
-                    codeGen.GenerateCode(),
-                    codeGen.GenerateHeader()
-                };
+                    if (module is not TextDisplayModule textModule)
+                        return [];
 
-                // Inject validation warnings as comments at top of source file
-                if (errors.Count > 0)
-                {
-                    var warnings = string.Join("\n", errors.Select(e => $"// WARNING: {e}"));
-                    files[0] = new GeneratedFile
+                    var codeGen = new SmsTextDisplayCodeGen(textModule);
+                    var errors = codeGen.Validate().ToList();
+                    var files = new List<GeneratedFile>
                     {
-                        FileName = files[0].FileName,
-                        Content = warnings + "\n\n" + files[0].Content,
-                        FileType = files[0].FileType,
-                        SourceModuleId = files[0].SourceModuleId
+                        codeGen.GenerateCode(),
+                        codeGen.GenerateHeader()
                     };
+
+                    if (errors.Count > 0)
+                    {
+                        var warnings = string.Join("\n", errors.Select(e => $"// WARNING: {e}"));
+                        files[0] = new GeneratedFile
+                        {
+                            FileName = files[0].FileName,
+                            Content = warnings + "\n\n" + files[0].Content,
+                            FileType = files[0].FileType,
+                            SourceModuleId = files[0].SourceModuleId
+                        };
+                    }
+
+                    return files;
                 }
 
-                return files;
+            case "sms.entity":
+                {
+                    var codeGen = new SmsEntityCodeGen(module.Serialize());
+                    var errors = codeGen.Validate().ToList();
+                    var files = new List<GeneratedFile>
+                    {
+                        codeGen.GenerateCode(),
+                        codeGen.GenerateHeader()
+                    };
+
+                    if (errors.Count > 0)
+                    {
+                        var warnings = string.Join("\n", errors.Select(e => $"// WARNING: {e}"));
+                        files[0] = new GeneratedFile
+                        {
+                            FileName = files[0].FileName,
+                            Content = warnings + "\n\n" + files[0].Content,
+                            FileType = files[0].FileType,
+                            SourceModuleId = files[0].SourceModuleId
+                        };
+                    }
+
+                    return files;
+                }
+
+            case "sms.scroll":
+                {
+                    var codeGen = new SmsScrollCodeGen(module.Serialize());
+                    return
+                    [
+                        codeGen.GenerateCode(),
+                        codeGen.GenerateHeader()
+                    ];
+                }
+
+            case "sms.enemy":
+                {
+                    var codeGen = new SmsEnemyCodeGen(module.Serialize());
+                    var errors = codeGen.Validate().ToList();
+                    var files = new List<GeneratedFile>
+                    {
+                        codeGen.GenerateCode(),
+                        codeGen.GenerateHeader()
+                    };
+
+                    if (errors.Count > 0)
+                    {
+                        var warnings = string.Join("\n", errors.Select(e => $"// WARNING: {e}"));
+                        files[0] = new GeneratedFile
+                        {
+                            FileName = files[0].FileName,
+                            Content = warnings + "\n\n" + files[0].Content,
+                            FileType = files[0].FileType,
+                            SourceModuleId = files[0].SourceModuleId
+                        };
+                    }
+
+                    return files;
+                }
 
             default:
                 return [];
@@ -193,33 +260,61 @@ public class SmsTarget : ITarget
 
     public GeneratedFile GenerateMainFile(RetruxelProject project, IEnumerable<GeneratedFile> moduleFiles)
     {
-        var headers = moduleFiles
+        var fileList = moduleFiles.ToList();
+
+        // Include all headers
+        var headers = fileList
             .Where(f => f.FileType == GeneratedFileType.Header)
             .Select(f => $"#include \"{f.FileName}\"");
 
-        var initCalls = moduleFiles
+        // Group files by module to call init once per module type
+        var moduleGroups = fileList
             .Where(f => f.FileType == GeneratedFileType.Source)
+            .GroupBy(f => f.SourceModuleId)
+            .ToList();
+
+        // Modules that have init functions (not text.display)
+        var modulesWithInit = new HashSet<string> { "sms.entity", "sms.enemy", "sms.scroll" };
+        
+        // Generate init calls - one per module type
+        var initCalls = moduleGroups
+            .Where(g => modulesWithInit.Contains(g.Key))
+            .Select(g => $"    {g.Key.Replace(".", "_")}_init();");
+
+        // Modules that have update functions
+        var modulesWithUpdate = new HashSet<string> { "sms.entity", "sms.enemy", "sms.scroll" };
+        
+        var updateCalls = moduleGroups
+            .Where(g => modulesWithUpdate.Contains(g.Key))
+            .Select(g => $"        {g.Key.Replace(".", "_")}_update();");
+        
+        // text.display calls (one per instance) - use _init suffix
+        var textDisplayCalls = fileList
+            .Where(f => f.SourceModuleId == "text.display" && f.FileType == GeneratedFileType.Source)
             .Select(f => $"    {Path.GetFileNameWithoutExtension(f.FileName)}_init();");
 
         var content = string.Join("\n", [
             "// Generated by Retruxel — do not edit manually.",
-        $"// Project: {project.Name} | Target: {project.TargetId}",
-        $"// Generated at: {DateTime.Now:yyyy-MM-dd HH:mm:ss}",
-        "",
-        "#include \"SMSlib.h\"",
-        .. headers,
-        "",
-        "void main(void) {",
-        .. initCalls,
-        "",
-        "    while(1) {",
-        "        SMS_waitForVBlank();",
-        "    }",
-        "}",
-        "",
-        "SMS_EMBED_SEGA_ROM_HEADER(9999, 0);",
-        $"SMS_EMBED_SDSC_HEADER(1, 0, 2026, 1, 1, \"Retruxel\", \"{project.Name}\", \"\");",
-    ]);
+            $"// Project: {project.Name} | Target: {project.TargetId}",
+            $"// Generated at: {DateTime.Now:yyyy-MM-dd HH:mm:ss}",
+            "",
+            "#include \"SMSlib.h\"",
+            .. headers,
+            "",
+            "void main(void) {",
+            .. initCalls,
+            .. textDisplayCalls,
+            "",
+            "    while(1) {",
+            "        SMS_waitForVBlank();",
+            .. updateCalls,
+            "    }",
+            "}",
+            "",
+            "SMS_EMBED_SEGA_ROM_HEADER(9999, 0);",
+            $"SMS_EMBED_SDSC_HEADER(1, 0, 2026, 1, 1, \"Retruxel\", \"{project.Name}\", \"\");",
+            ""
+        ]);
 
         return new GeneratedFile
         {
@@ -228,5 +323,10 @@ public class SmsTarget : ITarget
             FileType = GeneratedFileType.Source,
             SourceModuleId = "retruxel.core"
         };
+    }
+    
+    public void ResetCodeGenerationState()
+    {
+        SmsTextDisplayCodeGen.ResetCounter();
     }
 }

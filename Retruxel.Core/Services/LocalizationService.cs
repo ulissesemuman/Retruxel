@@ -26,6 +26,32 @@ public class LocalizationService : INotifyPropertyChanged
     private LocalizationService() { }
 
     /// <summary>
+    /// Detects the best language to use based on system locale with fallback logic.
+    /// 1. Try exact match (e.g., pt-BR)
+    /// 2. Try language family match (e.g., pt-BR -> pt)
+    /// 3. Fallback to English
+    /// </summary>
+    public string DetectSystemLanguage()
+    {
+        var systemCulture = CultureInfo.CurrentUICulture.Name; // e.g., "pt-BR", "en-US"
+        
+        // Try exact match
+        if (_availableLanguages.Any(l => l.Code.Equals(systemCulture, StringComparison.OrdinalIgnoreCase)))
+            return systemCulture;
+        
+        // Try language family match (pt-BR -> pt, pt-PT -> pt)
+        var languageFamily = systemCulture.Split('-')[0]; // "pt-BR" -> "pt"
+        var familyMatch = _availableLanguages.FirstOrDefault(l => 
+            l.Code.Split('-')[0].Equals(languageFamily, StringComparison.OrdinalIgnoreCase));
+        
+        if (familyMatch != null)
+            return familyMatch.Code;
+        
+        // Fallback to English
+        return "en";
+    }
+
+    /// <summary>
     /// Scans the localization folder and discovers all available languages.
     /// </summary>
     public void DiscoverLanguages(string localizationFolderPath)

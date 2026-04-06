@@ -1,5 +1,6 @@
 using Retruxel.Core.Interfaces;
 using Retruxel.Core.Models;
+using Retruxel.Target.NES.Modules.Text;
 using Retruxel.Target.NES.Toolchain;
 
 namespace Retruxel.Target.NES;
@@ -9,34 +10,64 @@ namespace Retruxel.Target.NES;
 /// </summary>
 public class NesTarget : ITarget
 {
-    public string TargetId => "nes";
+    public string TargetId    => "nes";
     public string DisplayName => "Nintendo Entertainment System";
-    public string ShortName => "NES";
     public string Description => "8-bit home video game console by Nintendo (1983)";
 
     public TargetSpecs Specs => new()
     {
-        ScreenWidth = 256,
+        // ── Screen ───────────────────────────────────────────────────────────
+        ScreenWidth  = 256,
         ScreenHeight = 240,
-        TileWidth = 8,
-        TileHeight = 8,
-        RamBytes = 2048,
-        CPU = "MOS 6502",
+
+        // ── Tiles ────────────────────────────────────────────────────────────
+        TileWidth      = 8,
+        TileHeight     = 8,
+        MaxTilesInVram = 256,
+
+        // ── Colors & Palettes ─────────────────────────────────────────────────
+        // NES PPU: fixed 54-color palette, not mathematically calculable
+        TotalColors              = 54,
+        ColorDepthBitsPerChannel = 0,   // N/A — NES palette is fixed hardware output
+        ColorsPerTile            = 4,
+        ColorsPerPalette         = 4,   // 4 colors per palette slot (including transparent)
+        SimultaneousPalettes     = 8,   // 4 BG + 4 sprite palette slots
+        BgPalettes               = 4,
+        SpritePalettes           = 4,
+
+        // ── Sprites ──────────────────────────────────────────────────────────
+        SpritesPerScanline          = 8,
+        MaxSpritesOnScreen          = 64,
+        SpriteWidth                 = 8,
+        SpriteHeight                = 8,
+        SupportsDoubleHeightSprites = true,   // 8×16 sprite mode via PPUCTRL bit
+
+        // ── Memory ───────────────────────────────────────────────────────────
+        RamBytes    = 2048,
+        RomMaxBytes = 524288,
+
+        // ── CPU ──────────────────────────────────────────────────────────────
+        CPU        = "MOS 6502",
         CpuClockHz = 1789773,
-        SoundChip = "2A03",
-        SoundToneChannels = 4,
-        SoundNoiseChannels = 1,
-        TotalColors = 54,
-        ColorsPerTile = 4,
-        MaxTilesInVram = 256
+
+        // Manufacturer
+        Manufacturer = "Nintendo",
+
+        // ── Sound ────────────────────────────────────────────────────────────
+        SoundChip          = "2A03",
+        SoundToneChannels  = 4,
+        SoundNoiseChannels = 1
     };
 
+    // ── Hardware palette ──────────────────────────────────────────────────────
+
+    /// <summary>
+    /// NES PPU fixed palette — 54 colors hardcoded from hardware output.
+    /// Unlike the SMS, these cannot be calculated mathematically.
+    /// Values sourced from the widely-accepted Nestopia NTSC palette.
+    /// </summary>
     public IReadOnlyList<HardwareColor> GetHardwarePalette()
     {
-        // NES PPU palette - 54 colors (4 rows of 13, last column unused)
-        var palette = new List<HardwareColor>();
-        
-        // Hardcoded NES palette RGB values
         var nesColors = new (byte r, byte g, byte b)[]
         {
             // Row 0
@@ -61,70 +92,178 @@ public class NesTarget : ITarget
             (0x00, 0xFC, 0xFC)
         };
 
-        for (int i = 0; i < nesColors.Length; i++)
-        {
-            palette.Add(new HardwareColor(
-                nesColors[i].r,
-                nesColors[i].g,
-                nesColors[i].b
-            ));
-        }
-
-        return palette;
+        return nesColors
+            .Select(c => new HardwareColor(c.r, c.g, c.b))
+            .ToList();
     }
 
-    public IEnumerable<ProjectTemplate> GetTemplates() => new[]
-    {
+    // ── Toolchain & modules ───────────────────────────────────────────────────
+
+    public IToolchain GetToolchain() => new NesToolchain();
+
+    public IEnumerable<IModule> GetBuiltinModules() => [];
+
+    // ── Templates ─────────────────────────────────────────────────────────────
+
+    public IEnumerable<ProjectTemplate> GetTemplates() =>
+    [
         new ProjectTemplate
         {
-            TemplateId = "nes.blank",
+            TemplateId  = "nes.blank",
             DisplayName = "Blank Project",
-            Description = "Empty NES project with basic initialization",
-            DefaultModules = [],
+            Description = "Empty NES project with basic initialization.",
+            DefaultModules    = [],
             DefaultParameters = new Dictionary<string, object>
             {
                 { "region", "NTSC" },
                 { "mapper", "NROM" }
             }
         }
-    };
+    ];
 
-    public IEnumerable<ParameterDefinition> GetSettingsDefinitions() => new[]
-    {
+    // ── Settings ──────────────────────────────────────────────────────────────
+
+    public IEnumerable<ParameterDefinition> GetSettingsDefinitions() =>
+    [
         new ParameterDefinition
         {
-            Name = "region",
-            DisplayName = "Region",
-            Type = ParameterType.Enum,
+            Name         = "region",
+            DisplayName  = "Region",
+            Description  = "Video standard — affects timing and resolution.",
+            Type         = ParameterType.Enum,
             DefaultValue = "NTSC",
-            EnumOptions = new Dictionary<string, string> { { "NTSC", "NTSC" }, { "PAL", "PAL" } },
-            Description = "Video standard - affects timing and resolution"
+            EnumOptions  = new() { { "NTSC", "NTSC" }, { "PAL", "PAL" } }
         },
         new ParameterDefinition
         {
-            Name = "mapper",
-            DisplayName = "Mapper",
-            Type = ParameterType.Enum,
+            Name         = "mapper",
+            DisplayName  = "Mapper",
+            Description  = "Memory mapper chip used by the cartridge.",
+            Type         = ParameterType.Enum,
             DefaultValue = "NROM",
-            EnumOptions = new Dictionary<string, string> { { "NROM", "NROM" }, { "MMC1", "MMC1" }, { "MMC3", "MMC3" }, { "UNROM", "UNROM" } },
-            Description = "Memory mapper chip used by the cartridge"
+            EnumOptions  = new()
+            {
+                { "NROM",  "NROM"  },
+                { "MMC1",  "MMC1"  },
+                { "MMC3",  "MMC3"  },
+                { "UNROM", "UNROM" }
+            }
         }
-    };
+    ];
 
-    public IToolchain GetToolchain() => new NesToolchain();
+    // ── Code generation ───────────────────────────────────────────────────────
 
-    public IEnumerable<IModule> GetBuiltinModules() => [];
-
-    public IEnumerable<GeneratedFile> GenerateCodeForModule(IModule module) => [];
-
-    public GeneratedFile GenerateMainFile(RetruxelProject project, IEnumerable<GeneratedFile> moduleFiles)
+    /// <summary>
+    /// Translates module JSON into NES C code (cc65 + neslib).
+    /// No concrete module types referenced — dispatch by ModuleId only.
+    /// </summary>
+    public IEnumerable<GeneratedFile> GenerateCodeForModule(IModule module)
     {
+        var json = module.Serialize();
+
+        switch (module.ModuleId)
+        {
+            case "text.display":
+            {
+                var codeGen = new NesTextDisplayCodeGen(json);
+                var errors  = codeGen.Validate().ToList();
+                var files   = new List<GeneratedFile>
+                {
+                    codeGen.GenerateCode(),
+                    codeGen.GenerateHeader()
+                };
+
+                if (errors.Count > 0)
+                {
+                    var warnings = string.Join("\n", errors.Select(e => $"// WARNING: {e}"));
+                    files[0] = new GeneratedFile
+                    {
+                        FileName = files[0].FileName,
+                        Content = warnings + "\n\n" + files[0].Content,
+                        FileType = files[0].FileType,
+                        SourceModuleId = files[0].SourceModuleId
+                    };
+                }
+
+                return files;
+            }
+
+            default:
+                return [];
+        }
+    }
+
+    /// <summary>
+    /// Generates the NES main.c entry point using cc65 + neslib.
+    /// Includes neslib.h, all module headers, calls init functions
+    /// and runs update loop via ppu_wait_nmi().
+    /// </summary>
+    public GeneratedFile GenerateMainFile(
+        RetruxelProject            project,
+        IEnumerable<GeneratedFile> moduleFiles)
+    {
+        var fileList = moduleFiles.ToList();
+
+        var headers = fileList
+            .Where(f => f.FileType == GeneratedFileType.Header)
+            .Select(f => $"#include \"{f.FileName}\"");
+
+        var initCalls = fileList
+            .Where(f => f.FileType == GeneratedFileType.Source)
+            .Select(f => $"    {Path.GetFileNameWithoutExtension(f.FileName)}_init();");
+
+        var updateModules = new HashSet<string> { "entity", "enemy", "scroll" };
+        var updateCalls   = fileList
+            .Where(f => f.FileType == GeneratedFileType.Source
+                     && updateModules.Contains(Path.GetFileNameWithoutExtension(f.FileName)))
+            .Select(f => $"        {Path.GetFileNameWithoutExtension(f.FileName)}_update();");
+
+        var content = string.Join("\n", [
+            "// Generated by Retruxel — do not edit manually.",
+            $"// Project: {project.Name} | Target: {project.TargetId}",
+            $"// Generated at: {DateTime.Now:yyyy-MM-dd HH:mm:ss}",
+            "",
+            "// NES cartridge configuration",
+            "#define NES_MAPPER 0        // NROM mapper",
+            "#define NES_PRG_BANKS 2     // 2 × 16KB PRG-ROM banks",
+            "#define NES_CHR_BANKS 1     // 1 × 8KB CHR-ROM bank",
+            "#define NES_MIRRORING 1     // 0=horizontal, 1=vertical",
+            "",
+            "#include \"neslib.h\"",
+            "#include \"nes.h\"",
+            .. headers,
+            "",
+            "// OAM sprite buffer offset (required by display.sinc)",
+            "#pragma bss-name(push, \"ZEROPAGE\")",
+            "unsigned char oam_off;",
+            "#pragma bss-name(pop)",
+            "",
+            "void main(void) {",
+            "    ppu_off();",
+            "    oam_off = 0;",
+            "    ",
+            .. initCalls,
+            "    ",
+            "    ppu_on_all();",
+            "",
+            "    while(1) {",
+            "        ppu_wait_nmi();",
+            .. updateCalls,
+            "    }",
+            "}",
+        ]);
+
         return new GeneratedFile
         {
-            FileName = "main.c",
-            Content = "// NES main file generation not yet implemented",
-            FileType = GeneratedFileType.Source,
+            FileName       = "main.c",
+            Content        = content,
+            FileType       = GeneratedFileType.Source,
             SourceModuleId = "retruxel.core"
         };
+    }
+
+    public void ResetCodeGenerationState()
+    {
+        NesTextDisplayCodeGen.ResetCounter();
     }
 }

@@ -1,6 +1,7 @@
 ﻿using System.IO;
 using System.Windows;
 using Retruxel.Core.Services;
+using Retruxel.Services;
 
 namespace Retruxel;
 
@@ -14,7 +15,20 @@ public partial class App : Application
         // Initialize localization
         var localizationPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Assets", "Localization");
         LocalizationService.Instance.DiscoverLanguages(localizationPath);
-        LocalizationService.Instance.Load(settings.General.Language, localizationPath);
+        
+        // Auto-detect system language on first run
+        var languageToLoad = settings.General.Language;
+        if (string.IsNullOrEmpty(languageToLoad))
+        {
+            languageToLoad = LocalizationService.Instance.DetectSystemLanguage();
+            settings.General.Language = languageToLoad;
+            SettingsService.Save(settings);
+        }
+        
+        LocalizationService.Instance.Load(languageToLoad, localizationPath);
+
+        // Initialize target registry
+        TargetRegistry.Initialize();
 
         var splash = new SplashScreen();
         splash.Show();

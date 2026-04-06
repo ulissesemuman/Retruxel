@@ -20,14 +20,14 @@
 
             <!-- Title -->
             <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,8">
-                <TextBlock Text="BUILD " Style="{StaticResource TextDisplay}"/>
-                <TextBlock Text="CONSOLE" Style="{StaticResource TextDisplay}"
+                <TextBlock x:Name="TxtBuildTitle" Style="{StaticResource TextDisplay}"/>
+                <TextBlock Text=" " Style="{StaticResource TextDisplay}"/>
+                <TextBlock x:Name="TxtConsoleTitle" Style="{StaticResource TextDisplay}"
                            Foreground="{StaticResource BrushPrimary}"/>
             </StackPanel>
 
             <TextBlock Grid.Row="1"
                        x:Name="TxtDescription"
-                       Text="Ready to compile."
                        Style="{StaticResource TextBody}"
                        Margin="0,0,0,16"
                        TextWrapping="Wrap"/>
@@ -38,14 +38,13 @@
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
-                <TextBlock Grid.Column="0" Text="STATUS:" Style="{StaticResource TextLabel}"/>
+                <TextBlock x:Name="TxtStatusLabel" Grid.Column="0" Style="{StaticResource TextLabel}"/>
                 <StackPanel Grid.Column="1" Orientation="Horizontal">
                     <Border Width="8" Height="8"
                             Background="{StaticResource BrushPrimary}"
                             Margin="0,0,8,0" VerticalAlignment="Center"
                             x:Name="StatusDot"/>
                     <TextBlock x:Name="TxtStatus"
-                               Text="READY"
                                Style="{StaticResource TextLabel}"
                                Foreground="{StaticResource BrushPrimary}"/>
                 </StackPanel>
@@ -73,38 +72,76 @@
                                 <Border Width="10" Height="10"
                                         Background="{StaticResource BrushPrimary}"/>
                             </StackPanel>
-                            <Button Content="💾"
-                                    HorizontalAlignment="Right"
-                                    VerticalAlignment="Center"
-                                    Background="Transparent"
-                                    BorderThickness="0"
-                                    Foreground="{StaticResource BrushOnSurfaceVariant}"
-                                    FontSize="14"
-                                    Padding="8,0"
-                                    Cursor="Hand"
-                                    Click="ExportLog_Click">
-                                <Button.Style>
-                                    <Style TargetType="Button">
-                                        <Setter Property="Background" Value="Transparent"/>
-                                        <Setter Property="Template">
-                                            <Setter.Value>
-                                                <ControlTemplate TargetType="Button">
-                                                    <Border Background="{TemplateBinding Background}"
-                                                            Padding="{TemplateBinding Padding}">
-                                                        <ContentPresenter HorizontalAlignment="Center"
-                                                                          VerticalAlignment="Center"/>
-                                                    </Border>
-                                                </ControlTemplate>
-                                            </Setter.Value>
-                                        </Setter>
-                                        <Style.Triggers>
-                                            <Trigger Property="IsMouseOver" Value="True">
-                                                <Setter Property="Foreground" Value="{StaticResource BrushPrimary}"/>
-                                            </Trigger>
-                                        </Style.Triggers>
-                                    </Style>
-                                </Button.Style>
-                            </Button>
+                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                                <Button Content="📋"
+                                        VerticalAlignment="Center"
+                                        Background="Transparent"
+                                        BorderThickness="0"
+                                        Foreground="{StaticResource BrushOnSurfaceVariant}"
+                                        FontSize="14"
+                                        Padding="8,0"
+                                        Cursor="Hand"
+                                        Click="CopyLog_Click"
+                                        ToolTip="Copy log to clipboard">
+                                    <Button.Style>
+                                        <Style TargetType="Button">
+                                            <Setter Property="Background" Value="Transparent"/>
+                                            <Setter Property="Foreground" Value="{StaticResource BrushOnSurfaceVariant}"/>
+                                            <Setter Property="Template">
+                                                <Setter.Value>
+                                                    <ControlTemplate TargetType="Button">
+                                                        <Border Background="{TemplateBinding Background}"
+                                                                Padding="{TemplateBinding Padding}">
+                                                            <ContentPresenter HorizontalAlignment="Center"
+                                                                              VerticalAlignment="Center"
+                                                                              TextElement.Foreground="{TemplateBinding Foreground}"/>
+                                                        </Border>
+                                                    </ControlTemplate>
+                                                </Setter.Value>
+                                            </Setter>
+                                            <Style.Triggers>
+                                                <Trigger Property="IsMouseOver" Value="True">
+                                                    <Setter Property="Foreground" Value="{StaticResource BrushPrimary}"/>
+                                                </Trigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </Button.Style>
+                                </Button>
+                                <Button Content="💾"
+                                        VerticalAlignment="Center"
+                                        Background="Transparent"
+                                        BorderThickness="0"
+                                        Foreground="{StaticResource BrushOnSurfaceVariant}"
+                                        FontSize="14"
+                                        Padding="8,0"
+                                        Cursor="Hand"
+                                        Click="ExportLog_Click"
+                                        ToolTip="Save log to file">
+                                    <Button.Style>
+                                        <Style TargetType="Button">
+                                            <Setter Property="Background" Value="Transparent"/>
+                                            <Setter Property="Foreground" Value="{StaticResource BrushOnSurfaceVariant}"/>
+                                            <Setter Property="Template">
+                                                <Setter.Value>
+                                                    <ControlTemplate TargetType="Button">
+                                                        <Border Background="{TemplateBinding Background}"
+                                                                Padding="{TemplateBinding Padding}">
+                                                            <ContentPresenter HorizontalAlignment="Center"
+                                                                              VerticalAlignment="Center"
+                                                                              TextElement.Foreground="{TemplateBinding Foreground}"/>
+                                                        </Border>
+                                                    </ControlTemplate>
+                                                </Setter.Value>
+                                            </Setter>
+                                            <Style.Triggers>
+                                                <Trigger Property="IsMouseOver" Value="True">
+                                                    <Setter Property="Foreground" Value="{StaticResource BrushPrimary}"/>
+                                                </Trigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </Button.Style>
+                                </Button>
+                            </StackPanel>
                         </Grid>
                     </Border>
 
@@ -123,7 +160,7 @@
         <StackPanel Grid.Column="1" Margin="16,24,32,24">
 
             <!-- Export options -->
-            <TextBlock Text="EXPORT OPTIONS"
+            <TextBlock x:Name="TxtExportOptions"
                        Style="{StaticResource TextLabel}"
                        Margin="0,48,0,12"/>
 
@@ -138,11 +175,11 @@
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
                     <StackPanel Grid.Column="0">
-                        <TextBlock Text="EXPORT ROM (.sms)"
+                        <TextBlock x:Name="TxtExportRom"
                                    Style="{StaticResource TextBody}"
                                    Foreground="{StaticResource BrushOnSurface}"
                                    FontWeight="Bold"/>
-                        <TextBlock Text="Save to custom location"
+                        <TextBlock x:Name="TxtExportRomDesc"
                                    Style="{StaticResource TextLabel}"/>
                     </StackPanel>
                     <TextBlock Grid.Column="1" Text="↓"
@@ -163,11 +200,11 @@
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
                     <StackPanel Grid.Column="0">
-                        <TextBlock Text="DEBUG PACKAGE (.zip)"
+                        <TextBlock x:Name="TxtExportDebug"
                                    Style="{StaticResource TextBody}"
                                    Foreground="{StaticResource BrushOnSurface}"
                                    FontWeight="Bold"/>
-                        <TextBlock Text="Incl. source files and build log"
+                        <TextBlock x:Name="TxtExportDebugDesc"
                                    Style="{StaticResource TextLabel}"/>
                     </StackPanel>
                     <TextBlock Grid.Column="1" Text="⬛"
@@ -182,39 +219,37 @@
                     Padding="16" x:Name="VerificationPanel"
                     Visibility="Collapsed">
                 <StackPanel>
-                    <TextBlock Text="VERIFICATION"
+                    <TextBlock x:Name="TxtVerification"
                                Style="{StaticResource TextLabel}"
                                Foreground="{StaticResource BrushOnSurface}"
                                Margin="0,0,0,12"/>
                     <Grid Margin="0,0,0,4">
-                        <TextBlock Text="MD5 HASH" Style="{StaticResource TextLabel}"/>
+                        <TextBlock x:Name="TxtMd5Label" Style="{StaticResource TextLabel}"/>
                         <TextBlock x:Name="TxtMd5"
                                    Style="{StaticResource TextCode}"
                                    HorizontalAlignment="Right"/>
                     </Grid>
                     <Grid Margin="0,0,0,12">
-                        <TextBlock Text="SHA-256" Style="{StaticResource TextLabel}"/>
+                        <TextBlock x:Name="TxtSha256Label" Style="{StaticResource TextLabel}"/>
                         <TextBlock x:Name="TxtSha256"
                                    Style="{StaticResource TextCode}"
                                    HorizontalAlignment="Right"/>
                     </Grid>
                     <TextBlock x:Name="TxtChecks"
-                               Text="✓ ALL CHECKS PASSED"
                                Style="{StaticResource TextLabel}"
                                Foreground="{StaticResource BrushPrimary}"/>
                 </StackPanel>
             </Border>
 
             <!-- Memory stats -->
-            <TextBlock Text="MEMORY ALLOCATION"
+            <TextBlock x:Name="MemoryHeader"
                        Style="{StaticResource TextLabel}"
                        Margin="0,24,0,12"
-                       x:Name="MemoryHeader"
                        Visibility="Collapsed"/>
 
             <StackPanel x:Name="MemoryPanel" Visibility="Collapsed">
                 <Grid Margin="0,0,0,4">
-                    <TextBlock Text="PRG-ROM" Style="{StaticResource TextLabel}"/>
+                    <TextBlock x:Name="TxtPrgRomLabel" Style="{StaticResource TextLabel}"/>
                     <TextBlock x:Name="TxtRomSize"
                                Style="{StaticResource TextLabel}"
                                Foreground="{StaticResource BrushOnSurface}"
@@ -229,5 +264,20 @@
             </StackPanel>
 
         </StackPanel>
+
+        <!-- Toast Notification -->
+        <Border x:Name="ToastNotification"
+                Background="{StaticResource BrushPrimary}"
+                Padding="16,12"
+                HorizontalAlignment="Center"
+                VerticalAlignment="Bottom"
+                Margin="0,0,0,32"
+                Opacity="0"
+                Grid.ColumnSpan="2">
+            <TextBlock x:Name="ToastText"
+                       Style="{StaticResource TextBody}"
+                       Foreground="{StaticResource BrushOnPrimary}"
+                       FontWeight="Bold"/>
+        </Border>
     </Grid>
 </UserControl>

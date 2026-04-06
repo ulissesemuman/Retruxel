@@ -24,7 +24,22 @@ public partial class NewProjectDialog : Window
         TxtTarget.Text = target.DisplayName.ToUpper();
         var settings = SettingsService.Load();
         TxtLocation.Text = settings.General.LastProjectLocation;
+        ApplyLocalization();
         LoadTemplates();
+    }
+
+    private void ApplyLocalization()
+    {
+        var loc = LocalizationService.Instance;
+        Title = loc.Get("newproject.title");
+        TxtDialogTitle.Text = loc.Get("newproject.title");
+        TxtProjectNameLabel.Text = loc.Get("newproject.name");
+        TxtLocationLabel.Text = loc.Get("newproject.location");
+        BtnBrowse.Content = loc.Get("newproject.browse");
+        TxtTargetLabel.Text = loc.Get("newproject.target");
+        TxtTemplateLabel.Text = loc.Get("newproject.template");
+        BtnCancel.Content = loc.Get("newproject.cancel");
+        BtnCreate.Content = loc.Get("newproject.create");
     }
 
     private void LoadTemplates()
@@ -106,10 +121,11 @@ public partial class NewProjectDialog : Window
 
     private void BrowseButton_Click(object sender, RoutedEventArgs e)
     {
+        var loc = LocalizationService.Instance;
         var settings = SettingsService.Load();
         var dialog = new OpenFolderDialog
         {
-            Title = "Select project location",
+            Title = loc.Get("newproject.browse.title"),
             InitialDirectory = settings.General.LastProjectLocation
         };
 
@@ -123,16 +139,18 @@ public partial class NewProjectDialog : Window
 
     private void CreateButton_Click(object sender, RoutedEventArgs e)
     {
+        var loc = LocalizationService.Instance;
+        
         if (string.IsNullOrWhiteSpace(TxtProjectName.Text))
         {
-            MessageBox.Show("Please enter a project name.", "Retruxel",
+            MessageBox.Show(loc.Get("newproject.error.name"), "Retruxel",
                 MessageBoxButton.OK, MessageBoxImage.Warning);
             return;
         }
 
         if (string.IsNullOrWhiteSpace(TxtLocation.Text))
         {
-            MessageBox.Show("Please select a project location.", "Retruxel",
+            MessageBox.Show(loc.Get("newproject.error.location"), "Retruxel",
                 MessageBoxButton.OK, MessageBoxImage.Warning);
             return;
         }
@@ -145,7 +163,7 @@ public partial class NewProjectDialog : Window
         if (Directory.Exists(projectPath))
         {
             var result = MessageBox.Show(
-                $"A folder named '{projectName}' already exists in this location.\n\nDo you want to use it anyway?",
+                string.Format(loc.Get("newproject.error.exists"), projectName),
                 "Retruxel",
                 MessageBoxButton.YesNo,
                 MessageBoxImage.Warning);

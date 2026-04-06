@@ -1,5 +1,5 @@
 using Retruxel.Core.Interfaces;
-using Retruxel.Target.SMS;
+using Retruxel.Services;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -9,20 +9,29 @@ namespace Retruxel.Views;
 
 public partial class TargetSelectionDialog : Window
 {
-    private readonly List<ITarget> _targets = [new SmsTarget()];
     public ITarget? SelectedTarget { get; private set; }
 
     public TargetSelectionDialog()
     {
         InitializeComponent();
+        ApplyLocalization();
         RenderTargets();
+    }
+
+    private void ApplyLocalization()
+    {
+        var loc = Retruxel.Core.Services.LocalizationService.Instance;
+        Title = loc.Get("targetselection.title");
+        TxtDialogTitle.Text = loc.Get("targetselection.title");
+        TxtDescription.Text = loc.Get("targetselection.description");
+        BtnCancel.Content = loc.Get("targetselection.cancel");
     }
 
     private void RenderTargets()
     {
         TargetsPanel.Children.Clear();
 
-        foreach (var target in _targets)
+        foreach (var target in TargetRegistry.GetAllTargets())
         {
             var card = BuildTargetCard(target);
             TargetsPanel.Children.Add(card);

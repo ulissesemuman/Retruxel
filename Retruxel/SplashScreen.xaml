@@ -12,6 +12,8 @@
         Icon="pack://application:,,,/Assets/icon.ico">
 
     <Border CornerRadius="6"
+            BorderBrush="#3a3a3a"
+            BorderThickness="1"
             ClipToBounds="True"
             MouseLeftButtonDown="Border_MouseLeftButtonDown">
 

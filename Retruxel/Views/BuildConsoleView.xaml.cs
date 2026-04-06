@@ -1,13 +1,14 @@
 using Microsoft.Win32;
 using Retruxel.Core.Models;
 using Retruxel.Core.Services;
-using Retruxel.Target.SMS;
+using Retruxel.Services;
 using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
+using System.Windows.Media.Animation;
 
 namespace Retruxel.Views;
 
@@ -19,10 +20,34 @@ public partial class BuildConsoleView : UserControl
     public BuildConsoleView()
     {
         InitializeComponent();
+        ApplyLocalization();
+    }
+
+    private void ApplyLocalization()
+    {
+        var loc = Retruxel.Core.Services.LocalizationService.Instance;
+        TxtBuildTitle.Text = loc.Get("buildconsole.title.build");
+        TxtConsoleTitle.Text = loc.Get("buildconsole.title.console");
+        TxtDescription.Text = loc.Get("buildconsole.description.ready");
+        TxtStatusLabel.Text = loc.Get("buildconsole.status");
+        TxtStatus.Text = loc.Get("build.status.ready");
+        TxtExportOptions.Text = loc.Get("buildconsole.export_options");
+        TxtExportRom.Text = loc.Get("buildconsole.export_rom");
+        TxtExportRomDesc.Text = loc.Get("buildconsole.export_rom.desc");
+        TxtExportDebug.Text = loc.Get("buildconsole.export_debug");
+        TxtExportDebugDesc.Text = loc.Get("buildconsole.export_debug.desc");
+        TxtVerification.Text = loc.Get("buildconsole.verification");
+        TxtMd5Label.Text = loc.Get("buildconsole.verification.md5");
+        TxtSha256Label.Text = loc.Get("buildconsole.verification.sha256");
+        TxtChecks.Text = loc.Get("buildconsole.verification.passed");
+        MemoryHeader.Text = loc.Get("buildconsole.memory");
+        TxtPrgRomLabel.Text = loc.Get("buildconsole.memory.prgrom");
     }
 
     /// <summary>
     /// Starts the build pipeline for the given project.
+    /// Resolves the target from the registry, registers built-in and compatible
+    /// plugin modules, then runs code generation and compilation.
     /// </summary>
     public async Task BuildAsync(RetruxelProject project)
     {
@@ -33,33 +58,39 @@ public partial class BuildConsoleView : UserControl
         MemoryHeader.Visibility = Visibility.Collapsed;
         MemoryPanel.Visibility = Visibility.Collapsed;
 
-        SetStatus("BUILDING...", false);
+        var loc = Retruxel.Core.Services.LocalizationService.Instance;
+
+        // Resolve target from registry using the project's TargetId
+        var target = TargetRegistry.GetTargetById(project.TargetId);
+        if (target is null)
+        {
+            SetStatus(loc.Get("build.status.failed"), false, isError: true);
+            AppendLog($"ERROR: Unknown target '{project.TargetId}'. Cannot build.", isError: true);
+            return;
+        }
+
+        SetStatus(loc.Get("build.status.building"), false);
         TxtDescription.Text = $"Compiling project '{project.Name}' for target {project.TargetId.ToUpper()}.";
 
-        // Reset static counters before build
-        Retruxel.Target.SMS.Modules.Text.SmsTextDisplayCodeGen.ResetCounter();
-
-        var target = new SmsTarget();
+        // Build module loader: built-in modules first, then compatible plugins
         var moduleLoader = new ModuleLoader(AppDomain.CurrentDomain.BaseDirectory);
+        moduleLoader.RegisterBuiltinModules(target);
+        moduleLoader.LoadCompatible(project.TargetId);
 
-        // Register module templates for deserialization
+        // Register universal modules present in the project that weren't
+        // covered by built-ins or plugins (e.g. text.display from Retruxel.Modules)
         foreach (var moduleId in project.DefaultModules.Distinct())
         {
-            if (moduleId == "text.display")
-            {
-                var template = new Retruxel.Modules.Text.TextDisplayModule();
-                moduleLoader.RegisterLogicModule(template);
-            }
-            // Add more module types here as they are implemented
+            if (moduleId == "text.display" && !moduleLoader.LogicModules.ContainsKey(moduleId))
+                moduleLoader.RegisterLogicModule(new Retruxel.Modules.Text.TextDisplayModule());
         }
 
         var progress = new Progress<string>(msg => Dispatcher.Invoke(() => AppendLog(msg)));
         var codeGen = new CodeGenerator(moduleLoader, target);
-        
-        // Build to project's build folder
+
         var outputDir = Path.Combine(project.ProjectPath, "build");
         Directory.CreateDirectory(outputDir);
-        
+
         var context = await codeGen.GenerateAsync(project, outputDir, progress);
 
         var toolchain = target.GetToolchain();
@@ -72,54 +103,75 @@ public partial class BuildConsoleView : UserControl
 
         if (_lastResult.Success)
         {
-            // ROM is already in the build folder, just log it
             if (_lastResult.RomPath != null)
-            {
                 AppendLog($"SAVED: {_lastResult.RomPath}");
-            }
 
-            SetStatus("BUILD SUCCESSFUL", true);
+            SetStatus(loc.Get("build.status.success"), true);
             ShowVerification(_lastResult);
-            ShowMemoryStats(_lastResult);
+            ShowMemoryStats(_lastResult, target.Specs.RomMaxBytes);
             AppendLog($"SUCCESS: ROM generated — {_lastResult.RomSizeBytes / 1024}KB", true);
 
-            // Launch emulator if configured
             await LaunchEmulatorIfConfiguredAsync(_lastResult.RomPath);
         }
         else
         {
-            SetStatus("BUILD FAILED", false, isError: true);
+            SetStatus(loc.Get("build.status.failed"), false, isError: true);
             AppendLog("ERROR: Build failed. Check log for details.", isError: true);
         }
     }
 
     private async Task LaunchEmulatorIfConfiguredAsync(string? romPath)
     {
-        if (romPath is null) return;
+        if (romPath is null || _project is null) return;
 
         var settings = await SettingsService.LoadAsync();
         
-        if (!settings.Targets.Sms.LaunchEmulatorAfterBuild)
+        // Get settings for the current target
+        var (launchEnabled, emulatorPath, emulatorArgs) = _project.TargetId.ToLower() switch
+        {
+            "sms" => (settings.Targets.Sms.LaunchEmulatorAfterBuild, 
+                      settings.Targets.Sms.EmulatorPath, 
+                      settings.Targets.Sms.EmulatorArguments),
+            "nes" => (settings.Targets.Nes.LaunchEmulatorAfterBuild, 
+                      settings.Targets.Nes.EmulatorPath, 
+                      settings.Targets.Nes.EmulatorArguments),
+            "gg" => (settings.Targets.Gg.LaunchEmulatorAfterBuild, 
+                     settings.Targets.Gg.EmulatorPath, 
+                     settings.Targets.Gg.EmulatorArguments),
+            "sg1000" => (settings.Targets.Sg1000.LaunchEmulatorAfterBuild, 
+                         settings.Targets.Sg1000.EmulatorPath, 
+                         settings.Targets.Sg1000.EmulatorArguments),
+            "coleco" => (settings.Targets.Coleco.LaunchEmulatorAfterBuild, 
+                         settings.Targets.Coleco.EmulatorPath, 
+                         settings.Targets.Coleco.EmulatorArguments),
+            _ => (false, string.Empty, string.Empty)
+        };
+        
+        if (!launchEnabled)
             return;
 
-        if (string.IsNullOrEmpty(settings.Targets.Sms.EmulatorPath))
+        if (string.IsNullOrEmpty(emulatorPath))
         {
-            AppendLog("WARN: Emulator path not configured. Set it in Settings → Master System.");
+            AppendLog($"WARN: Emulator path not configured for {_project.TargetId.ToUpper()}. Set it in Settings.");
             return;
         }
 
-        if (!File.Exists(settings.Targets.Sms.EmulatorPath))
+        if (!File.Exists(emulatorPath))
         {
-            AppendLog($"ERROR: Emulator not found at {settings.Targets.Sms.EmulatorPath}", isError: true);
+            AppendLog($"ERROR: Emulator not found at {emulatorPath}", isError: true);
             return;
         }
 
         try
         {
+            var args = string.IsNullOrEmpty(emulatorArgs) 
+                ? $"\"{romPath}\""
+                : $"{emulatorArgs} \"{romPath}\"";
+            
             Process.Start(new ProcessStartInfo
             {
-                FileName = settings.Targets.Sms.EmulatorPath,
-                Arguments = $"\"{romPath}\"",
+                FileName = emulatorPath,
+                Arguments = args,
                 UseShellExecute = true
             });
             AppendLog($"LAUNCH: Opening ROM in emulator...");
@@ -167,15 +219,15 @@ public partial class BuildConsoleView : UserControl
         TxtSha256.Text = result.RomSha256?[..8] + "...";
     }
 
-    private void ShowMemoryStats(BuildResult result)
+    private void ShowMemoryStats(BuildResult result, int romMaxBytes)
     {
         MemoryHeader.Visibility = Visibility.Visible;
         MemoryPanel.Visibility = Visibility.Visible;
 
-        var maxRom = 32 * 1024;
-        var percent = (double)result.RomSizeBytes / maxRom;
-        TxtRomSize.Text = $"{result.RomSizeBytes / 1024}KB / 32KB";
-        RomSizeBar.Width = 268 * percent;
+        var maxKb = romMaxBytes / 1024;
+        var percent = romMaxBytes > 0 ? (double)result.RomSizeBytes / romMaxBytes : 0;
+        TxtRomSize.Text = $"{result.RomSizeBytes / 1024}KB / {maxKb}KB";
+        RomSizeBar.Width = 268 * Math.Min(percent, 1.0);
     }
 
     private void ExportRom_Click(object sender, System.Windows.Input.MouseButtonEventArgs e)
@@ -186,9 +238,10 @@ public partial class BuildConsoleView : UserControl
             return;
         }
 
+        var ext = Path.GetExtension(_lastResult.RomPath).TrimStart('.');
         var dialog = new SaveFileDialog
         {
-            Filter = "SMS ROM (*.sms)|*.sms",
+            Filter = $"ROM File (*.{ext})|*.{ext}",
             FileName = _project?.Name ?? "output"
         };
 
@@ -232,5 +285,61 @@ public partial class BuildConsoleView : UserControl
             .Select(tb => tb.Text);
 
         File.WriteAllLines(dialog.FileName, lines);
+    }
+
+    private void CopyLog_Click(object sender, RoutedEventArgs e)
+    {
+        var lines = LogPanel.Children
+            .OfType<TextBlock>()
+            .Select(tb => tb.Text);
+
+        var logText = string.Join(Environment.NewLine, lines);
+
+        if (string.IsNullOrEmpty(logText))
+        {
+            MessageBox.Show("No log content to copy.", "Retruxel");
+            return;
+        }
+
+        try
+        {
+            Clipboard.SetText(logText);
+            ShowToast(LocalizationService.Instance.Get("toast.log_copied"));
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show($"Failed to copy to clipboard: {ex.Message}", "Retruxel");
+        }
+    }
+
+    private void ShowToast(string message)
+    {
+        ToastText.Text = message;
+
+        var fadeIn = new DoubleAnimation
+        {
+            From = 0,
+            To = 1,
+            Duration = TimeSpan.FromMilliseconds(200)
+        };
+
+        var fadeOut = new DoubleAnimation
+        {
+            From = 1,
+            To = 0,
+            Duration = TimeSpan.FromMilliseconds(300),
+            BeginTime = TimeSpan.FromMilliseconds(2000)
+        };
+
+        var storyboard = new Storyboard();
+        storyboard.Children.Add(fadeIn);
+        storyboard.Children.Add(fadeOut);
+
+        Storyboard.SetTarget(fadeIn, ToastNotification);
+        Storyboard.SetTargetProperty(fadeIn, new PropertyPath(OpacityProperty));
+        Storyboard.SetTarget(fadeOut, ToastNotification);
+        Storyboard.SetTargetProperty(fadeOut, new PropertyPath(OpacityProperty));
+
+        storyboard.Begin();
     }
 }

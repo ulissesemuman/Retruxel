@@ -1,8 +1,7 @@
 ﻿using Retruxel.Core.Interfaces;
 using Retruxel.Core.Models;
 using Retruxel.Core.Services;
-using Retruxel.Target.SMS;
-using Retruxel.Target.NES;
+using Retruxel.Services;
 using System.IO;
 using System.Windows;
 using System.Windows.Controls;
@@ -13,8 +12,11 @@ namespace Retruxel.Views;
 public partial class WelcomeView : UserControl
 {
     private bool _isGridView = true;
-    private readonly List<ITarget> _targets = [new SmsTarget(), new NesTarget()];
     private Border? _dropOverlay;
+    private string _currentSort = "name";
+    private string _currentFilter = "all";
+    private HashSet<string> _favoriteTargets = new();
+    
     public event Action<RetruxelProject>? OnProjectCreated;
     public event Action? OnAboutRequested;
 
@@ -26,19 +28,95 @@ public partial class WelcomeView : UserControl
 
     private void OnLoaded(object sender, RoutedEventArgs e)
     {
+        LoadFavorites();
+        InitializeSortAndFilter();
         RenderTargets();
         RenderRecentProjects();
         RenderSidebarRecentProjects();
     }
 
+    private void LoadFavorites()
+    {
+        var settings = SettingsService.Load();
+        _favoriteTargets = new HashSet<string>(settings.General.FavoriteTargets);
+    }
+
+    private void SaveFavorites()
+    {
+        var settings = SettingsService.Load();
+        settings.General.FavoriteTargets = _favoriteTargets.ToList();
+        SettingsService.Save(settings);
+    }
+
+    private void InitializeSortAndFilter()
+    {
+        var loc = LocalizationService.Instance;
+        
+        // Sort options
+        SortComboBox.Items.Add(new ComboBoxItem { Content = loc.Get("welcome.sort.name"), Tag = "name" });
+        SortComboBox.Items.Add(new ComboBoxItem { Content = loc.Get("welcome.sort.manufacturer"), Tag = "manufacturer" });
+        SortComboBox.SelectedIndex = 0;
+
+        // Filter options - dynamic based on manufacturers
+        FilterComboBox.Items.Add(new ComboBoxItem { Content = loc.Get("welcome.filter.all"), Tag = "all" });
+        FilterComboBox.Items.Add(new ComboBoxItem { Content = loc.Get("welcome.filter.favorites"), Tag = "favorites" });
+        
+        foreach (var manufacturer in TargetRegistry.GetManufacturers().OrderBy(m => m))
+        {
+            var key = $"welcome.filter.{manufacturer.ToLower()}";
+            var displayName = loc.Get(key);
+            FilterComboBox.Items.Add(new ComboBoxItem { Content = displayName, Tag = manufacturer.ToLower() });
+        }
+        
+        FilterComboBox.SelectedIndex = 0;
+    }
+
+    private void Sort_Changed(object sender, SelectionChangedEventArgs e)
+    {
+        if (SortComboBox.SelectedItem is ComboBoxItem item && item.Tag is string sortType)
+        {
+            _currentSort = sortType;
+            RenderTargets();
+        }
+    }
+
+    private void Filter_Changed(object sender, SelectionChangedEventArgs e)
+    {
+        if (FilterComboBox.SelectedItem is ComboBoxItem item && item.Tag is string filterType)
+        {
+            _currentFilter = filterType;
+            RenderTargets();
+        }
+    }
+
     // Renders target cards in grid or list mode
     private void RenderTargets()
     {
+        var allTargets = TargetRegistry.GetAllTargets().ToList();
+
+        // Apply filter
+        var filteredTargets = _currentFilter switch
+        {
+            "favorites" => allTargets.Where(t => _favoriteTargets.Contains(t.TargetId)).ToList(),
+            "all" => allTargets,
+            _ => allTargets.Where(t => t.Specs.Manufacturer?.Equals(_currentFilter, StringComparison.OrdinalIgnoreCase) == true).ToList()
+        };
+
+        // Apply sort
+        var sortedTargets = _currentSort switch
+        {
+            "manufacturer" => filteredTargets.OrderBy(t => t.Specs.Manufacturer).ThenBy(t => t.DisplayName).ToList(),
+            _ => filteredTargets.OrderBy(t => t.DisplayName).ToList()
+        };
+
+        // Update count
+        TargetCount.Text = $"COUNT: {sortedTargets.Count:D2}";
+
         Panel panel = _isGridView
             ? new WrapPanel { Orientation = Orientation.Horizontal }
             : new StackPanel();
 
-        foreach (var target in _targets)
+        foreach (var target in sortedTargets)
         {
             var card = _isGridView
                 ? BuildGridCard(target)
@@ -63,15 +141,21 @@ public partial class WelcomeView : UserControl
             Padding = new Thickness(16)
         };
 
-        var panel = new StackPanel();
+        var mainGrid = new Grid();
+        mainGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+        mainGrid.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
+        mainGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
 
-        // Architecture tag
+        // Top row: Architecture tag + Favorite star
+        var topGrid = new Grid { Margin = new Thickness(0, 0, 0, 16) };
+        topGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+        topGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+
         var arch = new Border
         {
             Background = new SolidColorBrush(Color.FromRgb(0x26, 0x26, 0x26)),
             Padding = new Thickness(8, 4, 8, 4),
-            HorizontalAlignment = HorizontalAlignment.Right,
-            Margin = new Thickness(0, 0, 0, 16),
+            HorizontalAlignment = HorizontalAlignment.Left,
             Child = new TextBlock
             {
                 Text = $"{target.Specs.CPU.Split(' ').Last()} ARCH",
@@ -81,7 +165,28 @@ public partial class WelcomeView : UserControl
             }
         };
 
-        // Console name
+        var isFavorite = _favoriteTargets.Contains(target.TargetId);
+        var starButton = new Button
+        {
+            Content = isFavorite ? "★" : "☆",
+            FontSize = 20,
+            Background = Brushes.Transparent,
+            Foreground = isFavorite ? new SolidColorBrush(Color.FromRgb(0xFF, 0xD7, 0x00)) : new SolidColorBrush(Color.FromRgb(0xAD, 0xAA, 0xAA)),
+            BorderThickness = new Thickness(0),
+            Padding = new Thickness(4),
+            Cursor = System.Windows.Input.Cursors.Hand,
+            HorizontalAlignment = HorizontalAlignment.Right,
+            Tag = target.TargetId
+        };
+        starButton.Click += ToggleFavorite_Click;
+
+        Grid.SetColumn(arch, 0);
+        Grid.SetColumn(starButton, 1);
+        topGrid.Children.Add(arch);
+        topGrid.Children.Add(starButton);
+
+        // Middle: Console name and specs
+        var contentPanel = new StackPanel();
         var name = new TextBlock
         {
             Text = target.DisplayName.ToUpper(),
@@ -92,7 +197,6 @@ public partial class WelcomeView : UserControl
             Margin = new Thickness(0, 0, 0, 8)
         };
 
-        // Specs
         var specs = new TextBlock
         {
             Text = $"{target.Specs.CPU} | {target.Specs.RamBytes / 1024}KB RAM",
@@ -102,23 +206,49 @@ public partial class WelcomeView : UserControl
             TextWrapping = TextWrapping.Wrap
         };
 
-        // Bottom accent line — color per target
+        contentPanel.Children.Add(name);
+        contentPanel.Children.Add(specs);
+
+        // Bottom accent line
         var accent = new Border
         {
             Height = 3,
             Background = new SolidColorBrush(Color.FromRgb(0x8E, 0xFF, 0x71)),
-            Margin = new Thickness(-16, 16, -16, -16),
-            VerticalAlignment = VerticalAlignment.Bottom
+            Margin = new Thickness(-16, 0, -16, -16)
         };
 
-        panel.Children.Add(arch);
-        panel.Children.Add(name);
-        panel.Children.Add(specs);
-        panel.Children.Add(accent);
-        card.Child = panel;
+        Grid.SetRow(topGrid, 0);
+        Grid.SetRow(contentPanel, 1);
+        Grid.SetRow(accent, 2);
+
+        mainGrid.Children.Add(topGrid);
+        mainGrid.Children.Add(contentPanel);
+        mainGrid.Children.Add(accent);
+        card.Child = mainGrid;
 
         card.MouseLeftButtonDown += (_, _) => OnTargetSelected(target);
         return card;
+    }
+
+    private void ToggleFavorite_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is not Button button || button.Tag is not string targetId)
+            return;
+
+        if (_favoriteTargets.Contains(targetId))
+        {
+            _favoriteTargets.Remove(targetId);
+            button.Content = "☆";
+            button.Foreground = new SolidColorBrush(Color.FromRgb(0xAD, 0xAA, 0xAA));
+        }
+        else
+        {
+            _favoriteTargets.Add(targetId);
+            button.Content = "★";
+            button.Foreground = new SolidColorBrush(Color.FromRgb(0xFF, 0xD7, 0x00));
+        }
+
+        SaveFavorites();
     }
 
     // List card — compact horizontal row
@@ -135,8 +265,26 @@ public partial class WelcomeView : UserControl
 
         var grid = new Grid();
         grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
         grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
         grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+
+        // Favorite star
+        var isFavorite = _favoriteTargets.Contains(target.TargetId);
+        var starButton = new Button
+        {
+            Content = isFavorite ? "★" : "☆",
+            FontSize = 16,
+            Background = Brushes.Transparent,
+            Foreground = isFavorite ? new SolidColorBrush(Color.FromRgb(0xFF, 0xD7, 0x00)) : new SolidColorBrush(Color.FromRgb(0xAD, 0xAA, 0xAA)),
+            BorderThickness = new Thickness(0),
+            Padding = new Thickness(4),
+            Cursor = System.Windows.Input.Cursors.Hand,
+            VerticalAlignment = VerticalAlignment.Center,
+            Margin = new Thickness(0, 0, 12, 0),
+            Tag = target.TargetId
+        };
+        starButton.Click += ToggleFavorite_Click;
 
         var name = new TextBlock
         {
@@ -166,10 +314,12 @@ public partial class WelcomeView : UserControl
             VerticalAlignment = VerticalAlignment.Center
         };
 
-        Grid.SetColumn(name, 0);
-        Grid.SetColumn(specs, 1);
-        Grid.SetColumn(arch, 2);
+        Grid.SetColumn(starButton, 0);
+        Grid.SetColumn(name, 1);
+        Grid.SetColumn(specs, 2);
+        Grid.SetColumn(arch, 3);
 
+        grid.Children.Add(starButton);
         grid.Children.Add(name);
         grid.Children.Add(specs);
         grid.Children.Add(arch);
@@ -240,7 +390,7 @@ public partial class WelcomeView : UserControl
             var project = System.Text.Json.JsonSerializer.Deserialize<RetruxelProject>(json);
             if (project != null)
             {
-                var target = _targets.FirstOrDefault(t => t.TargetId == project.TargetId);
+                var target = TargetRegistry.GetTargetById(project.TargetId);
                 targetLabel = target?.TargetId.ToUpper() ?? project.TargetId.ToUpper();
             }
         }
@@ -323,7 +473,7 @@ public partial class WelcomeView : UserControl
             var project = System.Text.Json.JsonSerializer.Deserialize<RetruxelProject>(json);
             if (project != null)
             {
-                var target = _targets.FirstOrDefault(t => t.TargetId == project.TargetId);
+                var target = TargetRegistry.GetTargetById(project.TargetId);
                 targetLabel = target?.TargetId.ToUpper() ?? project.TargetId.ToUpper();
             }
         }
@@ -397,8 +547,9 @@ public partial class WelcomeView : UserControl
         }
         catch (Exception ex)
         {
+            var loc = LocalizationService.Instance;
             MessageBox.Show(
-                $"Failed to load project:\n{ex.Message}",
+                string.Format(loc.Get("welcome.error.load"), ex.Message),
                 "Retruxel",
                 MessageBoxButton.OK,
                 MessageBoxImage.Error);
@@ -453,10 +604,11 @@ public partial class WelcomeView : UserControl
 
     private async void OpenProject_Click(object sender, RoutedEventArgs e)
     {
+        var loc = LocalizationService.Instance;
         var dialog = new Microsoft.Win32.OpenFileDialog
         {
             Filter = "Retruxel Project (*.rtrxproject)|*.rtrxproject",
-            Title = "Open Retruxel Project"
+            Title = loc.Get("welcome.open_project.title")
         };
 
         if (dialog.ShowDialog() == true)
@@ -470,7 +622,7 @@ public partial class WelcomeView : UserControl
             catch (Exception ex)
             {
                 MessageBox.Show(
-                    $"Failed to load project:\n{ex.Message}",
+                    string.Format(loc.Get("welcome.error.load"), ex.Message),
                     "Retruxel",
                     MessageBoxButton.OK,
                     MessageBoxImage.Error);
@@ -592,8 +744,9 @@ public partial class WelcomeView : UserControl
         }
         catch (Exception ex)
         {
+            var loc = LocalizationService.Instance;
             MessageBox.Show(
-                $"Failed to load project:\n{ex.Message}",
+                string.Format(loc.Get("welcome.error.load"), ex.Message),
                 "Retruxel",
                 MessageBoxButton.OK,
                 MessageBoxImage.Error);

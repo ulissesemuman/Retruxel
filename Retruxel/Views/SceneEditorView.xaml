@@ -27,7 +27,7 @@
                 </Grid.ColumnDefinitions>
 
                 <StackPanel Grid.Column="0" Orientation="Horizontal">
-                    <TextBlock Text="SCENE EDITOR"
+                    <TextBlock x:Name="TxtSceneTitle"
                                Style="{StaticResource TextLabel}"
                                VerticalAlignment="Center"
                                Margin="0,0,16,0"/>
@@ -49,7 +49,7 @@
                            VerticalAlignment="Center"/>
 
                 <StackPanel Grid.Column="2" Orientation="Horizontal">
-                    <Button Content="▶  GENERATE ROM"
+                    <Button x:Name="BtnGenerateRom"
                             Style="{StaticResource ButtonPrimary}"
                             Padding="16,0" Height="28"
                             Click="GenerateRom_Click"/>
@@ -63,7 +63,7 @@
                 Padding="0,8">
             <ScrollViewer VerticalScrollBarVisibility="Auto">
                 <StackPanel>
-                    <TextBlock Text="SYSTEM STATUS: NOMINAL"
+                    <TextBlock x:Name="TxtSystemStatus"
                                Style="{StaticResource TextLabel}"
                                Foreground="{StaticResource BrushPrimary}"
                                Margin="12,4,12,16"
@@ -71,7 +71,6 @@
 
                     <!-- Module categories -->
                     <TextBlock x:Name="ModulePaletteHeader"
-                               Text="MODULES"
                                Style="{StaticResource TextLabel}"
                                Foreground="{StaticResource BrushPrimary}"
                                Margin="12,0,12,8"/>
@@ -82,13 +81,13 @@
                             Background="{StaticResource BrushGhostBorder}"
                             Margin="12,16"/>
 
-                    <Button Content="+ NEW ASSET"
+                    <Button x:Name="BtnNewAsset"
                             Style="{StaticResource ButtonSecondary}"
                             Margin="12,0"
                             HorizontalAlignment="Stretch"
                             Padding="0,8"/>
 
-                    <TextBlock Text="? DOCUMENTATION"
+                    <TextBlock x:Name="TxtDocumentation"
                                Style="{StaticResource TextLabel}"
                                Margin="12,16,12,0"
                                Cursor="Hand"/>
@@ -110,9 +109,8 @@
                         BorderThickness="1"
                         Padding="1">
 
-                    <!-- SMS screen area — 256x192 -->
+                    <!-- Screen area — size set dynamically from target specs -->
                     <Canvas x:Name="SceneCanvas"
-                            Width="256" Height="192"
                             ClipToBounds="True"
                             MouseMove="Canvas_MouseMove"
                             MouseLeftButtonDown="Canvas_MouseLeftButtonDown"
@@ -151,7 +149,7 @@
                 </Border>
 
                 <!-- Canvas size label -->
-                <TextBlock Text="256 × 192 px"
+                <TextBlock x:Name="TxtCanvasSize"
                            Style="{StaticResource TextLabel}"
                            HorizontalAlignment="Right"
                            VerticalAlignment="Bottom"
@@ -164,14 +162,13 @@
                 Background="{StaticResource BrushSurfaceContainerLow}"
                 Padding="16">
             <StackPanel>
-                <TextBlock Text="PROPERTIES"
+                <TextBlock x:Name="TxtPropertiesTitle"
                            Style="{StaticResource TextLabel}"
                            Foreground="{StaticResource BrushPrimary}"
                            Margin="0,0,0,16"/>
 
                 <!-- Empty state -->
                 <TextBlock x:Name="TxtNoSelection"
-                           Text="Select an element on the canvas or in the events panel to edit its properties."
                            Style="{StaticResource TextBody}"
                            TextWrapping="Wrap"
                            Visibility="Visible"/>
@@ -193,7 +190,7 @@
                 </Grid.RowDefinitions>
 
                 <TextBlock Grid.Row="0"
-                           Text="EVENTS"
+                           x:Name="TxtEventsTitle"
                            Style="{StaticResource TextLabel}"
                            Foreground="{StaticResource BrushPrimary}"
                            Margin="0,0,0,8"/>

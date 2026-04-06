@@ -11,6 +11,8 @@
         Icon="pack://application:,,,/Assets/icon.ico">
 
     <Border CornerRadius="6"
+            BorderBrush="#3a3a3a"
+            BorderThickness="1"
             Background="{StaticResource BrushSurfaceContainerLow}">
         <Grid>
             <Grid.RowDefinitions>
@@ -26,7 +28,7 @@
                     MouseLeftButtonDown="TitleBar_MouseLeftButtonDown"
                     Padding="24,0">
                 <Grid>
-                    <TextBlock Text="NEW PROJECT"
+                    <TextBlock x:Name="TxtDialogTitle"
                                Style="{StaticResource TextHeadline}"
                                VerticalAlignment="Center"/>
                     <Button Content="✕"
@@ -44,15 +46,13 @@
             <StackPanel Grid.Row="1" Margin="24,16">
 
                 <!-- Project name -->
-                <TextBlock Text="PROJECT NAME"
+                <TextBlock x:Name="TxtProjectNameLabel"
                            Style="{StaticResource TextLabel}"
                            Margin="0,0,0,8"/>
                 <Border Background="{StaticResource BrushSurfaceContainerHighest}"
                         Padding="12,0" Margin="0,0,0,24" Height="40">
                     <TextBox x:Name="TxtProjectName"
-                             Background="Transparent"
                              Foreground="{StaticResource BrushOnSurface}"
-                             BorderThickness="0"
                              FontFamily="{StaticResource FontBody}"
                              FontSize="13"
                              VerticalAlignment="Center"
@@ -60,7 +60,7 @@
                 </Border>
 
                 <!-- Project location -->
-                <TextBlock Text="LOCATION"
+                <TextBlock x:Name="TxtLocationLabel"
                            Style="{StaticResource TextLabel}"
                            Margin="0,0,0,8"/>
                 <Grid Margin="0,0,0,24">
@@ -72,22 +72,20 @@
                             Background="{StaticResource BrushSurfaceContainerHighest}"
                             Padding="12,0" Height="40" Margin="0,0,8,0">
                         <TextBox x:Name="TxtLocation"
-                                 Background="Transparent"
                                  Foreground="{StaticResource BrushOnSurface}"
-                                 BorderThickness="0"
                                  FontFamily="{StaticResource FontBody}"
                                  FontSize="13"
                                  VerticalAlignment="Center"/>
                     </Border>
                     <Button Grid.Column="1"
-                            Content="BROWSE"
+                            x:Name="BtnBrowse"
                             Style="{StaticResource ButtonSecondary}"
                             Padding="16,0" Height="40"
                             Click="BrowseButton_Click"/>
                 </Grid>
 
                 <!-- Target (read-only — set from console selection) -->
-                <TextBlock Text="TARGET"
+                <TextBlock x:Name="TxtTargetLabel"
                            Style="{StaticResource TextLabel}"
                            Margin="0,0,0,8"/>
                 <Border Background="{StaticResource BrushSurfaceContainerHighest}"
@@ -99,7 +97,7 @@
                 </Border>
 
                 <!-- Template selection -->
-                <TextBlock Text="TEMPLATE"
+                <TextBlock x:Name="TxtTemplateLabel"
                            Style="{StaticResource TextLabel}"
                            Margin="0,0,0,8"/>
                 <StackPanel x:Name="TemplatesPanel"
@@ -113,12 +111,12 @@
                     CornerRadius="0,0,6,6"
                     Padding="24,0">
                 <Grid>
-                    <Button Content="CANCEL"
+                    <Button x:Name="BtnCancel"
                             Style="{StaticResource ButtonSecondary}"
                             HorizontalAlignment="Left"
                             Padding="24,0" Height="40"
                             Click="CloseButton_Click"/>
-                    <Button Content="CREATE PROJECT"
+                    <Button x:Name="BtnCreate"
                             Style="{StaticResource ButtonPrimary}"
                             HorizontalAlignment="Right"
                             Padding="24,0" Height="40"

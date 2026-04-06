@@ -40,25 +40,49 @@ public class ModuleLoader
     }
 
     /// <summary>
-    /// Loads all modules from internal and user plugin folders.
-    /// Reports progress for display in the splash screen loading log.
+    /// Loads all modules from internal and user plugin folders,
+    /// filtering by compatibility with the given target.
     /// </summary>
-    public void LoadAll(IProgress<string>? progress = null)
+    public void LoadCompatible(string targetId, IProgress<string>? progress = null)
     {
         var internalPath = Path.Combine(_basePath, InternalModulesFolder);
-        var pluginsPath = Path.Combine(_basePath, UserPluginsFolder);
+        var pluginsPath  = Path.Combine(_basePath, UserPluginsFolder);
 
         if (Directory.Exists(internalPath))
-            LoadFromPath(internalPath, progress);
+            LoadFromPath(internalPath, progress, targetId);
 
         if (Directory.Exists(pluginsPath))
-            LoadFromPath(pluginsPath, progress);
+            LoadFromPath(pluginsPath, progress, targetId);
+    }
+
+    /// <summary>
+    /// Registers all built-in modules provided by the target.
+    /// Called before LoadCompatible so built-in modules take precedence.
+    /// </summary>
+    public void RegisterBuiltinModules(ITarget target)
+    {
+        foreach (var module in target.GetBuiltinModules())
+        {
+            switch (module)
+            {
+                case IGraphicModule gm when !_graphicModules.ContainsKey(gm.ModuleId):
+                    _graphicModules[gm.ModuleId] = gm;
+                    break;
+                case IAudioModule am when !_audioModules.ContainsKey(am.ModuleId):
+                    _audioModules[am.ModuleId] = am;
+                    break;
+                case ILogicModule lm when !_logicModules.ContainsKey(lm.ModuleId):
+                    _logicModules[lm.ModuleId] = lm;
+                    break;
+            }
+        }
     }
 
     /// <summary>
     /// Loads all module DLLs from a given directory.
+    /// When targetId is provided, skips modules incompatible with that target.
     /// </summary>
-    private void LoadFromPath(string path, IProgress<string>? progress)
+    private void LoadFromPath(string path, IProgress<string>? progress, string? targetId = null)
     {
         foreach (var dll in Directory.GetFiles(path, "*.dll"))
         {
@@ -66,7 +90,7 @@ public class ModuleLoader
             {
                 progress?.Report($"LOADING_MODULE: {Path.GetFileName(dll)}");
                 var assembly = Assembly.LoadFrom(dll);
-                RegisterModulesFromAssembly(assembly);
+                RegisterModulesFromAssembly(assembly, targetId);
             }
             catch (Exception ex)
             {
@@ -78,8 +102,9 @@ public class ModuleLoader
     /// <summary>
     /// Scans an assembly for types implementing IGraphicModule, ILogicModule or IAudioModule
     /// and registers them. Skips duplicates — first loaded wins.
+    /// When targetId is provided, skips modules incompatible with that target.
     /// </summary>
-    private void RegisterModulesFromAssembly(Assembly assembly)
+    private void RegisterModulesFromAssembly(Assembly assembly, string? targetId = null)
     {
         var types = assembly.GetTypes()
             .Where(t => !t.IsAbstract && !t.IsInterface);
@@ -91,19 +116,19 @@ public class ModuleLoader
                 if (typeof(IGraphicModule).IsAssignableFrom(type))
                 {
                     var module = (IGraphicModule)Activator.CreateInstance(type)!;
-                    if (!_graphicModules.ContainsKey(module.ModuleId))
+                    if (IsCompatible(module, targetId) && !_graphicModules.ContainsKey(module.ModuleId))
                         _graphicModules[module.ModuleId] = module;
                 }
                 else if (typeof(IAudioModule).IsAssignableFrom(type))
                 {
                     var module = (IAudioModule)Activator.CreateInstance(type)!;
-                    if (!_audioModules.ContainsKey(module.ModuleId))
+                    if (IsCompatible(module, targetId) && !_audioModules.ContainsKey(module.ModuleId))
                         _audioModules[module.ModuleId] = module;
                 }
                 else if (typeof(ILogicModule).IsAssignableFrom(type))
                 {
                     var module = (ILogicModule)Activator.CreateInstance(type)!;
-                    if (!_logicModules.ContainsKey(module.ModuleId))
+                    if (IsCompatible(module, targetId) && !_logicModules.ContainsKey(module.ModuleId))
                         _logicModules[module.ModuleId] = module;
                 }
             }
@@ -112,6 +137,13 @@ public class ModuleLoader
                 // Skip types that cannot be instantiated
             }
         }
+    }
+
+    private static bool IsCompatible(IModule module, string? targetId)
+    {
+        if (targetId is null) return true;
+        return module.Compatibility.Contains("all", StringComparer.OrdinalIgnoreCase)
+            || module.Compatibility.Contains(targetId, StringComparer.OrdinalIgnoreCase);
     }
 
     /// <summary>

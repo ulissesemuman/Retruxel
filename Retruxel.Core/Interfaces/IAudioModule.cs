@@ -24,6 +24,12 @@ public interface IAudioModule : IModule
     int NoiseChannels { get; }
 
     /// <summary>
+    /// Returns the module manifest describing configurable parameters.
+    /// The shell uses this to auto-generate the configuration UI.
+    /// </summary>
+    ModuleManifest GetManifest();
+
+    /// <summary>
     /// Returns the ViewModel for this module's audio editor.
     /// Typically a sequencer, tracker or piano roll ViewModel.
     /// The shell binds this to a WPF View.

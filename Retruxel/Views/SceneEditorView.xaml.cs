@@ -1,6 +1,6 @@
 using Retruxel.Core.Interfaces;
 using Retruxel.Core.Models;
-using Retruxel.Modules.Text;
+using Retruxel.Core.Services;
 using System.Text.Json;
 using System.Windows;
 using System.Windows.Controls;
@@ -19,7 +19,8 @@ public partial class SceneEditorView : UserControl
     private bool _isDragging;
     private Point _dragOffset;
     private SceneElement? _draggedElement;
-    private Retruxel.Core.Services.ProjectManager? _projectManager;
+    private ProjectManager? _projectManager;
+    private ModuleLoader? _moduleLoader;
     private bool _isUpdatingUI;
     private bool _isLoadingProject;
 
@@ -30,11 +31,31 @@ public partial class SceneEditorView : UserControl
         InitializeComponent();
         KeyDown += SceneEditorView_KeyDown;
         Focusable = true;
+        ApplyLocalization();
     }
 
-    public void SetProjectManager(Retruxel.Core.Services.ProjectManager manager)
+    private void ApplyLocalization()
+    {
+        var loc = LocalizationService.Instance;
+        TxtSceneTitle.Text = loc.Get("scene.title");
+        BtnGenerateRom.Content = loc.Get("scene.generate_rom");
+        TxtSystemStatus.Text = loc.Get("scene.system_status");
+        ModulePaletteHeader.Text = loc.Get("scene.modules");
+        BtnNewAsset.Content = loc.Get("scene.new_asset");
+        TxtDocumentation.Text = loc.Get("scene.documentation");
+        TxtPropertiesTitle.Text = loc.Get("scene.properties");
+        TxtNoSelection.Text = loc.Get("scene.no_selection");
+        TxtEventsTitle.Text = loc.Get("scene.events");
+    }
+
+    public void SetProjectManager(ProjectManager manager)
     {
         _projectManager = manager;
+    }
+
+    public void SetModuleLoader(ModuleLoader loader)
+    {
+        _moduleLoader = loader;
     }
 
     private void SceneEditorView_KeyDown(object sender, KeyEventArgs e)
@@ -73,9 +94,18 @@ public partial class SceneEditorView : UserControl
         }
         
         TxtSceneName.Text = _currentScene.SceneName;
+        ApplyTargetSpecs(target);
         LoadModulePalette(target);
         LoadEvents();
         LoadFromProject();
+    }
+
+    private void ApplyTargetSpecs(ITarget target)
+    {
+        var specs = target.Specs;
+        SceneCanvas.Width  = specs.ScreenWidth;
+        SceneCanvas.Height = specs.ScreenHeight;
+        TxtCanvasSize.Text = $"{specs.ScreenWidth} × {specs.ScreenHeight} px";
     }
 
     // ===== MODULE PALETTE =====
@@ -87,17 +117,32 @@ public partial class SceneEditorView : UserControl
     {
         ModulePalettePanel.Children.Clear();
 
-        var modules = new List<(string Category, string ModuleId, string DisplayName)>
+        if (_moduleLoader is null) return;
+
+        var modules = new List<(string Category, string ModuleId, string DisplayName)>();
+
+        foreach (var (moduleId, module) in _moduleLoader.LogicModules)
         {
-            ("OUTPUT", "text.display", "Text Display"),
-            // More modules will be added as they are implemented
-        };
+            var m = (IModule)module;
+            modules.Add((m.Category, moduleId, m.DisplayName));
+        }
+
+        foreach (var (moduleId, module) in _moduleLoader.GraphicModules)
+        {
+            var m = (IModule)module;
+            modules.Add((m.Category, moduleId, m.DisplayName));
+        }
+
+        foreach (var (moduleId, module) in _moduleLoader.AudioModules)
+        {
+            var m = (IModule)module;
+            modules.Add((m.Category, moduleId, m.DisplayName));
+        }
 
         var grouped = modules.GroupBy(m => m.Category);
 
         foreach (var group in grouped)
         {
-            // Category header
             var header = new TextBlock
             {
                 Text = group.Key,
@@ -106,7 +151,6 @@ public partial class SceneEditorView : UserControl
             };
             ModulePalettePanel.Children.Add(header);
 
-            // Module items
             foreach (var module in group)
             {
                 var item = BuildModulePaletteItem(module.ModuleId, module.DisplayName);
@@ -246,9 +290,12 @@ public partial class SceneEditorView : UserControl
                 var canvasPos = e.GetPosition(SceneCanvas);
                 var adjustedX = canvasPos.X - _dragOffset.X;
                 var adjustedY = canvasPos.Y - _dragOffset.Y;
-                
-                var tileX = Math.Clamp((int)adjustedX / 8, 0, 31);
-                var tileY = Math.Clamp((int)adjustedY / 8, 0, 23);
+
+                var maxTileX = (int)(SceneCanvas.Width  / 8) - 1;
+                var maxTileY = (int)(SceneCanvas.Height / 8) - 1;
+
+                var tileX = Math.Clamp((int)adjustedX / 8, 0, maxTileX);
+                var tileY = Math.Clamp((int)adjustedY / 8, 0, maxTileY);
                 
                 Canvas.SetLeft(border, tileX * 8);
                 Canvas.SetTop(border, tileY * 8);
@@ -256,13 +303,10 @@ public partial class SceneEditorView : UserControl
                 element.TileX = tileX;
                 element.TileY = tileY;
                 
-                if (element.Module is TextDisplayModule textModule)
-                {
-                    textModule.X = tileX;
-                    textModule.Y = tileY;
-                    if (_selectedElement == element)
-                        BuildPropertiesPanel(element);
-                }
+                UpdateModulePosition(element.Module, tileX, tileY);
+                
+                if (_selectedElement == element)
+                    BuildPropertiesPanel(element);
             }
         };
 
@@ -296,6 +340,7 @@ public partial class SceneEditorView : UserControl
 
     private void AddEventBlock(string trigger)
     {
+        var loc = LocalizationService.Instance;
         var block = new Border
         {
             Background = new SolidColorBrush(Color.FromRgb(0x13, 0x13, 0x13)),
@@ -313,7 +358,7 @@ public partial class SceneEditorView : UserControl
 
         var whenLabel = new TextBlock
         {
-            Text = "WHEN",
+            Text = loc.Get("scene.event.when"),
             FontSize = 9,
             Foreground = new SolidColorBrush(Color.FromRgb(0x81, 0xEC, 0xFF)),
             FontFamily = new FontFamily("Consolas"),
@@ -338,7 +383,7 @@ public partial class SceneEditorView : UserControl
 
         var addAction = new TextBlock
         {
-            Text = "+ ADD ACTION",
+            Text = loc.Get("scene.event.add_action"),
             Style = (Style)FindResource("TextLabel"),
             Foreground = new SolidColorBrush(Color.FromRgb(0x8E, 0xFF, 0x71)),
             Cursor = Cursors.Hand,
@@ -517,63 +562,47 @@ public partial class SceneEditorView : UserControl
         _isUpdatingUI = true;
         PropertiesPanel.Children.Clear();
 
-        if (element.Module is not TextDisplayModule textModule)
+        if (element.Module is not IModule module)
         {
             _isUpdatingUI = false;
             return;
         }
 
-        // Module name
+        ModuleManifest? manifest = module switch
+        {
+            ILogicModule lm => lm.GetManifest(),
+            IGraphicModule gm => gm.GetManifest(),
+            IAudioModule am => am.GetManifest(),
+            _ => null
+        };
+
+        if (manifest is null)
+        {
+            _isUpdatingUI = false;
+            return;
+        }
+
         PropertiesPanel.Children.Add(new TextBlock
         {
-            Text = "TEXT DISPLAY",
+            Text = manifest.ModuleId.ToUpper().Replace(".", " "),
             Style = (Style)FindResource("TextLabel"),
             Foreground = new SolidColorBrush(Color.FromRgb(0x8E, 0xFF, 0x71)),
             Margin = new Thickness(0, 0, 0, 16)
         });
 
-        // X position
-        AddPropertyField("X POSITION", textModule.X.ToString(), value =>
+        foreach (var param in manifest.Parameters)
         {
-            if (int.TryParse(value, out var x))
-            {
-                textModule.X = Math.Clamp(x, 0, 31);
-                element.TileX = textModule.X;
-                UpdateElementPosition(element);
-                UpdateElementLabel(element);
-                SyncProjectModules();
-            }
-        });
-
-        // Y position
-        AddPropertyField("Y POSITION", textModule.Y.ToString(), value =>
-        {
-            if (int.TryParse(value, out var y))
-            {
-                textModule.Y = Math.Clamp(y, 0, 23);
-                element.TileY = textModule.Y;
-                UpdateElementPosition(element);
-                UpdateElementLabel(element);
-                SyncProjectModules();
-            }
-        });
-
-        // Text
-        AddPropertyField("TEXT", textModule.Text, value =>
-        {
-            textModule.Text = value;
-            UpdateElementLabel(element);
-            SyncProjectModules();
-        });
+            AddParameterField(element, module, param);
+        }
         
         _isUpdatingUI = false;
     }
 
-    private void AddPropertyField(string label, string value, Action<string> onChange)
+    private void AddParameterField(SceneElement element, IModule module, ParameterDefinition param)
     {
         PropertiesPanel.Children.Add(new TextBlock
         {
-            Text = label,
+            Text = param.DisplayName,
             Style = (Style)FindResource("TextLabel"),
             Margin = new Thickness(0, 0, 0, 4)
         });
@@ -581,24 +610,23 @@ public partial class SceneEditorView : UserControl
         var input = new Border
         {
             Background = new SolidColorBrush(Color.FromRgb(0x26, 0x26, 0x26)),
-            Padding = new Thickness(8, 0, 8, 0),
+            Padding = new Thickness(0),
             Height = 32,
             Margin = new Thickness(0, 0, 0, 12)
         };
 
+        var currentValue = GetModuleParameterValue(module, param.Name);
+
         var textBox = new TextBox
         {
-            Text = value,
-            Background = Brushes.Transparent,
+            Text = currentValue?.ToString() ?? param.DefaultValue?.ToString() ?? "",
             Foreground = Brushes.White,
-            BorderThickness = new Thickness(0),
             FontFamily = new FontFamily("Consolas"),
             FontSize = 12,
             VerticalAlignment = VerticalAlignment.Center
         };
 
-        // Auto-focus on TEXT field
-        if (label == "TEXT")
+        if (param.Type == ParameterType.String)
         {
             textBox.Loaded += (s, e) => textBox.Focus();
         }
@@ -606,8 +634,25 @@ public partial class SceneEditorView : UserControl
         textBox.TextChanged += (s, e) =>
         {
             if (!_isUpdatingUI)
-                onChange(textBox.Text);
+            {
+                SetModuleParameterValue(module, param.Name, textBox.Text, param.Type);
+                
+                if (param.Name.Equals("x", StringComparison.OrdinalIgnoreCase) && int.TryParse(textBox.Text, out var x))
+                {
+                    element.TileX = x;
+                    UpdateElementPosition(element);
+                }
+                else if (param.Name.Equals("y", StringComparison.OrdinalIgnoreCase) && int.TryParse(textBox.Text, out var y))
+                {
+                    element.TileY = y;
+                    UpdateElementPosition(element);
+                }
+                
+                UpdateElementLabel(element);
+                SyncProjectModules();
+            }
         };
+        
         input.Child = textBox;
         PropertiesPanel.Children.Add(input);
     }
@@ -616,11 +661,25 @@ public partial class SceneEditorView : UserControl
 
     private SceneElement CreateSceneElement(string moduleId, int tileX, int tileY)
     {
-        var module = moduleId switch
-        {
-            "text.display" => (object)new TextDisplayModule { X = tileX, Y = tileY },
-            _ => throw new InvalidOperationException($"Unknown module: {moduleId}")
-        };
+        if (_moduleLoader is null)
+            throw new InvalidOperationException("ModuleLoader not initialized");
+
+        IModule? moduleTemplate = null;
+
+        if (_moduleLoader.LogicModules.TryGetValue(moduleId, out var lm))
+            moduleTemplate = lm;
+        else if (_moduleLoader.GraphicModules.TryGetValue(moduleId, out var gm))
+            moduleTemplate = gm;
+        else if (_moduleLoader.AudioModules.TryGetValue(moduleId, out var am))
+            moduleTemplate = am;
+
+        if (moduleTemplate is null)
+            throw new InvalidOperationException($"Module not found: {moduleId}");
+
+        var moduleType = moduleTemplate.GetType();
+        var module = (IModule)Activator.CreateInstance(moduleType)!;
+
+        UpdateModulePosition(module, tileX, tileY);
 
         return new SceneElement
         {
@@ -634,13 +693,25 @@ public partial class SceneEditorView : UserControl
 
     private void UpdateElementLabel(SceneElement element)
     {
-        var label = element.DisplayLabel;
+        var label = GetElementDisplayLabel(element);
 
         if (element.CanvasVisual is Border cv && cv.Child is TextBlock ctb)
             ctb.Text = label;
         if (element.EventVisual is Border ev && ev.Child is Grid g &&
             g.Children.OfType<TextBlock>().FirstOrDefault() is TextBlock etb)
             etb.Text = label;
+    }
+
+    private string GetElementDisplayLabel(SceneElement element)
+    {
+        if (element.Module is not IModule module)
+            return element.ModuleId;
+
+        var textValue = GetModuleParameterValue(module, "text");
+        if (textValue is not null)
+            return $"[{element.ModuleId.ToUpper()}] {textValue}";
+
+        return element.ModuleId.ToUpper();
     }
 
     private void UpdateElementPosition(SceneElement element)
@@ -735,12 +806,7 @@ public partial class SceneEditorView : UserControl
                     Trigger = elementData.Trigger
                 };
 
-                // Sync module coordinates with element coordinates
-                if (module is TextDisplayModule textModule)
-                {
-                    textModule.X = elementData.TileX;
-                    textModule.Y = elementData.TileY;
-                }
+                UpdateModulePosition(module, elementData.TileX, elementData.TileY);
 
                 _elements.Add(element);
 
@@ -766,22 +832,86 @@ public partial class SceneEditorView : UserControl
         }
         
         _isLoadingProject = false;
+        
+        // If there are elements, select the first one and show properties
+        if (_elements.Count > 0)
+        {
+            SelectElement(_elements[0]);
+            BuildPropertiesPanel(_elements[0]);
+        }
     }
 
     /// <summary>
     /// Deserializes a module from its JSON state.
     /// </summary>
-    private object? DeserializeModule(string moduleId, string moduleState)
+    private IModule? DeserializeModule(string moduleId, string moduleState)
     {
-        if (moduleId == "text.display")
-        {
-            var module = new TextDisplayModule();
-            if (!string.IsNullOrEmpty(moduleState))
-                module.Deserialize(moduleState);
-            return module;
-        }
+        if (_moduleLoader is null) return null;
+
+        IModule? moduleTemplate = null;
+
+        if (_moduleLoader.LogicModules.TryGetValue(moduleId, out var lm))
+            moduleTemplate = lm;
+        else if (_moduleLoader.GraphicModules.TryGetValue(moduleId, out var gm))
+            moduleTemplate = gm;
+        else if (_moduleLoader.AudioModules.TryGetValue(moduleId, out var am))
+            moduleTemplate = am;
+
+        if (moduleTemplate is null) return null;
+
+        var moduleType = moduleTemplate.GetType();
+        var module = (IModule)Activator.CreateInstance(moduleType)!;
         
-        return null;
+        if (!string.IsNullOrEmpty(moduleState))
+            module.Deserialize(moduleState);
+        
+        return module;
+    }
+
+    private void UpdateModulePosition(object? module, int x, int y)
+    {
+        if (module is not IModule imodule) return;
+        SetModuleParameterValue(imodule, "x", x.ToString(), ParameterType.Int);
+        SetModuleParameterValue(imodule, "y", y.ToString(), ParameterType.Int);
+    }
+
+    private object? GetModuleParameterValue(IModule module, string paramName)
+    {
+        var prop = module.GetType().GetProperty(paramName, 
+            System.Reflection.BindingFlags.Public | 
+            System.Reflection.BindingFlags.Instance | 
+            System.Reflection.BindingFlags.IgnoreCase);
+        
+        return prop?.GetValue(module);
+    }
+
+    private void SetModuleParameterValue(IModule module, string paramName, string value, ParameterType type)
+    {
+        var prop = module.GetType().GetProperty(paramName, 
+            System.Reflection.BindingFlags.Public | 
+            System.Reflection.BindingFlags.Instance | 
+            System.Reflection.BindingFlags.IgnoreCase);
+        
+        if (prop is null) return;
+
+        try
+        {
+            object? convertedValue = type switch
+            {
+                ParameterType.Int => int.TryParse(value, out var i) ? i : null,
+                ParameterType.Float => float.TryParse(value, out var f) ? f : null,
+                ParameterType.Bool => bool.TryParse(value, out var b) ? b : null,
+                ParameterType.String => value,
+                _ => value
+            };
+
+            if (convertedValue is not null)
+                prop.SetValue(module, convertedValue);
+        }
+        catch
+        {
+            // Ignore conversion errors
+        }
     }
 }
 
@@ -799,9 +929,20 @@ public class SceneElement
     public UIElement? CanvasVisual { get; set; }
     public UIElement? EventVisual { get; set; }
 
-    public string DisplayLabel => Module switch
+    public string DisplayLabel
     {
-        TextDisplayModule m => $"[TEXT] {m.Text}",
-        _ => ModuleId
-    };
+        get
+        {
+            if (Module is IModule module)
+            {
+                var textValue = module.GetType().GetProperty("Text", 
+                    System.Reflection.BindingFlags.Public | 
+                    System.Reflection.BindingFlags.Instance | 
+                    System.Reflection.BindingFlags.IgnoreCase)?.GetValue(module);
+                if (textValue is not null)
+                    return $"[{ModuleId.ToUpper()}] {textValue}";
+            }
+            return ModuleId.ToUpper();
+        }
+    }
 }

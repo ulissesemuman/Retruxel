@@ -25,8 +25,9 @@
     <!-- Outer border — rounded corners + shadow -->
     <Border CornerRadius="6"
             Background="{StaticResource BrushSurface}"
-            Effect="{StaticResource WindowShadow}"
-            Margin="16">
+            BorderBrush="#3a3a3a"
+            BorderThickness="1"
+            Effect="{StaticResource WindowShadow}">
 
         <Grid>
             <Grid.RowDefinitions>

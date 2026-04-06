@@ -2,8 +2,10 @@
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
 
     <!-- ==================== FONTS ==================== -->
-    <FontFamily x:Key="FontDisplay">pack://application:,,,/Assets/Fonts/#Space Grotesk</FontFamily>
-    <FontFamily x:Key="FontBody">pack://application:,,,/Assets/Fonts/#Inter</FontFamily>
+    <!-- Display & Headlines: Space Grotesk (hardware font) -->
+    <FontFamily x:Key="FontDisplay">pack://application:,,,/Assets/Fonts/Space_Grotesk/static/#Space Grotesk</FontFamily>
+    <!-- Body & Labels: Inter (software font) -->
+    <FontFamily x:Key="FontBody">pack://application:,,,/Assets/Fonts/Inter/static/#Inter</FontFamily>
 
     <!-- ==================== COLORS ==================== -->
     <Color x:Key="ColorSurface">#FF0E0E0E</Color>
@@ -45,6 +47,7 @@
     <SolidColorBrush x:Key="BrushGhostBorder" Color="#26ADAAAA"/>
 
     <!-- ==================== TYPOGRAPHY ==================== -->
+    <!-- Display: Large data points, screen titles (Space Grotesk Bold) -->
     <Style x:Key="TextDisplay" TargetType="TextBlock">
         <Setter Property="FontFamily" Value="{StaticResource FontDisplay}"/>
         <Setter Property="FontWeight" Value="Bold"/>
@@ -52,6 +55,7 @@
         <Setter Property="Foreground" Value="{StaticResource BrushOnSurface}"/>
     </Style>
 
+    <!-- Headline: Section headers (Space Grotesk SemiBold) -->
     <Style x:Key="TextHeadline" TargetType="TextBlock">
         <Setter Property="FontFamily" Value="{StaticResource FontDisplay}"/>
         <Setter Property="FontWeight" Value="SemiBold"/>
@@ -59,19 +63,22 @@
         <Setter Property="Foreground" Value="{StaticResource BrushOnSurface}"/>
     </Style>
 
+    <!-- Label: Small metadata, fine print (Inter Regular) -->
     <Style x:Key="TextLabel" TargetType="TextBlock">
         <Setter Property="FontFamily" Value="{StaticResource FontBody}"/>
         <Setter Property="FontSize" Value="11"/>
         <Setter Property="Foreground" Value="{StaticResource BrushOnSurfaceVariant}"/>
     </Style>
 
+    <!-- Body: Technical documentation, dense content (Inter Regular) -->
     <Style x:Key="TextBody" TargetType="TextBlock">
         <Setter Property="FontFamily" Value="{StaticResource FontBody}"/>
         <Setter Property="FontSize" Value="13"/>
         <Setter Property="Foreground" Value="{StaticResource BrushOnSurfaceVariant}"/>
-        <Setter Property="LineHeight" Value="20"/>
+        <Setter Property="LineHeight" Value="19.5"/><!-- 1.5 × 13 = 19.5 -->
     </Style>
 
+    <!-- Code: Monospace for code snippets (Consolas) -->
     <Style x:Key="TextCode" TargetType="TextBlock">
         <Setter Property="FontFamily" Value="Consolas"/>
         <Setter Property="FontSize" Value="12"/>
@@ -178,15 +185,141 @@
 
     <!-- ==================== TEXTBOX ==================== -->
     <Style TargetType="TextBox">
-        <Setter Property="Background" Value="{StaticResource BrushSurfaceContainerHighest}"/>
+        <Setter Property="Background" Value="Transparent"/>
         <Setter Property="Foreground" Value="{StaticResource BrushOnSurface}"/>
         <Setter Property="CaretBrush" Value="{StaticResource BrushPrimary}"/>
         <Setter Property="SelectionBrush" Value="{StaticResource BrushPrimary}"/>
         <Setter Property="SelectionOpacity" Value="0.3"/>
-        <Setter Property="BorderThickness" Value="0"/>
+        <Setter Property="BorderBrush" Value="#4a4a4a"/>
+        <Setter Property="BorderThickness" Value="0,0,0,1"/>
+        <Setter Property="FontFamily" Value="{StaticResource FontBody}"/>
+        <Setter Property="FontSize" Value="13"/>
+        <Setter Property="Padding" Value="4,6,4,4"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="TextBox">
+                    <Grid>
+                        <ScrollViewer x:Name="PART_ContentHost"
+                                      Focusable="False"
+                                      HorizontalScrollBarVisibility="Hidden"
+                                      VerticalScrollBarVisibility="Hidden"
+                                      Margin="{TemplateBinding Padding}"/>
+                        <Border x:Name="border"
+                                Background="Transparent"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                IsHitTestVisible="False"/>
+                    </Grid>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsFocused" Value="True">
+                            <Setter TargetName="border" Property="BorderBrush" Value="#8eff71"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- ==================== COMBOBOX ==================== -->
+    <Style TargetType="ComboBox">
+        <Setter Property="Background" Value="#0e0e03"/>
+        <Setter Property="Foreground" Value="#8eff71"/>
+        <Setter Property="BorderBrush" Value="#3a3a3a"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="FontFamily" Value="{StaticResource FontBody}"/>
+        <Setter Property="FontSize" Value="13"/>
+        <Setter Property="Height" Value="32"/>
+        <Setter Property="Padding" Value="8,0"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="ComboBox">
+                    <Grid>
+                        <ToggleButton x:Name="ToggleButton"
+                                      Grid.Column="0"
+                                      Focusable="False"
+                                      IsChecked="{Binding IsDropDownOpen, Mode=TwoWay, RelativeSource={RelativeSource TemplatedParent}}"
+                                      ClickMode="Press">
+                            <ToggleButton.Template>
+                                <ControlTemplate TargetType="ToggleButton">
+                                    <Border Background="#0e0e03"
+                                            BorderBrush="#3a3a3a"
+                                            BorderThickness="1">
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="24"/>
+                                            </Grid.ColumnDefinitions>
+                                            <ContentPresenter x:Name="ContentSite"
+                                                              Grid.Column="0"
+                                                              Content="{TemplateBinding Content}"
+                                                              ContentTemplate="{TemplateBinding ContentTemplate}"
+                                                              Margin="8,0"
+                                                              HorizontalAlignment="Left"
+                                                              VerticalAlignment="Center"/>
+                                            <TextBlock Grid.Column="1" Text="▼"
+                                                       FontSize="8"
+                                                       Foreground="#8eff71"
+                                                       HorizontalAlignment="Center"
+                                                       VerticalAlignment="Center"/>
+                                        </Grid>
+                                    </Border>
+                                </ControlTemplate>
+                            </ToggleButton.Template>
+                        </ToggleButton>
+                        <ContentPresenter x:Name="ContentPresenter"
+                                          Content="{TemplateBinding SelectionBoxItem}"
+                                          ContentTemplate="{TemplateBinding SelectionBoxItemTemplate}"
+                                          Margin="8,0,32,0"
+                                          HorizontalAlignment="Left"
+                                          VerticalAlignment="Center"
+                                          IsHitTestVisible="False"
+                                          TextElement.Foreground="#8eff71"/>
+                        <Popup x:Name="PART_Popup"
+                               IsOpen="{TemplateBinding IsDropDownOpen}"
+                               Placement="Bottom"
+                               AllowsTransparency="True"
+                               Focusable="False"
+                               PopupAnimation="Slide">
+                            <Border Background="#0e0e03"
+                                    BorderBrush="#3a3a3a"
+                                    BorderThickness="1"
+                                    MinWidth="{TemplateBinding ActualWidth}">
+                                <ScrollViewer MaxHeight="200">
+                                    <ItemsPresenter/>
+                                </ScrollViewer>
+                            </Border>
+                        </Popup>
+                    </Grid>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <Style TargetType="ComboBoxItem">
+        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="Foreground" Value="#8eff71"/>
         <Setter Property="FontFamily" Value="{StaticResource FontBody}"/>
         <Setter Property="FontSize" Value="13"/>
         <Setter Property="Padding" Value="8,6"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="ComboBoxItem">
+                    <Border x:Name="Bd"
+                            Background="{TemplateBinding Background}"
+                            Padding="{TemplateBinding Padding}">
+                        <ContentPresenter/>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Bd" Property="Background" Value="#262626"/>
+                        </Trigger>
+                        <Trigger Property="IsSelected" Value="True">
+                            <Setter TargetName="Bd" Property="Background" Value="#262626"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
     </Style>
 
 </ResourceDictionary>

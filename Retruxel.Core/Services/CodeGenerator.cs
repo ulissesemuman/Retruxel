@@ -32,6 +32,9 @@ public class CodeGenerator
         var assets = new List<GeneratedAsset>();
 
         progress?.Report("INIT: Starting code generation...");
+        
+        // Reset target-specific state before generation
+        _target.ResetCodeGenerationState();
 
         // Collect all module instances from scenes
         var instancesByModule = new Dictionary<string, List<IModule>>();
@@ -75,10 +78,27 @@ public class CodeGenerator
 
             foreach (var module in instances)
             {
+                // 1. Ask the target to translate this module into target-specific C code.
+                // 2. If the target has no translator (returns empty), fall back to the
+                //    module's own GenerateCode() — used by external plugins that ship
+                //    their own C implementation directly.
                 var generatedFiles = _target.GenerateCodeForModule(module).ToList();
 
                 if (generatedFiles.Count == 0)
-                    progress?.Report($"WARN: No translator for {moduleId} in target '{_target.TargetId}' — skipping.");
+                {
+                    generatedFiles = module switch
+                    {
+                        ILogicModule lm   => lm.GenerateCode().ToList(),
+                        IGraphicModule gm => gm.GenerateCode().ToList(),
+                        IAudioModule am   => am.GenerateCode().ToList(),
+                        _                 => []
+                    };
+
+                    if (generatedFiles.Count == 0)
+                        progress?.Report($"WARN: No code generated for {moduleId} — skipping.");
+                    else
+                        progress?.Report($"INFO: {moduleId} generated via plugin fallback.");
+                }
 
                 sourceFiles.AddRange(generatedFiles);
 

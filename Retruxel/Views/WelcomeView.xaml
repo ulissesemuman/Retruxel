@@ -109,10 +109,41 @@
                                    VerticalAlignment="Center"/>
                     </StackPanel>
 
-                    <TextBlock Grid.Column="2"
+                    <TextBlock x:Name="TargetCount" Grid.Column="2"
                                Text="COUNT: 01"
                                Style="{StaticResource TextLabel}"
                                VerticalAlignment="Center"/>
+                </Grid>
+
+                <!-- Sort and Filter controls -->
+                <Grid Margin="0,0,0,16">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+
+                    <!-- Sort -->
+                    <StackPanel Grid.Column="0" Orientation="Horizontal" Margin="0,0,16,0">
+                        <TextBlock Text="{loc:Tr Key='welcome.sort'}" Style="{StaticResource TextLabel}" 
+                                   VerticalAlignment="Center" Margin="0,0,8,0"/>
+                        <ComboBox x:Name="SortComboBox" Width="150" 
+                                  SelectionChanged="Sort_Changed"
+                                  Background="{StaticResource BrushSurfaceContainerHigh}"
+                                  Foreground="{StaticResource BrushOnSurface}"
+                                  BorderThickness="0" Padding="8,6"/>
+                    </StackPanel>
+
+                    <!-- Filter -->
+                    <StackPanel Grid.Column="2" Orientation="Horizontal">
+                        <TextBlock Text="{loc:Tr Key='welcome.filter'}" Style="{StaticResource TextLabel}" 
+                                   VerticalAlignment="Center" Margin="0,0,8,0"/>
+                        <ComboBox x:Name="FilterComboBox" Width="150" 
+                                  SelectionChanged="Filter_Changed"
+                                  Background="{StaticResource BrushSurfaceContainerHigh}"
+                                  Foreground="{StaticResource BrushOnSurface}"
+                                  BorderThickness="0" Padding="8,6"/>
+                    </StackPanel>
                 </Grid>
 
                 <!-- View toggle + Target cards -->

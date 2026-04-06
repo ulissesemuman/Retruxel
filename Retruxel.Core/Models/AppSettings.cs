@@ -44,6 +44,10 @@ public class GeneralSettings
     /// <summary>Recent project file paths (max 5).</summary>
     [JsonPropertyName("recentProjects")]
     public List<string> RecentProjects { get; set; } = [];
+
+    /// <summary>Favorite target IDs.</summary>
+    [JsonPropertyName("favoriteTargets")]
+    public List<string> FavoriteTargets { get; set; } = [];
 }
 
 // ── Appearance ────────────────────────────────────────────────────────────────
@@ -66,6 +70,18 @@ public class TargetSettingsMap
 {
     [JsonPropertyName("sms")]
     public SmsSettings Sms { get; set; } = new();
+    
+    [JsonPropertyName("gg")]
+    public GgSettings Gg { get; set; } = new();
+    
+    [JsonPropertyName("sg1000")]
+    public Sg1000Settings Sg1000 { get; set; } = new();
+    
+    [JsonPropertyName("coleco")]
+    public ColecoSettings Coleco { get; set; } = new();
+    
+    [JsonPropertyName("nes")]
+    public NesSettings Nes { get; set; } = new();
 }
 
 /// <summary>
@@ -73,18 +89,87 @@ public class TargetSettingsMap
 /// </summary>
 public class SmsSettings
 {
-    /// <summary>
-    /// Whether to display toolchain warnings in the Build Console.
-    /// When false, WARNING-level entries from the SMS toolchain are suppressed.
-    /// </summary>
     [JsonPropertyName("showToolchainWarnings")]
     public bool ShowToolchainWarnings { get; set; } = true;
 
-    /// <summary>Path to the SMS emulator executable (e.g., Emulicious).</summary>
     [JsonPropertyName("emulatorPath")]
     public string EmulatorPath { get; set; } = string.Empty;
 
-    /// <summary>Whether to automatically launch the emulator after a successful build.</summary>
+    [JsonPropertyName("emulatorArguments")]
+    public string EmulatorArguments { get; set; } = string.Empty;
+
+    [JsonPropertyName("launchEmulatorAfterBuild")]
+    public bool LaunchEmulatorAfterBuild { get; set; } = false;
+}
+
+/// <summary>
+/// Settings specific to the Sega Game Gear target.
+/// </summary>
+public class GgSettings
+{
+    [JsonPropertyName("showToolchainWarnings")]
+    public bool ShowToolchainWarnings { get; set; } = true;
+
+    [JsonPropertyName("emulatorPath")]
+    public string EmulatorPath { get; set; } = string.Empty;
+
+    [JsonPropertyName("emulatorArguments")]
+    public string EmulatorArguments { get; set; } = string.Empty;
+
+    [JsonPropertyName("launchEmulatorAfterBuild")]
+    public bool LaunchEmulatorAfterBuild { get; set; } = false;
+}
+
+/// <summary>
+/// Settings specific to the Sega SG-1000 target.
+/// </summary>
+public class Sg1000Settings
+{
+    [JsonPropertyName("showToolchainWarnings")]
+    public bool ShowToolchainWarnings { get; set; } = true;
+
+    [JsonPropertyName("emulatorPath")]
+    public string EmulatorPath { get; set; } = string.Empty;
+
+    [JsonPropertyName("emulatorArguments")]
+    public string EmulatorArguments { get; set; } = string.Empty;
+
+    [JsonPropertyName("launchEmulatorAfterBuild")]
+    public bool LaunchEmulatorAfterBuild { get; set; } = false;
+}
+
+/// <summary>
+/// Settings specific to the ColecoVision target.
+/// </summary>
+public class ColecoSettings
+{
+    [JsonPropertyName("showToolchainWarnings")]
+    public bool ShowToolchainWarnings { get; set; } = true;
+
+    [JsonPropertyName("emulatorPath")]
+    public string EmulatorPath { get; set; } = string.Empty;
+
+    [JsonPropertyName("emulatorArguments")]
+    public string EmulatorArguments { get; set; } = string.Empty;
+
+    [JsonPropertyName("launchEmulatorAfterBuild")]
+    public bool LaunchEmulatorAfterBuild { get; set; } = false;
+}
+
+/// <summary>
+/// Settings specific to the Nintendo Entertainment System target.
+/// </summary>
+public class NesSettings
+{
+    [JsonPropertyName("showToolchainWarnings")]
+    public bool ShowToolchainWarnings { get; set; } = true;
+
+    [JsonPropertyName("emulatorPath")]
+    public string EmulatorPath { get; set; } = string.Empty;
+
+    [JsonPropertyName("emulatorArguments")]
+    public string EmulatorArguments { get; set; } = string.Empty;
+
     [JsonPropertyName("launchEmulatorAfterBuild")]
     public bool LaunchEmulatorAfterBuild { get; set; } = false;
 }

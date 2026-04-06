@@ -10,6 +10,8 @@
         ResizeMode="NoResize">
 
     <Border CornerRadius="6"
+            BorderBrush="#3a3a3a"
+            BorderThickness="1"
             Background="{StaticResource BrushSurfaceContainerLow}">
         <Grid>
             <Grid.RowDefinitions>
@@ -25,7 +27,7 @@
                     MouseLeftButtonDown="TitleBar_MouseLeftButtonDown"
                     Padding="24,0">
                 <Grid>
-                    <TextBlock Text="SELECT TARGET PLATFORM"
+                    <TextBlock x:Name="TxtDialogTitle"
                                Style="{StaticResource TextHeadline}"
                                VerticalAlignment="Center"/>
                     <Button Content="✕"
@@ -42,7 +44,7 @@
             <!-- ===== CONTENT ===== -->
             <Grid Grid.Row="1">
                 <StackPanel Margin="24,16">
-                    <TextBlock Text="Choose the console you want to develop for. This cannot be changed later."
+                    <TextBlock x:Name="TxtDescription"
                                Style="{StaticResource TextBody}"
                                Margin="0,0,0,24"/>
                     <WrapPanel x:Name="TargetsPanel" Orientation="Horizontal"/>
@@ -54,7 +56,7 @@
                     Background="{StaticResource BrushSurface}"
                     CornerRadius="0,0,6,6"
                     Padding="24,0">
-                <Button Content="CANCEL"
+                <Button x:Name="BtnCancel"
                         Style="{StaticResource ButtonSecondary}"
                         HorizontalAlignment="Right"
                         Padding="24,0" Height="40"

@@ -27,7 +27,8 @@ public static class FontRasterizer
         using var typeface = LoadTypeface(ttfPath);
         if (typeface is null) return null;
 
-        using var paint = BuildPaint(typeface, tileWidth, tileHeight);
+        using var font = BuildFont(typeface, tileHeight);
+        using var paint = BuildPaint();
 
         // Check if the font actually has a glyph for this codepoint
         var glyphId = typeface.GetGlyph(codepoint);
@@ -37,7 +38,7 @@ public static class FontRasterizer
         using var canvas = new SKCanvas(bitmap);
         canvas.Clear(SKColors.Transparent);
 
-        DrawGlyph(canvas, paint, codepoint, tileWidth, tileHeight);
+        DrawGlyph(canvas, font, paint, codepoint, tileWidth, tileHeight);
 
         return ToBitmapSource(bitmap);
     }
@@ -59,7 +60,8 @@ public static class FontRasterizer
         using var typeface = LoadTypeface(ttfPath)
             ?? throw new InvalidOperationException("Failed to load font.");
 
-        using var paint = BuildPaint(typeface, tileWidth, tileHeight);
+        using var font = BuildFont(typeface, tileHeight);
+        using var paint = BuildPaint();
 
         var rows         = (int)Math.Ceiling(codepoints.Count / (double)columnsPerRow);
         var sheetWidth   = tileWidth  * columnsPerRow;
@@ -78,7 +80,7 @@ public static class FontRasterizer
 
             canvas.Save();
             canvas.Translate(destX, destY);
-            DrawGlyph(canvas, paint, codepoints[i], tileWidth, tileHeight);
+            DrawGlyph(canvas, font, paint, codepoints[i], tileWidth, tileHeight);
             canvas.Restore();
         }
 
@@ -103,23 +105,29 @@ public static class FontRasterizer
     private static SKTypeface? LoadTypeface(string path)
         => SKTypeface.FromFile(path);
 
-    private static SKPaint BuildPaint(SKTypeface typeface, int tileWidth, int tileHeight)
+    private static SKFont BuildFont(SKTypeface typeface, int tileHeight)
     {
         // Font size = 80% of tile height to leave a small margin
         var fontSize = tileHeight * 0.80f;
 
+        return new SKFont(typeface, fontSize)
+        {
+            Subpixel = false  // pixel-perfect for retro targets
+        };
+    }
+
+    private static SKPaint BuildPaint()
+    {
         return new SKPaint
         {
-            Typeface    = typeface,
-            TextSize    = fontSize,
             IsAntialias = false,   // pixel-perfect for retro targets
-            Color       = SKColors.White,
-            TextAlign   = SKTextAlign.Center
+            Color       = SKColors.White
         };
     }
 
     private static void DrawGlyph(
         SKCanvas canvas,
+        SKFont   font,
         SKPaint  paint,
         int      codepoint,
         int      tileWidth,
@@ -129,12 +137,12 @@ public static class FontRasterizer
 
         // Measure to vertically center
         var bounds = new SKRect();
-        paint.MeasureText(text, ref bounds);
+        font.MeasureText(text, out bounds);
 
-        var x = tileWidth  / 2f;
+        var x = tileWidth  / 2f - bounds.MidX;  // center horizontally
         var y = tileHeight / 2f - bounds.MidY;  // center vertically
 
-        canvas.DrawText(text, x, y, paint);
+        canvas.DrawText(text, x, y, font, paint);
     }
 
     private static BitmapSource ToBitmapSource(SKBitmap bitmap)

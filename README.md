@@ -22,12 +22,15 @@ No terminal. No Makefile. No toolchain setup. Just open and start building.
 ## ✨ Features
 
 - 🎮 **Visual game editor** — place modules on canvas and configure them through auto-generated UI
-- ⚙️ **Zero setup** — toolchain (SDCC, ihx2sms, SMSlib) is embedded and extracted automatically on first run
+- 🎯 **Multi-target support** — build for multiple retro consoles from a single project
+- ⚙️ **Zero setup** — toolchains embedded and extracted automatically on first run
 - 🧩 **Module system** — graphic, logic and audio modules as building blocks
 - 🔁 **Portable modules** — universal modules keep your project target-agnostic for future migration
 - 🏗️ **Auto-generated UI** — module parameters are described via `ModuleManifest`, no UI code needed
-- 📦 **One-click ROM export** — full build pipeline from project to `.sms` file
+- 📦 **One-click ROM export** — full build pipeline from project to ROM file
+- ⭐ **Favorites system** — mark and filter your preferred target platforms
 - 🌍 **Multilingual** — interface available in multiple languages with runtime switching
+- 🚀 **Emulator integration** — launch ROMs directly from the IDE
 
 ---
 
@@ -36,7 +39,10 @@ No terminal. No Makefile. No toolchain setup. Just open and start building.
 | Console | Status | Toolchain |
 |---|---|---|
 | Sega Master System | 🟢 Active | SDCC 4.5.24 + devkitSMS + SMSlib |
-| NES | 🔮 Planned | — |
+| Nintendo NES | 🟢 Active | cc65 + neslib |
+| Sega Game Gear | 🟡 Scaffolding | SDCC 4.5.24 + devkitSMS + SMSlib |
+| Sega SG-1000 | 🟡 Scaffolding | SDCC 4.5.24 + devkitSMS + SMSlib |
+| ColecoVision | 🟡 Scaffolding | SDCC 4.5.24 + devkitSMS + SMSlib |
 | SNES | 🔮 Planned | — |
 
 ---
@@ -50,13 +56,23 @@ Retruxel is built on .NET / WPF and organized as a multi-project solution:
 | `Retruxel` | WPF Application | Main shell — UI and navigation |
 | `Retruxel.Core` | Class Library | Interfaces, models and core services |
 | `Retruxel.SDK` | Class Library | Public interfaces for plugin developers |
-| `Retruxel.Toolchain` | Class Library | Embedded SDCC, ihx2sms and SMSlib binaries |
+| `Retruxel.Toolchain` | Class Library | Embedded toolchains (SDCC + devkitSMS for Sega/Coleco, cc65 for NES) |
 | `Retruxel.Target.SMS` | Class Library | SMS-specific modules and target implementation |
+| `Retruxel.Target.NES` | Class Library | NES-specific modules and target implementation |
+| `Retruxel.Target.GameGear` | Class Library | Game Gear target implementation (scaffolding) |
+| `Retruxel.Target.SG1000` | Class Library | SG-1000 target implementation (scaffolding) |
+| `Retruxel.Target.ColecoVision` | Class Library | ColecoVision target implementation (scaffolding) |
 
 ### Build Pipeline
 
+**SMS / Game Gear / SG-1000 / ColecoVision:**
 ```
 .rtrxproject  →  CodeGenerator  →  .c / .h files  →  SDCC  →  ihx2sms  →  .sms ROM
+```
+
+**NES:**
+```
+.rtrxproject  →  CodeGenerator  →  .c / .h files  →  cc65  →  ld65  →  .nes ROM
 ```
 
 ### Module System
@@ -95,7 +111,7 @@ Retruxel uses a custom design system called **Neo-Technical Archive** — a mode
 
 ## 🚀 Getting Started
 
-> ⚠️ Retruxel is currently in early alpha development (v0.3.0-alpha). Builds are not yet available for download.
+> ⚠️ Retruxel is currently in early alpha development (v0.4.0-alpha). Builds are not yet available for download.
 
 1. Clone the repository
 2. Open `Retruxel.slnx` in Visual Studio 2022+
@@ -105,12 +121,16 @@ Retruxel uses a custom design system called **Neo-Technical Archive** — a mode
 ### Current Status
 
 - ✅ Project creation and management
+- ✅ Multi-target infrastructure with 5 platforms
 - ✅ Visual scene editor with canvas
-- ✅ Text display module (SMS)
+- ✅ Text display module (SMS + NES)
 - ✅ Event system (OnStart, OnVBlank, OnInput)
-- ✅ Code generation and ROM compilation
-- ✅ Build console with real-time output
+- ✅ Code generation and ROM compilation (SMS + NES)
+- ✅ Build console with real-time output and toast notifications
+- ✅ Emulator integration with configurable launch settings
+- ✅ Favorites system with sort and filter capabilities
 - ✅ Internationalization (i18n) system with runtime language switching
+- ✅ Dynamic manufacturer discovery and filtering
 - 🚧 Additional modules (in progress)
 - 🚧 Plugin system (planned)
 - 🚧 Asset editors (planned)

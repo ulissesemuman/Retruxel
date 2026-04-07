@@ -3,9 +3,9 @@
 
     <!-- ==================== FONTS ==================== -->
     <!-- Display & Headlines: Space Grotesk (hardware font) -->
-    <FontFamily x:Key="FontDisplay">pack://application:,,,/Assets/Fonts/Space_Grotesk/static/#Space Grotesk</FontFamily>
+    <FontFamily x:Key="FontDisplay">pack://application:,,,/Assets/Fonts/#Space Grotesk</FontFamily>
     <!-- Body & Labels: Inter (software font) -->
-    <FontFamily x:Key="FontBody">pack://application:,,,/Assets/Fonts/Inter/static/#Inter</FontFamily>
+    <FontFamily x:Key="FontBody">pack://application:,,,/Assets/Fonts/#Inter</FontFamily>
 
     <!-- ==================== COLORS ==================== -->
     <Color x:Key="ColorSurface">#FF0E0E0E</Color>

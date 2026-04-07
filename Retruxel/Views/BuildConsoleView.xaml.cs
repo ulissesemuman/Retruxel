@@ -82,7 +82,7 @@ public partial class BuildConsoleView : UserControl
         foreach (var moduleId in project.DefaultModules.Distinct())
         {
             if (moduleId == "text.display" && !moduleLoader.LogicModules.ContainsKey(moduleId))
-                moduleLoader.RegisterLogicModule(new Retruxel.Modules.Text.TextDisplayModule());
+                moduleLoader.RegisterLogicModule(new Retruxel.Modules.Graphics.TextDisplayModule());
         }
 
         var progress = new Progress<string>(msg => Dispatcher.Invoke(() => AppendLog(msg)));

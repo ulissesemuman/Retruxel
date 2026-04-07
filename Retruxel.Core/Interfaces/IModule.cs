@@ -43,7 +43,7 @@ public interface IModule
 /// <summary>Module type classification.</summary>
 public enum ModuleType
 {
-    Graphic,
+    Graphics,
     Logic,
     Audio
 }

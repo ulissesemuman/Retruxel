@@ -1,7 +1,7 @@
 ﻿using Retruxel.Core.Interfaces;
 using Retruxel.Core.Models;
-using Retruxel.Modules.Text;
-using Retruxel.Target.ColecoVision.Modules.Text;
+using Retruxel.Modules.Graphics;
+using Retruxel.Target.ColecoVision.Modules.Graphics;
 
 namespace Retruxel.Target.ColecoVision;
 

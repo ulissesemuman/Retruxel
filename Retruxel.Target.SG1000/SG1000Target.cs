@@ -1,7 +1,7 @@
 ﻿using Retruxel.Core.Interfaces;
 using Retruxel.Core.Models;
-using Retruxel.Modules.Text;
-using Retruxel.Target.SG1000.Modules.Text;
+using Retruxel.Modules.Graphics;
+using Retruxel.Target.SG1000.Modules.Graphics;
 
 namespace Retruxel.Target.SG1000;
 

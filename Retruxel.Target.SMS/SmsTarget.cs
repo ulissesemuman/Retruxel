@@ -1,10 +1,10 @@
 ﻿using Retruxel.Core.Interfaces;
 using Retruxel.Core.Models;
-using Retruxel.Modules.Text;
-using Retruxel.Target.SMS.Modules.Text;
 using Retruxel.Target.SMS.Modules.Enemy;
 using Retruxel.Target.SMS.Modules.Entity;
 using Retruxel.Target.SMS.Modules.Scroll;
+using Retruxel.Modules.Graphics;
+using Retruxel.Target.SMS.Modules.Graphics;
 
 namespace Retruxel.Target.SMS;
 

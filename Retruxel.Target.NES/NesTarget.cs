@@ -1,6 +1,6 @@
 using Retruxel.Core.Interfaces;
 using Retruxel.Core.Models;
-using Retruxel.Target.NES.Modules.Text;
+using Retruxel.Target.NES.Modules.Graphics;
 
 namespace Retruxel.Target.NES;
 

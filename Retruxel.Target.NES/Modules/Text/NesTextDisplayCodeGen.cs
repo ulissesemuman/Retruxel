@@ -83,6 +83,9 @@ public class NesTextDisplayCodeGen
         var safeText = _text.Replace("\\", "\\\\").Replace("\"", "\\\"");
         var length   = _text.Length;
 
+        // Converte ASCII para índices de tile (subtrai 0x20)
+        var tileData = string.Join(", ", _text.Select(c => $"0x{((byte)c - 0x20):X2}"));
+
         return new GeneratedFile
         {
             FileName       = $"text_display_{_instanceId}.c",
@@ -94,14 +97,10 @@ public class NesTextDisplayCodeGen
                 #include "text_display_{{_instanceId}}.h"
 
                 // Text: "{{safeText}}" at ({{_x}}, {{_y}})
-                static const unsigned char text_data_{{_instanceId}}[] = "{{safeText}}";
+                static const unsigned char text_data_{{_instanceId}}[] = { {{tileData}} };
 
                 void text_display_{{_instanceId}}_init(void) {
-                    // NTADR_A(col, row) computes the nametable address for nametable A
                     vram_adr(NTADR_A({{_x}}, {{_y}}));
-
-                    // vram_write writes 'length' bytes from a buffer to VRAM
-                    // Must be called while PPU is off or inside the update buffer
                     vram_write((unsigned char *)text_data_{{_instanceId}}, {{length}});
                 }
                 """

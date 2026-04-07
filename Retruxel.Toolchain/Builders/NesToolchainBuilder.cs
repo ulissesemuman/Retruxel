@@ -80,11 +80,27 @@ public class NesToolchainBuilder : IToolchainBuilder
             var nesConfigPath = Path.Combine(srcDirectory, "nes_config.s");
             await File.WriteAllTextAsync(nesConfigPath,
                 "; NES cartridge configuration\n" +
-                ".export NES_MAPPER, NES_PRG_BANKS, NES_CHR_BANKS, NES_MIRRORING\n" +
-                "NES_MAPPER = 0\n" +
-                "NES_PRG_BANKS = 2\n" +
-                "NES_CHR_BANKS = 1\n" +
-                "NES_MIRRORING = 1\n");
+                ".segment \"HEADER\"\n" +
+                "\n" +
+                ".export NES_MAPPER: absolute\n" +
+                ".export NES_PRG_BANKS: absolute\n" +
+                ".export NES_CHR_BANKS: absolute\n" +
+                ".export NES_MIRRORING: absolute\n" +
+                "\n" +
+                "NES_MAPPER     = 0\n" +
+                "NES_PRG_BANKS  = 2\n" +
+                "NES_CHR_BANKS  = 1\n" +
+                "NES_MIRRORING  = 1\n");
+
+            // Create CHR data file
+            var chrPath = Path.Combine(ToolchainPath, "sdks", "nes", "chr", "font.chr");
+            var chrAsmPath = Path.Combine(srcDirectory, "chr_data.s");
+            var chrData = await File.ReadAllBytesAsync(chrPath);
+            var chrAsm = new System.Text.StringBuilder();
+            chrAsm.AppendLine("; CHR-ROM data");
+            chrAsm.AppendLine(".segment \"CHARS\"");
+            chrAsm.AppendLine(".byte " + string.Join(", ", chrData.Select(b => $"${b:X2}")));
+            await File.WriteAllTextAsync(chrAsmPath, chrAsm.ToString());
 
             var objectFiles = new List<string>();
 
@@ -155,12 +171,27 @@ public class NesToolchainBuilder : IToolchainBuilder
                 return result;
             }
 
+            // Step 2d: ca65 — assemble chr_data.s
+            var chrDataObjPath = Path.Combine(srcDirectory, "chr_data.o");
+            progress.Report("ASSEMBLING: chr_data.s");
+
+            var chrDataArgs = $"\"{chrAsmPath}\" -o \"{chrDataObjPath}\"";
+            var chrDataOk = await RunProcessAsync(ca65, chrDataArgs, srcDirectory, log, progress);
+
+            if (!chrDataOk)
+            {
+                result.Success = false;
+                result.Log = log;
+                result.FinishedAt = DateTime.Now;
+                return result;
+            }
+
             // Step 3: ld65 — link everything
             var romName = context.BuildParameters.TryGetValue("romName", out var n)
                 ? n.ToString()! : "output";
 
             var romPath = Path.Combine(context.OutputDirectory, $"{romName}.nes");
-            var allObjects = string.Join(" ", new[] { $"\"{crt0ObjPath}\"", $"\"{nesConfigObjPath}\"" }
+            var allObjects = string.Join(" ", new[] { $"\"{crt0ObjPath}\"", $"\"{nesConfigObjPath}\"", $"\"{chrDataObjPath}\"" }
                 .Concat(objectFiles.Select(o => $"\"{o}\"")));
 
             progress.Report("LINKING...");
@@ -168,6 +199,7 @@ public class NesToolchainBuilder : IToolchainBuilder
             var ld65Args = $"-C \"{nesCfg}\" -o \"{romPath}\" {allObjects} \"{nesLib}\"";
             var linkOk = await RunProcessAsync(ld65, ld65Args, srcDirectory, log, progress);
 
+            // Não anexar CHR - ele já está incluído via segmento CHARS
             result.Success = linkOk && File.Exists(romPath);
             result.RomPath = result.Success ? romPath : null;
             result.RomSizeBytes = result.Success ? (int)new FileInfo(romPath).Length : 0;
@@ -227,6 +259,11 @@ public class NesToolchainBuilder : IToolchainBuilder
         {
             var fileName = resourceName.Replace("Retruxel.Toolchain.SDKs.Nes.Resources.lib.", "");
             return Path.Combine("sdks", "nes", "lib", fileName);
+        }
+        if (resourceName.StartsWith("Retruxel.Toolchain.SDKs.Nes.Resources.chr."))
+        {
+            var fileName = resourceName.Replace("Retruxel.Toolchain.SDKs.Nes.Resources.chr.", "");
+            return Path.Combine("sdks", "nes", "chr", fileName);
         }
         return null;
     }

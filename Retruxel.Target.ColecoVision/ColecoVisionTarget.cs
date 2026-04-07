@@ -2,7 +2,6 @@
 using Retruxel.Core.Models;
 using Retruxel.Modules.Text;
 using Retruxel.Target.ColecoVision.Modules.Text;
-using Retruxel.Target.ColecoVision.Toolchain;
 
 namespace Retruxel.Target.ColecoVision;
 
@@ -18,6 +17,8 @@ public class ColecoVisionTarget : ITarget
 
     public TargetSpecs Specs => new()
     {
+        Manufacturer = "Coleco",
+
         // Screen
         ScreenWidth  = 256,
         ScreenHeight = 192,
@@ -86,7 +87,7 @@ public class ColecoVisionTarget : ITarget
 
     // Toolchain & modules
 
-    public IToolchain GetToolchain() => new ColecoVisionToolchain();
+    public IToolchain GetToolchain() => new ColecoToolchainAdapter();
 
     public IEnumerable<IModule> GetBuiltinModules() => [];
 
@@ -180,16 +181,17 @@ public class ColecoVisionTarget : ITarget
         $"// Project: {project.Name} | Target: {project.TargetId}",
         $"// Generated at: {DateTime.Now:yyyy-MM-dd HH:mm:ss}",
         "",
-        "#include \"SMSlib.h\"",
+        "#include \"SGlib.h\"",
         .. headers,
         "",
         "void main(void) {",
         .. initCalls,
         "",
         "    while(1) {",
-        "        SMS_waitForVBlank();",
+        "        SG_waitForVBlank();",
         "    }",
         "}",
+        ""
     ]);
 
         return new GeneratedFile

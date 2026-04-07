@@ -86,6 +86,17 @@ public class ProjectManager
             CurrentProject.Name + ProjectFileExtension);
 
         await File.WriteAllTextAsync(filePath, json);
+        
+        // Garantir que o arquivo tenha o nome correto (case-sensitive)
+        var actualFileName = Path.GetFileName(filePath);
+        var expectedFileName = CurrentProject.Name + ProjectFileExtension;
+        if (actualFileName != expectedFileName)
+        {
+            var tempPath = filePath + ".tmp";
+            File.Move(filePath, tempPath);
+            File.Move(tempPath, Path.Combine(CurrentProject.ProjectPath, expectedFileName));
+        }
+        
         HasUnsavedChanges = false;
     }
 

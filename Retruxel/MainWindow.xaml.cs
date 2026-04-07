@@ -124,15 +124,20 @@ public partial class MainWindow : Window
     private void AddToRecentProjects(RetruxelProject project)
     {
         var settings = SettingsService.Load();
-        var projectPath = Path.Combine(project.ProjectPath, project.Name + ".rtrxproject");
+        var projectPath = Path.GetFullPath(Path.Combine(project.ProjectPath, project.Name + ".rtrxproject"));
         
-        settings.General.RecentProjects.Remove(projectPath);
+        // Remove duplicatas case-insensitive
+        settings.General.RecentProjects = settings.General.RecentProjects
+            .Where(p => !p.Equals(projectPath, StringComparison.OrdinalIgnoreCase))
+            .ToList();
+        
         settings.General.RecentProjects.Insert(0, projectPath);
         
         if (settings.General.RecentProjects.Count > 5)
             settings.General.RecentProjects = settings.General.RecentProjects.Take(5).ToList();
         
         SettingsService.Save(settings);
+        WelcomeView.RefreshRecentProjects();
     }
 
     private async void OnGenerateRomRequested(RetruxelProject project)

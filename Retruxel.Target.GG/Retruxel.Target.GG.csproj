@@ -7,28 +7,9 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <None Remove="Toolchain\Resources\ihx2sms.exe" />
-    <None Remove="Toolchain\Resources\sdcc.exe" />
-    <None Remove="Toolchain\Resources\z80.lib" />
-    <None Remove="Toolchain\Resources\SMSlib\crt0\crt0_sms.rel" />
-    <None Remove="Toolchain\Resources\SMSlib\SMSlib.lib" />
-    <None Remove="Toolchain\Resources\SMSlib\src\peep-rules.txt" />
-    <None Remove="Toolchain\Resources\SMSlib\src\SMSlib.h" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <EmbeddedResource Include="Toolchain\Resources\ihx2sms.exe" />
-    <EmbeddedResource Include="Toolchain\Resources\sdcc.exe" />
-    <EmbeddedResource Include="Toolchain\Resources\z80.lib" />
-    <EmbeddedResource Include="Toolchain\Resources\SMSlib\crt0\crt0_sms.rel" />
-    <EmbeddedResource Include="Toolchain\Resources\SMSlib\SMSlib.lib" />
-    <EmbeddedResource Include="Toolchain\Resources\SMSlib\src\peep-rules.txt" />
-    <EmbeddedResource Include="Toolchain\Resources\SMSlib\src\SMSlib.h" />
-  </ItemGroup>
-
-  <ItemGroup>
     <ProjectReference Include="..\Retruxel.Core\Retruxel.Core.csproj" />
     <ProjectReference Include="..\Retruxel.Modules\Retruxel.Modules.csproj" />
+    <ProjectReference Include="..\Retruxel.Toolchain\Retruxel.Toolchain.csproj" />
   </ItemGroup>
 
 </Project>

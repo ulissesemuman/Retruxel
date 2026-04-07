@@ -2,7 +2,6 @@
 using Retruxel.Core.Models;
 using Retruxel.Modules.Text;
 using Retruxel.Target.GG.Modules.Text;
-using Retruxel.Target.GG.Toolchain;
 
 namespace Retruxel.Target.GG;
 
@@ -52,6 +51,9 @@ public class GgTarget : ITarget
         CPU        = "Zilog Z80",
         CpuClockHz = 3579545,
 
+        // Manufacturer
+        Manufacturer = "Sega",
+
         // Sound
         SoundChip          = "SN76489",
         SoundToneChannels  = 3,
@@ -82,7 +84,11 @@ public class GgTarget : ITarget
 
     // Toolchain & modules
 
-    public IToolchain GetToolchain() => new GgToolchain();
+    public IToolchain GetToolchain()
+    {
+        var builder = Retruxel.Toolchain.ToolchainOrchestrator.GetBuilder(TargetId);
+        return new GgToolchainAdapter(builder);
+    }
 
     public IEnumerable<IModule> GetBuiltinModules() => [];
 
@@ -187,8 +193,8 @@ public class GgTarget : ITarget
         "    }",
         "}",
         "",
-        "GG_EMBED_SEGA_ROM_HEADER(9999, 0);",
-        $"GG_EMBED_SDSC_HEADER(1, 0, 2026, 1, 1, \"Retruxel\", \"{project.Name}\", \"\");",
+        "SMS_EMBED_SEGA_ROM_HEADER(9999, 0);",
+        $"SMS_EMBED_SDSC_HEADER(1, 0, 2026, 1, 1, \"Retruxel\", \"{project.Name}\", \"\");",
     ]);
 
         return new GeneratedFile

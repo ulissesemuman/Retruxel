@@ -32,6 +32,7 @@
   <ItemGroup>
     <EmbeddedResource Include="SDKs\Nes\Resources\include\*" />
     <EmbeddedResource Include="SDKs\Nes\Resources\lib\*" />
+    <EmbeddedResource Include="SDKs\Nes\Resources\chr\*.chr" />
   </ItemGroup>
 
   <!-- Sega Utils -->

@@ -1,5 +1,6 @@
 using Retruxel.Core.Interfaces;
 using Retruxel.Core.Models;
+using Retruxel.Toolchain;
 
 namespace Retruxel.Target.SMS;
 
@@ -8,9 +9,9 @@ namespace Retruxel.Target.SMS;
 /// </summary>
 internal class SmsToolchainAdapter : IToolchain
 {
-    private readonly Toolchain.IToolchainBuilder _builder;
+    private readonly IToolchainBuilder _builder;
 
-    public SmsToolchainAdapter(Toolchain.IToolchainBuilder builder)
+    public SmsToolchainAdapter(IToolchainBuilder builder)
     {
         _builder = builder;
     }

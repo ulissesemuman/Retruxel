@@ -31,7 +31,7 @@ public class GameGearToolchainBuilder : IToolchainBuilder
         var log = new List<BuildLogEntry>();
 
         var settings = await SettingsService.LoadAsync();
-        var suppressWarnings = !settings.Toolchain.ShowToolchainWarnings;
+        var suppressWarnings = !settings.Targets.Gg.ShowToolchainWarnings;
 
         try
         {

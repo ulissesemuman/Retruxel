@@ -57,11 +57,25 @@ public class GgTextDisplayCodeGen
         sb.AppendLine($"#include \"text_display_{_instanceId}.h\"");
         sb.AppendLine("#include \"SMSlib.h\"");
         sb.AppendLine();
+        
+        if (_instanceId == 0)
+        {
+            sb.AppendLine("const unsigned char default_palette[] = {");
+            sb.AppendLine("    0x00, 0x00, 0x3F, 0x00, 0x00, 0x00, 0x00, 0x00,");
+            sb.AppendLine("    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,");
+            sb.AppendLine("    0x00, 0x00, 0x3F, 0x00, 0x00, 0x00, 0x00, 0x00,");
+            sb.AppendLine("    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00");
+            sb.AppendLine("};");
+            sb.AppendLine();
+        }
+        
         sb.AppendLine($"void {funcName}(void) {{");
         
         if (_instanceId == 0)
         {
             sb.AppendLine("    SMS_VRAMmemsetW(0, 0x0000, 16384);");
+            sb.AppendLine("    SMS_loadBGPalette(default_palette);");
+            sb.AppendLine("    SMS_loadSpritePalette(default_palette);");
             sb.AppendLine("    SMS_autoSetUpTextRenderer();");
         }
         

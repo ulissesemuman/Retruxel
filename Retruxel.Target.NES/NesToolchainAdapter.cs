@@ -1,5 +1,6 @@
 using Retruxel.Core.Interfaces;
 using Retruxel.Core.Models;
+using Retruxel.Toolchain;
 
 namespace Retruxel.Target.NES;
 
@@ -8,9 +9,9 @@ namespace Retruxel.Target.NES;
 /// </summary>
 internal class NesToolchainAdapter : IToolchain
 {
-    private readonly Toolchain.IToolchainBuilder _builder;
+    private readonly IToolchainBuilder _builder;
 
-    public NesToolchainAdapter(Toolchain.IToolchainBuilder builder)
+    public NesToolchainAdapter(IToolchainBuilder builder)
     {
         _builder = builder;
     }

@@ -60,29 +60,23 @@ public partial class NewProjectDialog : Window
         {
             Width = 160,
             Height = 80,
-            Background = selected
-                ? new SolidColorBrush(Color.FromRgb(0x26, 0x26, 0x26))
-                : new SolidColorBrush(Color.FromRgb(0x1E, 0x1E, 0x1E)),
+            Background = (Brush)FindResource(selected
+                ? "BrushSurfaceContainerHighest"
+                : "BrushSurfaceContainerHigh"),
+            BorderBrush = selected ? (Brush)FindResource("BrushPrimary") : Brushes.Transparent,
+            BorderThickness = selected ? new Thickness(0, 2, 0, 0) : new Thickness(0),
             Margin = new Thickness(0, 0, 8, 0),
             Padding = new Thickness(12),
             Cursor = Cursors.Hand,
             Tag = template
         };
 
-        if (selected)
-        {
-            card.BorderBrush = new SolidColorBrush(Color.FromRgb(0x8E, 0xFF, 0x71));
-            card.BorderThickness = new Thickness(0, 2, 0, 0);
-        }
-
         var panel = new StackPanel();
 
         panel.Children.Add(new TextBlock
         {
             Text = template.DisplayName.ToUpper(),
-            FontSize = 12,
-            FontWeight = FontWeights.Bold,
-            Foreground = Brushes.White,
+            Style = (Style)FindResource("TextTitle"),
             TextWrapping = TextWrapping.Wrap,
             Margin = new Thickness(0, 0, 0, 4)
         });
@@ -90,8 +84,7 @@ public partial class NewProjectDialog : Window
         panel.Children.Add(new TextBlock
         {
             Text = template.Description,
-            FontSize = 10,
-            Foreground = new SolidColorBrush(Color.FromRgb(0xAD, 0xAA, 0xAA)),
+            Style = (Style)FindResource("TextLabel"),
             TextWrapping = TextWrapping.Wrap
         });
 
@@ -107,15 +100,11 @@ public partial class NewProjectDialog : Window
         foreach (Border card in TemplatesPanel.Children)
         {
             var isSelected = card.Tag is ProjectTemplate t && t.TemplateId == template.TemplateId;
-            card.Background = new SolidColorBrush(isSelected
-                ? Color.FromRgb(0x26, 0x26, 0x26)
-                : Color.FromRgb(0x1E, 0x1E, 0x1E));
-            card.BorderBrush = isSelected
-                ? new SolidColorBrush(Color.FromRgb(0x8E, 0xFF, 0x71))
-                : Brushes.Transparent;
-            card.BorderThickness = isSelected
-                ? new Thickness(0, 2, 0, 0)
-                : new Thickness(0);
+            card.Background = (Brush)FindResource(isSelected
+                ? "BrushSurfaceContainerHighest"
+                : "BrushSurfaceContainerHigh");
+            card.BorderBrush = isSelected ? (Brush)FindResource("BrushPrimary") : Brushes.Transparent;
+            card.BorderThickness = isSelected ? new Thickness(0, 2, 0, 0) : new Thickness(0);
         }
     }
 

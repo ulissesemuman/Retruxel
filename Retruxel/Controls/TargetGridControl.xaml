@@ -1,0 +1,72 @@
+<UserControl x:Class="Retruxel.Controls.TargetGridControl"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:loc="clr-namespace:Retruxel.Localization">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <!-- Sort, Filter and View Mode                                    -->
+        <!-- Visibility controlada pelo host: Collapsed na welcome quando  -->
+        <!-- há poucos targets, Visible quando o contexto justifica.       -->
+        <Grid x:Name="ToolbarRow" Grid.Row="0" Margin="0,0,0,16">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="8"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+
+            <!-- Sort -->
+            <TextBlock x:Name="TxtSortLabel"
+                       Grid.Column="0"
+                       Style="{StaticResource TextLabelCaps}"
+                       VerticalAlignment="Center"
+                       Margin="0,0,8,0"/>
+            <ComboBox x:Name="SortComboBox"
+                      Grid.Column="1"
+                      Width="150"
+                      SelectionChanged="Sort_Changed"/>
+
+            <!-- Filter -->
+            <TextBlock x:Name="TxtFilterLabel"
+                       Grid.Column="3"
+                       Style="{StaticResource TextLabelCaps}"
+                       VerticalAlignment="Center"
+                       Margin="0,0,8,0"/>
+            <ComboBox x:Name="FilterComboBox"
+                      Grid.Column="4"
+                      Width="150"
+                      SelectionChanged="Filter_Changed"/>
+
+            <!-- View Mode: Grid / List -->
+            <StackPanel Grid.Column="6" Orientation="Horizontal">
+                <Button x:Name="BtnGrid"
+                        Content="⊞"
+                        Style="{StaticResource ButtonTitleBarActive}"
+                        FontSize="16"
+                        Margin="0,0,4,0"
+                        Click="BtnGrid_Click"
+                        ToolTip="Grid view"/>
+                <Button x:Name="BtnList"
+                        Content="☰"
+                        Style="{StaticResource ButtonTitleBar}"
+                        FontSize="16"
+                        Click="BtnList_Click"
+                        ToolTip="List view"/>
+            </StackPanel>
+        </Grid>
+
+        <!-- Scrollable Target Grid / List -->
+        <ScrollViewer Grid.Row="1"
+                      VerticalScrollBarVisibility="Auto"
+                      HorizontalScrollBarVisibility="Disabled">
+            <StackPanel x:Name="TargetsPanel"/>
+        </ScrollViewer>
+    </Grid>
+</UserControl>

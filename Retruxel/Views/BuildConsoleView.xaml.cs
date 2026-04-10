@@ -1,4 +1,5 @@
 using Microsoft.Win32;
+using Retruxel.Core.Interfaces;
 using Retruxel.Core.Models;
 using Retruxel.Core.Services;
 using Retruxel.Services;
@@ -21,6 +22,7 @@ public partial class BuildConsoleView : UserControl
     {
         InitializeComponent();
         ApplyLocalization();
+        Loaded += (s, e) => UpdateTooltips();
     }
 
     private void ApplyLocalization()
@@ -41,7 +43,15 @@ public partial class BuildConsoleView : UserControl
         TxtSha256Label.Text = loc.Get("buildconsole.verification.sha256");
         TxtChecks.Text = loc.Get("buildconsole.verification.passed");
         MemoryHeader.Text = loc.Get("buildconsole.memory");
-        TxtPrgRomLabel.Text = loc.Get("buildconsole.memory.prgrom");
+    }
+
+    public void UpdateTooltips()
+    {
+        var loc = LocalizationService.Instance;
+        var copyBtn = LogicalTreeHelper.FindLogicalNode(this, "BtnCopyLog") as Button;
+        var saveBtn = LogicalTreeHelper.FindLogicalNode(this, "BtnSaveLog") as Button;
+        if (copyBtn != null) copyBtn.ToolTip = loc.Get("buildconsole.tooltip.copy");
+        if (saveBtn != null) saveBtn.ToolTip = loc.Get("buildconsole.tooltip.save");
     }
 
     /// <summary>
@@ -70,7 +80,7 @@ public partial class BuildConsoleView : UserControl
         }
 
         SetStatus(loc.Get("build.status.building"), false);
-        TxtDescription.Text = $"Compiling project '{project.Name}' for target {project.TargetId.ToUpper()}.";
+        TxtDescription.Text = string.Format(loc.Get("buildconsole.compiling"), project.Name, project.TargetId.ToUpper());
 
         // Build module loader: built-in modules first, then compatible plugins
         var moduleLoader = new ModuleLoader(AppDomain.CurrentDomain.BaseDirectory);
@@ -82,7 +92,7 @@ public partial class BuildConsoleView : UserControl
         foreach (var moduleId in project.DefaultModules.Distinct())
         {
             if (moduleId == "text.display" && !moduleLoader.LogicModules.ContainsKey(moduleId))
-                moduleLoader.RegisterLogicModule(new Retruxel.Modules.Text.TextDisplayModule());
+                moduleLoader.RegisterLogicModule(new Retruxel.Modules.Graphics.TextDisplayModule());
         }
 
         var progress = new Progress<string>(msg => Dispatcher.Invoke(() => AppendLog(msg)));
@@ -108,7 +118,7 @@ public partial class BuildConsoleView : UserControl
 
             SetStatus(loc.Get("build.status.success"), true);
             ShowVerification(_lastResult);
-            ShowMemoryStats(_lastResult, target.Specs.RomMaxBytes);
+            ShowMemoryStats(_lastResult, target);
             AppendLog($"SUCCESS: ROM generated — {_lastResult.RomSizeBytes / 1024}KB", true);
 
             await LaunchEmulatorIfConfiguredAsync(_lastResult.RomPath);
@@ -219,22 +229,79 @@ public partial class BuildConsoleView : UserControl
         TxtSha256.Text = result.RomSha256?[..8] + "...";
     }
 
-    private void ShowMemoryStats(BuildResult result, int romMaxBytes)
+    private void ShowMemoryStats(BuildResult result, ITarget target)
     {
         MemoryHeader.Visibility = Visibility.Visible;
         MemoryPanel.Visibility = Visibility.Visible;
+        MemoryPanel.Children.Clear();
 
-        var maxKb = romMaxBytes / 1024;
-        var percent = romMaxBytes > 0 ? (double)result.RomSizeBytes / romMaxBytes : 0;
-        TxtRomSize.Text = $"{result.RomSizeBytes / 1024}KB / {maxKb}KB";
-        RomSizeBar.Width = 268 * Math.Min(percent, 1.0);
+        foreach (var bank in target.Specs.Banks)
+        {
+            var usedBytes = result.BankUsage.TryGetValue(bank.Id, out var used) ? used : 0;
+            var maxKb = bank.MaxBytes / 1024;
+            var usedKb = usedBytes / 1024;
+            var percent = bank.MaxBytes > 0 ? (double)usedBytes / bank.MaxBytes : 0;
+            var isOverLimit = usedBytes > bank.MaxBytes;
+
+            // Label row
+            var labelGrid = new Grid { Margin = new Thickness(0, 0, 0, 4) };
+            labelGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+            labelGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+
+            var bankLabel = new TextBlock
+            {
+                Text = bank.Label,
+                Style = (Style)FindResource("TextLabel"),
+                Foreground = isOverLimit ? new SolidColorBrush(Color.FromRgb(0xFF, 0x44, 0x44)) : (System.Windows.Media.Brush)FindResource("BrushOnSurfaceVariant")
+            };
+            Grid.SetColumn(bankLabel, 0);
+
+            var sizeLabel = new TextBlock
+            {
+                Text = $"{usedKb}KB / {maxKb}KB",
+                Style = (Style)FindResource("TextLabel"),
+                Foreground = isOverLimit ? new SolidColorBrush(Color.FromRgb(0xFF, 0x44, 0x44)) : (System.Windows.Media.Brush)FindResource("BrushOnSurface"),
+                HorizontalAlignment = HorizontalAlignment.Right,
+                FontWeight = isOverLimit ? FontWeights.Bold : FontWeights.Normal
+            };
+            Grid.SetColumn(sizeLabel, 1);
+
+            labelGrid.Children.Add(bankLabel);
+            labelGrid.Children.Add(sizeLabel);
+
+            // Progress bar
+            var barContainer = new Border
+            {
+                Height = 4,
+                Background = (System.Windows.Media.Brush)FindResource("BrushSurfaceContainerHighest"),
+                Margin = new Thickness(0, 0, 0, 12)
+            };
+
+            // Barra vermelha se ultrapassar o limite, verde caso contrário
+            // A largura não é limitada pelo máximo - mostra o tamanho real mesmo se ultrapassar
+            var barWidth = 268 * percent;
+            var progressBar = new Border
+            {
+                Background = isOverLimit 
+                    ? new SolidColorBrush(Color.FromRgb(0xFF, 0x44, 0x44))
+                    : (System.Windows.Media.Brush)FindResource("BrushPrimaryGradient"),
+                HorizontalAlignment = HorizontalAlignment.Left,
+                Width = barWidth,
+                MaxWidth = 268 // Limita visualmente ao container, mas mostra overflow
+            };
+
+            barContainer.Child = progressBar;
+
+            MemoryPanel.Children.Add(labelGrid);
+            MemoryPanel.Children.Add(barContainer);
+        }
     }
 
     private void ExportRom_Click(object sender, System.Windows.Input.MouseButtonEventArgs e)
     {
         if (_lastResult?.RomPath is null)
         {
-            MessageBox.Show("No ROM available. Run a build first.", "Retruxel");
+            MessageBox.Show(LocalizationService.Instance.Get("buildconsole.error.no_rom"), "Retruxel");
             return;
         }
 
@@ -253,7 +320,7 @@ public partial class BuildConsoleView : UserControl
     {
         if (_lastResult?.RomPath is null)
         {
-            MessageBox.Show("No build available. Run a build first.", "Retruxel");
+            MessageBox.Show(LocalizationService.Instance.Get("buildconsole.error.no_build"), "Retruxel");
             return;
         }
 
@@ -272,10 +339,11 @@ public partial class BuildConsoleView : UserControl
 
     private void ExportLog_Click(object sender, RoutedEventArgs e)
     {
+        var loc = LocalizationService.Instance;
         var dialog = new SaveFileDialog
         {
-            Filter = "Text file (*.txt)|*.txt",
-            FileName = $"retruxel_build_log_{DateTime.Now:yyyyMMdd_HHmmss}"
+            Filter = loc.Get("buildconsole.savelog.filter"),
+            FileName = string.Format(loc.Get("buildconsole.savelog.filename"), DateTime.Now.ToString("yyyyMMdd_HHmmss"))
         };
 
         if (dialog.ShowDialog() != true) return;
@@ -297,7 +365,7 @@ public partial class BuildConsoleView : UserControl
 
         if (string.IsNullOrEmpty(logText))
         {
-            MessageBox.Show("No log content to copy.", "Retruxel");
+            MessageBox.Show(LocalizationService.Instance.Get("buildconsole.error.no_log"), "Retruxel");
             return;
         }
 
@@ -308,7 +376,7 @@ public partial class BuildConsoleView : UserControl
         }
         catch (Exception ex)
         {
-            MessageBox.Show($"Failed to copy to clipboard: {ex.Message}", "Retruxel");
+            MessageBox.Show(string.Format(LocalizationService.Instance.Get("buildconsole.error.clipboard"), ex.Message), "Retruxel");
         }
     }
 

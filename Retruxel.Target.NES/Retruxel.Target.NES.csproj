@@ -1,50 +1,9 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <ItemGroup>
-    <None Remove="Toolchain\Resources\bin\ar65.exe" />
-    <None Remove="Toolchain\Resources\bin\ca65.exe" />
-    <None Remove="Toolchain\Resources\bin\cc65.exe" />
-    <None Remove="Toolchain\Resources\bin\ld65.exe" />
-    <None Remove="Toolchain\Resources\include\crt0.s" />
-    <None Remove="Toolchain\Resources\include\display.sinc" />
-    <None Remove="Toolchain\Resources\include\famitone2.sinc" />
-    <None Remove="Toolchain\Resources\include\nes.h" />
-    <None Remove="Toolchain\Resources\include\neslib.h" />
-    <None Remove="Toolchain\Resources\include\neslib.sinc" />
-    <None Remove="Toolchain\Resources\include\peekpoke.h" />
-    <None Remove="Toolchain\Resources\include\stdint.h" />
-    <None Remove="Toolchain\Resources\include\longbranch.mac" />
-    <None Remove="Toolchain\Resources\include\zeropage.inc" />
-    <None Remove="Toolchain\Resources\lib\nes.cfg" />
-    <None Remove="Toolchain\Resources\lib\nes.lib" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <EmbeddedResource Include="Toolchain\Resources\bin\ar65.exe" />
-    <EmbeddedResource Include="Toolchain\Resources\bin\ca65.exe" />
-    <EmbeddedResource Include="Toolchain\Resources\bin\cc65.exe" />
-    <EmbeddedResource Include="Toolchain\Resources\bin\ld65.exe" />
-    <EmbeddedResource Include="Toolchain\Resources\include\crt0.s" />
-    <EmbeddedResource Include="Toolchain\Resources\include\display.sinc" />
-    <EmbeddedResource Include="Toolchain\Resources\include\famitone2.sinc" />
-    <EmbeddedResource Include="Toolchain\Resources\include\nes.h" />
-    <EmbeddedResource Include="Toolchain\Resources\include\neslib.h" />
-    <EmbeddedResource Include="Toolchain\Resources\include\neslib.sinc" />
-    <EmbeddedResource Include="Toolchain\Resources\include\peekpoke.h" />
-    <EmbeddedResource Include="Toolchain\Resources\include\stdint.h" />
-    <EmbeddedResource Include="Toolchain\Resources\include\longbranch.mac" />
-    <EmbeddedResource Include="Toolchain\Resources\include\zeropage.inc" />
-    <EmbeddedResource Include="Toolchain\Resources\lib\nes.cfg" />
-    <EmbeddedResource Include="Toolchain\Resources\lib\nes.lib" />
-  </ItemGroup>
-
-  <ItemGroup>
     <ProjectReference Include="..\Retruxel.Core\Retruxel.Core.csproj" />
     <ProjectReference Include="..\Retruxel.Modules\Retruxel.Modules.csproj" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Folder Include="Toolchain\NovaPasta\" />
+    <ProjectReference Include="..\Retruxel.Toolchain\Retruxel.Toolchain.csproj" />
   </ItemGroup>
 
   <PropertyGroup>

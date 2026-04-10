@@ -15,8 +15,13 @@ public class EntityModule : ILogicModule
     public string     DisplayName  => "Player Entity";
     public string     Category     => "Entities";
     public ModuleType Type         => ModuleType.Logic;
-    public bool       IsUniversal  => false;
     public string[]   Compatibility => ["sms"];
+
+    private static readonly JsonSerializerOptions _jsonOptions = new()
+    {
+        PropertyNamingPolicy        = JsonNamingPolicy.CamelCase,
+        PropertyNameCaseInsensitive = true
+    };
 
     private EntityState _state = new();
 
@@ -81,9 +86,9 @@ public class EntityModule : ILogicModule
 
     public IEnumerable<GeneratedFile> GenerateCode() => [];
 
-    public string Serialize()            => JsonSerializer.Serialize(_state);
-    public void   Deserialize(string json) => _state = JsonSerializer.Deserialize<EntityState>(json) ?? new();
-    public string GetValidationSample()  => JsonSerializer.Serialize(new EntityState());
+    public string Serialize()              => JsonSerializer.Serialize(_state, _jsonOptions);
+    public void   Deserialize(string json) => _state = JsonSerializer.Deserialize<EntityState>(json, _jsonOptions) ?? new();
+    public string GetValidationSample()    => JsonSerializer.Serialize(new EntityState(), _jsonOptions);
 
     private class EntityState
     {

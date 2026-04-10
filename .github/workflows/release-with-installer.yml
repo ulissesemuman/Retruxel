@@ -53,13 +53,15 @@ jobs:
     
     - name: Publish
       if: steps.check_tag.outputs.TAG_EXISTS == 'false'
-      run: dotnet publish Retruxel/Retruxel.csproj --configuration Release --output ./publish --no-build
+      run: dotnet publish Retruxel/Retruxel.csproj --configuration Release --output ./publish --no-build /p:DebugType=None /p:DebugSymbols=false
     
     - name: Create Portable ZIP
       if: steps.check_tag.outputs.TAG_EXISTS == 'false'
       shell: pwsh
       run: |
         $version = "${{ steps.version.outputs.VERSION }}"
+        # Remove PDB files before creating ZIP
+        Get-ChildItem -Path ./publish -Filter *.pdb -Recurse | Remove-Item -Force
         Compress-Archive -Path ./publish/* -DestinationPath "Retruxel-$version-portable.zip"
     
     - name: Update Inno Setup script version

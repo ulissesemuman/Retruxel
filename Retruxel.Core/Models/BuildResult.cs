@@ -12,8 +12,20 @@ public class BuildResult
     /// <summary>Full path to the generated ROM file. Null if the build failed.</summary>
     public string? RomPath { get; set; }
 
-    /// <summary>ROM size in bytes. Zero if the build failed.</summary>
-    public int RomSizeBytes { get; set; }
+    /// <summary>
+    /// Per-bank usage in bytes. Key = RomBank.Id, Value = bytes consumed.
+    /// Populated in two stages:
+    ///   1. Before build: estimated from GeneratedFile sizes grouped by BankId.
+    ///   2. After build:  overwritten with real values parsed from the linker .map file (if available).
+    /// The Build Console reads only this dictionary — it does not care about the source.
+    /// </summary>
+    public Dictionary<string, int> BankUsage { get; set; } = [];
+
+    /// <summary>
+    /// Total ROM size in bytes across all banks.
+    /// Computed from BankUsage — do not set directly.
+    /// </summary>
+    public int RomSizeBytes => BankUsage.Values.Sum();
 
     /// <summary>
     /// Full build log output as displayed in the Build Console.

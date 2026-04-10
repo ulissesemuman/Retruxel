@@ -12,6 +12,9 @@ public class AppSettings
     [JsonPropertyName("general")]
     public GeneralSettings General { get; set; } = new();
 
+    [JsonPropertyName("window")]
+    public WindowSettings Window { get; set; } = new();
+
     [JsonPropertyName("appearance")]
     public AppearanceSettings Appearance { get; set; } = new();
 
@@ -48,6 +51,29 @@ public class GeneralSettings
     /// <summary>Favorite target IDs.</summary>
     [JsonPropertyName("favoriteTargets")]
     public List<string> FavoriteTargets { get; set; } = [];
+}
+
+// ── Window ────────────────────────────────────────────────────────────────────
+
+public class WindowSettings
+{
+    [JsonPropertyName("width")]
+    public double Width { get; set; } = 1280;
+
+    [JsonPropertyName("height")]
+    public double Height { get; set; } = 800;
+
+    [JsonPropertyName("left")]
+    public double Left { get; set; } = 100;
+
+    [JsonPropertyName("top")]
+    public double Top { get; set; } = 100;
+
+    [JsonPropertyName("isMaximized")]
+    public bool IsMaximized { get; set; } = false;
+
+    [JsonPropertyName("isFirstRun")]
+    public bool IsFirstRun { get; set; } = true;
 }
 
 // ── Appearance ────────────────────────────────────────────────────────────────

@@ -1,11 +1,11 @@
 #define MyAppName "Retruxel"
-#define MyAppVersion "0.4.0"
+#define MyAppVersion "0.4.0-alpha"
 #define MyAppPublisher "Ulisses Emuman"
 #define MyAppURL "https://github.com/ulissesemuman/Retruxel"
 #define MyAppExeName "Retruxel.exe"
 
 [Setup]
-AppId={{A1B2C3D4-E5F6-7890-ABCD-EF1234567890}
+AppId={{8F3A2B1C-4D5E-6F7A-8B9C-0D1E2F3A4B5C}
 AppName={#MyAppName}
 AppVersion={#MyAppVersion}
 AppPublisher={#MyAppPublisher}
@@ -16,9 +16,9 @@ DefaultDirName={autopf}\{#MyAppName}
 DefaultGroupName={#MyAppName}
 AllowNoIcons=yes
 LicenseFile=LICENSE
-OutputDir=installer
-OutputBaseFilename=Retruxel-{#MyAppVersion}-setup
-SetupIconFile=Retruxel\Assets\icon.ico
+OutputDir=Output
+OutputBaseFilename=RetruxelSetup
+SetupIconFile=Retruxel\Assets\Icons\app-icon.ico
 Compression=lzma2/ultra64
 SolidCompression=yes
 WizardStyle=modern
@@ -37,6 +37,8 @@ Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{
 [Files]
 Source: "publish\{#MyAppExeName}"; DestDir: "{app}"; Flags: ignoreversion
 Source: "publish\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "README.md"; DestDir: "{app}"; Flags: ignoreversion
+Source: "LICENSE"; DestDir: "{app}"; Flags: ignoreversion
 
 [Icons]
 Name: "{group}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"

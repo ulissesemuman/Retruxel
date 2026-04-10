@@ -15,8 +15,13 @@ public class ScrollModule : ILogicModule
     public string     DisplayName  => "Background Scroll";
     public string     Category     => "Background";
     public ModuleType Type         => ModuleType.Logic;
-    public bool       IsUniversal  => false;
     public string[]   Compatibility => ["sms"];
+
+    private static readonly JsonSerializerOptions _jsonOptions = new()
+    {
+        PropertyNamingPolicy        = JsonNamingPolicy.CamelCase,
+        PropertyNameCaseInsensitive = true
+    };
 
     private ScrollState _state = new();
 
@@ -60,9 +65,9 @@ public class ScrollModule : ILogicModule
 
     public IEnumerable<GeneratedFile> GenerateCode() => [];
 
-    public string Serialize()              => JsonSerializer.Serialize(_state);
-    public void   Deserialize(string json) => _state = JsonSerializer.Deserialize<ScrollState>(json) ?? new();
-    public string GetValidationSample()    => JsonSerializer.Serialize(new ScrollState());
+    public string Serialize()              => JsonSerializer.Serialize(_state, _jsonOptions);
+    public void   Deserialize(string json) => _state = JsonSerializer.Deserialize<ScrollState>(json, _jsonOptions) ?? new();
+    public string GetValidationSample()    => JsonSerializer.Serialize(new ScrollState(), _jsonOptions);
 
     private class ScrollState
     {

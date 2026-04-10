@@ -1,0 +1,113 @@
+name: Build and Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  release:
+    runs-on: windows-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Verify branch is master
+        run: |
+          $branch = git branch -r --contains ${{ github.ref }}
+          if ($branch -notmatch "origin/master") {
+            Write-Error "Tag must be on master branch"
+            exit 1
+          }
+        shell: pwsh
+      
+      - name: Check if release already exists
+        id: check_release
+        run: |
+          $tag = "${{ github.ref_name }}"
+          $releases = gh release list --limit 100
+          if ($releases -match $tag) {
+            Write-Host "Release $tag already exists, skipping..."
+            echo "exists=true" >> $env:GITHUB_OUTPUT
+          } else {
+            echo "exists=false" >> $env:GITHUB_OUTPUT
+          }
+        shell: pwsh
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Verify release notes file exists
+        if: steps.check_release.outputs.exists == 'false'
+        run: |
+          $tag = "${{ github.ref_name }}"
+          $releaseFile = "RELEASE_$tag.md"
+          if (-not (Test-Path $releaseFile)) {
+            Write-Error "Release notes file $releaseFile not found"
+            exit 1
+          }
+        shell: pwsh
+      
+      - name: Setup .NET
+        if: steps.check_release.outputs.exists == 'false'
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+      
+      - name: Restore dependencies
+        if: steps.check_release.outputs.exists == 'false'
+        run: dotnet restore Retruxel.slnx
+      
+      - name: Build and Publish
+        if: steps.check_release.outputs.exists == 'false'
+        run: |
+          dotnet publish Retruxel/Retruxel.csproj `
+            -c Release `
+            -r win-x64 `
+            --self-contained true `
+            -p:PublishSingleFile=false `
+            -p:IncludeNativeLibrariesForSelfExtract=true `
+            -o publish/
+        shell: pwsh
+      
+      - name: Create Portable ZIP
+        if: steps.check_release.outputs.exists == 'false'
+        run: |
+          $tag = "${{ github.ref_name }}"
+          Compress-Archive -Path publish/* -DestinationPath "Retruxel-$tag-portable.zip"
+        shell: pwsh
+      
+      - name: Install Inno Setup
+        if: steps.check_release.outputs.exists == 'false'
+        run: choco install innosetup -y
+        shell: pwsh
+      
+      - name: Build Installer with Inno Setup
+        if: steps.check_release.outputs.exists == 'false'
+        run: |
+          $tag = "${{ github.ref_name }}"
+          $version = $tag -replace '^v', ''
+          
+          # Update installer.iss with version
+          (Get-Content installer.iss) `
+            -replace '#define MyAppVersion ".*"', "#define MyAppVersion `"$version`"" `
+            | Set-Content installer-temp.iss
+          
+          & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" installer-temp.iss
+          
+          # Rename output to include version tag
+          Move-Item "Output\RetruxelSetup.exe" "Retruxel-$tag-setup.exe"
+        shell: pwsh
+      
+      - name: Create GitHub Release
+        if: steps.check_release.outputs.exists == 'false'
+        uses: softprops/action-gh-release@v2
+        with:
+          body_path: RELEASE_${{ github.ref_name }}.md
+          files: |
+            Retruxel-${{ github.ref_name }}-setup.exe
+            Retruxel-${{ github.ref_name }}-portable.zip
+          draft: false
+          prerelease: ${{ contains(github.ref_name, 'alpha') || contains(github.ref_name, 'beta') }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -9,6 +9,14 @@ public partial class App : Application
 {
     private async void App_Startup(object sender, StartupEventArgs e)
     {
+        // ═══════════════════════════════════════════════════════════════════════
+        // STARTUP MODE CONFIGURATION
+        // ═══════════════════════════════════════════════════════════════════════
+        // Set to false for real initialization (slower but functional)
+        // Set to true for dummy mode (fast fake delays for development)
+        StartupService.UseDummyMode = false;
+        // ═══════════════════════════════════════════════════════════════════════
+
         // Load settings
         var settings = SettingsService.Load();
 
@@ -37,30 +45,7 @@ public partial class App : Application
 
         await splash.RunAsync(async progress =>
         {
-            progress.Report("INITIALIZING_CORE...");
-            await Task.Delay(300);
-
-            progress.Report("LOADING_GRAPHIC_MODULES...");
-            await Task.Delay(300);
-
-            progress.Report("LOADING_LOGIC_MODULES...");
-            await Task.Delay(300);
-
-            progress.Report("LOADING_AUDIO_MODULES...");
-            await Task.Delay(300);
-
-            progress.Report("LOADING_TARGET_SMS...");
-            await Task.Delay(300);
-
-            progress.Report("EXTRACTING_TOOLCHAIN...");
-            await Task.Delay(300);
-
-            progress.Report("VERIFYING_TOOLCHAIN...");
-            await Task.Delay(300);
-
-            progress.Report("SYSTEM_READY");
-            await Task.Delay(200);
-
+            await StartupService.InitializeAsync(progress);
         }, () =>
         {
             mainWindow.Show();

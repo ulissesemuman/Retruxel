@@ -1,8 +1,6 @@
 ﻿using Retruxel.Core.Interfaces;
 using Retruxel.Core.Models;
-using Retruxel.Modules.Text;
-using Retruxel.Target.ColecoVision.Modules.Text;
-using Retruxel.Target.ColecoVision.Toolchain;
+using Retruxel.Target.ColecoVision.Modules.Graphics;
 
 namespace Retruxel.Target.ColecoVision;
 
@@ -18,6 +16,8 @@ public class ColecoVisionTarget : ITarget
 
     public TargetSpecs Specs => new()
     {
+        Manufacturer = "Coleco",
+
         // Screen
         ScreenWidth  = 256,
         ScreenHeight = 192,
@@ -46,7 +46,10 @@ public class ColecoVisionTarget : ITarget
 
         // Memory
         RamBytes    = 1024,
-        RomMaxBytes = 32768,
+        Banks =
+        [
+            new RomBank("rom", "ROM", 32768)
+        ],
 
         // CPU
         CPU        = "Zilog Z80",
@@ -86,7 +89,7 @@ public class ColecoVisionTarget : ITarget
 
     // Toolchain & modules
 
-    public IToolchain GetToolchain() => new ColecoVisionToolchain();
+    public IToolchain GetToolchain() => new ColecoToolchainAdapter();
 
     public IEnumerable<IModule> GetBuiltinModules() => [];
 
@@ -136,29 +139,29 @@ public class ColecoVisionTarget : ITarget
         switch (module.ModuleId)
         {
             case "text.display":
-                var textModule = (TextDisplayModule)module;
-                var codeGen = new ColecoVisionTextDisplayCodeGen(textModule);
-
-                var errors = codeGen.Validate().ToList();
-                var files = new List<GeneratedFile>
                 {
-                    codeGen.GenerateCode(),
-                    codeGen.GenerateHeader()
-                };
-
-                if (errors.Count > 0)
-                {
-                    var warnings = string.Join("\n", errors.Select(e => $"// WARNING: {e}"));
-                    files[0] = new GeneratedFile
+                    var codeGen = new ColecoVisionTextDisplayCodeGen(module.Serialize());
+                    var errors  = codeGen.Validate().ToList();
+                    var files   = new List<GeneratedFile>
                     {
-                        FileName       = files[0].FileName,
-                        Content        = warnings + "\n\n" + files[0].Content,
-                        FileType       = files[0].FileType,
-                        SourceModuleId = files[0].SourceModuleId
+                        codeGen.GenerateCode(),
+                        codeGen.GenerateHeader()
                     };
-                }
 
-                return files;
+                    if (errors.Count > 0)
+                    {
+                        var warnings = string.Join("\n", errors.Select(e => $"// WARNING: {e}"));
+                        files[0] = new GeneratedFile
+                        {
+                            FileName       = files[0].FileName,
+                            Content        = warnings + "\n\n" + files[0].Content,
+                            FileType       = files[0].FileType,
+                            SourceModuleId = files[0].SourceModuleId
+                        };
+                    }
+
+                    return files;
+                }
 
             default:
                 return [];
@@ -180,16 +183,17 @@ public class ColecoVisionTarget : ITarget
         $"// Project: {project.Name} | Target: {project.TargetId}",
         $"// Generated at: {DateTime.Now:yyyy-MM-dd HH:mm:ss}",
         "",
-        "#include \"SMSlib.h\"",
+        "#include \"SGlib.h\"",
         .. headers,
         "",
         "void main(void) {",
         .. initCalls,
         "",
         "    while(1) {",
-        "        SMS_waitForVBlank();",
+        "        SG_waitForVBlank();",
         "    }",
         "}",
+        ""
     ]);
 
         return new GeneratedFile

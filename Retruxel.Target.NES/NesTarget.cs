@@ -1,7 +1,6 @@
 using Retruxel.Core.Interfaces;
 using Retruxel.Core.Models;
-using Retruxel.Target.NES.Modules.Text;
-using Retruxel.Target.NES.Toolchain;
+using Retruxel.Target.NES.Modules.Graphics;
 
 namespace Retruxel.Target.NES;
 
@@ -44,7 +43,11 @@ public class NesTarget : ITarget
 
         // ── Memory ───────────────────────────────────────────────────────────
         RamBytes    = 2048,
-        RomMaxBytes = 524288,
+        Banks =
+        [
+            new RomBank("prg", "PRG-ROM", 524288),
+            new RomBank("chr", "CHR-ROM",   8192)
+        ],
 
         // ── CPU ──────────────────────────────────────────────────────────────
         CPU        = "MOS 6502",
@@ -99,7 +102,11 @@ public class NesTarget : ITarget
 
     // ── Toolchain & modules ───────────────────────────────────────────────────
 
-    public IToolchain GetToolchain() => new NesToolchain();
+    public IToolchain GetToolchain()
+    {
+        var builder = Retruxel.Toolchain.ToolchainOrchestrator.GetBuilder(TargetId);
+        return new NesToolchainAdapter(builder);
+    }
 
     public IEnumerable<IModule> GetBuiltinModules() => [];
 
@@ -208,14 +215,15 @@ public class NesTarget : ITarget
             .Where(f => f.FileType == GeneratedFileType.Header)
             .Select(f => $"#include \"{f.FileName}\"");
 
-        var initCalls = fileList
-            .Where(f => f.FileType == GeneratedFileType.Source)
+        // text.display calls (one per instance)
+        var textDisplayCalls = fileList
+            .Where(f => f.SourceModuleId == "text.display" && f.FileType == GeneratedFileType.Source)
             .Select(f => $"    {Path.GetFileNameWithoutExtension(f.FileName)}_init();");
 
         var updateModules = new HashSet<string> { "entity", "enemy", "scroll" };
         var updateCalls   = fileList
             .Where(f => f.FileType == GeneratedFileType.Source
-                     && updateModules.Contains(Path.GetFileNameWithoutExtension(f.FileName)))
+                     && updateModules.Contains(f.SourceModuleId))
             .Select(f => $"        {Path.GetFileNameWithoutExtension(f.FileName)}_update();");
 
         var content = string.Join("\n", [
@@ -233,7 +241,14 @@ public class NesTarget : ITarget
             "#include \"nes.h\"",
             .. headers,
             "",
-            "// OAM sprite buffer offset (required by display.sinc)",
+            "// NES palette - white text on black background",
+            "const unsigned char palette[16] = {",
+            "    0x0F, 0x30, 0x30, 0x30,  // BG0: preto (fundo), branco (texto)",
+            "    0x0F, 0x30, 0x30, 0x30,  // BG1",
+            "    0x0F, 0x30, 0x30, 0x30,  // BG2",
+            "    0x0F, 0x30, 0x30, 0x30   // BG3",
+            "};\n",
+            "// OAM sprite buffer offset",
             "#pragma bss-name(push, \"ZEROPAGE\")",
             "unsigned char oam_off;",
             "#pragma bss-name(pop)",
@@ -242,7 +257,10 @@ public class NesTarget : ITarget
             "    ppu_off();",
             "    oam_off = 0;",
             "    ",
-            .. initCalls,
+            "    // Load background palette",
+            "    pal_bg(palette);",
+            "    ",
+            .. textDisplayCalls,
             "    ",
             "    ppu_on_all();",
             "",

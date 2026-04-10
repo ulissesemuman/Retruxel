@@ -6,6 +6,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
+using System.Windows.Threading;
 
 namespace Retruxel.Views;
 
@@ -23,6 +24,9 @@ public partial class SceneEditorView : UserControl
     private ModuleLoader? _moduleLoader;
     private bool _isUpdatingUI;
     private bool _isLoadingProject;
+    private Border? _selectedTab;
+    private TextBox? _editingTextBox;
+    private DispatcherTimer? _longPressTimer;
 
     public event Action<RetruxelProject>? OnGenerateRomRequested;
 
@@ -37,12 +41,8 @@ public partial class SceneEditorView : UserControl
     private void ApplyLocalization()
     {
         var loc = LocalizationService.Instance;
-        TxtSceneTitle.Text = loc.Get("scene.title");
         BtnGenerateRom.Content = loc.Get("scene.generate_rom");
-        TxtSystemStatus.Text = loc.Get("scene.system_status");
         ModulePaletteHeader.Text = loc.Get("scene.modules");
-        BtnNewAsset.Content = loc.Get("scene.new_asset");
-        TxtDocumentation.Text = loc.Get("scene.documentation");
         TxtPropertiesTitle.Text = loc.Get("scene.properties");
         TxtNoSelection.Text = loc.Get("scene.no_selection");
         TxtEventsTitle.Text = loc.Get("scene.events");
@@ -56,6 +56,24 @@ public partial class SceneEditorView : UserControl
     public void SetModuleLoader(ModuleLoader loader)
     {
         _moduleLoader = loader;
+    }
+
+    /// <summary>
+    /// Refreshes localization for all UI elements.
+    /// Called when language changes.
+    /// </summary>
+    public void RefreshLocalization()
+    {
+        ApplyLocalization();
+        if (_target != null)
+        {
+            LoadModulePalette(_target);
+            LoadEvents();
+        }
+        if (_selectedElement != null)
+        {
+            BuildPropertiesPanel(_selectedElement);
+        }
     }
 
     private void SceneEditorView_KeyDown(object sender, KeyEventArgs e)
@@ -80,23 +98,24 @@ public partial class SceneEditorView : UserControl
         SceneCanvas.Children.Clear();
         _selectedElement = null;
         
-        // Get or create main scene
-        _currentScene = project.Scenes.FirstOrDefault();
-        if (_currentScene is null)
+        // Ensure at least one scene exists
+        if (project.Scenes.Count == 0)
         {
-            _currentScene = new SceneData
+            project.Scenes.Add(new SceneData
             {
                 SceneId = Guid.NewGuid().ToString(),
-                SceneName = "Main",
+                SceneName = "Scene 1",
                 Elements = []
-            };
-            project.Scenes.Add(_currentScene);
+            });
         }
         
-        TxtSceneName.Text = _currentScene.SceneName;
+        // Load first scene
+        _currentScene = project.Scenes[0];
+        
         ApplyTargetSpecs(target);
         LoadModulePalette(target);
         LoadEvents();
+        RebuildSceneTabs();
         LoadFromProject();
     }
 
@@ -105,7 +124,263 @@ public partial class SceneEditorView : UserControl
         var specs = target.Specs;
         SceneCanvas.Width  = specs.ScreenWidth;
         SceneCanvas.Height = specs.ScreenHeight;
-        TxtCanvasSize.Text = $"{specs.ScreenWidth} × {specs.ScreenHeight} px";
+        TxtCanvasSize.Text = string.Format(
+            LocalizationService.Instance.Get("scene.canvas_size.format"),
+            specs.ScreenWidth, specs.ScreenHeight);
+    }
+
+    // ===== SCENE TABS =====
+
+    private void RebuildSceneTabs()
+    {
+        SceneTabsPanel.Children.Clear();
+        
+        if (_project is null) return;
+        
+        foreach (var scene in _project.Scenes)
+        {
+            var tab = BuildSceneTab(scene);
+            SceneTabsPanel.Children.Add(tab);
+        }
+    }
+
+    private Border BuildSceneTab(SceneData scene)
+    {
+        var isSelected = scene == _currentScene;
+        
+        var tab = new Border
+        {
+            Background = new SolidColorBrush(isSelected 
+                ? Color.FromRgb(0x26, 0x26, 0x26) 
+                : Color.FromRgb(0x1E, 0x1E, 0x1E)),
+            Padding = new Thickness(12, 0, 12, 0),
+            Height = 40,
+            Margin = new Thickness(0, 0, 4, 0),
+            Cursor = Cursors.Hand,
+            Tag = scene
+        };
+
+        var label = new TextBlock
+        {
+            Text = scene.SceneName,
+            Style = (Style)FindResource("TextCode"),
+            Foreground = new SolidColorBrush(isSelected 
+                ? Color.FromRgb(0x8E, 0xFF, 0x71) 
+                : Color.FromRgb(0xAD, 0xAA, 0xAA)),
+            VerticalAlignment = VerticalAlignment.Center
+        };
+
+        tab.Child = label;
+
+        if (isSelected)
+            _selectedTab = tab;
+
+        // Click to switch scene
+        tab.MouseLeftButtonDown += (s, e) =>
+        {
+            if (e.ClickCount == 1)
+            {
+                SwitchToScene(scene);
+                e.Handled = true;
+            }
+        };
+
+        // Long press to edit
+        // Trocar MouseLeftButtonDown por PreviewMouseLeftButtonDown
+        tab.PreviewMouseLeftButtonDown += (s, e) =>
+        {
+            _longPressTimer?.Stop();
+            _longPressTimer = new DispatcherTimer
+            {
+                Interval = TimeSpan.FromMilliseconds(500)
+            };
+            _longPressTimer.Tick += (_, _) =>
+            {
+                _longPressTimer.Stop();
+                StartEditingSceneName(tab, scene);
+                e.Handled = true; // Previne o Click de disparar
+            };
+            _longPressTimer.Start();
+        };
+
+        tab.PreviewMouseLeftButtonUp += (s, e) =>
+        {
+            _longPressTimer?.Stop();
+        };
+
+        // Right-click context menu
+        tab.MouseRightButtonDown += (s, e) =>
+        {
+            ShowSceneContextMenu(tab, scene, e.GetPosition(tab));
+            e.Handled = true;
+        };
+
+        return tab;
+    }
+
+    private void SwitchToScene(SceneData scene)
+    {
+        if (_currentScene == scene) return;
+        
+        // Save current scene
+        SyncProjectModules();
+        
+        // Clear canvas and elements
+        _elements.Clear();
+        SceneCanvas.Children.Clear();
+        _selectedElement = null;
+        
+        // Switch to new scene
+        _currentScene = scene;
+        
+        // Reload UI
+        LoadEvents();
+        RebuildSceneTabs();
+        LoadFromProject();
+    }
+
+    private void NewScene_Click(object sender, RoutedEventArgs e)
+    {
+        if (_project is null) return;
+        
+        // Find next scene number
+        var sceneNumber = 1;
+        while (_project.Scenes.Any(s => s.SceneName == $"Scene {sceneNumber}"))
+            sceneNumber++;
+        
+        var newScene = new SceneData
+        {
+            SceneId = Guid.NewGuid().ToString(),
+            SceneName = $"Scene {sceneNumber}",
+            Elements = []
+        };
+        
+        _project.Scenes.Add(newScene);
+        RebuildSceneTabs();
+        SwitchToScene(newScene);
+        
+        // Start editing the name
+        var tab = SceneTabsPanel.Children.OfType<Border>()
+            .FirstOrDefault(b => b.Tag == newScene);
+        if (tab is not null)
+            StartEditingSceneName(tab, newScene);
+        
+        _projectManager?.MarkDirty();
+    }
+
+    private void StartEditingSceneName(Border tab, SceneData scene)
+    {
+        if (tab.Child is not TextBlock label) return;
+        
+        var textBox = new TextBox
+        {
+            Text = scene.SceneName,
+            FontFamily = new FontFamily("Consolas"),
+            FontSize = 12,
+            Foreground = new SolidColorBrush(Color.FromRgb(0x8E, 0xFF, 0x71)),
+            Background = Brushes.Transparent,
+            BorderThickness = new Thickness(0),
+            VerticalAlignment = VerticalAlignment.Center,
+            CaretBrush = new SolidColorBrush(Color.FromRgb(0x8E, 0xFF, 0x71))
+        };
+        
+        _editingTextBox = textBox;
+        tab.Child = textBox;
+        textBox.Focus();
+        textBox.SelectAll();
+        
+        textBox.KeyDown += (s, e) =>
+        {
+            if (e.Key == Key.Enter)
+            {
+                FinishEditingSceneName(tab, scene, textBox.Text);
+                e.Handled = true;
+            }
+            else if (e.Key == Key.Escape)
+            {
+                FinishEditingSceneName(tab, scene, scene.SceneName);
+                e.Handled = true;
+            }
+        };
+        
+        textBox.LostFocus += (s, e) =>
+        {
+            FinishEditingSceneName(tab, scene, textBox.Text);
+        };
+    }
+
+    private void FinishEditingSceneName(Border tab, SceneData scene, string newName)
+    {
+        if (_editingTextBox is null) return;
+        
+        _editingTextBox = null;
+        
+        if (!string.IsNullOrWhiteSpace(newName))
+        {
+            scene.SceneName = newName.Trim();
+            _projectManager?.MarkDirty();
+        }
+        
+        var label = new TextBlock
+        {
+            Text = scene.SceneName,
+            Style = (Style)FindResource("TextCode"),
+            Foreground = new SolidColorBrush(scene == _currentScene 
+                ? Color.FromRgb(0x8E, 0xFF, 0x71) 
+                : Color.FromRgb(0xAD, 0xAA, 0xAA)),
+            VerticalAlignment = VerticalAlignment.Center
+        };
+        
+        tab.Child = label;
+    }
+
+    private void ShowSceneContextMenu(Border tab, SceneData scene, Point position)
+    {
+        var loc = LocalizationService.Instance;
+        var menu = new ContextMenu
+        {
+            Background = new SolidColorBrush(Color.FromRgb(0x1E, 0x1E, 0x1E)),
+            BorderBrush = new SolidColorBrush(Color.FromRgb(0x3A, 0x3A, 0x3A)),
+            BorderThickness = new Thickness(1)
+        };
+        
+        // Rename
+        var renameItem = new MenuItem
+        {
+            Header = loc.Get("scene.context.rename"),
+            Foreground = Brushes.White,
+            Background = Brushes.Transparent
+        };
+        renameItem.Click += (s, e) => StartEditingSceneName(tab, scene);
+        menu.Items.Add(renameItem);
+        
+        // Delete
+        var deleteItem = new MenuItem
+        {
+            Header = loc.Get("scene.context.delete"),
+            Foreground = Brushes.White,
+            Background = Brushes.Transparent,
+            IsEnabled = _project?.Scenes.Count > 1
+        };
+        deleteItem.Click += (s, e) => DeleteScene(scene);
+        menu.Items.Add(deleteItem);
+        
+        menu.PlacementTarget = tab;
+        menu.IsOpen = true;
+    }
+
+    private void DeleteScene(SceneData scene)
+    {
+        if (_project is null || _project.Scenes.Count <= 1) return;
+        
+        var index = _project.Scenes.IndexOf(scene);
+        _project.Scenes.Remove(scene);
+        
+        // Switch to previous or next scene
+        var newIndex = Math.Max(0, index - 1);
+        SwitchToScene(_project.Scenes[newIndex]);
+        
+        _projectManager?.MarkDirty();
     }
 
     // ===== MODULE PALETTE =====
@@ -119,6 +394,7 @@ public partial class SceneEditorView : UserControl
 
         if (_moduleLoader is null) return;
 
+        var loc = LocalizationService.Instance;
         var modules = new List<(string Category, string ModuleId, string DisplayName)>();
 
         foreach (var (moduleId, module) in _moduleLoader.LogicModules)
@@ -143,9 +419,13 @@ public partial class SceneEditorView : UserControl
 
         foreach (var group in grouped)
         {
+            // Translate category name
+            var categoryKey = $"scene.category.{group.Key.ToLower()}";
+            var categoryName = loc.Get(categoryKey);
+            
             var header = new TextBlock
             {
-                Text = group.Key,
+                Text = categoryName,
                 Style = (Style)FindResource("TextLabel"),
                 Margin = new Thickness(12, 8, 12, 4)
             };
@@ -207,7 +487,9 @@ public partial class SceneEditorView : UserControl
     private void Canvas_MouseMove(object sender, MouseEventArgs e)
     {
         var pos = e.GetPosition(SceneCanvas);
-        TxtCoordinates.Text = $"X: {(int)pos.X} | Y: {(int)pos.Y}";
+        TxtCoordinates.Text = string.Format(
+            LocalizationService.Instance.Get("scene.coordinates.format"),
+            (int)pos.X, (int)pos.Y);
     }
 
     private void Canvas_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
@@ -600,9 +882,18 @@ public partial class SceneEditorView : UserControl
 
     private void AddParameterField(SceneElement element, IModule module, ParameterDefinition param)
     {
+        var loc = LocalizationService.Instance;
+        
+        // Try to get localized parameter name
+        var paramKey = $"scene.param.{param.Name.ToLower().Replace(" ", "_")}";
+        var paramDisplayName = loc.Get(paramKey);
+        // If key not found, use original DisplayName
+        if (paramDisplayName == paramKey)
+            paramDisplayName = param.DisplayName;
+        
         PropertiesPanel.Children.Add(new TextBlock
         {
-            Text = param.DisplayName,
+            Text = paramDisplayName,
             Style = (Style)FindResource("TextLabel"),
             Margin = new Thickness(0, 0, 0, 4)
         });

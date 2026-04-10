@@ -17,27 +17,25 @@ namespace Retruxel.Modules.Logic;
 ///
 /// JSON format:
 /// {
-///   "module":         "sms.input",
-///   "holdThreshold":  60,     // frames before a button press is considered "held" (~1s at 60fps)
-///   "port":           1       // joypad port (1 or 2)
+///   "holdThreshold": 60,     // frames before a button press is considered "held" (~1s at 60fps)
+///   "port":          1       // joypad port (1 or 2)
 /// }
 /// </summary>
 public class InputModule : ILogicModule
 {
-    public string ModuleId    => "sms.input";
-    public string DisplayName => "Input";
-    public string Category    => "Logic";
-    public ModuleType Type    => ModuleType.Logic;
-    public string[] Compatibility => ["sms", "gg"];
+    public string     ModuleId     => "sms.input";
+    public string     DisplayName  => "Input";
+    public string     Category     => "Logic";
+    public ModuleType Type         => ModuleType.Logic;
+    public string[]   Compatibility => ["sms", "gg"];
 
-    /// <summary>
-    /// Number of frames a button must be held before triggering a "hold" event.
-    /// At 60fps: 60 frames ≈ 1 second.
-    /// </summary>
-    public int HoldThreshold { get; set; } = 60;
+    private static readonly JsonSerializerOptions _jsonOptions = new()
+    {
+        PropertyNamingPolicy        = JsonNamingPolicy.CamelCase,
+        PropertyNameCaseInsensitive = true
+    };
 
-    /// <summary>Joypad port to read (1 or 2).</summary>
-    public int Port { get; set; } = 1;
+    private InputState _state = new();
 
     public ModuleManifest GetManifest() => new()
     {
@@ -49,42 +47,41 @@ public class InputModule : ILogicModule
         [
             new ParameterDefinition
             {
-                Name        = "holdThreshold",
-                DisplayName = "Hold Threshold (frames)",
-                Description = "Frames before a button press becomes a hold. 60 ≈ 1 second at 60fps.",
-                Type        = ParameterType.Int,
+                Name         = "holdThreshold",
+                DisplayName  = "Hold Threshold (frames)",
+                Description  = "Frames before a button press becomes a hold. 60 ≈ 1 second at 60fps.",
+                Type         = ParameterType.Int,
                 DefaultValue = 60,
-                MinValue    = 10,
-                MaxValue    = 300
+                MinValue     = 10,
+                MaxValue     = 300
             },
             new ParameterDefinition
             {
-                Name        = "port",
-                DisplayName = "Joypad Port",
-                Description = "Joypad port to read (1 or 2).",
-                Type        = ParameterType.Enum,
+                Name         = "port",
+                DisplayName  = "Joypad Port",
+                Description  = "Joypad port to read (1 or 2).",
+                Type         = ParameterType.Enum,
                 DefaultValue = "1",
-                EnumOptions = new() { { "Port 1", "1" }, { "Port 2", "2" } }
+                EnumOptions  = new() { { "Port 1", "1" }, { "Port 2", "2" } }
             }
         ]
     };
 
     public IEnumerable<GeneratedFile> GenerateCode() => [];
 
-    public string Serialize()
+    public string Serialize()              => JsonSerializer.Serialize(_state, _jsonOptions);
+    public void   Deserialize(string json) => _state = JsonSerializer.Deserialize<InputState>(json, _jsonOptions) ?? new();
+    public string GetValidationSample()    => JsonSerializer.Serialize(new InputState(), _jsonOptions);
+
+    private class InputState
     {
-        var data = new { module = ModuleId, holdThreshold = HoldThreshold, port = Port };
-        return JsonSerializer.Serialize(data);
+        /// <summary>
+        /// Number of frames a button must be held before triggering a "hold" event.
+        /// At 60fps: 60 frames ≈ 1 second.
+        /// </summary>
+        public int HoldThreshold { get; set; } = 60;
+
+        /// <summary>Joypad port to read (1 or 2).</summary>
+        public int Port { get; set; } = 1;
     }
-
-    public void Deserialize(string json)
-    {
-        var doc  = JsonDocument.Parse(json);
-        var root = doc.RootElement;
-
-        if (root.TryGetProperty("holdThreshold", out var ht)) HoldThreshold = ht.GetInt32();
-        if (root.TryGetProperty("port",          out var p))  Port          = p.GetInt32();
-    }
-
-    public string GetValidationSample() => Serialize();
 }

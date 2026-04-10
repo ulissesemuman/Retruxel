@@ -14,7 +14,6 @@ namespace Retruxel.Modules.Graphics;
 ///
 /// JSON format:
 /// {
-///   "module":       "sms.sprite",
 ///   "tilesAssetId": "player_tiles",   // asset ID for sprite CHR data
 ///   "startTile":    256,              // first VRAM sprite tile slot (256–511 recommended)
 ///   "doubleHeight": false             // enable 8×16 sprite mode
@@ -22,27 +21,19 @@ namespace Retruxel.Modules.Graphics;
 /// </summary>
 public class SpriteModule : ILogicModule
 {
-    public string ModuleId    => "sms.sprite";
-    public string DisplayName => "Sprite";
-    public string Category    => "Graphics";
-    public ModuleType Type    => ModuleType.Logic;
-    public string[] Compatibility => ["sms", "gg"];
+    public string     ModuleId     => "sms.sprite";
+    public string     DisplayName  => "Sprite";
+    public string     Category     => "Graphics";
+    public ModuleType Type         => ModuleType.Logic;
+    public string[]   Compatibility => ["sms", "gg"];
 
-    /// <summary>Asset ID for the sprite tile CHR data.</summary>
-    public string TilesAssetId { get; set; } = string.Empty;
+    private static readonly JsonSerializerOptions _jsonOptions = new()
+    {
+        PropertyNamingPolicy        = JsonNamingPolicy.CamelCase,
+        PropertyNameCaseInsensitive = true
+    };
 
-    /// <summary>
-    /// First VRAM tile slot for sprite graphics.
-    /// On SMS, sprites can use tiles 0–255 (first half) or 256–511 (second half).
-    /// Using the second half (256+) is recommended to separate BG and sprite tiles.
-    /// </summary>
-    public int StartTile { get; set; } = 256;
-
-    /// <summary>
-    /// Enable 8×16 sprite mode (VDP double-height sprites).
-    /// When true, each sprite entry uses two vertically stacked 8×8 tiles.
-    /// </summary>
-    public bool DoubleHeight { get; set; } = false;
+    private SpriteState _state = new();
 
     public ModuleManifest GetManifest() => new()
     {
@@ -54,28 +45,28 @@ public class SpriteModule : ILogicModule
         [
             new ParameterDefinition
             {
-                Name        = "tilesAssetId",
-                DisplayName = "Sprite Tiles Asset",
-                Description = "Asset ID for the sprite CHR graphics data.",
-                Type        = ParameterType.String,
+                Name         = "tilesAssetId",
+                DisplayName  = "Sprite Tiles Asset",
+                Description  = "Asset ID for the sprite CHR graphics data.",
+                Type         = ParameterType.String,
                 DefaultValue = string.Empty
             },
             new ParameterDefinition
             {
-                Name        = "startTile",
-                DisplayName = "Start Tile",
-                Description = "First VRAM tile slot for sprite graphics (256–511 recommended).",
-                Type        = ParameterType.Int,
+                Name         = "startTile",
+                DisplayName  = "Start Tile",
+                Description  = "First VRAM tile slot for sprite graphics (256–511 recommended).",
+                Type         = ParameterType.Int,
                 DefaultValue = 256,
-                MinValue    = 0,
-                MaxValue    = 511
+                MinValue     = 0,
+                MaxValue     = 511
             },
             new ParameterDefinition
             {
-                Name        = "doubleHeight",
-                DisplayName = "Double Height (8×16)",
-                Description = "Enable 8×16 sprite mode. Each sprite entry uses two stacked 8×8 tiles.",
-                Type        = ParameterType.Bool,
+                Name         = "doubleHeight",
+                DisplayName  = "Double Height (8×16)",
+                Description  = "Enable 8×16 sprite mode. Each sprite entry uses two stacked 8×8 tiles.",
+                Type         = ParameterType.Bool,
                 DefaultValue = false
             }
         ]
@@ -83,27 +74,14 @@ public class SpriteModule : ILogicModule
 
     public IEnumerable<GeneratedFile> GenerateCode() => [];
 
-    public string Serialize()
+    public string Serialize()              => JsonSerializer.Serialize(_state, _jsonOptions);
+    public void   Deserialize(string json) => _state = JsonSerializer.Deserialize<SpriteState>(json, _jsonOptions) ?? new();
+    public string GetValidationSample()    => JsonSerializer.Serialize(new SpriteState(), _jsonOptions);
+
+    private class SpriteState
     {
-        var data = new
-        {
-            module       = ModuleId,
-            tilesAssetId = TilesAssetId,
-            startTile    = StartTile,
-            doubleHeight = DoubleHeight
-        };
-        return JsonSerializer.Serialize(data);
+        public string TilesAssetId { get; set; } = string.Empty;
+        public int    StartTile    { get; set; } = 256;
+        public bool   DoubleHeight { get; set; } = false;
     }
-
-    public void Deserialize(string json)
-    {
-        var doc  = JsonDocument.Parse(json);
-        var root = doc.RootElement;
-
-        if (root.TryGetProperty("tilesAssetId", out var ta)) TilesAssetId = ta.GetString() ?? string.Empty;
-        if (root.TryGetProperty("startTile",    out var st)) StartTile    = st.GetInt32();
-        if (root.TryGetProperty("doubleHeight", out var dh)) DoubleHeight = dh.GetBoolean();
-    }
-
-    public string GetValidationSample() => Serialize();
 }

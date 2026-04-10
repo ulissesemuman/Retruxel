@@ -42,7 +42,29 @@ public partial class SettingsWindow : Window
         _settings = await SettingsService.LoadAsync();
         PopulateLanguageCombo();
         ApplySettingsToUi();
+        ApplyLocalization();
         _loading = false;
+    }
+
+    private void ApplyLocalization()
+    {
+        var loc = LocalizationService.Instance;
+        
+        // Title
+        Title = loc.Get("settings.title");
+        TxtTitleSettings.Text = loc.Get("settings.title");
+        
+        // Navigation
+        FindTextBlockIn(NavGeneral)!.Text = loc.Get("settings.nav.general");
+        FindTextBlockIn(NavAppearance)!.Text = loc.Get("settings.nav.appearance");
+        FindTextBlockIn(NavToolchain)!.Text = loc.Get("settings.nav.toolchain");
+        
+        // Tabs
+        TabGeneralInterface.Content = loc.Get("settings.tab.interface");
+        TabGeneralBehavior.Content = loc.Get("settings.tab.behavior");
+        
+        // Close button
+        BtnClose.Content = loc.Get("settings.close");
     }
 
     // ── Populate language combo dynamically ──────────────────────────────────
@@ -63,14 +85,10 @@ public partial class SettingsWindow : Window
 
         // If no language is set (first run), detect system language
         var languageToSelect = _settings.General.Language;
-        if (string.IsNullOrEmpty(languageToSelect) || languageToSelect == "en")
+        if (string.IsNullOrEmpty(languageToSelect))
         {
-            var detectedLanguage = LocalizationService.Instance.DetectSystemLanguage();
-            if (detectedLanguage != "en" || string.IsNullOrEmpty(_settings.General.Language))
-            {
-                languageToSelect = detectedLanguage;
-                _settings.General.Language = detectedLanguage;
-            }
+            languageToSelect = LocalizationService.Instance.DetectSystemLanguage();
+            _settings.General.Language = languageToSelect;
         }
 
         // Select current language immediately after populating
@@ -186,6 +204,17 @@ public partial class SettingsWindow : Window
             // Reload localization in runtime
             var localizationPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Assets", "Localization");
             LocalizationService.Instance.Load(selectedLanguage, localizationPath);
+            
+            // Refresh this window
+            ApplyLocalization();
+            
+            // Refresh views if they exist
+            var mainWindow = Owner as MainWindow;
+            if (mainWindow != null)
+            {
+                var sceneEditorView = FindVisualChild<SceneEditorView>(mainWindow);
+                sceneEditorView?.RefreshLocalization();
+            }
         }
         AutoSave();
     }
@@ -366,7 +395,7 @@ public partial class SettingsWindow : Window
     private void AutoSave()
     {
         SettingsService.Save(_settings);
-        LblSaved.Text = "SAVED";
+        LblSaved.Text = LocalizationService.Instance.Get("settings.saved");
 
         // Clear the label after 2 seconds
         var timer = new System.Windows.Threading.DispatcherTimer
@@ -393,6 +422,21 @@ public partial class SettingsWindow : Window
             }
         if (combo.Items.Count > 0)
             combo.SelectedIndex = 0;
+    }
+
+    private static T? FindVisualChild<T>(DependencyObject parent) where T : DependencyObject
+    {
+        for (int i = 0; i < VisualTreeHelper.GetChildrenCount(parent); i++)
+        {
+            var child = VisualTreeHelper.GetChild(parent, i);
+            if (child is T typedChild)
+                return typedChild;
+            
+            var result = FindVisualChild<T>(child);
+            if (result != null)
+                return result;
+        }
+        return null;
     }
 
     // ── Window chrome ─────────────────────────────────────────────────────────

@@ -1,6 +1,5 @@
 ﻿using Retruxel.Core.Interfaces;
 using Retruxel.Core.Models;
-using Retruxel.Modules.Graphics;
 using Retruxel.Target.GG.Modules.Graphics;
 
 namespace Retruxel.Target.GG;
@@ -45,7 +44,10 @@ public class GgTarget : ITarget
 
         // Memory
         RamBytes    = 8192,
-        RomMaxBytes = 524288,
+        Banks =
+        [
+            new RomBank("rom", "ROM", 524288)
+        ],
 
         // CPU
         CPU        = "Zilog Z80",
@@ -138,29 +140,29 @@ public class GgTarget : ITarget
         switch (module.ModuleId)
         {
             case "text.display":
-                var textModule = (TextDisplayModule)module;
-                var codeGen = new GgTextDisplayCodeGen(textModule);
-
-                var errors = codeGen.Validate().ToList();
-                var files = new List<GeneratedFile>
                 {
-                    codeGen.GenerateCode(),
-                    codeGen.GenerateHeader()
-                };
-
-                if (errors.Count > 0)
-                {
-                    var warnings = string.Join("\n", errors.Select(e => $"// WARNING: {e}"));
-                    files[0] = new GeneratedFile
+                    var codeGen = new GgTextDisplayCodeGen(module.Serialize());
+                    var errors  = codeGen.Validate().ToList();
+                    var files   = new List<GeneratedFile>
                     {
-                        FileName = files[0].FileName,
-                        Content = warnings + "\n\n" + files[0].Content,
-                        FileType = files[0].FileType,
-                        SourceModuleId = files[0].SourceModuleId
+                        codeGen.GenerateCode(),
+                        codeGen.GenerateHeader()
                     };
-                }
 
-                return files;
+                    if (errors.Count > 0)
+                    {
+                        var warnings = string.Join("\n", errors.Select(e => $"// WARNING: {e}"));
+                        files[0] = new GeneratedFile
+                        {
+                            FileName       = files[0].FileName,
+                            Content        = warnings + "\n\n" + files[0].Content,
+                            FileType       = files[0].FileType,
+                            SourceModuleId = files[0].SourceModuleId
+                        };
+                    }
+
+                    return files;
+                }
 
             default:
                 return [];

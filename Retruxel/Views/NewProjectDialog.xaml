@@ -1,4 +1,4 @@
-﻿<Window x:Class="Retruxel.Views.NewProjectDialog"
+<Window x:Class="Retruxel.Views.NewProjectDialog"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="New Project"
@@ -10,6 +10,7 @@
         ResizeMode="NoResize"
         Icon="pack://application:,,,/Assets/icon.ico">
 
+    <!-- Outer border — CornerRadius 6 permitido: moldura física da janela -->
     <Border CornerRadius="6"
             BorderBrush="#3a3a3a"
             BorderThickness="1"
@@ -32,13 +33,9 @@
                                Style="{StaticResource TextHeadline}"
                                VerticalAlignment="Center"/>
                     <Button Content="✕"
-                            Width="32" Height="32"
-                            Background="Transparent"
-                            Foreground="{StaticResource BrushOnSurfaceVariant}"
-                            BorderThickness="0"
+                            Style="{StaticResource ButtonTitleBarClose}"
                             HorizontalAlignment="Right"
-                            Click="CloseButton_Click"
-                            Cursor="Hand"/>
+                            Click="CloseButton_Click"/>
                 </Grid>
             </Border>
 
@@ -47,21 +44,19 @@
 
                 <!-- Project name -->
                 <TextBlock x:Name="TxtProjectNameLabel"
-                           Style="{StaticResource TextLabel}"
+                           Style="{StaticResource TextLabelCaps}"
                            Margin="0,0,0,8"/>
                 <Border Background="{StaticResource BrushSurfaceContainerHighest}"
                         Padding="12,0" Margin="0,0,0,24" Height="40">
                     <TextBox x:Name="TxtProjectName"
-                             Foreground="{StaticResource BrushOnSurface}"
-                             FontFamily="{StaticResource FontBody}"
-                             FontSize="13"
+                             BorderThickness="0"
                              VerticalAlignment="Center"
                              Text="my_project"/>
                 </Border>
 
                 <!-- Project location -->
                 <TextBlock x:Name="TxtLocationLabel"
-                           Style="{StaticResource TextLabel}"
+                           Style="{StaticResource TextLabelCaps}"
                            Margin="0,0,0,8"/>
                 <Grid Margin="0,0,0,24">
                     <Grid.ColumnDefinitions>
@@ -72,33 +67,30 @@
                             Background="{StaticResource BrushSurfaceContainerHighest}"
                             Padding="12,0" Height="40" Margin="0,0,8,0">
                         <TextBox x:Name="TxtLocation"
-                                 Foreground="{StaticResource BrushOnSurface}"
-                                 FontFamily="{StaticResource FontBody}"
-                                 FontSize="13"
+                                 BorderThickness="0"
                                  VerticalAlignment="Center"/>
                     </Border>
                     <Button Grid.Column="1"
                             x:Name="BtnBrowse"
-                            Style="{StaticResource ButtonSecondary}"
+                            Style="{StaticResource ButtonToolbar}"
                             Padding="16,0" Height="40"
                             Click="BrowseButton_Click"/>
                 </Grid>
 
                 <!-- Target (read-only — set from console selection) -->
                 <TextBlock x:Name="TxtTargetLabel"
-                           Style="{StaticResource TextLabel}"
+                           Style="{StaticResource TextLabelCaps}"
                            Margin="0,0,0,8"/>
                 <Border Background="{StaticResource BrushSurfaceContainerHighest}"
                         Padding="12,0" Margin="0,0,0,24" Height="40">
                     <TextBlock x:Name="TxtTarget"
-                               Style="{StaticResource TextBody}"
-                               Foreground="{StaticResource BrushPrimary}"
+                               Style="{StaticResource TextCode}"
                                VerticalAlignment="Center"/>
                 </Border>
 
                 <!-- Template selection -->
                 <TextBlock x:Name="TxtTemplateLabel"
-                           Style="{StaticResource TextLabel}"
+                           Style="{StaticResource TextLabelCaps}"
                            Margin="0,0,0,8"/>
                 <StackPanel x:Name="TemplatesPanel"
                             Orientation="Horizontal"/>
@@ -106,13 +98,14 @@
             </StackPanel>
 
             <!-- ===== FOOTER ===== -->
+            <!-- BrushSurface: tonal shift intencional para ancorar o rodapé -->
             <Border Grid.Row="2"
                     Background="{StaticResource BrushSurface}"
                     CornerRadius="0,0,6,6"
                     Padding="24,0">
                 <Grid>
                     <Button x:Name="BtnCancel"
-                            Style="{StaticResource ButtonSecondary}"
+                            Style="{StaticResource ButtonGhost}"
                             HorizontalAlignment="Left"
                             Padding="24,0" Height="40"
                             Click="CloseButton_Click"/>

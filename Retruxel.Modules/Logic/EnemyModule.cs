@@ -16,8 +16,13 @@ public class EnemyModule : ILogicModule
     public string     DisplayName  => "Enemy Entity";
     public string     Category     => "Entities";
     public ModuleType Type         => ModuleType.Logic;
-    public bool       IsUniversal  => false;
     public string[]   Compatibility => ["sms"];
+
+    private static readonly JsonSerializerOptions _jsonOptions = new()
+    {
+        PropertyNamingPolicy        = JsonNamingPolicy.CamelCase,
+        PropertyNameCaseInsensitive = true
+    };
 
     private EnemyState _state = new();
 
@@ -101,9 +106,9 @@ public class EnemyModule : ILogicModule
 
     public IEnumerable<GeneratedFile> GenerateCode() => [];
 
-    public string Serialize()              => JsonSerializer.Serialize(_state);
-    public void   Deserialize(string json) => _state = JsonSerializer.Deserialize<EnemyState>(json) ?? new();
-    public string GetValidationSample()    => JsonSerializer.Serialize(new EnemyState());
+    public string Serialize()              => JsonSerializer.Serialize(_state, _jsonOptions);
+    public void   Deserialize(string json) => _state = JsonSerializer.Deserialize<EnemyState>(json, _jsonOptions) ?? new();
+    public string GetValidationSample()    => JsonSerializer.Serialize(new EnemyState(), _jsonOptions);
 
     private class EnemyState
     {

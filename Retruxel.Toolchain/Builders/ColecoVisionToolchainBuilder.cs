@@ -103,16 +103,18 @@ public class ColecoVisionToolchainBuilder : IToolchainBuilder
 
             result.Success = convertOk && File.Exists(romPath);
             result.RomPath = result.Success ? romPath : null;
-            result.RomSizeBytes = result.Success ? (int)new FileInfo(romPath).Length : 0;
-
+            
             if (result.Success)
             {
+                var romSize = (int)new FileInfo(romPath).Length;
+                result.BankUsage["rom"] = romSize;
+                
                 result.RomMd5 = await ComputeMd5Async(romPath);
                 result.RomSha256 = await ComputeSha256Async(romPath);
                 log.Add(new BuildLogEntry
                 {
                     Level = BuildLogLevel.Success,
-                    Message = $"ROM generated: {result.RomSizeBytes / 1024}KB"
+                    Message = $"ROM generated: {romSize / 1024}KB"
                 });
             }
         }

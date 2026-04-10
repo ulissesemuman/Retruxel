@@ -30,25 +30,27 @@ public static class StartupService
 
     private static async Task InitializeDummyAsync(IProgress<string> progress)
     {
-        progress.Report("INIT: Starting boot sequence...");
+        var loc = LocalizationService.Instance;
+        
+        progress.Report(loc.Get("startup.init"));
         await Task.Delay(200);
 
-        progress.Report("SCAN: Discovering targets...");
+        progress.Report(loc.Get("startup.scan_targets"));
         await Task.Delay(300);
 
-        progress.Report("LOAD: Loading localization...");
+        progress.Report(loc.Get("startup.load_localization"));
         await Task.Delay(250);
 
-        progress.Report("CHECK: Verifying toolchain...");
+        progress.Report(loc.Get("startup.check_toolchain"));
         await Task.Delay(400);
 
-        progress.Report("CACHE: Warming up resources...");
+        progress.Report(loc.Get("startup.cache"));
         await Task.Delay(300);
 
-        progress.Report("RESTORE: Loading workspace...");
+        progress.Report(loc.Get("startup.restore"));
         await Task.Delay(250);
 
-        progress.Report("READY: Initialization complete.");
+        progress.Report(loc.Get("startup.ready"));
         await Task.Delay(100);
     }
 
@@ -56,38 +58,40 @@ public static class StartupService
 
     private static async Task InitializeRealAsync(IProgress<string> progress)
     {
-        progress.Report("INIT: Starting boot sequence...");
+        var loc = LocalizationService.Instance;
+        
+        progress.Report(loc.Get("startup.init"));
         await Task.Delay(100);
 
         // 1. Target Discovery
-        progress.Report("SCAN: Discovering targets...");
+        progress.Report(loc.Get("startup.scan_targets"));
         await DiscoverTargetsAsync();
 
         // 2. Localization
-        progress.Report("LOAD: Loading localization...");
+        progress.Report(loc.Get("startup.load_localization"));
         await LoadLocalizationAsync();
 
         // 3. Toolchain Verification
-        progress.Report("CHECK: Verifying toolchain...");
+        progress.Report(loc.Get("startup.check_toolchain"));
         await VerifyToolchainAsync();
 
         // 4. Plugin Discovery (stub)
-        progress.Report("SCAN: Discovering plugins...");
+        progress.Report(loc.Get("startup.scan_plugins"));
         await DiscoverPluginsAsync();
 
         // 5. Resource Cache (stub)
-        progress.Report("CACHE: Warming up resources...");
+        progress.Report(loc.Get("startup.cache"));
         await WarmupCacheAsync();
 
         // 6. Workspace Restoration (stub)
-        progress.Report("RESTORE: Loading workspace...");
+        progress.Report(loc.Get("startup.restore"));
         await RestoreWorkspaceAsync();
 
         // 7. Update Check (stub)
-        progress.Report("NET: Checking for updates...");
+        progress.Report(loc.Get("startup.updates"));
         await CheckForUpdatesAsync();
 
-        progress.Report("READY: Initialization complete.");
+        progress.Report(loc.Get("startup.ready"));
         await Task.Delay(100);
     }
 

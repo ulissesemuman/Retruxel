@@ -43,7 +43,11 @@ public class NesTarget : ITarget
 
         // ── Memory ───────────────────────────────────────────────────────────
         RamBytes    = 2048,
-        RomMaxBytes = 524288,
+        Banks =
+        [
+            new RomBank("prg", "PRG-ROM", 524288),
+            new RomBank("chr", "CHR-ROM",   8192)
+        ],
 
         // ── CPU ──────────────────────────────────────────────────────────────
         CPU        = "MOS 6502",

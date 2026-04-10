@@ -101,7 +101,8 @@
                                    Foreground="{StaticResource BrushOnSurfaceVariant}"
                                    VerticalAlignment="Center"
                                    Margin="0,0,12,0"/>
-                        <TextBlock Text="SETTINGS"
+                        <TextBlock x:Name="TxtTitleSettings"
+                                   Text="SETTINGS"
                                    Style="{StaticResource TextHeadline}"
                                    VerticalAlignment="Center"/>
                     </StackPanel>
@@ -800,6 +801,7 @@
                                VerticalAlignment="Center"/>
 
                     <Button Grid.Column="1"
+                            x:Name="BtnClose"
                             Content="CLOSE"
                             Style="{StaticResource ButtonPrimary}"
                             Padding="32,0" Height="40"

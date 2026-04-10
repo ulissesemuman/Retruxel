@@ -5,6 +5,7 @@ using Retruxel.Services;
 using System.IO;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
 using System.Windows.Media;
 
 namespace Retruxel.Views;
@@ -13,9 +14,6 @@ public partial class WelcomeView : UserControl
 {
     private bool _isGridView = true;
     private Border? _dropOverlay;
-    private string _currentSort = "name";
-    private string _currentFilter = "all";
-    private HashSet<string> _favoriteTargets = new();
     
     public event Action<RetruxelProject>? OnProjectCreated;
     public event Action? OnAboutRequested;
@@ -28,305 +26,19 @@ public partial class WelcomeView : UserControl
 
     private void OnLoaded(object sender, RoutedEventArgs e)
     {
-        LoadFavorites();
-        InitializeSortAndFilter();
-        RenderTargets();
+        // Connect TargetGridControl event
+        TargetGrid.TargetSelected += OnTargetSelected;
+        
+        UpdateTargetCount();
         RenderRecentProjects();
         RenderSidebarRecentProjects();
     }
 
-    private void LoadFavorites()
+    private void UpdateTargetCount()
     {
-        var settings = SettingsService.Load();
-        _favoriteTargets = new HashSet<string>(settings.General.FavoriteTargets);
-    }
-
-    private void SaveFavorites()
-    {
-        var settings = SettingsService.Load();
-        settings.General.FavoriteTargets = _favoriteTargets.ToList();
-        SettingsService.Save(settings);
-    }
-
-    private void InitializeSortAndFilter()
-    {
+        var count = TargetRegistry.GetAllTargets().Count;
         var loc = LocalizationService.Instance;
-        
-        // Sort options
-        SortComboBox.Items.Add(new ComboBoxItem { Content = loc.Get("welcome.sort.name"), Tag = "name" });
-        SortComboBox.Items.Add(new ComboBoxItem { Content = loc.Get("welcome.sort.manufacturer"), Tag = "manufacturer" });
-        SortComboBox.SelectedIndex = 0;
-
-        // Filter options - dynamic based on manufacturers
-        FilterComboBox.Items.Add(new ComboBoxItem { Content = loc.Get("welcome.filter.all"), Tag = "all" });
-        FilterComboBox.Items.Add(new ComboBoxItem { Content = loc.Get("welcome.filter.favorites"), Tag = "favorites" });
-        
-        foreach (var manufacturer in TargetRegistry.GetManufacturers().OrderBy(m => m))
-        {
-            var key = $"welcome.filter.{manufacturer.ToLower()}";
-            var displayName = loc.Get(key);
-            FilterComboBox.Items.Add(new ComboBoxItem { Content = displayName, Tag = manufacturer.ToLower() });
-        }
-        
-        FilterComboBox.SelectedIndex = 0;
-    }
-
-    private void Sort_Changed(object sender, SelectionChangedEventArgs e)
-    {
-        if (SortComboBox.SelectedItem is ComboBoxItem item && item.Tag is string sortType)
-        {
-            _currentSort = sortType;
-            RenderTargets();
-        }
-    }
-
-    private void Filter_Changed(object sender, SelectionChangedEventArgs e)
-    {
-        if (FilterComboBox.SelectedItem is ComboBoxItem item && item.Tag is string filterType)
-        {
-            _currentFilter = filterType;
-            RenderTargets();
-        }
-    }
-
-    // Renders target cards in grid or list mode
-    private void RenderTargets()
-    {
-        var allTargets = TargetRegistry.GetAllTargets().ToList();
-
-        // Apply filter
-        var filteredTargets = _currentFilter switch
-        {
-            "favorites" => allTargets.Where(t => _favoriteTargets.Contains(t.TargetId)).ToList(),
-            "all" => allTargets,
-            _ => allTargets.Where(t => t.Specs.Manufacturer?.Equals(_currentFilter, StringComparison.OrdinalIgnoreCase) == true).ToList()
-        };
-
-        // Apply sort
-        var sortedTargets = _currentSort switch
-        {
-            "manufacturer" => filteredTargets.OrderBy(t => t.Specs.Manufacturer).ThenBy(t => t.DisplayName).ToList(),
-            _ => filteredTargets.OrderBy(t => t.DisplayName).ToList()
-        };
-
-        // Update count
-        TargetCount.Text = $"COUNT: {sortedTargets.Count:D2}";
-
-        Panel panel = _isGridView
-            ? new WrapPanel { Orientation = Orientation.Horizontal }
-            : new StackPanel();
-
-        foreach (var target in sortedTargets)
-        {
-            var card = _isGridView
-                ? BuildGridCard(target)
-                : BuildListCard(target);
-
-            panel.Children.Add(card);
-        }
-
-        TargetsPanel.Content = panel;
-    }
-
-    // Grid card — large card with specs
-    private Border BuildGridCard(ITarget target)
-    {
-        var card = new Border
-        {
-            Width = 220,
-            Height = 200,
-            Background = new SolidColorBrush(Color.FromRgb(0x1E, 0x1E, 0x1E)),
-            Margin = new Thickness(0, 0, 16, 16),
-            Cursor = System.Windows.Input.Cursors.Hand,
-            Padding = new Thickness(16)
-        };
-
-        var mainGrid = new Grid();
-        mainGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
-        mainGrid.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
-        mainGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
-
-        // Top row: Architecture tag + Favorite star
-        var topGrid = new Grid { Margin = new Thickness(0, 0, 0, 16) };
-        topGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
-        topGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-
-        var arch = new Border
-        {
-            Background = new SolidColorBrush(Color.FromRgb(0x26, 0x26, 0x26)),
-            Padding = new Thickness(8, 4, 8, 4),
-            HorizontalAlignment = HorizontalAlignment.Left,
-            Child = new TextBlock
-            {
-                Text = $"{target.Specs.CPU.Split(' ').Last()} ARCH",
-                FontSize = 10,
-                Foreground = new SolidColorBrush(Color.FromRgb(0x8E, 0xFF, 0x71)),
-                FontFamily = new FontFamily("Consolas")
-            }
-        };
-
-        var isFavorite = _favoriteTargets.Contains(target.TargetId);
-        var starButton = new Button
-        {
-            Content = isFavorite ? "★" : "☆",
-            FontSize = 20,
-            Background = Brushes.Transparent,
-            Foreground = isFavorite ? new SolidColorBrush(Color.FromRgb(0xFF, 0xD7, 0x00)) : new SolidColorBrush(Color.FromRgb(0xAD, 0xAA, 0xAA)),
-            BorderThickness = new Thickness(0),
-            Padding = new Thickness(4),
-            Cursor = System.Windows.Input.Cursors.Hand,
-            HorizontalAlignment = HorizontalAlignment.Right,
-            Tag = target.TargetId
-        };
-        starButton.Click += ToggleFavorite_Click;
-
-        Grid.SetColumn(arch, 0);
-        Grid.SetColumn(starButton, 1);
-        topGrid.Children.Add(arch);
-        topGrid.Children.Add(starButton);
-
-        // Middle: Console name and specs
-        var contentPanel = new StackPanel();
-        var name = new TextBlock
-        {
-            Text = target.DisplayName.ToUpper(),
-            FontSize = 16,
-            FontWeight = FontWeights.Bold,
-            Foreground = Brushes.White,
-            TextWrapping = TextWrapping.Wrap,
-            Margin = new Thickness(0, 0, 0, 8)
-        };
-
-        var specs = new TextBlock
-        {
-            Text = $"{target.Specs.CPU} | {target.Specs.RamBytes / 1024}KB RAM",
-            FontSize = 11,
-            Foreground = new SolidColorBrush(Color.FromRgb(0xAD, 0xAA, 0xAA)),
-            FontFamily = new FontFamily("Consolas"),
-            TextWrapping = TextWrapping.Wrap
-        };
-
-        contentPanel.Children.Add(name);
-        contentPanel.Children.Add(specs);
-
-        // Bottom accent line
-        var accent = new Border
-        {
-            Height = 3,
-            Background = new SolidColorBrush(Color.FromRgb(0x8E, 0xFF, 0x71)),
-            Margin = new Thickness(-16, 0, -16, -16)
-        };
-
-        Grid.SetRow(topGrid, 0);
-        Grid.SetRow(contentPanel, 1);
-        Grid.SetRow(accent, 2);
-
-        mainGrid.Children.Add(topGrid);
-        mainGrid.Children.Add(contentPanel);
-        mainGrid.Children.Add(accent);
-        card.Child = mainGrid;
-
-        card.MouseLeftButtonDown += (_, _) => OnTargetSelected(target);
-        return card;
-    }
-
-    private void ToggleFavorite_Click(object sender, RoutedEventArgs e)
-    {
-        if (sender is not Button button || button.Tag is not string targetId)
-            return;
-
-        if (_favoriteTargets.Contains(targetId))
-        {
-            _favoriteTargets.Remove(targetId);
-            button.Content = "☆";
-            button.Foreground = new SolidColorBrush(Color.FromRgb(0xAD, 0xAA, 0xAA));
-        }
-        else
-        {
-            _favoriteTargets.Add(targetId);
-            button.Content = "★";
-            button.Foreground = new SolidColorBrush(Color.FromRgb(0xFF, 0xD7, 0x00));
-        }
-
-        SaveFavorites();
-    }
-
-    // List card — compact horizontal row
-    private Border BuildListCard(ITarget target)
-    {
-        var card = new Border
-        {
-            Background = new SolidColorBrush(Color.FromRgb(0x1E, 0x1E, 0x1E)),
-            Margin = new Thickness(0, 0, 0, 8),
-            Padding = new Thickness(16, 12, 16, 12),
-            Cursor = System.Windows.Input.Cursors.Hand,
-            HorizontalAlignment = HorizontalAlignment.Stretch
-        };
-
-        var grid = new Grid();
-        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
-        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-
-        // Favorite star
-        var isFavorite = _favoriteTargets.Contains(target.TargetId);
-        var starButton = new Button
-        {
-            Content = isFavorite ? "★" : "☆",
-            FontSize = 16,
-            Background = Brushes.Transparent,
-            Foreground = isFavorite ? new SolidColorBrush(Color.FromRgb(0xFF, 0xD7, 0x00)) : new SolidColorBrush(Color.FromRgb(0xAD, 0xAA, 0xAA)),
-            BorderThickness = new Thickness(0),
-            Padding = new Thickness(4),
-            Cursor = System.Windows.Input.Cursors.Hand,
-            VerticalAlignment = VerticalAlignment.Center,
-            Margin = new Thickness(0, 0, 12, 0),
-            Tag = target.TargetId
-        };
-        starButton.Click += ToggleFavorite_Click;
-
-        var name = new TextBlock
-        {
-            Text = target.DisplayName.ToUpper(),
-            FontSize = 13,
-            FontWeight = FontWeights.Bold,
-            Foreground = Brushes.White,
-            VerticalAlignment = VerticalAlignment.Center,
-            Margin = new Thickness(0, 0, 16, 0)
-        };
-
-        var specs = new TextBlock
-        {
-            Text = $"{target.Specs.CPU} | {target.Specs.RamBytes / 1024}KB RAM | {target.Specs.SoundChip}",
-            FontSize = 11,
-            Foreground = new SolidColorBrush(Color.FromRgb(0xAD, 0xAA, 0xAA)),
-            FontFamily = new FontFamily("Consolas"),
-            VerticalAlignment = VerticalAlignment.Center
-        };
-
-        var arch = new TextBlock
-        {
-            Text = $"{target.Specs.CPU.Split(' ').Last()} ARCH",
-            FontSize = 10,
-            Foreground = new SolidColorBrush(Color.FromRgb(0x8E, 0xFF, 0x71)),
-            FontFamily = new FontFamily("Consolas"),
-            VerticalAlignment = VerticalAlignment.Center
-        };
-
-        Grid.SetColumn(starButton, 0);
-        Grid.SetColumn(name, 1);
-        Grid.SetColumn(specs, 2);
-        Grid.SetColumn(arch, 3);
-
-        grid.Children.Add(starButton);
-        grid.Children.Add(name);
-        grid.Children.Add(specs);
-        grid.Children.Add(arch);
-        card.Child = grid;
-
-        card.MouseLeftButtonDown += (_, _) => OnTargetSelected(target);
-        return card;
+        TargetCount.Text = string.Format(loc.Get("welcome.count"), count);
     }
 
     private void RenderRecentProjects()
@@ -344,8 +56,8 @@ public partial class WelcomeView : UserControl
             PageTitle.Visibility = Visibility.Collapsed;
             PageDescription.Visibility = Visibility.Collapsed;
             TargetHeader.Visibility = Visibility.Collapsed;
-            TargetCardsSection.Visibility = Visibility.Collapsed;
             RecentProjectsHeader.Visibility = Visibility.Collapsed;
+            TargetGrid.Visibility = Visibility.Collapsed;
             EmptyState.Visibility = Visibility.Visible;
             return;
         }
@@ -354,7 +66,6 @@ public partial class WelcomeView : UserControl
         PageTitle.Visibility = Visibility.Visible;
         PageDescription.Visibility = Visibility.Visible;
         TargetHeader.Visibility = Visibility.Visible;
-        TargetCardsSection.Visibility = Visibility.Visible;
         RecentProjectsHeader.Visibility = Visibility.Visible;
         EmptyState.Visibility = Visibility.Collapsed;
 
@@ -407,7 +118,10 @@ public partial class WelcomeView : UserControl
             Tag = projectPath
         };
 
-        var panel = new StackPanel();
+        var mainGrid = new Grid();
+        mainGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+        mainGrid.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
+        mainGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
         
         // Target badge at top right
         var targetBadge = new Border
@@ -415,7 +129,7 @@ public partial class WelcomeView : UserControl
             Background = new SolidColorBrush(Color.FromRgb(0x26, 0x26, 0x26)),
             Padding = new Thickness(8, 4, 8, 4),
             HorizontalAlignment = HorizontalAlignment.Right,
-            Margin = new Thickness(0, 0, 0, 12),
+            Margin = new Thickness(0, 0, 0, 16),
             Child = new TextBlock
             {
                 Text = targetLabel,
@@ -424,9 +138,9 @@ public partial class WelcomeView : UserControl
                 FontFamily = new FontFamily("Consolas")
             }
         };
-        panel.Children.Add(targetBadge);
 
-        panel.Children.Add(new TextBlock
+        var contentPanel = new StackPanel();
+        contentPanel.Children.Add(new TextBlock
         {
             Text = projectName.ToUpper(),
             FontSize = 14,
@@ -436,7 +150,7 @@ public partial class WelcomeView : UserControl
             Margin = new Thickness(0, 0, 0, 8)
         });
 
-        panel.Children.Add(new TextBlock
+        contentPanel.Children.Add(new TextBlock
         {
             Text = projectDir,
             FontSize = 10,
@@ -450,12 +164,23 @@ public partial class WelcomeView : UserControl
         {
             Height = 3,
             Background = new SolidColorBrush(Color.FromRgb(0x81, 0xEC, 0xFF)),
-            Margin = new Thickness(-16, 0, -16, -16),
+            Margin = new Thickness(-16, 16, -16, -16),
             VerticalAlignment = VerticalAlignment.Bottom
         };
-        panel.Children.Add(accent);
 
-        card.Child = panel;
+        Grid.SetRow(targetBadge, 0);
+        Grid.SetRow(contentPanel, 1);
+        Grid.SetRow(accent, 2);
+
+        mainGrid.Children.Add(targetBadge);
+        mainGrid.Children.Add(contentPanel);
+        mainGrid.Children.Add(accent);
+        card.Child = mainGrid;
+
+        // Hover effect
+        card.MouseEnter += (s, e) => card.Background = new SolidColorBrush(Color.FromRgb(0x24, 0x24, 0x24));
+        card.MouseLeave += (s, e) => card.Background = new SolidColorBrush(Color.FromRgb(0x1E, 0x1E, 0x1E));
+
         card.MouseLeftButtonDown += RecentProject_Click;
         return card;
     }
@@ -530,15 +255,32 @@ public partial class WelcomeView : UserControl
         grid.Children.Add(targetBadge);
 
         card.Child = grid;
+
+        // Hover effect
+        card.MouseEnter += (s, e) => card.Background = new SolidColorBrush(Color.FromRgb(0x24, 0x24, 0x24));
+        card.MouseLeave += (s, e) => card.Background = new SolidColorBrush(Color.FromRgb(0x1E, 0x1E, 0x1E));
+
         card.MouseLeftButtonDown += RecentProject_Click;
         return card;
     }
 
-    private async void RecentProject_Click(object sender, System.Windows.Input.MouseButtonEventArgs e)
+    // Handler para Button.Click
+    private void RecentProject_Click(object sender, RoutedEventArgs e)
     {
-        if (sender is not Border card || card.Tag is not string projectPath)
-            return;
+        if (sender is Button button && button.Tag is string projectPath)
+            LoadRecentProject(projectPath);
+    }
 
+    // Handler para Border.MouseLeftButtonDown
+    private void RecentProject_Click(object sender, MouseButtonEventArgs e)
+    {
+        if (sender is Border border && border.Tag is string projectPath)
+            LoadRecentProject(projectPath);
+    }
+
+    // Método comum que faz o trabalho real
+    private async void LoadRecentProject(string projectPath)
+    {
         try
         {
             var manager = new ProjectManager();
@@ -564,32 +306,10 @@ public partial class WelcomeView : UserControl
             OnProjectCreated?.Invoke(dialog.CreatedProject);
     }
 
-    private void BtnGrid_Click(object sender, RoutedEventArgs e)
-    {
-        _isGridView = true;
-        BtnGrid.Background = new SolidColorBrush(Color.FromRgb(0x26, 0x26, 0x26));
-        BtnGrid.Foreground = new SolidColorBrush(Color.FromRgb(0x8E, 0xFF, 0x71));
-        BtnList.Background = new SolidColorBrush(Color.FromRgb(0x1E, 0x1E, 0x1E));
-        BtnList.Foreground = new SolidColorBrush(Color.FromRgb(0xAD, 0xAA, 0xAA));
-        RenderTargets();
-        RenderRecentProjects();
-    }
-
-    private void BtnList_Click(object sender, RoutedEventArgs e)
-    {
-        _isGridView = false;
-        BtnList.Background = new SolidColorBrush(Color.FromRgb(0x26, 0x26, 0x26));
-        BtnList.Foreground = new SolidColorBrush(Color.FromRgb(0x8E, 0xFF, 0x71));
-        BtnGrid.Background = new SolidColorBrush(Color.FromRgb(0x1E, 0x1E, 0x1E));
-        BtnGrid.Foreground = new SolidColorBrush(Color.FromRgb(0xAD, 0xAA, 0xAA));
-        RenderTargets();
-        RenderRecentProjects();
-    }
-
-    private void Documentation_Click(object sender, System.Windows.Input.MouseButtonEventArgs e)
+    private void Documentation_Click(object sender, RoutedEventArgs e)
         => OnAboutRequested?.Invoke();
 
-    private void About_Click(object sender, System.Windows.Input.MouseButtonEventArgs e)
+    private void About_Click(object sender, RoutedEventArgs e)
         => OnAboutRequested?.Invoke();
 
     private void NewProject_Click(object sender, RoutedEventArgs e)
@@ -655,40 +375,18 @@ public partial class WelcomeView : UserControl
         foreach (var projectPath in recentProjects)
         {
             var projectName = Path.GetFileNameWithoutExtension(projectPath);
-            
-            var item = new Border
+
+            var button = new Button
             {
-                Padding = new Thickness(8, 6, 8, 6),
-                Margin = new Thickness(0, 0, 0, 4),
-                Cursor = System.Windows.Input.Cursors.Hand,
+                Content = projectName,
                 Tag = projectPath,
-                Background = System.Windows.Media.Brushes.Transparent
+                Style = (Style)FindResource("ButtonToolbar"),
+                HorizontalAlignment = HorizontalAlignment.Left
             };
 
-            var text = new TextBlock
-            {
-                Text = projectName,
-                Style = (Style)FindResource("TextBody"),
-                Foreground = new SolidColorBrush(Color.FromRgb(0xAD, 0xAA, 0xAA)),
-                TextTrimming = TextTrimming.CharacterEllipsis
-            };
+            button.Click += RecentProject_Click;
 
-            item.Child = text;
-            item.MouseLeftButtonDown += RecentProject_Click;
-            
-            // Hover effect
-            item.MouseEnter += (s, e) =>
-            {
-                item.Background = new SolidColorBrush(Color.FromRgb(0x1E, 0x1E, 0x1E));
-                text.Foreground = new SolidColorBrush(Color.FromRgb(0xFF, 0xFF, 0xFF));
-            };
-            item.MouseLeave += (s, e) =>
-            {
-                item.Background = System.Windows.Media.Brushes.Transparent;
-                text.Foreground = new SolidColorBrush(Color.FromRgb(0xAD, 0xAA, 0xAA));
-            };
-
-            SidebarRecentProjects.Children.Add(item);
+            SidebarRecentProjects.Children.Add(button);
         }
     }
 

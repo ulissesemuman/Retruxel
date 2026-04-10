@@ -25,6 +25,14 @@ public class GeneratedFile
     /// Used for error reporting in the ToolchainValidator.
     /// </summary>
     public string SourceModuleId { get; set; } = string.Empty;
+
+    /// <summary>
+    /// The ROM bank this file belongs to. Matches a RomBank.Id from TargetSpecs.Banks.
+    /// Used by the Build Console to estimate per-bank usage before compilation.
+    /// Ex: "rom" (SMS/GG/SG-1000/ColecoVision), "prg" (NES code), "chr" (NES graphics).
+    /// Defaults to "rom" — override only for multi-bank targets.
+    /// </summary>
+    public string BankId { get; set; } = "rom";
 }
 
 /// <summary>

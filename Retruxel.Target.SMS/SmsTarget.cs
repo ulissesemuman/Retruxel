@@ -48,7 +48,10 @@ public class SmsTarget : ITarget
 
         // Memory
         RamBytes    = 8192,
-        RomMaxBytes = 524288,
+        Banks =
+        [
+            new RomBank("rom", "ROM", 524288)
+        ],
 
         // CPU
         CPU        = "Zilog Z80",
@@ -114,14 +117,14 @@ public class SmsTarget : ITarget
             TemplateId = "sms.platformer",
             DisplayName = "Platformer",
             Description = "Pre-configured with tiles, sprites, physics and input modules.",
-            DefaultModules = ["sms.tiles", "sms.sprites", "sms.physics", "sms.input"]
+            DefaultModules = ["sms.tilemap", "sms.sprite", "sms.physics", "sms.input"]
         },
         new ProjectTemplate
         {
             TemplateId = "sms.beatemup",
             DisplayName = "Beat Em Up",
             Description = "Pre-configured for side-scrolling beat em up games.",
-            DefaultModules = ["sms.tiles", "sms.sprites", "sms.physics", "sms.input", "sms.scroll"]
+            DefaultModules = ["sms.tilemap", "sms.sprite", "sms.physics", "sms.input", "sms.scroll"]
         }
     ];
 
@@ -170,90 +173,26 @@ public class SmsTarget : ITarget
         {
             case "text.display":
                 {
-                    if (module is not TextDisplayModule textModule)
-                        return [];
-
-                    var codeGen = new SmsTextDisplayCodeGen(textModule);
-                    var errors = codeGen.Validate().ToList();
-                    var files = new List<GeneratedFile>
-                    {
-                        codeGen.GenerateCode(),
-                        codeGen.GenerateHeader()
-                    };
-
-                    if (errors.Count > 0)
-                    {
-                        var warnings = string.Join("\n", errors.Select(e => $"// WARNING: {e}"));
-                        files[0] = new GeneratedFile
-                        {
-                            FileName = files[0].FileName,
-                            Content = warnings + "\n\n" + files[0].Content,
-                            FileType = files[0].FileType,
-                            SourceModuleId = files[0].SourceModuleId
-                        };
-                    }
-
-                    return files;
+                    var codeGen = new SmsTextDisplayCodeGen(module.Serialize());
+                    return InjectWarnings(codeGen.Validate(), [codeGen.GenerateCode(), codeGen.GenerateHeader()]);
                 }
 
             case "sms.entity":
                 {
                     var codeGen = new SmsEntityCodeGen(module.Serialize());
-                    var errors = codeGen.Validate().ToList();
-                    var files = new List<GeneratedFile>
-                    {
-                        codeGen.GenerateCode(),
-                        codeGen.GenerateHeader()
-                    };
-
-                    if (errors.Count > 0)
-                    {
-                        var warnings = string.Join("\n", errors.Select(e => $"// WARNING: {e}"));
-                        files[0] = new GeneratedFile
-                        {
-                            FileName = files[0].FileName,
-                            Content = warnings + "\n\n" + files[0].Content,
-                            FileType = files[0].FileType,
-                            SourceModuleId = files[0].SourceModuleId
-                        };
-                    }
-
-                    return files;
+                    return InjectWarnings(codeGen.Validate(), [codeGen.GenerateCode(), codeGen.GenerateHeader()]);
                 }
 
             case "sms.scroll":
                 {
                     var codeGen = new SmsScrollCodeGen(module.Serialize());
-                    return
-                    [
-                        codeGen.GenerateCode(),
-                        codeGen.GenerateHeader()
-                    ];
+                    return [codeGen.GenerateCode(), codeGen.GenerateHeader()];
                 }
 
             case "sms.enemy":
                 {
                     var codeGen = new SmsEnemyCodeGen(module.Serialize());
-                    var errors = codeGen.Validate().ToList();
-                    var files = new List<GeneratedFile>
-                    {
-                        codeGen.GenerateCode(),
-                        codeGen.GenerateHeader()
-                    };
-
-                    if (errors.Count > 0)
-                    {
-                        var warnings = string.Join("\n", errors.Select(e => $"// WARNING: {e}"));
-                        files[0] = new GeneratedFile
-                        {
-                            FileName = files[0].FileName,
-                            Content = warnings + "\n\n" + files[0].Content,
-                            FileType = files[0].FileType,
-                            SourceModuleId = files[0].SourceModuleId
-                        };
-                    }
-
-                    return files;
+                    return InjectWarnings(codeGen.Validate(), [codeGen.GenerateCode(), codeGen.GenerateHeader()]);
                 }
 
             default:
@@ -331,5 +270,33 @@ public class SmsTarget : ITarget
     public void ResetCodeGenerationState()
     {
         SmsTextDisplayCodeGen.ResetCounter();
+    }
+
+    // Helpers
+
+    /// <summary>
+    /// Prepends validation warnings as C comments to the first source file in the list.
+    /// Returns the files unchanged if there are no errors.
+    /// </summary>
+    private static IEnumerable<GeneratedFile> InjectWarnings(
+        IEnumerable<string> errors,
+        List<GeneratedFile> files)
+    {
+        var errorList = errors.ToList();
+        if (errorList.Count == 0 || files.Count == 0)
+            return files;
+
+        var warnings = string.Join("\n", errorList.Select(e => $"// WARNING: {e}"));
+        var first = files[0];
+
+        files[0] = new GeneratedFile
+        {
+            FileName = first.FileName,
+            FileType = first.FileType,
+            SourceModuleId = first.SourceModuleId,
+            Content = warnings + "\n\n" + first.Content
+        };
+
+        return files;
     }
 }

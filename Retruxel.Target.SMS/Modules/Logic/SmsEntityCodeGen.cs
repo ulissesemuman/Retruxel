@@ -75,8 +75,8 @@ public class SmsEntityCodeGen
             // Global player instance — accessible by sms.enemy for collision
             extern Player player;
 
-            void entity_init(void);
-            void entity_update(void);
+            void sms_entity_init(void);
+            void sms_entity_update(void);
 
             #endif // ENTITY_H
             """
@@ -94,7 +94,7 @@ public class SmsEntityCodeGen
 
             Player player;
 
-            void entity_init(void) {
+            void sms_entity_init(void) {
                 player.x        = {{_x}};
                 player.y        = {{_y}};
                 player.speed    = {{_speed}};
@@ -102,7 +102,7 @@ public class SmsEntityCodeGen
                 player.spriteId = {{_spriteId}};
             }
 
-            void entity_update(void) {
+            void sms_entity_update(void) {
                 unsigned int keys = SMS_getKeysStatus();
 
                 if (keys & PORT_A_KEY_LEFT)  player.x -= player.speed;

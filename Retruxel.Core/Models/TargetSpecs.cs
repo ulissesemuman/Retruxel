@@ -84,8 +84,19 @@ public class TargetSpecs
     /// <summary>Available RAM in bytes. Ex: 8192 (SMS), 2048 (NES)</summary>
     public int RamBytes { get; set; }
 
-    /// <summary>Maximum ROM size in bytes.</summary>
-    public int RomMaxBytes { get; set; }
+    /// <summary>
+    /// ROM banks available on this target.
+    /// Single-bank targets (SMS, GG, SG-1000, ColecoVision) define one entry.
+    /// Multi-bank targets (NES) define one entry per named bank (PRG-ROM, CHR-ROM).
+    /// The Build Console iterates this array to display per-bank usage.
+    /// </summary>
+    public RomBank[] Banks { get; set; } = [];
+
+    /// <summary>
+    /// Total maximum ROM size in bytes across all banks.
+    /// Computed from Banks — do not set directly.
+    /// </summary>
+    public int RomMaxBytes => Banks.Sum(b => b.MaxBytes);
 
     // CPU
 
@@ -111,3 +122,13 @@ public class TargetSpecs
     /// <summary>Number of noise channels on the sound chip.</summary>
     public int SoundNoiseChannels { get; set; }
 }
+
+/// <summary>
+/// Represents a named ROM bank on a target console.
+/// Single-bank targets use one entry labelled "ROM".
+/// Multi-bank targets (NES) define one entry per bank (PRG-ROM, CHR-ROM).
+/// </summary>
+/// <param name="Id">Internal identifier. Ex: "rom", "prg", "chr"</param>
+/// <param name="Label">Display name shown in the Build Console. Ex: "ROM", "PRG-ROM", "CHR-ROM"</param>
+/// <param name="MaxBytes">Maximum capacity of this bank in bytes.</param>
+public record RomBank(string Id, string Label, int MaxBytes);

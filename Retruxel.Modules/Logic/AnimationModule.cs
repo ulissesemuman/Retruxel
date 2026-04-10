@@ -1,6 +1,7 @@
 using Retruxel.Core.Interfaces;
 using Retruxel.Core.Models;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace Retruxel.Modules.Logic;
 
@@ -12,7 +13,6 @@ namespace Retruxel.Modules.Logic;
 ///
 /// JSON format:
 /// {
-///   "module": "sms.animation",
 ///   "animations": [
 ///     { "name": "idle",  "frames": [0, 1],       "speed": 16 },
 ///     { "name": "walk",  "frames": [2, 3, 4, 5], "speed": 8  },
@@ -25,27 +25,19 @@ namespace Retruxel.Modules.Logic;
 /// </summary>
 public class AnimationModule : ILogicModule
 {
-    public string ModuleId    => "sms.animation";
-    public string DisplayName => "Animation";
-    public string Category    => "Logic";
-    public ModuleType Type    => ModuleType.Logic;
-    public string[] Compatibility => ["sms", "gg"];
+    public string     ModuleId     => "sms.animation";
+    public string     DisplayName  => "Animation";
+    public string     Category     => "Logic";
+    public ModuleType Type         => ModuleType.Logic;
+    public string[]   Compatibility => ["sms", "gg"];
 
-    public List<AnimationClip> Animations { get; set; } = [];
-
-    public AnimationModule()
+    private static readonly JsonSerializerOptions _jsonOptions = new()
     {
-        // Default animations for a basic platformer character
-        Animations =
-        [
-            new AnimationClip { Name = "idle",  Frames = [0, 1],       Speed = 16 },
-            new AnimationClip { Name = "walk",  Frames = [2, 3, 4, 5], Speed = 8  },
-            new AnimationClip { Name = "punch", Frames = [6, 7],       Speed = 4  },
-            new AnimationClip { Name = "kick",  Frames = [8, 9],       Speed = 4  },
-            new AnimationClip { Name = "jump",  Frames = [10],          Speed = 1  },
-            new AnimationClip { Name = "hurt",  Frames = [11, 12],     Speed = 6  }
-        ];
-    }
+        PropertyNamingPolicy        = JsonNamingPolicy.CamelCase,
+        PropertyNameCaseInsensitive = true
+    };
+
+    private AnimationState _state = new();
 
     public ModuleManifest GetManifest() => new()
     {
@@ -57,10 +49,10 @@ public class AnimationModule : ILogicModule
         [
             new ParameterDefinition
             {
-                Name        = "animations",
-                DisplayName = "Animation Clips",
-                Description = "List of named animation sequences with frame indices and speed.",
-                Type        = ParameterType.String,
+                Name         = "animations",
+                DisplayName  = "Animation Clips",
+                Description  = "List of named animation sequences with frame indices and speed.",
+                Type         = ParameterType.String,
                 DefaultValue = "[]"
             }
         ]
@@ -68,32 +60,22 @@ public class AnimationModule : ILogicModule
 
     public IEnumerable<GeneratedFile> GenerateCode() => [];
 
-    public string Serialize()
+    public string Serialize()              => JsonSerializer.Serialize(_state, _jsonOptions);
+    public void   Deserialize(string json) => _state = JsonSerializer.Deserialize<AnimationState>(json, _jsonOptions) ?? new();
+    public string GetValidationSample()    => JsonSerializer.Serialize(new AnimationState(), _jsonOptions);
+
+    private class AnimationState
     {
-        var data = new { module = ModuleId, animations = Animations };
-        return JsonSerializer.Serialize(data);
+        public List<AnimationClip> Animations { get; set; } =
+        [
+            new() { Name = "idle",  Frames = [0, 1],       Speed = 16 },
+            new() { Name = "walk",  Frames = [2, 3, 4, 5], Speed = 8  },
+            new() { Name = "punch", Frames = [6, 7],       Speed = 4  },
+            new() { Name = "kick",  Frames = [8, 9],       Speed = 4  },
+            new() { Name = "jump",  Frames = [10],          Speed = 1  },
+            new() { Name = "hurt",  Frames = [11, 12],     Speed = 6  }
+        ];
     }
-
-    public void Deserialize(string json)
-    {
-        var doc  = JsonDocument.Parse(json);
-        var root = doc.RootElement;
-
-        if (!root.TryGetProperty("animations", out var animArray)) return;
-
-        Animations = [];
-        foreach (var anim in animArray.EnumerateArray())
-        {
-            var clip = new AnimationClip();
-            if (anim.TryGetProperty("name",   out var n)) clip.Name  = n.GetString() ?? string.Empty;
-            if (anim.TryGetProperty("speed",  out var s)) clip.Speed = s.GetInt32();
-            if (anim.TryGetProperty("frames", out var f))
-                clip.Frames = f.EnumerateArray().Select(x => x.GetInt32()).ToList();
-            Animations.Add(clip);
-        }
-    }
-
-    public string GetValidationSample() => Serialize();
 }
 
 /// <summary>A single named animation sequence.</summary>

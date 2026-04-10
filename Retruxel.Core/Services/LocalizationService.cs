@@ -22,6 +22,7 @@ public class LocalizationService : INotifyPropertyChanged
     public IReadOnlyList<LanguageInfo> AvailableLanguages => _availableLanguages;
 
     public event PropertyChangedEventHandler? PropertyChanged;
+    public static event Action? LanguageChanged;
 
     private LocalizationService() { }
 
@@ -154,6 +155,7 @@ public class LocalizationService : INotifyPropertyChanged
 
             // Notify all bindings to refresh by passing empty string
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(string.Empty));
+            LanguageChanged?.Invoke();
         }
         catch
         {

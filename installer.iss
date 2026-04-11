@@ -1,5 +1,5 @@
 #define MyAppName "Retruxel"
-#define MyAppVersion "0.4.0-alpha"
+#define MyAppVersion "0.6.0-alpha"
 #define MyAppPublisher "Ulisses Emuman"
 #define MyAppURL "https://github.com/ulissesemuman/Retruxel"
 #define MyAppExeName "Retruxel.exe"
@@ -18,7 +18,7 @@ AllowNoIcons=yes
 LicenseFile=LICENSE
 OutputDir=Output
 OutputBaseFilename=RetruxelSetup
-SetupIconFile=Retruxel\Assets\Icons\app-icon.ico
+SetupIconFile=Retruxel\Assets\Icons\icon.ico
 Compression=lzma2/ultra64
 SolidCompression=yes
 WizardStyle=modern

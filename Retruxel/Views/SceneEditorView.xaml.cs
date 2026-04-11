@@ -1,12 +1,14 @@
 using Retruxel.Core.Interfaces;
 using Retruxel.Core.Models;
 using Retruxel.Core.Services;
+using Retruxel.Tools.AssetImporter;
+using System.IO;
 using System.Text.Json;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
-using System.Windows.Threading;
+using System.Windows.Media.Imaging;
 
 namespace Retruxel.Views;
 
@@ -24,9 +26,6 @@ public partial class SceneEditorView : UserControl
     private ModuleLoader? _moduleLoader;
     private bool _isUpdatingUI;
     private bool _isLoadingProject;
-    private Border? _selectedTab;
-    private TextBox? _editingTextBox;
-    private DispatcherTimer? _longPressTimer;
 
     public event Action<RetruxelProject>? OnGenerateRomRequested;
 
@@ -42,21 +41,17 @@ public partial class SceneEditorView : UserControl
     {
         var loc = LocalizationService.Instance;
         BtnGenerateRom.Content = loc.Get("scene.generate_rom");
+        TxtSystemStatus.Text   = loc.Get("scene.system_status");
         ModulePaletteHeader.Text = loc.Get("scene.modules");
+        BtnNewScene.Content    = loc.Get("scene.new_scene");
+        TxtDocumentation.Text  = loc.Get("scene.documentation");
         TxtPropertiesTitle.Text = loc.Get("scene.properties");
-        TxtNoSelection.Text = loc.Get("scene.no_selection");
-        TxtEventsTitle.Text = loc.Get("scene.events");
+        TxtNoSelection.Text    = loc.Get("scene.no_selection");
+        TxtEventsTitle.Text    = loc.Get("scene.events");
     }
 
-    public void SetProjectManager(ProjectManager manager)
-    {
-        _projectManager = manager;
-    }
-
-    public void SetModuleLoader(ModuleLoader loader)
-    {
-        _moduleLoader = loader;
-    }
+    public void SetProjectManager(ProjectManager manager) => _projectManager = manager;
+    public void SetModuleLoader(ModuleLoader loader)       => _moduleLoader   = loader;
 
     /// <summary>
     /// Refreshes localization for all UI elements.
@@ -65,15 +60,313 @@ public partial class SceneEditorView : UserControl
     public void RefreshLocalization()
     {
         ApplyLocalization();
-        if (_target != null)
+        if (_target != null) { LoadModulePalette(_target); LoadEvents(); }
+        if (_selectedElement != null) BuildPropertiesPanel(_selectedElement);
+    }
+
+    // ── Sidebar tab switching ─────────────────────────────────────────────────
+
+    private void BtnTabModules_Click(object sender, RoutedEventArgs e)
+    {
+        PanelModules.Visibility = Visibility.Visible;
+        PanelAssets.Visibility  = Visibility.Collapsed;
+        BtnTabModules.Tag = "active";
+        BtnTabAssets.Tag  = null;
+    }
+
+    private void BtnTabAssets_Click(object sender, RoutedEventArgs e)
+    {
+        PanelModules.Visibility = Visibility.Collapsed;
+        PanelAssets.Visibility  = Visibility.Visible;
+        BtnTabModules.Tag = null;
+        BtnTabAssets.Tag  = "active";
+        RefreshAssetPanel();
+    }
+
+    // ── Asset panel ───────────────────────────────────────────────────────────
+
+    /// <summary>
+    /// Rebuilds the asset panel from the current project's asset list.
+    /// </summary>
+    private void RefreshAssetPanel()
+    {
+        if (_project is null) return;
+
+        AssetTilesPanel.Children.Clear();
+        AssetSpritesPanel.Children.Clear();
+
+        foreach (var asset in _project.Assets)
         {
-            LoadModulePalette(_target);
-            LoadEvents();
+            var panel = asset.Type == AssetType.Tiles
+                ? AssetTilesPanel
+                : AssetSpritesPanel;
+
+            panel.Children.Add(BuildAssetRow(asset));
         }
-        if (_selectedElement != null)
+    }
+
+    /// <summary>
+    /// Builds a single asset row for the asset panel.
+    /// </summary>
+    private FrameworkElement BuildAssetRow(AssetEntry asset)
+    {
+        var border = new Border
         {
-            BuildPropertiesPanel(_selectedElement);
+            Margin  = new Thickness(12, 0, 12, 4),
+            Padding = new Thickness(8, 6, 8, 6),
+            Cursor  = System.Windows.Input.Cursors.Hand,
+            Tag     = asset.Id
+        };
+        border.SetResourceReference(Border.BackgroundProperty, "BrushSurfaceContainerHigh");
+
+        var grid = new Grid();
+        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+
+        // Color indicator
+        var indicator = new Border
+        {
+            Width  = 8,
+            Height = 8,
+            Margin = new Thickness(0, 0, 8, 0),
+            VerticalAlignment = VerticalAlignment.Center
+        };
+        indicator.SetResourceReference(Border.BackgroundProperty,
+            asset.Type == AssetType.Tiles ? "BrushSecondary" : "BrushTertiary");
+        Grid.SetColumn(indicator, 0);
+
+        // Asset name
+        var name = new TextBlock
+        {
+            Text = asset.Id,
+            VerticalAlignment = VerticalAlignment.Center
+        };
+        name.SetResourceReference(TextBlock.StyleProperty, "TextBody");
+        Grid.SetColumn(name, 1);
+
+        // Tile count
+        var count = new TextBlock
+        {
+            Text = $"{asset.TileCount}t",
+            VerticalAlignment = VerticalAlignment.Center,
+            FontSize = 10
+        };
+        count.SetResourceReference(TextBlock.ForegroundProperty, "BrushOnSurfaceVariant");
+        Grid.SetColumn(count, 2);
+
+        grid.Children.Add(indicator);
+        grid.Children.Add(name);
+        grid.Children.Add(count);
+        border.Child = grid;
+
+        return border;
+    }
+
+    private void BtnImportTiles_Click(object sender, RoutedEventArgs e)
+        => OpenAssetImporter(AssetType.Tiles);
+
+    private void BtnImportSprites_Click(object sender, RoutedEventArgs e)
+        => OpenAssetImporter(AssetType.Sprites);
+
+    private void OpenAssetImporter(AssetType assetType)
+    {
+        if (_project is null || _target is null) return;
+
+        var window = new AssetImporterWindow(_target, _project.ProjectPath)
+        {
+            Owner = Window.GetWindow(this)
+        };
+
+        // Pre-select asset type
+        if (assetType == AssetType.Sprites)
+            window.PreSelectSprites();
+
+        if (window.ShowDialog() == true && window.ImportedAsset is not null)
+        {
+            // Check for duplicate ID
+            if (_project.Assets.Any(a => a.Id == window.ImportedAsset.Id))
+            {
+                MessageBox.Show(
+                    $"An asset named '{window.ImportedAsset.Id}' already exists.",
+                    "Retruxel", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            _project.Assets.Add(window.ImportedAsset);
+            _ = _projectManager?.SaveAsync();
+            RefreshAssetPanel();
         }
+    }
+
+    // ── New Scene ─────────────────────────────────────────────────────────────
+
+    private void BtnNewScene_Click(object sender, RoutedEventArgs e)
+    {
+        if (_project is null) return;
+
+        var index   = _project.Scenes.Count + 1;
+        var newName = $"Scene {index}";
+        while (_project.Scenes.Any(s => s.SceneName == newName))
+        {
+            index++;
+            newName = $"Scene {index}";
+        }
+
+        var scene = new SceneData { SceneId = Guid.NewGuid().ToString(), SceneName = newName };
+        _project.Scenes.Add(scene);
+        _ = _projectManager?.SaveAsync();
+
+        RebuildSceneTabs();
+        ActivateScene(scene);
+    }
+
+    // ── Scene tabs ────────────────────────────────────────────────────────────
+
+    /// <summary>
+    /// Rebuilds the scene tab strip from the current project's scene list.
+    /// Called on project load and after adding/removing/renaming scenes.
+    /// </summary>
+    private void RebuildSceneTabs()
+    {
+        if (_project is null) return;
+
+        SceneTabsPanel.Children.Clear();
+
+        foreach (var scene in _project.Scenes)
+            SceneTabsPanel.Children.Add(BuildSceneTab(scene));
+    }
+
+    /// <summary>
+    /// Builds a single scene tab. Double-click or right-click → Rename/Delete.
+    /// </summary>
+    private FrameworkElement BuildSceneTab(SceneData scene)
+    {
+        var isActive = _currentScene?.SceneId == scene.SceneId;
+
+        var border = new Border
+        {
+            Padding           = new Thickness(16, 0, 16, 0),
+            Cursor            = Cursors.Hand,
+            Tag               = scene.SceneId,
+            BorderThickness   = new Thickness(0, 0, 0, isActive ? 2 : 0),
+            VerticalAlignment = VerticalAlignment.Stretch
+        };
+        border.SetResourceReference(Border.BorderBrushProperty, "BrushPrimary");
+        border.SetResourceReference(Border.BackgroundProperty,
+            isActive ? "BrushSurfaceContainerHigh" : "BrushSurfaceContainerLow");
+
+        border.Child = BuildLabelForTab(scene);
+
+        // Single click → activate, double click → rename
+        border.MouseLeftButtonDown += (_, e) =>
+        {
+            if (e.ClickCount == 2)
+                StartInlineRename(border, scene);
+            else
+                ActivateScene(scene);
+        };
+
+        // Right-click context menu: Rename / Delete
+        var menu       = new ContextMenu();
+        var menuRename = new MenuItem { Header = "Rename" };
+        var menuDelete = new MenuItem { Header = "Delete" };
+
+        menuRename.Click += (_, _) => StartInlineRename(border, scene);
+        menuDelete.Click += (_, _) => DeleteScene(scene);
+
+        // Disable Delete when only one scene remains
+        if (_project!.Scenes.Count <= 1)
+            menuDelete.IsEnabled = false;
+
+        menu.Items.Add(menuRename);
+        menu.Items.Add(menuDelete);
+        border.ContextMenu = menu;
+
+        return border;
+    }
+
+    private TextBlock BuildLabelForTab(SceneData scene)
+    {
+        var isActive = _currentScene?.SceneId == scene.SceneId;
+        var label    = new TextBlock
+        {
+            Text              = scene.SceneName,
+            VerticalAlignment = VerticalAlignment.Center
+        };
+        label.SetResourceReference(TextBlock.StyleProperty, "TextLabel");
+        if (isActive)
+            label.SetResourceReference(TextBlock.ForegroundProperty, "BrushPrimary");
+        return label;
+    }
+
+    /// <summary>
+    /// Activates a scene — switches the canvas to show its elements.
+    /// </summary>
+    private void ActivateScene(SceneData scene)
+    {
+        _currentScene = scene;
+        RebuildSceneTabs();
+        // TODO: reload canvas elements for this scene
+    }
+
+    /// <summary>
+    /// Starts inline rename — replaces tab label with a TextBox.
+    /// Confirms on Enter or focus loss, cancels on Esc.
+    /// </summary>
+    private void StartInlineRename(Border tab, SceneData scene)
+    {
+        var textBox = new TextBox
+        {
+            Text              = scene.SceneName,
+            VerticalAlignment = VerticalAlignment.Center,
+            MinWidth          = 60,
+            MaxWidth          = 160
+        };
+        textBox.SetResourceReference(TextBox.StyleProperty, "RetruxelTextBox");
+        textBox.SelectAll();
+
+        tab.Child = textBox;
+        textBox.Focus();
+
+        void Confirm()
+        {
+            var newName = textBox.Text.Trim();
+            if (string.IsNullOrEmpty(newName)
+                || _project!.Scenes.Any(s => s.SceneId != scene.SceneId && s.SceneName == newName))
+            {
+                tab.Child = BuildLabelForTab(scene); // revert
+                return;
+            }
+
+            scene.SceneName = newName;
+            _ = _projectManager?.SaveAsync();
+            RebuildSceneTabs();
+        }
+
+        textBox.KeyDown += (_, e) =>
+        {
+            if (e.Key == Key.Return) { Confirm(); e.Handled = true; }
+            if (e.Key == Key.Escape) { tab.Child = BuildLabelForTab(scene); e.Handled = true; }
+        };
+        textBox.LostFocus += (_, _) => Confirm();
+    }
+
+    /// <summary>
+    /// Deletes a scene. No-op when only one scene remains.
+    /// </summary>
+    private void DeleteScene(SceneData scene)
+    {
+        if (_project is null || _project.Scenes.Count <= 1) return;
+
+        _project.Scenes.Remove(scene);
+
+        if (_currentScene?.SceneId == scene.SceneId)
+            ActivateScene(_project.Scenes[0]);
+        else
+            RebuildSceneTabs();
+
+        _ = _projectManager?.SaveAsync();
     }
 
     private void SceneEditorView_KeyDown(object sender, KeyEventArgs e)
@@ -91,31 +384,30 @@ public partial class SceneEditorView : UserControl
     public void Initialize(RetruxelProject project, ITarget target)
     {
         _project = project;
-        _target = target;
-        
+        _target  = target;
+
         // Clear previous session data
         _elements.Clear();
         SceneCanvas.Children.Clear();
         _selectedElement = null;
-        
-        // Ensure at least one scene exists
-        if (project.Scenes.Count == 0)
+
+        // Get or create main scene
+        _currentScene = project.Scenes.FirstOrDefault();
+        if (_currentScene is null)
         {
-            project.Scenes.Add(new SceneData
+            _currentScene = new SceneData
             {
-                SceneId = Guid.NewGuid().ToString(),
-                SceneName = "Scene 1",
-                Elements = []
-            });
+                SceneId   = Guid.NewGuid().ToString(),
+                SceneName = "Main",
+                Elements  = []
+            };
+            project.Scenes.Add(_currentScene);
         }
-        
-        // Load first scene
-        _currentScene = project.Scenes[0];
-        
+
+        RebuildSceneTabs();
         ApplyTargetSpecs(target);
         LoadModulePalette(target);
         LoadEvents();
-        RebuildSceneTabs();
         LoadFromProject();
     }
 
@@ -124,263 +416,7 @@ public partial class SceneEditorView : UserControl
         var specs = target.Specs;
         SceneCanvas.Width  = specs.ScreenWidth;
         SceneCanvas.Height = specs.ScreenHeight;
-        TxtCanvasSize.Text = string.Format(
-            LocalizationService.Instance.Get("scene.canvas_size.format"),
-            specs.ScreenWidth, specs.ScreenHeight);
-    }
-
-    // ===== SCENE TABS =====
-
-    private void RebuildSceneTabs()
-    {
-        SceneTabsPanel.Children.Clear();
-        
-        if (_project is null) return;
-        
-        foreach (var scene in _project.Scenes)
-        {
-            var tab = BuildSceneTab(scene);
-            SceneTabsPanel.Children.Add(tab);
-        }
-    }
-
-    private Border BuildSceneTab(SceneData scene)
-    {
-        var isSelected = scene == _currentScene;
-        
-        var tab = new Border
-        {
-            Background = new SolidColorBrush(isSelected 
-                ? Color.FromRgb(0x26, 0x26, 0x26) 
-                : Color.FromRgb(0x1E, 0x1E, 0x1E)),
-            Padding = new Thickness(12, 0, 12, 0),
-            Height = 40,
-            Margin = new Thickness(0, 0, 4, 0),
-            Cursor = Cursors.Hand,
-            Tag = scene
-        };
-
-        var label = new TextBlock
-        {
-            Text = scene.SceneName,
-            Style = (Style)FindResource("TextCode"),
-            Foreground = new SolidColorBrush(isSelected 
-                ? Color.FromRgb(0x8E, 0xFF, 0x71) 
-                : Color.FromRgb(0xAD, 0xAA, 0xAA)),
-            VerticalAlignment = VerticalAlignment.Center
-        };
-
-        tab.Child = label;
-
-        if (isSelected)
-            _selectedTab = tab;
-
-        // Click to switch scene
-        tab.MouseLeftButtonDown += (s, e) =>
-        {
-            if (e.ClickCount == 1)
-            {
-                SwitchToScene(scene);
-                e.Handled = true;
-            }
-        };
-
-        // Long press to edit
-        // Trocar MouseLeftButtonDown por PreviewMouseLeftButtonDown
-        tab.PreviewMouseLeftButtonDown += (s, e) =>
-        {
-            _longPressTimer?.Stop();
-            _longPressTimer = new DispatcherTimer
-            {
-                Interval = TimeSpan.FromMilliseconds(500)
-            };
-            _longPressTimer.Tick += (_, _) =>
-            {
-                _longPressTimer.Stop();
-                StartEditingSceneName(tab, scene);
-                e.Handled = true; // Previne o Click de disparar
-            };
-            _longPressTimer.Start();
-        };
-
-        tab.PreviewMouseLeftButtonUp += (s, e) =>
-        {
-            _longPressTimer?.Stop();
-        };
-
-        // Right-click context menu
-        tab.MouseRightButtonDown += (s, e) =>
-        {
-            ShowSceneContextMenu(tab, scene, e.GetPosition(tab));
-            e.Handled = true;
-        };
-
-        return tab;
-    }
-
-    private void SwitchToScene(SceneData scene)
-    {
-        if (_currentScene == scene) return;
-        
-        // Save current scene
-        SyncProjectModules();
-        
-        // Clear canvas and elements
-        _elements.Clear();
-        SceneCanvas.Children.Clear();
-        _selectedElement = null;
-        
-        // Switch to new scene
-        _currentScene = scene;
-        
-        // Reload UI
-        LoadEvents();
-        RebuildSceneTabs();
-        LoadFromProject();
-    }
-
-    private void NewScene_Click(object sender, RoutedEventArgs e)
-    {
-        if (_project is null) return;
-        
-        // Find next scene number
-        var sceneNumber = 1;
-        while (_project.Scenes.Any(s => s.SceneName == $"Scene {sceneNumber}"))
-            sceneNumber++;
-        
-        var newScene = new SceneData
-        {
-            SceneId = Guid.NewGuid().ToString(),
-            SceneName = $"Scene {sceneNumber}",
-            Elements = []
-        };
-        
-        _project.Scenes.Add(newScene);
-        RebuildSceneTabs();
-        SwitchToScene(newScene);
-        
-        // Start editing the name
-        var tab = SceneTabsPanel.Children.OfType<Border>()
-            .FirstOrDefault(b => b.Tag == newScene);
-        if (tab is not null)
-            StartEditingSceneName(tab, newScene);
-        
-        _projectManager?.MarkDirty();
-    }
-
-    private void StartEditingSceneName(Border tab, SceneData scene)
-    {
-        if (tab.Child is not TextBlock label) return;
-        
-        var textBox = new TextBox
-        {
-            Text = scene.SceneName,
-            FontFamily = new FontFamily("Consolas"),
-            FontSize = 12,
-            Foreground = new SolidColorBrush(Color.FromRgb(0x8E, 0xFF, 0x71)),
-            Background = Brushes.Transparent,
-            BorderThickness = new Thickness(0),
-            VerticalAlignment = VerticalAlignment.Center,
-            CaretBrush = new SolidColorBrush(Color.FromRgb(0x8E, 0xFF, 0x71))
-        };
-        
-        _editingTextBox = textBox;
-        tab.Child = textBox;
-        textBox.Focus();
-        textBox.SelectAll();
-        
-        textBox.KeyDown += (s, e) =>
-        {
-            if (e.Key == Key.Enter)
-            {
-                FinishEditingSceneName(tab, scene, textBox.Text);
-                e.Handled = true;
-            }
-            else if (e.Key == Key.Escape)
-            {
-                FinishEditingSceneName(tab, scene, scene.SceneName);
-                e.Handled = true;
-            }
-        };
-        
-        textBox.LostFocus += (s, e) =>
-        {
-            FinishEditingSceneName(tab, scene, textBox.Text);
-        };
-    }
-
-    private void FinishEditingSceneName(Border tab, SceneData scene, string newName)
-    {
-        if (_editingTextBox is null) return;
-        
-        _editingTextBox = null;
-        
-        if (!string.IsNullOrWhiteSpace(newName))
-        {
-            scene.SceneName = newName.Trim();
-            _projectManager?.MarkDirty();
-        }
-        
-        var label = new TextBlock
-        {
-            Text = scene.SceneName,
-            Style = (Style)FindResource("TextCode"),
-            Foreground = new SolidColorBrush(scene == _currentScene 
-                ? Color.FromRgb(0x8E, 0xFF, 0x71) 
-                : Color.FromRgb(0xAD, 0xAA, 0xAA)),
-            VerticalAlignment = VerticalAlignment.Center
-        };
-        
-        tab.Child = label;
-    }
-
-    private void ShowSceneContextMenu(Border tab, SceneData scene, Point position)
-    {
-        var loc = LocalizationService.Instance;
-        var menu = new ContextMenu
-        {
-            Background = new SolidColorBrush(Color.FromRgb(0x1E, 0x1E, 0x1E)),
-            BorderBrush = new SolidColorBrush(Color.FromRgb(0x3A, 0x3A, 0x3A)),
-            BorderThickness = new Thickness(1)
-        };
-        
-        // Rename
-        var renameItem = new MenuItem
-        {
-            Header = loc.Get("scene.context.rename"),
-            Foreground = Brushes.White,
-            Background = Brushes.Transparent
-        };
-        renameItem.Click += (s, e) => StartEditingSceneName(tab, scene);
-        menu.Items.Add(renameItem);
-        
-        // Delete
-        var deleteItem = new MenuItem
-        {
-            Header = loc.Get("scene.context.delete"),
-            Foreground = Brushes.White,
-            Background = Brushes.Transparent,
-            IsEnabled = _project?.Scenes.Count > 1
-        };
-        deleteItem.Click += (s, e) => DeleteScene(scene);
-        menu.Items.Add(deleteItem);
-        
-        menu.PlacementTarget = tab;
-        menu.IsOpen = true;
-    }
-
-    private void DeleteScene(SceneData scene)
-    {
-        if (_project is null || _project.Scenes.Count <= 1) return;
-        
-        var index = _project.Scenes.IndexOf(scene);
-        _project.Scenes.Remove(scene);
-        
-        // Switch to previous or next scene
-        var newIndex = Math.Max(0, index - 1);
-        SwitchToScene(_project.Scenes[newIndex]);
-        
-        _projectManager?.MarkDirty();
+        TxtCanvasSize.Text = $"{specs.ScreenWidth} × {specs.ScreenHeight} px";
     }
 
     // ===== MODULE PALETTE =====
@@ -394,7 +430,6 @@ public partial class SceneEditorView : UserControl
 
         if (_moduleLoader is null) return;
 
-        var loc = LocalizationService.Instance;
         var modules = new List<(string Category, string ModuleId, string DisplayName)>();
 
         foreach (var (moduleId, module) in _moduleLoader.LogicModules)
@@ -419,13 +454,9 @@ public partial class SceneEditorView : UserControl
 
         foreach (var group in grouped)
         {
-            // Translate category name
-            var categoryKey = $"scene.category.{group.Key.ToLower()}";
-            var categoryName = loc.Get(categoryKey);
-            
             var header = new TextBlock
             {
-                Text = categoryName,
+                Text = group.Key,
                 Style = (Style)FindResource("TextLabel"),
                 Margin = new Thickness(12, 8, 12, 4)
             };
@@ -487,9 +518,7 @@ public partial class SceneEditorView : UserControl
     private void Canvas_MouseMove(object sender, MouseEventArgs e)
     {
         var pos = e.GetPosition(SceneCanvas);
-        TxtCoordinates.Text = string.Format(
-            LocalizationService.Instance.Get("scene.coordinates.format"),
-            (int)pos.X, (int)pos.Y);
+        TxtCoordinates.Text = $"X: {(int)pos.X} | Y: {(int)pos.Y}";
     }
 
     private void Canvas_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
@@ -537,23 +566,31 @@ public partial class SceneEditorView : UserControl
     {
         var border = new Border
         {
-            Background = new SolidColorBrush(Color.FromArgb(0xCC, 0x1E, 0x1E, 0x1E)),
-            BorderBrush = new SolidColorBrush(Color.FromRgb(0x8E, 0xFF, 0x71)),
+            Background      = new SolidColorBrush(Color.FromArgb(0xCC, 0x1E, 0x1E, 0x1E)),
+            BorderBrush     = new SolidColorBrush(Color.FromRgb(0x8E, 0xFF, 0x71)),
             BorderThickness = new Thickness(1),
-            Padding = new Thickness(4, 2, 4, 2),
-            Cursor = Cursors.Hand,
-            Tag = element
+            Padding         = new Thickness(4, 2, 4, 2),
+            Cursor          = Cursors.Hand,
+            Tag             = element
         };
 
-        var label = new TextBlock
+        // Try to render real asset — fallback to label if not available
+        var assetVisual = TryBuildAssetVisual(element);
+        if (assetVisual is not null)
         {
-            Text = element.DisplayLabel,
-            FontFamily = new FontFamily("Consolas"),
-            FontSize = 9,
-            Foreground = new SolidColorBrush(Color.FromRgb(0x8E, 0xFF, 0x71))
-        };
-
-        border.Child = label;
+            border.Padding = new Thickness(0);
+            border.Child   = assetVisual;
+        }
+        else
+        {
+            border.Child = new TextBlock
+            {
+                Text       = element.DisplayLabel,
+                FontFamily = new FontFamily("Consolas"),
+                FontSize   = 9,
+                Foreground = new SolidColorBrush(Color.FromRgb(0x8E, 0xFF, 0x71))
+            };
+        }
         border.MouseLeftButtonDown += (s, e) =>
         {
             SelectElement(element);
@@ -882,18 +919,9 @@ public partial class SceneEditorView : UserControl
 
     private void AddParameterField(SceneElement element, IModule module, ParameterDefinition param)
     {
-        var loc = LocalizationService.Instance;
-        
-        // Try to get localized parameter name
-        var paramKey = $"scene.param.{param.Name.ToLower().Replace(" ", "_")}";
-        var paramDisplayName = loc.Get(paramKey);
-        // If key not found, use original DisplayName
-        if (paramDisplayName == paramKey)
-            paramDisplayName = param.DisplayName;
-        
         PropertiesPanel.Children.Add(new TextBlock
         {
-            Text = paramDisplayName,
+            Text = param.DisplayName,
             Style = (Style)FindResource("TextLabel"),
             Margin = new Thickness(0, 0, 0, 4)
         });
@@ -940,6 +968,7 @@ public partial class SceneEditorView : UserControl
                 }
                 
                 UpdateElementLabel(element);
+                RefreshElementVisual(element);
                 SyncProjectModules();
             }
         };
@@ -949,6 +978,71 @@ public partial class SceneEditorView : UserControl
     }
 
     // ===== HELPERS =====
+
+    /// <summary>
+    /// Tries to build an Image visual from the asset referenced by the module.
+    /// Returns null if the module has no asset reference or the asset file is missing —
+    /// the caller falls back to the gray box label in that case.
+    /// </summary>
+    private UIElement? TryBuildAssetVisual(SceneElement element)
+    {
+        if (_project is null || element.Module is not IModule module) return null;
+
+        // Extract tilesAssetId from the module JSON
+        var assetId = ExtractAssetId(module);
+        if (string.IsNullOrEmpty(assetId)) return null;
+
+        // Find asset entry in project
+        var asset = _project.Assets.FirstOrDefault(a => a.Id == assetId);
+        if (asset is null) return null;
+
+        // Resolve absolute path
+        var absPath = Path.Combine(_project.ProjectPath, asset.RelativePath.Replace('/', Path.DirectorySeparatorChar));
+        if (!File.Exists(absPath)) return null;
+
+        try
+        {
+            var bitmap = new BitmapImage();
+            bitmap.BeginInit();
+            bitmap.UriSource   = new Uri(absPath);
+            bitmap.CacheOption = BitmapCacheOption.OnLoad;
+            bitmap.EndInit();
+            bitmap.Freeze();
+
+            var img = new System.Windows.Controls.Image
+            {
+                Source              = bitmap,
+                Width               = asset.SourceWidth,
+                Height              = asset.SourceHeight,
+                Stretch             = System.Windows.Media.Stretch.None,
+                SnapsToDevicePixels = true
+            };
+            RenderOptions.SetBitmapScalingMode(img, BitmapScalingMode.NearestNeighbor);
+            return img;
+        }
+        catch
+        {
+            return null; // Any I/O or decode failure → fall back to gray box
+        }
+    }
+
+    /// <summary>
+    /// Extracts the tilesAssetId from a module's serialized JSON.
+    /// Works for TilemapModule and SpriteModule which both use "tilesAssetId".
+    /// </summary>
+    private static string? ExtractAssetId(IModule module)
+    {
+        try
+        {
+            var json = module.Serialize();
+            using var doc = System.Text.Json.JsonDocument.Parse(json);
+            if (doc.RootElement.TryGetProperty("tilesAssetId", out var prop))
+                return prop.GetString();
+        }
+        catch { /* ignore */ }
+
+        return null;
+    }
 
     private SceneElement CreateSceneElement(string moduleId, int tileX, int tileY)
     {
@@ -991,6 +1085,34 @@ public partial class SceneEditorView : UserControl
         if (element.EventVisual is Border ev && ev.Child is Grid g &&
             g.Children.OfType<TextBlock>().FirstOrDefault() is TextBlock etb)
             etb.Text = label;
+    }
+
+    /// <summary>
+    /// Refreshes the canvas visual for an element after its module state changes.
+    /// Used when tilesAssetId is updated in the properties panel — switches from
+    /// gray box to real asset image (or back if the asset is removed).
+    /// </summary>
+    private void RefreshElementVisual(SceneElement element)
+    {
+        if (element.CanvasVisual is not Border border) return;
+
+        var assetVisual = TryBuildAssetVisual(element);
+        if (assetVisual is not null)
+        {
+            border.Padding = new Thickness(0);
+            border.Child   = assetVisual;
+        }
+        else
+        {
+            border.Padding = new Thickness(4, 2, 4, 2);
+            border.Child   = new TextBlock
+            {
+                Text       = element.DisplayLabel,
+                FontFamily = new FontFamily("Consolas"),
+                FontSize   = 9,
+                Foreground = new SolidColorBrush(Color.FromRgb(0x8E, 0xFF, 0x71))
+            };
+        }
     }
 
     private string GetElementDisplayLabel(SceneElement element)

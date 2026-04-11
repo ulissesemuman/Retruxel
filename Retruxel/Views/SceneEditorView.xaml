@@ -1,4 +1,4 @@
-<UserControl x:Class="Retruxel.Views.SceneEditorView"
+﻿<UserControl x:Class="Retruxel.Views.SceneEditorView"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              Background="{StaticResource BrushSurface}">
@@ -18,26 +18,36 @@
         <!-- ===== TOP BAR ===== -->
         <Border Grid.Row="0" Grid.ColumnSpan="3"
                 Background="{StaticResource BrushSurfaceContainerLow}"
-                Padding="16,0">
+                Padding="0">
             <Grid>
                 <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
 
                 <!-- Scene tabs -->
-                <StackPanel x:Name="SceneTabsPanel" Grid.Column="0" Orientation="Horizontal"/>
+                <ScrollViewer Grid.Column="0"
+                              HorizontalScrollBarVisibility="Hidden"
+                              VerticalScrollBarVisibility="Disabled"
+                              VerticalAlignment="Stretch">
+                    <StackPanel x:Name="SceneTabsPanel"
+                                Orientation="Horizontal"
+                                VerticalAlignment="Stretch"/>
+                </ScrollViewer>
 
-                <!-- Coordinates display — TextCode: dado técnico -->
+                <!-- Coordinates display -->
                 <TextBlock Grid.Column="1"
                            x:Name="TxtCoordinates"
                            Text="X: 0 | Y: 0"
-                           Style="{StaticResource TextCode}"
-                           HorizontalAlignment="Center"
-                           VerticalAlignment="Center"/>
+                           Style="{StaticResource TextLabel}"
+                           VerticalAlignment="Center"
+                           Margin="16 0"/>
 
-                <StackPanel Grid.Column="2" Orientation="Horizontal">
+                <!-- Generate ROM -->
+                <StackPanel Grid.Column="2" Orientation="Horizontal"
+                            VerticalAlignment="Center"
+                            Margin="0 0 12 0">
                     <Button x:Name="BtnGenerateRom"
                             Style="{StaticResource ButtonPrimary}"
                             Padding="16,0" Height="28"
@@ -46,32 +56,110 @@
             </Grid>
         </Border>
 
-        <!-- ===== LEFT — MODULE PALETTE ===== -->
+        <!-- ===== LEFT — SIDEBAR ===== -->
         <Border Grid.Row="1" Grid.Column="0" Grid.RowSpan="2"
-                Background="{StaticResource BrushSurfaceContainerLow}"
-                Padding="0,8">
-            <ScrollViewer VerticalScrollBarVisibility="Auto">
-                <StackPanel>
+                Background="{StaticResource BrushSurfaceContainerLow}">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="40"/>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
 
-                    <TextBlock x:Name="ModulePaletteHeader"
-                               Style="{StaticResource TextLabelCaps}"
-                               Foreground="{StaticResource BrushPrimary}"
-                               Margin="12,0,12,8"/>
+                <!-- Tab headers -->
+                <Grid Grid.Row="0" Background="{StaticResource BrushSurface}">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
 
-                    <StackPanel x:Name="ModulePalettePanel"/>
+                    <Button x:Name="BtnTabModules"
+                            Grid.Column="0"
+                            Content="MODULES"
+                            Click="BtnTabModules_Click"
+                            Tag="active"
+                            Style="{StaticResource SidebarTab}"/>
 
-                    <Separator Margin="12,16"/>
+                    <Button x:Name="BtnTabAssets"
+                            Grid.Column="1"
+                            Content="ASSETS"
+                            Click="BtnTabAssets_Click"
+                            Style="{StaticResource SidebarTab}"/>
+                </Grid>
 
-                    <!-- ButtonSecondary (roxo): ação utilitária dentro do editor — uso correto -->
-                    <Button x:Name="BtnNewScene"
-                            Content="+ NEW SCENE"
-                            Style="{StaticResource ButtonSecondary}"
-                            Margin="12,0"
-                            HorizontalAlignment="Stretch"
-                            Padding="0,8"
-                            Click="NewScene_Click"/>
-                </StackPanel>
-            </ScrollViewer>
+                <!-- ── MODULES panel ── -->
+                <ScrollViewer x:Name="PanelModules"
+                              Grid.Row="1"
+                              VerticalScrollBarVisibility="Auto">
+                    <StackPanel Margin="0 8 0 0">
+                        <TextBlock x:Name="TxtSystemStatus"
+                                   Style="{StaticResource TextLabel}"
+                                   Foreground="{StaticResource BrushPrimary}"
+                                   Margin="12,4,12,16"
+                                   FontSize="9"/>
+
+                        <TextBlock x:Name="ModulePaletteHeader"
+                                   Style="{StaticResource TextLabel}"
+                                   Foreground="{StaticResource BrushPrimary}"
+                                   Margin="12,0,12,8"/>
+
+                        <StackPanel x:Name="ModulePalettePanel"/>
+
+                        <TextBlock x:Name="TxtDocumentation"
+                                   Style="{StaticResource TextLabel}"
+                                   Margin="12,16,12,0"
+                                   Cursor="Hand"/>
+                    </StackPanel>
+                </ScrollViewer>
+
+                <!-- ── ASSETS panel ── -->
+                <ScrollViewer x:Name="PanelAssets"
+                              Grid.Row="1"
+                              Visibility="Collapsed"
+                              VerticalScrollBarVisibility="Auto">
+                    <StackPanel Margin="0 8 0 0">
+
+                        <!-- Tiles section -->
+                        <TextBlock Text="TILES"
+                                   Style="{StaticResource TextLabel}"
+                                   Foreground="{StaticResource BrushPrimary}"
+                                   Margin="12 0 12 8"/>
+
+                        <StackPanel x:Name="AssetTilesPanel"
+                                    Margin="0 0 0 4"/>
+
+                        <Button Content="+ IMPORT TILES"
+                                Style="{StaticResource AssetImportButton}"
+                                Margin="12 4 12 16"
+                                Click="BtnImportTiles_Click"/>
+
+                        <!-- Sprites section -->
+                        <TextBlock Text="SPRITES"
+                                   Style="{StaticResource TextLabel}"
+                                   Foreground="{StaticResource BrushPrimary}"
+                                   Margin="12 0 12 8"/>
+
+                        <StackPanel x:Name="AssetSpritesPanel"
+                                    Margin="0 0 0 4"/>
+
+                        <Button Content="+ IMPORT SPRITES"
+                                Style="{StaticResource AssetImportButton}"
+                                Margin="12 4 12 16"
+                                Click="BtnImportSprites_Click"/>
+
+                    </StackPanel>
+                </ScrollViewer>
+
+                <!-- ── Bottom: New Scene button (always visible) ── -->
+                <Button x:Name="BtnNewScene"
+                        Grid.Row="2"
+                        Style="{StaticResource ButtonSecondary}"
+                        Margin="12 8"
+                        HorizontalAlignment="Stretch"
+                        Padding="0,8"
+                        Click="BtnNewScene_Click"/>
+
+            </Grid>
         </Border>
 
         <!-- ===== CENTER — CANVAS ===== -->
@@ -127,9 +215,9 @@
                     </Canvas>
                 </Border>
 
-                <!-- Canvas size label — TextCode: dado técnico de dimensão -->
+                <!-- Canvas size label -->
                 <TextBlock x:Name="TxtCanvasSize"
-                           Style="{StaticResource TextCode}"
+                           Style="{StaticResource TextLabel}"
                            HorizontalAlignment="Right"
                            VerticalAlignment="Bottom"
                            Margin="0,4,0,-16"/>
@@ -142,7 +230,7 @@
                 Padding="16">
             <StackPanel>
                 <TextBlock x:Name="TxtPropertiesTitle"
-                           Style="{StaticResource TextLabelCaps}"
+                           Style="{StaticResource TextLabel}"
                            Foreground="{StaticResource BrushPrimary}"
                            Margin="0,0,0,16"/>
 
@@ -170,7 +258,7 @@
 
                 <TextBlock Grid.Row="0"
                            x:Name="TxtEventsTitle"
-                           Style="{StaticResource TextLabelCaps}"
+                           Style="{StaticResource TextLabel}"
                            Foreground="{StaticResource BrushPrimary}"
                            Margin="0,0,0,8"/>
 

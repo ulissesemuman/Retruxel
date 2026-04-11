@@ -46,7 +46,7 @@
                         HorizontalAlignment="Center">
 
                 <!-- Chip icon -->
-                <Image Source="pack://application:,,,/Assets/Images/Splash/logochip.png"
+                <Image Source="pack://application:,,,/Assets/Images/Logo/logochip.png"
                        Width="80" Height="80"
                        Margin="0,0,0,24"
                        HorizontalAlignment="Center"/>

@@ -1,4 +1,4 @@
-﻿using System.IO;
+using System.IO;
 using System.Windows;
 using Retruxel.Core.Services;
 using Retruxel.Services;
@@ -9,47 +9,39 @@ public partial class App : Application
 {
     private async void App_Startup(object sender, StartupEventArgs e)
     {
-        // ═══════════════════════════════════════════════════════════════════════
-        // STARTUP MODE CONFIGURATION
-        // ═══════════════════════════════════════════════════════════════════════
-        // Set to false for real initialization (slower but functional)
-        // Set to true for dummy mode (fast fake delays for development)
-        StartupService.UseDummyMode = false;
-        // ═══════════════════════════════════════════════════════════════════════
-
-        // Load settings
+        // 1. Settings
         var settings = SettingsService.Load();
 
-        // Initialize localization
-        var localizationPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Assets", "Localization");
-        LocalizationService.Instance.DiscoverLanguages(localizationPath);
-        
-        // Auto-detect system language on first run
-        var languageToLoad = settings.General.Language;
-        if (string.IsNullOrEmpty(languageToLoad))
+        // 2. Localization
+        var locPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Assets", "Localization");
+        LocalizationService.Instance.DiscoverLanguages(locPath);
+
+        var language = settings.General.Language;
+        if (string.IsNullOrEmpty(language))
         {
-            languageToLoad = LocalizationService.Instance.DetectSystemLanguage();
-            settings.General.Language = languageToLoad;
+            language = LocalizationService.Instance.DetectSystemLanguage();
+            settings.General.Language = language;
             SettingsService.Save(settings);
         }
-        
-        LocalizationService.Instance.Load(languageToLoad, localizationPath);
 
-        // Initialize target registry
+        LocalizationService.Instance.Load(language, locPath);
+
+        // 3. Target Registry — shell owns this, Core never references it directly
         TargetRegistry.Initialize();
+        var targetIds = TargetRegistry.GetAllTargets().Select(t => t.TargetId);
 
-        var splash = new SplashScreen();
-        splash.Show();
-
+        // 4. Splash + real startup tasks
+        var splash     = new SplashScreen();
         var mainWindow = new MainWindow();
 
-        await splash.RunAsync(async progress =>
-        {
-            await StartupService.InitializeAsync(progress);
-        }, () =>
-        {
-            mainWindow.Show();
-            splash.Close();
-        });
+        splash.Show();
+
+        await splash.RunAsync(
+            progress => StartupService.InitializeAsync(progress, targetIds),
+            () =>
+            {
+                mainWindow.Show();
+                splash.Close();
+            });
     }
 }

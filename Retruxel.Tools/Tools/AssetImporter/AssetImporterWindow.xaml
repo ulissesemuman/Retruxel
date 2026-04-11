@@ -1,0 +1,227 @@
+<Window x:Class="Retruxel.Tools.AssetImporter.AssetImporterWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Asset Importer"
+        Height="600" Width="860"
+        MinHeight="500" MinWidth="720"
+        WindowStartupLocation="CenterOwner"
+        Background="Transparent"
+        AllowsTransparency="True"
+        WindowStyle="None"
+        ResizeMode="CanResizeWithGrip">
+
+    <Window.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="pack://application:,,,/Retruxel;component/Themes/RetruxelTheme.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+
+            <DropShadowEffect x:Key="WindowShadow"
+                              Color="Black" Direction="270"
+                              ShadowDepth="8" BlurRadius="32" Opacity="0.6"/>
+        </ResourceDictionary>
+    </Window.Resources>
+
+    <Border CornerRadius="6"
+            Background="{StaticResource BrushSurface}"
+            Effect="{StaticResource WindowShadow}"
+            Margin="16">
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="48"/>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="64"/>
+            </Grid.RowDefinitions>
+
+            <!-- ===== TITLE BAR ===== -->
+            <Border Grid.Row="0"
+                    Background="{StaticResource BrushSurfaceContainerLow}"
+                    CornerRadius="6 6 0 0"
+                    MouseLeftButtonDown="TitleBar_MouseLeftButtonDown">
+                <Grid Margin="16 0">
+                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                        <TextBlock Text="ASSET IMPORTER"
+                                   FontFamily="{StaticResource FontDisplay}"
+                                   FontSize="13" FontWeight="Bold"
+                                   Foreground="{StaticResource BrushPrimary}"
+                                   VerticalAlignment="Center"
+                                   Margin="0 0 12 0"/>
+                        <TextBlock x:Name="TxtTargetLabel"
+                                   FontFamily="{StaticResource FontBody}"
+                                   FontSize="11"
+                                   Foreground="{StaticResource BrushOnSurfaceVariant}"
+                                   VerticalAlignment="Center"/>
+                    </StackPanel>
+                    <Button Content="✕"
+                            HorizontalAlignment="Right"
+                            Click="BtnClose_Click"
+                            Style="{StaticResource ButtonTitleBar}"/>
+                </Grid>
+            </Border>
+
+            <!-- ===== CONTENT ===== -->
+            <Grid Grid.Row="1" Margin="24 20">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="20"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="16"/>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="16"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+
+                <!-- Asset type selector -->
+                <StackPanel Grid.Row="0" Grid.ColumnSpan="3" Orientation="Horizontal">
+                    <TextBlock Text="TYPE"
+                               FontFamily="{StaticResource FontDisplay}"
+                               FontSize="11" FontWeight="Bold"
+                               Foreground="{StaticResource BrushOnSurfaceVariant}"
+                               VerticalAlignment="Center"
+                               Margin="0 0 8 0"/>
+                    <RadioButton x:Name="RbTiles" Content="Tiles"
+                                 IsChecked="True"
+                                 GroupName="AssetType"
+                                 Style="{StaticResource SegmentedRadio}"
+                                 Margin="0 0 8 0"/>
+                    <RadioButton x:Name="RbSprites" Content="Sprites"
+                                 GroupName="AssetType"
+                                 Style="{StaticResource SegmentedRadio}"/>
+                </StackPanel>
+
+                <!-- BEFORE preview -->
+                <StackPanel Grid.Row="2" Grid.Column="0">
+                    <TextBlock Text="SOURCE"
+                               FontFamily="{StaticResource FontDisplay}"
+                               FontSize="11" FontWeight="Bold"
+                               Foreground="{StaticResource BrushOnSurfaceVariant}"
+                               Margin="0 0 0 8"/>
+                    <Border Background="{StaticResource BrushSurfaceContainerHigh}"
+                            MinHeight="200"
+                            AllowDrop="True"
+                            Drop="DropZone_Drop"
+                            DragOver="DropZone_DragOver"
+                            x:Name="DropZone">
+                        <Grid>
+                            <!-- Drop hint (shown when no image loaded) -->
+                            <StackPanel x:Name="DropHint"
+                                        VerticalAlignment="Center"
+                                        HorizontalAlignment="Center">
+                                <TextBlock Text="DROP PNG HERE"
+                                           FontFamily="{StaticResource FontDisplay}"
+                                           FontSize="12" FontWeight="Bold"
+                                           Foreground="{StaticResource BrushOnSurfaceVariant}"
+                                           HorizontalAlignment="Center"/>
+                                <TextBlock Text="or"
+                                           FontFamily="{StaticResource FontBody}"
+                                           FontSize="11"
+                                           Foreground="{StaticResource BrushOnSurfaceVariant}"
+                                           HorizontalAlignment="Center"
+                                           Margin="0 4"/>
+                                <Button Content="BROWSE"
+                                        HorizontalAlignment="Center"
+                                        Click="BtnBrowse_Click"
+                                        Style="{StaticResource ButtonSecondary}"/>
+                            </StackPanel>
+
+                            <!-- Source image preview -->
+                            <Image x:Name="ImgSource"
+                                   Visibility="Collapsed"
+                                   Stretch="Uniform"
+                                   RenderOptions.BitmapScalingMode="NearestNeighbor"
+                                   Margin="8"/>
+                        </Grid>
+                    </Border>
+                    <TextBlock x:Name="TxtSourceInfo"
+                               FontFamily="{StaticResource FontBody}"
+                               FontSize="11"
+                               Foreground="{StaticResource BrushOnSurfaceVariant}"
+                               Margin="0 6 0 0"/>
+                </StackPanel>
+
+                <!-- AFTER preview -->
+                <StackPanel Grid.Row="2" Grid.Column="2">
+                    <TextBlock Text="REDUCED"
+                               FontFamily="{StaticResource FontDisplay}"
+                               FontSize="11" FontWeight="Bold"
+                               Foreground="{StaticResource BrushOnSurfaceVariant}"
+                               Margin="0 0 0 8"/>
+                    <Border Background="{StaticResource BrushSurfaceContainerHigh}"
+                            MinHeight="200">
+                        <Grid>
+                            <TextBlock x:Name="ReducedHint"
+                                       Text="PREVIEW WILL APPEAR HERE"
+                                       FontFamily="{StaticResource FontDisplay}"
+                                       FontSize="11"
+                                       Foreground="{StaticResource BrushOnSurfaceVariant}"
+                                       VerticalAlignment="Center"
+                                       HorizontalAlignment="Center"/>
+                            <Image x:Name="ImgReduced"
+                                   Visibility="Collapsed"
+                                   Stretch="Uniform"
+                                   RenderOptions.BitmapScalingMode="NearestNeighbor"
+                                   Margin="8"/>
+                        </Grid>
+                    </Border>
+                    <TextBlock x:Name="TxtReducedInfo"
+                               FontFamily="{StaticResource FontBody}"
+                               FontSize="11"
+                               Foreground="{StaticResource BrushOnSurfaceVariant}"
+                               Margin="0 6 0 0"/>
+                </StackPanel>
+
+                <!-- Asset name + validation -->
+                <StackPanel Grid.Row="4" Grid.ColumnSpan="3" Orientation="Vertical">
+                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0 0 0 6">
+                        <TextBlock Text="ASSET NAME"
+                                   FontFamily="{StaticResource FontDisplay}"
+                                   FontSize="11" FontWeight="Bold"
+                                   Foreground="{StaticResource BrushOnSurfaceVariant}"
+                                   VerticalAlignment="Center"
+                                   Margin="0 0 12 0"/>
+                        <TextBox x:Name="TxtAssetName"
+                                 Width="220"
+                                 TextChanged="TxtAssetName_TextChanged"/>
+                    </StackPanel>
+                    <TextBlock x:Name="TxtValidation"
+                               FontFamily="{StaticResource FontBody}"
+                               FontSize="11"
+                               Foreground="{StaticResource BrushWarning}"/>
+                </StackPanel>
+            </Grid>
+
+            <!-- ===== FOOTER ===== -->
+            <Border Grid.Row="2"
+                    Background="{StaticResource BrushSurfaceContainerLow}"
+                    CornerRadius="0 0 6 6">
+                <Grid Margin="24 0">
+                    <StackPanel Orientation="Horizontal"
+                                VerticalAlignment="Center"
+                                HorizontalAlignment="Left">
+                        <TextBlock x:Name="TxtTileCount"
+                                   FontFamily="{StaticResource FontBody}"
+                                   FontSize="11"
+                                   Foreground="{StaticResource BrushOnSurfaceVariant}"
+                                   VerticalAlignment="Center"/>
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal"
+                                HorizontalAlignment="Right"
+                                VerticalAlignment="Center">
+                        <Button Content="CANCEL"
+                                Click="BtnCancel_Click"
+                                Style="{StaticResource ButtonSecondary}"
+                                Margin="0 0 12 0"/>
+                        <Button x:Name="BtnImport"
+                                Content="IMPORT"
+                                IsEnabled="False"
+                                Click="BtnImport_Click"
+                                Style="{StaticResource ButtonPrimary}"/>
+                    </StackPanel>
+                </Grid>
+            </Border>
+        </Grid>
+    </Border>
+</Window>

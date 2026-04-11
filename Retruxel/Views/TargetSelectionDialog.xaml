@@ -29,6 +29,7 @@
                     MouseLeftButtonDown="TitleBar_MouseLeftButtonDown"
                     Padding="24,0">
                 <Grid>
+
                     <TextBlock x:Name="TxtDialogTitle"
                                Style="{StaticResource TextHeadline}"
                                VerticalAlignment="Center"/>

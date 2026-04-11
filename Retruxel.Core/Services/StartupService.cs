@@ -1,186 +1,109 @@
+using System.IO;
+
 namespace Retruxel.Core.Services;
 
 /// <summary>
-/// Handles application startup initialization tasks.
-/// Can run in dummy mode (fake delays) or real mode (actual work).
+/// Handles application startup initialization.
+/// Responsibilities at startup:
+///   - Report registered targets to the splash screen
+///   - Verify that toolchain binaries are present for each target
+///
+/// NOT responsible for:
+///   - Loading modules (depends on target — happens in MainWindow.OnProjectCreated)
+///   - Plugin discovery (stub until plugin system is ready)
 /// </summary>
 public static class StartupService
 {
-    /// <summary>
-    /// Set to true for real initialization, false for dummy mode with fake delays.
-    /// </summary>
-    public static bool UseDummyMode { get; set; } = true;
+    private static readonly string ToolchainRoot = Path.Combine(
+        Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+        "Retruxel", "toolchain");
 
     /// <summary>
-    /// Runs all startup tasks in sequence, reporting progress.
+    /// Runs all startup tasks in sequence, reporting progress to the splash screen.
+    /// targetIds: list of registered target IDs passed from the shell — avoids
+    /// a circular reference between Retruxel.Core and the shell's TargetRegistry.
     /// </summary>
-    public static async Task InitializeAsync(IProgress<string> progress)
-    {
-        if (UseDummyMode)
-        {
-            await InitializeDummyAsync(progress);
-        }
-        else
-        {
-            await InitializeRealAsync(progress);
-        }
-    }
-
-    // ── Dummy Mode ────────────────────────────────────────────────────────────
-
-    private static async Task InitializeDummyAsync(IProgress<string> progress)
+    public static async Task InitializeAsync(IProgress<string> progress, IEnumerable<string> targetIds)
     {
         var loc = LocalizationService.Instance;
-        
-        progress.Report(loc.Get("startup.init"));
-        await Task.Delay(200);
 
-        progress.Report(loc.Get("startup.scan_targets"));
-        await Task.Delay(300);
-
+        // 1. Localization — already loaded in App_Startup, just confirm
         progress.Report(loc.Get("startup.load_localization"));
-        await Task.Delay(250);
+        await Task.Delay(50);
 
-        progress.Report(loc.Get("startup.check_toolchain"));
-        await Task.Delay(400);
-
-        progress.Report(loc.Get("startup.cache"));
-        await Task.Delay(300);
-
-        progress.Report(loc.Get("startup.restore"));
-        await Task.Delay(250);
-
-        progress.Report(loc.Get("startup.ready"));
-        await Task.Delay(100);
-    }
-
-    // ── Real Mode ─────────────────────────────────────────────────────────────
-
-    private static async Task InitializeRealAsync(IProgress<string> progress)
-    {
-        var loc = LocalizationService.Instance;
-        
-        progress.Report(loc.Get("startup.init"));
-        await Task.Delay(100);
-
-        // 1. Target Discovery
+        // 2. Targets — received from shell, no registry reference needed here
         progress.Report(loc.Get("startup.scan_targets"));
-        await DiscoverTargetsAsync();
+        foreach (var id in targetIds)
+            progress.Report($"  TARGET: {id.ToUpper()}");
+        await Task.Delay(50);
 
-        // 2. Localization
-        progress.Report(loc.Get("startup.load_localization"));
-        await LoadLocalizationAsync();
-
-        // 3. Toolchain Verification
+        // 3. Toolchain verification — the only real work at startup
         progress.Report(loc.Get("startup.check_toolchain"));
-        await VerifyToolchainAsync();
+        await VerifyToolchainsAsync(progress);
 
-        // 4. Plugin Discovery (stub)
+        // 4. Stubs — placeholders for future systems
         progress.Report(loc.Get("startup.scan_plugins"));
-        await DiscoverPluginsAsync();
-
-        // 5. Resource Cache (stub)
-        progress.Report(loc.Get("startup.cache"));
-        await WarmupCacheAsync();
-
-        // 6. Workspace Restoration (stub)
-        progress.Report(loc.Get("startup.restore"));
-        await RestoreWorkspaceAsync();
-
-        // 7. Update Check (stub)
-        progress.Report(loc.Get("startup.updates"));
-        await CheckForUpdatesAsync();
+        await Task.Delay(50);
 
         progress.Report(loc.Get("startup.ready"));
         await Task.Delay(100);
     }
 
-    // ── Task Implementations ──────────────────────────────────────────────────
+    // ── Toolchain Verification ────────────────────────────────────────────────
 
     /// <summary>
-    /// Validates that all registered targets have proper architecture.
-    /// Targets are loaded via assembly references, but we verify their structure.
-    /// NOTE: This is a stub - actual target validation happens in the main app.
+    /// Checks whether toolchain binaries are present for each registered target.
+    /// Reports found/missing status per target.
+    /// Binaries are extracted on first build — missing here is not a fatal error.
     /// </summary>
-    private static async Task DiscoverTargetsAsync()
-    {
-        await Task.Delay(50); // Stub - targets are validated by TargetRegistry in main app
-    }
-
-    /// <summary>
-    /// Loads all language files from Assets/Localization/.
-    /// </summary>
-    private static async Task LoadLocalizationAsync()
+    private static async Task VerifyToolchainsAsync(IProgress<string> progress)
     {
         await Task.Run(() =>
         {
-            var locService = LocalizationService.Instance;
-            // Language files are already loaded in constructor
-            // This just ensures it's initialized
-            _ = locService.CurrentLanguage;
-        });
-    }
-
-    /// <summary>
-    /// Verifies that toolchain binaries are extracted and functional.
-    /// </summary>
-    private static async Task VerifyToolchainAsync()
-    {
-        await Task.Run(() =>
-        {
-            var toolchainPath = Path.Combine(
-                Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-                "Retruxel", "toolchain");
-
-            // Check if toolchain directory exists
-            if (!Directory.Exists(toolchainPath))
+            foreach (var (targetId, binaryPaths) in GetToolchainBinaries())
             {
-                // Will be extracted on first build
-                return;
+                var allFound = binaryPaths.All(File.Exists);
+                var status   = allFound ? "OK" : "NOT EXTRACTED";
+                progress.Report($"  TOOLCHAIN [{targetId.ToUpper()}]: {status}");
+
+                if (!allFound)
+                {
+                    // Report which specific binary is missing for diagnosis
+                    foreach (var path in binaryPaths.Where(p => !File.Exists(p)))
+                        progress.Report($"    MISSING: {Path.GetFileName(path)}");
+                }
             }
-
-            // Verify key files exist
-            var sdccPath = Path.Combine(toolchainPath, "compilers", "sdcc", "bin", "sdcc.exe");
-            var cc65Path = Path.Combine(toolchainPath, "compilers", "cc65", "bin", "cc65.exe");
-
-            _ = File.Exists(sdccPath);
-            _ = File.Exists(cc65Path);
         });
     }
 
     /// <summary>
-    /// Discovers and loads plugins from /plugins/ directory.
-    /// TODO: Implement when plugin system is ready.
+    /// Returns the expected binary paths per target.
+    /// These will be extracted to ToolchainRoot on first build.
     /// </summary>
-    private static async Task DiscoverPluginsAsync()
+    private static Dictionary<string, string[]> GetToolchainBinaries() => new()
     {
-        await Task.Delay(50); // Stub
-    }
-
-    /// <summary>
-    /// Pre-loads commonly used resources into memory.
-    /// TODO: Implement resource caching system.
-    /// </summary>
-    private static async Task WarmupCacheAsync()
-    {
-        await Task.Delay(50); // Stub
-    }
-
-    /// <summary>
-    /// Restores last workspace state (open projects, window positions, etc).
-    /// TODO: Implement workspace persistence.
-    /// </summary>
-    private static async Task RestoreWorkspaceAsync()
-    {
-        await Task.Delay(50); // Stub
-    }
-
-    /// <summary>
-    /// Checks GitHub releases for newer version.
-    /// TODO: Implement update checker.
-    /// </summary>
-    private static async Task CheckForUpdatesAsync()
-    {
-        await Task.Delay(50); // Stub
-    }
+        ["sms"] =
+        [
+            Path.Combine(ToolchainRoot, "compilers", "sdcc", "bin", "sdcc.exe"),
+            Path.Combine(ToolchainRoot, "utils",     "sega", "bin", "ihx2sms.exe")
+        ],
+        ["gg"] =
+        [
+            Path.Combine(ToolchainRoot, "compilers", "sdcc", "bin", "sdcc.exe"),
+            Path.Combine(ToolchainRoot, "utils",     "sega", "bin", "ihx2sms.exe")
+        ],
+        ["sg1000"] =
+        [
+            Path.Combine(ToolchainRoot, "compilers", "sdcc", "bin", "sdcc.exe")
+        ],
+        ["coleco"] =
+        [
+            Path.Combine(ToolchainRoot, "compilers", "sdcc", "bin", "sdcc.exe")
+        ],
+        ["nes"] =
+        [
+            Path.Combine(ToolchainRoot, "compilers", "cc65", "bin", "cc65.exe"),
+            Path.Combine(ToolchainRoot, "compilers", "cc65", "bin", "ld65.exe")
+        ]
+    };
 }

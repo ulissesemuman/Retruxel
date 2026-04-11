@@ -82,7 +82,7 @@
     "scene.generate_rom": "▶  GENERATE ROM",
     "scene.system_status": "SYSTEM STATUS: NOMINAL",
     "scene.modules": "MODULES",
-    "scene.new_asset": "+ NEW ASSET",
+    "scene.new_scene": "+  N E W  S C E N E",
     "scene.documentation": "? DOCUMENTATION",
     "scene.canvas_size": "256 × 192 px",
     "scene.properties": "PROPERTIES",

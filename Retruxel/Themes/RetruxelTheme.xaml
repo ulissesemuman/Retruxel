@@ -132,22 +132,6 @@
     <!-- Base template shared by all button variants                      -->
     <!-- ================================================================ -->
 
-    <!-- Internal base template — not for direct use -->
-    <ControlTemplate x:Key="ButtonBaseTemplate" TargetType="Button">
-        <Border x:Name="Root"
-                Background="{TemplateBinding Background}"
-                Padding="{TemplateBinding Padding}"
-                CornerRadius="0">
-            <ContentPresenter HorizontalAlignment="Center"
-                              VerticalAlignment="Center"/>
-        </Border>
-        <ControlTemplate.Triggers>
-            <Trigger Property="IsEnabled" Value="False">
-                <Setter TargetName="Root" Property="Opacity" Value="0.4"/>
-            </Trigger>
-        </ControlTemplate.Triggers>
-    </ControlTemplate>
-
     <!-- ButtonBase: shared defaults — not for direct use -->
     <Style x:Key="ButtonBase" TargetType="Button">
         <Setter Property="FontFamily"        Value="{StaticResource FontDisplay}"/>
@@ -318,7 +302,7 @@
         <Setter Property="Background"    Value="Transparent"/>
         <Setter Property="Foreground"    Value="{StaticResource BrushOnSurfaceVariant}"/>
         <Setter Property="FontFamily"    Value="{StaticResource FontBody}"/>
-        <Setter Property="FontWeight"    Value="Regular"/>
+        <Setter Property="FontWeight"    Value="Normal"/>
         <Setter Property="Padding"       Value="10,6"/>
         <Setter Property="Template">
             <Setter.Value>
@@ -757,6 +741,44 @@
     </Style>
 	
     <!-- ================================================================ -->
+    <!-- TAB BUTTONS (manual tab switching — not TabControl)              -->
+    <!-- Used in SettingsWindow and any panel with custom tab bars        -->
+    <!-- ================================================================ -->
+    <Style x:Key="ButtonTab" TargetType="Button">
+        <Setter Property="Background"      Value="Transparent"/>
+        <Setter Property="Foreground"      Value="{StaticResource BrushOnSurfaceVariant}"/>
+        <Setter Property="FontFamily"      Value="{StaticResource FontBody}"/>
+        <Setter Property="FontSize"        Value="11"/>
+        <Setter Property="FontWeight"      Value="SemiBold"/>
+        <Setter Property="BorderThickness" Value="0"/>
+        <Setter Property="Padding"         Value="16,8"/>
+        <Setter Property="Cursor"          Value="Hand"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Border x:Name="Root"
+                            Background="{TemplateBinding Background}"
+                            Padding="{TemplateBinding Padding}">
+                        <ContentPresenter HorizontalAlignment="Center"
+                                          VerticalAlignment="Center"/>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Root" Property="Background"
+                                    Value="{StaticResource BrushSurfaceContainerHighest}"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <Style x:Key="ButtonTabActive" TargetType="Button" BasedOn="{StaticResource ButtonTab}">
+        <Setter Property="Foreground" Value="{StaticResource BrushOnSurface}"/>
+        <Setter Property="Background" Value="{StaticResource BrushSurfaceContainerHighest}"/>
+    </Style>	
+	
+    <!-- ================================================================ -->
     <!-- TITLE BAR BUTTONS                                                 -->
     <!-- 32x32 compact icon buttons for window chrome                     -->
     <!-- ================================================================ -->
@@ -841,6 +863,143 @@
                 </ControlTemplate>
             </Setter.Value>
         </Setter>
+    </Style>
+	
+    <!-- ================================================================ -->
+    <!-- RADIOBUTTON STYLES                                                -->
+    <!-- ================================================================ -->
+
+    <!-- SegmentedRadio: segmented control style for RadioButton -->
+    <Style x:Key="SegmentedRadio" TargetType="RadioButton">
+        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="Foreground" Value="{StaticResource BrushOnSurfaceVariant}"/>
+        <Setter Property="FontFamily" Value="{StaticResource FontBody}"/>
+        <Setter Property="FontSize" Value="12"/>
+        <Setter Property="FontWeight" Value="SemiBold"/>
+        <Setter Property="Padding" Value="16,8"/>
+        <Setter Property="Cursor" Value="Hand"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="RadioButton">
+                    <Border x:Name="Root"
+                            Background="{TemplateBinding Background}"
+                            Padding="{TemplateBinding Padding}"
+                            BorderBrush="{StaticResource BrushGhostBorder}"
+                            BorderThickness="1">
+                        <ContentPresenter HorizontalAlignment="Center"
+                                          VerticalAlignment="Center"/>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Root" Property="Background" Value="{StaticResource BrushSurfaceContainerHigh}"/>
+                            <Setter Property="Foreground" Value="{StaticResource BrushOnSurface}"/>
+                        </Trigger>
+                        <Trigger Property="IsChecked" Value="True">
+                            <Setter TargetName="Root" Property="Background" Value="{StaticResource BrushPrimary}"/>
+                            <Setter TargetName="Root" Property="BorderBrush" Value="{StaticResource BrushPrimary}"/>
+                            <Setter Property="Foreground" Value="{StaticResource BrushOnPrimary}"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>	
+	
+    <!-- ================================================================ -->
+    <!-- SETTING ROW                                                        -->
+    <!-- Container de uma linha de configuração — usado em SettingsWindow  -->
+    <!-- e qualquer futura tela de settings (project, plugin, etc.)        -->
+    <!-- ================================================================ -->
+    <Style x:Key="SettingRow" TargetType="Border">
+        <Setter Property="Background" Value="{StaticResource BrushSurfaceContainerHighest}"/>
+        <Setter Property="Padding"    Value="16,12"/>
+        <Setter Property="Margin"     Value="0,0,0,4"/>
+    </Style>
+	
+	<!-- Nav item — left sidebar with hover effect -->
+	<Style x:Key="NavItem" TargetType="Border">
+		<Setter Property="Padding"    Value="20,12"/>
+		<Setter Property="Cursor"     Value="Hand"/>
+		<Setter Property="Background" Value="Transparent"/>
+		<Style.Triggers>
+			<Trigger Property="IsMouseOver" Value="True">
+				<Setter Property="Background" Value="{StaticResource BrushSurfaceContainerHighest}"/>
+			</Trigger>
+		</Style.Triggers>
+	</Style>
+	
+    <!-- SidebarTab: tab button for sidebar sections (MODULES / ASSETS) -->
+    <Style x:Key="SidebarTab" TargetType="Button">
+        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="Foreground" Value="{StaticResource BrushOnSurfaceVariant}"/>
+        <Setter Property="FontFamily" Value="{StaticResource FontDisplay}"/>
+        <Setter Property="FontSize" Value="11"/>
+        <Setter Property="FontWeight" Value="Bold"/>
+        <Setter Property="BorderThickness" Value="0"/>
+        <Setter Property="Padding" Value="0,12"/>
+        <Setter Property="HorizontalAlignment" Value="Stretch"/>
+        <Setter Property="Cursor" Value="Hand"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Border x:Name="Root"
+                            Background="{TemplateBinding Background}"
+                            Padding="{TemplateBinding Padding}">
+                        <ContentPresenter HorizontalAlignment="Center"
+                                          VerticalAlignment="Center"/>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Root" Property="Background" Value="{StaticResource BrushSurfaceContainerHigh}"/>
+                        </Trigger>
+                        <Trigger Property="Tag" Value="active">
+                            <Setter TargetName="Root" Property="Background" Value="{StaticResource BrushSurfaceContainerHighest}"/>
+                            <Setter Property="Foreground" Value="{StaticResource BrushPrimary}"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- AssetImportButton: discrete import button for sidebar (+ IMPORT TILES / + IMPORT SPRITES) -->
+    <Style x:Key="AssetImportButton" TargetType="Button">
+        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="Foreground" Value="{StaticResource BrushOnSurfaceVariant}"/>
+        <Setter Property="FontFamily" Value="{StaticResource FontBody}"/>
+        <Setter Property="FontSize" Value="11"/>
+        <Setter Property="FontWeight" Value="Normal"/>
+        <Setter Property="BorderThickness" Value="0"/>
+        <Setter Property="Padding" Value="12,8"/>
+        <Setter Property="HorizontalAlignment" Value="Stretch"/>
+        <Setter Property="HorizontalContentAlignment" Value="Left"/>
+        <Setter Property="Cursor" Value="Hand"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Border x:Name="Root"
+                            Background="{TemplateBinding Background}"
+                            Padding="{TemplateBinding Padding}">
+                        <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                          VerticalAlignment="Center"/>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Root" Property="Background" Value="{StaticResource BrushSurfaceContainerHigh}"/>
+                            <Setter Property="Foreground" Value="{StaticResource BrushOnSurface}"/>
+                        </Trigger>
+                        <Trigger Property="IsPressed" Value="True">
+                            <Setter TargetName="Root" Property="Background" Value="{StaticResource BrushSurfaceContainerHighest}"/>
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter Property="Opacity" Value="0.4"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
     </Style>	
 
 </ResourceDictionary>
+
+

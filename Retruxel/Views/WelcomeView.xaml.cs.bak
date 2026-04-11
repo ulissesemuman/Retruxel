@@ -120,7 +120,7 @@ public partial class WelcomeView : UserControl
             Child = new TextBlock
             {
                 Text = targetLabel,
-                Style = (Style)FindResource("TextCode"),
+                FStyle = (Style)FindResource("TextCode"),
                 Foreground = (Brush)FindResource("BrushTertiary")
             }
         };
@@ -210,7 +210,7 @@ public partial class WelcomeView : UserControl
             Child = new TextBlock
             {
                 Text = targetLabel,
-                Style = (Style)FindResource("TextCode"),
+                FStyle = (Style)FindResource("TextCode"),
                 Foreground = (Brush)FindResource("BrushTertiary")
             }
         };
@@ -246,7 +246,6 @@ public partial class WelcomeView : UserControl
         catch { /* Ignore errors, show UNKNOWN */ }
         return "UNKNOWN";
     }
-
     // Handler para Button.Click
     private void RecentProject_Click(object sender, RoutedEventArgs e)
     {
@@ -361,7 +360,7 @@ public partial class WelcomeView : UserControl
 
             var button = new Button
             {
-                Content = Path.GetFileNameWithoutExtension(projectPath),
+                Content = projectName,
                 Tag = projectPath,
                 Style = (Style)FindResource("ButtonToolbar"),
                 HorizontalAlignment = HorizontalAlignment.Left
@@ -455,8 +454,9 @@ public partial class WelcomeView : UserControl
                     new TextBlock
                     {
                         Text = LocalizationService.Instance.Get("welcome.drop_overlay"),
-                        Style = (Style)FindResource("TextDisplay"),
-                        Foreground = (Brush)FindResource("BrushPrimary"),
+                        FontSize = 32,
+                        FontWeight = FontWeights.Bold,
+                        Foreground = new SolidColorBrush(Color.FromRgb(0x8E, 0xFF, 0x71)),
                         HorizontalAlignment = HorizontalAlignment.Center,
                         Margin = new Thickness(0, 0, 0, 16)
                     },
@@ -464,20 +464,20 @@ public partial class WelcomeView : UserControl
                     {
                         Width = 200,
                         Height = 200,
-                        BorderBrush = (Brush)FindResource("BrushPrimary"),
+                        BorderBrush = new SolidColorBrush(Color.FromRgb(0x8E, 0xFF, 0x71)),
                         BorderThickness = new Thickness(3),
                         Child = new TextBlock
                         {
                             Text = "↓",
-                            Style = (Style)FindResource("TextDisplay"),
                             FontSize = 120,
-                            Foreground = (Brush)FindResource("BrushPrimary"),
+                            Foreground = new SolidColorBrush(Color.FromRgb(0x8E, 0xFF, 0x71)),
                             HorizontalAlignment = HorizontalAlignment.Center,
                             VerticalAlignment = VerticalAlignment.Center
                         }
                     }
                 }
             },
+            IsHitTestVisible = false
         };
 
         rootGrid.Children.Add(_dropOverlay);

@@ -1,4 +1,4 @@
-﻿<UserControl x:Class="Retruxel.Views.AboutView"
+<UserControl x:Class="Retruxel.Views.AboutView"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              Background="{StaticResource BrushSurface}">
@@ -20,7 +20,7 @@
                         Background="Transparent"
                         HorizontalAlignment="Center"
                         Margin="0,0,0,24">
-                    <Image Source="pack://application:,,,/Assets/Images/Splash/logochip.png"
+                    <Image Source="/Assets/Images/Logo/logochip.png"
                            Stretch="Uniform"/>
                 </Border>
 
@@ -30,20 +30,24 @@
                            Foreground="{StaticResource BrushPrimary}"
                            HorizontalAlignment="Center"
                            Margin="0,0,0,4"/>
-
                 <TextBlock Text="RETRO_DEVELOPMENT_SUITE"
                            Style="{StaticResource TextLabel}"
                            HorizontalAlignment="Center"
                            Margin="0,0,0,32"/>
 
-                <!-- Version info -->
-                <TextBlock x:Name="TxtVersionLabel" Style="{StaticResource TextLabel}" Margin="0,0,0,4"/>
+                <!-- Version -->
+                <TextBlock x:Name="TxtVersionLabel"
+                           Style="{StaticResource TextLabelCaps}"
+                           Margin="0,0,0,4"/>
                 <TextBlock x:Name="TxtVersion"
                            Style="{StaticResource TextBody}"
                            Foreground="{StaticResource BrushOnSurface}"
                            Margin="0,0,0,24"/>
 
-                <TextBlock x:Name="TxtDeveloperLabel" Style="{StaticResource TextLabel}" Margin="0,0,0,4"/>
+                <!-- Developer -->
+                <TextBlock x:Name="TxtDeveloperLabel"
+                           Style="{StaticResource TextLabelCaps}"
+                           Margin="0,0,0,4"/>
                 <TextBlock Text="Ulisses Farias"
                            Style="{StaticResource TextBody}"
                            Foreground="{StaticResource BrushOnSurface}"
@@ -55,7 +59,10 @@
                            MouseLeftButtonDown="DeveloperLink_Click"
                            Margin="0,0,0,24"/>
 
-                <TextBlock x:Name="TxtProjectLabel" Style="{StaticResource TextLabel}" Margin="0,0,0,4"/>
+                <!-- Project -->
+                <TextBlock x:Name="TxtProjectLabel"
+                           Style="{StaticResource TextLabelCaps}"
+                           Margin="0,0,0,4"/>
                 <TextBlock Text="github.com/ulissesemuman/Retruxel"
                            Style="{StaticResource TextLabel}"
                            Foreground="{StaticResource BrushPrimary}"
@@ -63,21 +70,25 @@
                            MouseLeftButtonDown="ProjectLink_Click"
                            Margin="0,0,0,32"/>
 
-                <!-- Build info -->
-                <TextBlock x:Name="TxtBuildLabel" Style="{StaticResource TextLabel}" Margin="0,0,0,4"/>
+                <!-- Build -->
+                <TextBlock x:Name="TxtBuildLabel"
+                           Style="{StaticResource TextLabelCaps}"
+                           Margin="0,0,0,4"/>
                 <TextBlock x:Name="TxtBuildDate"
                            Text=".NET 10 / WPF"
                            Style="{StaticResource TextBody}"
                            Foreground="{StaticResource BrushOnSurface}"
                            Margin="0,0,0,32"/>
 
-                <!-- Target support -->
-                <TextBlock x:Name="TxtSupportedTargets" Style="{StaticResource TextLabel}" Margin="0,0,0,8"/>
+                <!-- Supported targets -->
+                <TextBlock x:Name="TxtSupportedTargets"
+                           Style="{StaticResource TextLabelCaps}"
+                           Margin="0,0,0,8"/>
                 <Border Background="{StaticResource BrushSurfaceContainerHighest}"
-                        Padding="8,4" Margin="0,0,0,4" HorizontalAlignment="Left">
+                        Padding="8,4" Margin="0,0,0,4"
+                        HorizontalAlignment="Left">
                     <TextBlock x:Name="TxtTargetSms"
-                               Style="{StaticResource TextCode}"
-                               Foreground="{StaticResource BrushPrimary}"/>
+                               Style="{StaticResource TextCode}"/>
                 </Border>
                 <TextBlock x:Name="TxtMoreTargets"
                            Style="{StaticResource TextLabel}"
@@ -117,12 +128,12 @@
                                         <ColumnDefinition Width="Auto"/>
                                     </Grid.ColumnDefinitions>
 
+                                    <!-- Name — TextTitle: equivale a TextBody Bold -->
                                     <TextBlock Grid.Row="0" Grid.Column="0"
                                                Text="{Binding Name}"
-                                               Style="{StaticResource TextBody}"
-                                               Foreground="{StaticResource BrushOnSurface}"
-                                               FontWeight="Bold"/>
+                                               Style="{StaticResource TextTitle}"/>
 
+                                    <!-- License badge — ciano: informação/leitura -->
                                     <TextBlock Grid.Row="0" Grid.Column="1"
                                                Text="{Binding License}"
                                                Style="{StaticResource TextLabel}"
@@ -135,6 +146,7 @@
                                                TextWrapping="Wrap"
                                                Margin="0,4,0,8"/>
 
+                                    <!-- URL — primary: ação/link -->
                                     <TextBlock Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2"
                                                Text="{Binding Url}"
                                                Style="{StaticResource TextLabel}"
@@ -152,21 +164,17 @@
                 <TextBlock x:Name="TxtLicensesTitle"
                            Style="{StaticResource TextHeadline}"
                            Margin="0,32,0,12"/>
-
                 <TextBlock x:Name="TxtLicensesSubtitle"
                            Style="{StaticResource TextBody}"
                            TextWrapping="Wrap"
                            Margin="0,0,0,12"/>
 
-                <!-- Scrollable readonly license box -->
+                <!-- Readonly license text — Consolas 11px intencional para texto de licença -->
                 <Border Background="{StaticResource BrushSurfaceContainerHigh}"
                         Height="240">
-                    <ScrollViewer VerticalScrollBarVisibility="Auto"
-                                  Padding="16">
+                    <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="16">
                         <TextBox x:Name="TxtLicenses"
                                  IsReadOnly="True"
-                                 Background="Transparent"
-                                 Foreground="{StaticResource BrushOnSurfaceVariant}"
                                  BorderThickness="0"
                                  FontFamily="Consolas"
                                  FontSize="11"

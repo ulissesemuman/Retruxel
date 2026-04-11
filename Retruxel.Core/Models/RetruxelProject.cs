@@ -43,6 +43,13 @@ public class RetruxelProject
     public List<SceneData> Scenes { get; set; } = [];
 
     /// <summary>
+    /// All imported assets in this project.
+    /// Assets are identified by Id (filename without extension).
+    /// Modules reference assets via their Id (tilesAssetId, spriteAssetId).
+    /// </summary>
+    public List<AssetEntry> Assets { get; set; } = [];
+
+    /// <summary>
     /// All module and target settings serialized as key-value pairs.
     /// Key format: "ModuleId.ParameterName" or "target.ParameterName"
     /// Ex: { "sms.physics.gravityStrength": 8, "target.region": "PAL" }

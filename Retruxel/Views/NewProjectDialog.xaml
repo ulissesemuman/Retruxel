@@ -92,8 +92,11 @@
                 <TextBlock x:Name="TxtTemplateLabel"
                            Style="{StaticResource TextLabelCaps}"
                            Margin="0,0,0,8"/>
-                <StackPanel x:Name="TemplatesPanel"
-                            Orientation="Horizontal"/>
+                <ScrollViewer HorizontalScrollBarVisibility="Auto"
+                              VerticalScrollBarVisibility="Disabled">
+                    <StackPanel x:Name="TemplatesPanel"
+                                Orientation="Horizontal"/>
+                </ScrollViewer>
 
             </StackPanel>
 

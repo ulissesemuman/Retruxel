@@ -1,7 +1,6 @@
 using SkiaSharp;
-using System.Windows.Media.Imaging;
 using System.IO;
-using System.Windows.Media;
+using System.Windows.Media.Imaging;
 
 namespace Retruxel.Tools.FontImporter.Services;
 
@@ -20,9 +19,9 @@ public static class FontRasterizer
     /// </summary>
     public static BitmapSource? RenderGlyph(
         string ttfPath,
-        int    codepoint,
-        int    tileWidth,
-        int    tileHeight)
+        int codepoint,
+        int tileWidth,
+        int tileHeight)
     {
         using var typeface = LoadTypeface(ttfPath);
         if (typeface is null) return null;
@@ -51,11 +50,11 @@ public static class FontRasterizer
     /// Characters are laid out in codepoint order, left-to-right, top-to-bottom.
     /// </summary>
     public static BitmapSource RenderSpritesheet(
-        string      ttfPath,
-        List<int>   codepoints,
-        int         tileWidth,
-        int         tileHeight,
-        int         columnsPerRow = 16)
+        string ttfPath,
+        List<int> codepoints,
+        int tileWidth,
+        int tileHeight,
+        int columnsPerRow = 16)
     {
         using var typeface = LoadTypeface(ttfPath)
             ?? throw new InvalidOperationException("Failed to load font.");
@@ -63,9 +62,9 @@ public static class FontRasterizer
         using var font = BuildFont(typeface, tileHeight);
         using var paint = BuildPaint();
 
-        var rows         = (int)Math.Ceiling(codepoints.Count / (double)columnsPerRow);
-        var sheetWidth   = tileWidth  * columnsPerRow;
-        var sheetHeight  = tileHeight * rows;
+        var rows = (int)Math.Ceiling(codepoints.Count / (double)columnsPerRow);
+        var sheetWidth = tileWidth * columnsPerRow;
+        var sheetHeight = tileHeight * rows;
 
         using var bitmap = new SKBitmap(sheetWidth, sheetHeight);
         using var canvas = new SKCanvas(bitmap);
@@ -73,10 +72,10 @@ public static class FontRasterizer
 
         for (int i = 0; i < codepoints.Count; i++)
         {
-            var col    = i % columnsPerRow;
-            var row    = i / columnsPerRow;
-            var destX  = col * tileWidth;
-            var destY  = row * tileHeight;
+            var col = i % columnsPerRow;
+            var row = i / columnsPerRow;
+            var destX = col * tileWidth;
+            var destY = row * tileHeight;
 
             canvas.Save();
             canvas.Translate(destX, destY);
@@ -121,17 +120,17 @@ public static class FontRasterizer
         return new SKPaint
         {
             IsAntialias = false,   // pixel-perfect for retro targets
-            Color       = SKColors.White
+            Color = SKColors.White
         };
     }
 
     private static void DrawGlyph(
         SKCanvas canvas,
-        SKFont   font,
-        SKPaint  paint,
-        int      codepoint,
-        int      tileWidth,
-        int      tileHeight)
+        SKFont font,
+        SKPaint paint,
+        int codepoint,
+        int tileWidth,
+        int tileHeight)
     {
         var text = char.ConvertFromUtf32(codepoint);
 
@@ -139,7 +138,7 @@ public static class FontRasterizer
         var bounds = new SKRect();
         font.MeasureText(text, out bounds);
 
-        var x = tileWidth  / 2f - bounds.MidX;  // center horizontally
+        var x = tileWidth / 2f - bounds.MidX;  // center horizontally
         var y = tileHeight / 2f - bounds.MidY;  // center vertically
 
         canvas.DrawText(text, x, y, font, paint);
@@ -147,13 +146,13 @@ public static class FontRasterizer
 
     private static BitmapSource ToBitmapSource(SKBitmap bitmap)
     {
-        using var image  = SKImage.FromBitmap(bitmap);
-        using var data   = image.Encode(SKEncodedImageFormat.Png, 100);
+        using var image = SKImage.FromBitmap(bitmap);
+        using var data = image.Encode(SKEncodedImageFormat.Png, 100);
         using var stream = new MemoryStream(data.ToArray());
 
         var wpfBitmap = new BitmapImage();
         wpfBitmap.BeginInit();
-        wpfBitmap.CacheOption  = BitmapCacheOption.OnLoad;
+        wpfBitmap.CacheOption = BitmapCacheOption.OnLoad;
         wpfBitmap.StreamSource = stream;
         wpfBitmap.EndInit();
         wpfBitmap.Freeze();

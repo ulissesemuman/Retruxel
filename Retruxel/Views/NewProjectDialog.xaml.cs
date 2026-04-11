@@ -59,7 +59,7 @@ public partial class NewProjectDialog : Window
         var card = new Border
         {
             Width = 160,
-            Height = 80,
+            MinHeight = 80,
             Background = (Brush)FindResource(selected
                 ? "BrushSurfaceContainerHighest"
                 : "BrushSurfaceContainerHigh"),

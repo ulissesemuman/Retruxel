@@ -132,7 +132,7 @@
                             Margin="0,80,0,0">
 
                     <!-- Logo -->
-                    <Image Source="/Assets/Images/Splash/logochip.png"
+                    <Image Source="/Assets/Images/Logo/logochip.png"
                                Width="64" Height="64"
                                HorizontalAlignment="Center"
                                Margin="0,0,0,24"/>

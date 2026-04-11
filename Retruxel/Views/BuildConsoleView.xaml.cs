@@ -27,7 +27,7 @@ public partial class BuildConsoleView : UserControl
 
     private void ApplyLocalization()
     {
-        var loc = Retruxel.Core.Services.LocalizationService.Instance;
+        var loc = LocalizationService.Instance;
         TxtBuildTitle.Text = loc.Get("buildconsole.title.build");
         TxtConsoleTitle.Text = loc.Get("buildconsole.title.console");
         TxtDescription.Text = loc.Get("buildconsole.description.ready");
@@ -68,7 +68,7 @@ public partial class BuildConsoleView : UserControl
         MemoryHeader.Visibility = Visibility.Collapsed;
         MemoryPanel.Visibility = Visibility.Collapsed;
 
-        var loc = Retruxel.Core.Services.LocalizationService.Instance;
+        var loc = LocalizationService.Instance;
 
         // Resolve target from registry using the project's TargetId
         var target = TargetRegistry.GetTargetById(project.TargetId);
@@ -119,7 +119,7 @@ public partial class BuildConsoleView : UserControl
             SetStatus(loc.Get("build.status.success"), true);
             ShowVerification(_lastResult);
             ShowMemoryStats(_lastResult, target);
-            AppendLog($"SUCCESS: ROM generated — {_lastResult.RomSizeBytes / 1024}KB", true);
+            AppendLog($"SUCCESS: ROM generated — {_lastResult.RomSizeBytes / 1024}KB", isSuccess: true);
 
             await LaunchEmulatorIfConfiguredAsync(_lastResult.RomPath);
         }
@@ -194,15 +194,17 @@ public partial class BuildConsoleView : UserControl
 
     private void AppendLog(string message, bool isSuccess = false, bool isError = false)
     {
-        var color = isError ? "#FF4444" :
-                    isSuccess ? "#8EFF71" :
-                    message.StartsWith("WARN") ? "#FFAA00" : "#ADAAAA";
+        // Use theme brushes — avoid hardcoded hex colors
+        Brush foreground = isError ? (Brush)FindResource("BrushError") :
+                           isSuccess ? (Brush)FindResource("BrushPrimary") :
+                           message.StartsWith("WARN") ? (Brush)FindResource("BrushWarning") :
+                                        (Brush)FindResource("BrushOnSurfaceVariant");
 
         var entry = new TextBlock
         {
             Text = $"> {message}",
-            Foreground = new SolidColorBrush(
-                (Color)ColorConverter.ConvertFromString(color)),
+            Foreground = foreground,
+
             FontFamily = new FontFamily("Consolas"),
             FontSize = 12,
             TextWrapping = TextWrapping.Wrap,
@@ -216,10 +218,12 @@ public partial class BuildConsoleView : UserControl
     private void SetStatus(string status, bool isReady, bool isError = false)
     {
         TxtStatus.Text = status;
-        var color = isError ? "#FF4444" : isReady ? "#8EFF71" : "#FFAA00";
-        TxtStatus.Foreground = new SolidColorBrush(
-            (Color)ColorConverter.ConvertFromString(color));
-        StatusDot.Background = TxtStatus.Foreground;
+        var brush = isError ? (Brush)FindResource("BrushError") :
+                    isReady ? (Brush)FindResource("BrushPrimary") :
+                                (Brush)FindResource("BrushWarning");
+
+        TxtStatus.Foreground = brush;
+        StatusDot.Background = brush;
     }
 
     private void ShowVerification(BuildResult result)
@@ -241,7 +245,11 @@ public partial class BuildConsoleView : UserControl
             var maxKb = bank.MaxBytes / 1024;
             var usedKb = usedBytes / 1024;
             var percent = bank.MaxBytes > 0 ? (double)usedBytes / bank.MaxBytes : 0;
-            var isOverLimit = usedBytes > bank.MaxBytes;
+            var isOver = usedBytes > bank.MaxBytes;
+
+            var normalBrush = (Brush)FindResource("BrushOnSurfaceVariant");
+            var errorBrush = (Brush)FindResource("BrushError");
+
 
             // Label row
             var labelGrid = new Grid { Margin = new Thickness(0, 0, 0, 4) };
@@ -252,7 +260,7 @@ public partial class BuildConsoleView : UserControl
             {
                 Text = bank.Label,
                 Style = (Style)FindResource("TextLabel"),
-                Foreground = isOverLimit ? new SolidColorBrush(Color.FromRgb(0xFF, 0x44, 0x44)) : (System.Windows.Media.Brush)FindResource("BrushOnSurfaceVariant")
+                Foreground = isOver ? errorBrush : normalBrush
             };
             Grid.SetColumn(bankLabel, 0);
 
@@ -260,9 +268,9 @@ public partial class BuildConsoleView : UserControl
             {
                 Text = $"{usedKb}KB / {maxKb}KB",
                 Style = (Style)FindResource("TextLabel"),
-                Foreground = isOverLimit ? new SolidColorBrush(Color.FromRgb(0xFF, 0x44, 0x44)) : (System.Windows.Media.Brush)FindResource("BrushOnSurface"),
+                Foreground = isOver ? errorBrush : (Brush)FindResource("BrushOnSurface"),
                 HorizontalAlignment = HorizontalAlignment.Right,
-                FontWeight = isOverLimit ? FontWeights.Bold : FontWeights.Normal
+                FontWeight = isOver ? FontWeights.Bold : FontWeights.Normal
             };
             Grid.SetColumn(sizeLabel, 1);
 
@@ -273,21 +281,16 @@ public partial class BuildConsoleView : UserControl
             var barContainer = new Border
             {
                 Height = 4,
-                Background = (System.Windows.Media.Brush)FindResource("BrushSurfaceContainerHighest"),
+                Background = (Brush)FindResource("BrushSurfaceContainerHighest"),
                 Margin = new Thickness(0, 0, 0, 12)
             };
 
-            // Barra vermelha se ultrapassar o limite, verde caso contrário
-            // A largura não é limitada pelo máximo - mostra o tamanho real mesmo se ultrapassar
-            var barWidth = 268 * percent;
             var progressBar = new Border
             {
-                Background = isOverLimit 
-                    ? new SolidColorBrush(Color.FromRgb(0xFF, 0x44, 0x44))
-                    : (System.Windows.Media.Brush)FindResource("BrushPrimaryGradient"),
+                Background = isOver ? errorBrush : (Brush)FindResource("BrushPrimaryGradient"),
                 HorizontalAlignment = HorizontalAlignment.Left,
-                Width = barWidth,
-                MaxWidth = 268 // Limita visualmente ao container, mas mostra overflow
+                Width = 268 * percent,
+                MaxWidth = 268
             };
 
             barContainer.Child = progressBar;

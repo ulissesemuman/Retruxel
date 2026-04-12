@@ -73,6 +73,31 @@ jobs:
         $version = "${{ steps.version.outputs.VERSION }}"
         Move-Item "Output\RetruxelSetup.exe" "Retruxel-$version-setup.exe"
     
+    - name: Verify files before release
+      shell: pwsh
+      run: |
+        $version = "${{ steps.version.outputs.VERSION }}"
+        Write-Host "Checking for release files..."
+        
+        if (Test-Path "Retruxel-$version-portable.zip") {
+          Write-Host "✓ Found: Retruxel-$version-portable.zip"
+          $zipSize = (Get-Item "Retruxel-$version-portable.zip").Length / 1MB
+          Write-Host "  Size: $([math]::Round($zipSize, 2)) MB"
+        } else {
+          Write-Error "✗ Missing: Retruxel-$version-portable.zip"
+        }
+        
+        if (Test-Path "Retruxel-$version-setup.exe") {
+          Write-Host "✓ Found: Retruxel-$version-setup.exe"
+          $exeSize = (Get-Item "Retruxel-$version-setup.exe").Length / 1MB
+          Write-Host "  Size: $([math]::Round($exeSize, 2)) MB"
+        } else {
+          Write-Error "✗ Missing: Retruxel-$version-setup.exe"
+        }
+        
+        Write-Host "`nAll files in current directory:"
+        Get-ChildItem -File | Format-Table Name, Length
+    
     - name: Generate changelog
       id: changelog
       shell: pwsh

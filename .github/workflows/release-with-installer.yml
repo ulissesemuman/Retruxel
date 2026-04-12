@@ -2,8 +2,11 @@ name: Create Release with Installer
 
 on:
   push:
-    branches:
-      - master
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
 
 jobs:
   release:
@@ -20,43 +23,25 @@ jobs:
       with:
         dotnet-version: '8.0.x'
     
-    - name: Extract version from csproj
+    - name: Extract version from tag
       id: version
       shell: pwsh
       run: |
-        [xml]$csproj = Get-Content "Retruxel/Retruxel.csproj"
-        $version = $csproj.Project.PropertyGroup.Version
+        $tag = "${{ github.ref_name }}"
+        $version = $tag -replace '^v', ''
         echo "VERSION=$version" >> $env:GITHUB_OUTPUT
         echo "Version: $version"
     
-    - name: Check if tag exists
-      id: check_tag
-      shell: pwsh
-      run: |
-        $version = "${{ steps.version.outputs.VERSION }}"
-        $tagExists = git tag -l "v$version"
-        if ($tagExists) {
-          echo "TAG_EXISTS=true" >> $env:GITHUB_OUTPUT
-          echo "Tag v$version already exists, skipping release"
-        } else {
-          echo "TAG_EXISTS=false" >> $env:GITHUB_OUTPUT
-          echo "Tag v$version does not exist, proceeding with release"
-        }
-    
     - name: Restore dependencies
-      if: steps.check_tag.outputs.TAG_EXISTS == 'false'
       run: dotnet restore Retruxel.slnx
     
     - name: Build
-      if: steps.check_tag.outputs.TAG_EXISTS == 'false'
       run: dotnet build Retruxel.slnx --configuration Release --no-restore
     
     - name: Publish
-      if: steps.check_tag.outputs.TAG_EXISTS == 'false'
       run: dotnet publish Retruxel/Retruxel.csproj --configuration Release --output ./publish --no-build /p:DebugType=None /p:DebugSymbols=false
     
     - name: Create Portable ZIP
-      if: steps.check_tag.outputs.TAG_EXISTS == 'false'
       shell: pwsh
       run: |
         $version = "${{ steps.version.outputs.VERSION }}"
@@ -65,7 +50,6 @@ jobs:
         Compress-Archive -Path ./publish/* -DestinationPath "Retruxel-$version-portable.zip"
     
     - name: Update Inno Setup script version
-      if: steps.check_tag.outputs.TAG_EXISTS == 'false'
       shell: pwsh
       run: |
         $version = "${{ steps.version.outputs.VERSION }}"
@@ -74,19 +58,22 @@ jobs:
         $content | Set-Content "installer.iss" -NoNewline
     
     - name: Install Inno Setup
-      if: steps.check_tag.outputs.TAG_EXISTS == 'false'
       shell: pwsh
       run: |
         choco install innosetup -y
     
     - name: Build Installer
-      if: steps.check_tag.outputs.TAG_EXISTS == 'false'
       shell: pwsh
       run: |
         & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" installer.iss
     
+    - name: Rename installer
+      shell: pwsh
+      run: |
+        $version = "${{ steps.version.outputs.VERSION }}"
+        Move-Item "Output\RetruxelSetup.exe" "Retruxel-$version-setup.exe"
+    
     - name: Generate changelog
-      if: steps.check_tag.outputs.TAG_EXISTS == 'false'
       id: changelog
       shell: pwsh
       run: |
@@ -165,15 +152,14 @@ jobs:
         echo "Changelog generated successfully"
     
     - name: Create Release
-      if: steps.check_tag.outputs.TAG_EXISTS == 'false'
-      uses: softprops/action-gh-release@v1
+      uses: softprops/action-gh-release@v2
       with:
         tag_name: v${{ steps.version.outputs.VERSION }}
         name: Retruxel v${{ steps.version.outputs.VERSION }}
         body_path: changelog.md
         files: |
           Retruxel-${{ steps.version.outputs.VERSION }}-portable.zip
-          installer/Retruxel-${{ steps.version.outputs.VERSION }}-setup.exe
+          Retruxel-${{ steps.version.outputs.VERSION }}-setup.exe
         draft: false
         prerelease: ${{ contains(steps.version.outputs.VERSION, 'alpha') || contains(steps.version.outputs.VERSION, 'beta') }}
       env:

@@ -1,6 +1,8 @@
 # Retruxel
 
-![Full Logo](Retruxel/Assets/Images/Logo/full_logo.png)
+<p align="center">
+  <img src="Retruxel/Assets/Images/Logo/full_logo.png" alt="Full Logo" width="50%">
+</p>
 
 > Visual retro game development tool — build games for classic consoles without writing a single line of code.
 > 

@@ -7,7 +7,7 @@
 ---
 
 <!-- Application screenshot -->
-![Retruxel Screenshot](docs/screenshot.png)
+![Retruxel Screenshot](docs/builder.png)
 
 ---
 

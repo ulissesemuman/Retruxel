@@ -1,5 +1,7 @@
 # Retruxel
 
+![Full Logo](Retruxel/Assets/Images/Logo/full_logo.png)
+
 > Visual retro game development tool — build games for classic consoles without writing a single line of code.
 > 
 > Inspired by [GB Studio](https://www.gbstudio.dev/)

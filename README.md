@@ -4,6 +4,15 @@
   <img src="Retruxel/Assets/Images/Logo/full_logo.png" alt="Full Logo" width="40%">
 </p>
 
+<p align="center">
+  <img src="https://img.shields.io/badge/.NET-10.0-512BD4?logo=dotnet&logoColor=white" alt=".NET 10">
+  <img src="https://img.shields.io/badge/WPF-Windows-0078D4?logo=windows&logoColor=white" alt="WPF">
+  <img src="https://img.shields.io/github/v/release/ulissesemuman/Retruxel?include_prereleases&label=version" alt="Version">
+  <img src="https://img.shields.io/badge/License-MIT-green" alt="License">
+  <img src="https://img.shields.io/badge/Status-Alpha-orange" alt="Status">
+  <img src="https://img.shields.io/badge/Platforms-SMS%20%7C%20NES%20%7C%20GG%20%7C%20SG1000%20%7C%20Coleco-blueviolet" alt="Platforms">
+</p>
+
 > Visual retro game development tool — build games for classic consoles without writing a single line of code.
 > 
 > Inspired by [GB Studio](https://www.gbstudio.dev/)

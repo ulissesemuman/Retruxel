@@ -34,6 +34,10 @@ public class GeneralSettings
     [JsonPropertyName("showWelcomeOnStartup")]
     public bool ShowWelcomeOnStartup { get; set; } = true;
 
+    /// <summary>Whether to check for updates on application startup.</summary>
+    [JsonPropertyName("checkUpdatesOnStartup")]
+    public bool CheckUpdatesOnStartup { get; set; } = true;
+
     /// <summary>
     /// Maximum number of undoable actions retained in history.
     /// Configurable between 20 and 100. Default: 32.

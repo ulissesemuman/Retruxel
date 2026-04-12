@@ -586,7 +586,7 @@
                         <!-- Track -->
                         <Border x:Name="Track"
                                 Height="2"
-                                Background="{StaticResource BrushSurfaceContainerHighest}"
+                                Background="{StaticResource BrushOnSurfaceVariant}"
                                 VerticalAlignment="Center"/>
                         <!-- Fill -->
                         <Border x:Name="Fill"

@@ -199,6 +199,13 @@
     "scene.context.rename": "Rename",
     "scene.context.delete": "Delete",
     "buildconsole.savelog.filter": "Text file (*.txt)|*.txt",
-    "buildconsole.savelog.filename": "retruxel_build_log_{0}"
+    "buildconsole.savelog.filename": "retruxel_build_log_{0}",
+    "settings.section.editor": "EDITOR",
+    "settings.editor.undo_limit": "Undo history limit",
+    "settings.editor.undo_limit.desc": "Maximum number of undoable actions (20-100)",
+    "settings.toolchain.warnings": "Show toolchain warnings",
+    "settings.toolchain.warnings.desc": "Displays WARNING-level entries from toolchain output in the Build Console",
+    "settings.general.check_updates": "Check for updates on startup",
+    "settings.general.check_updates.desc": "Automatically checks for new Retruxel versions when launching"
   }
 }

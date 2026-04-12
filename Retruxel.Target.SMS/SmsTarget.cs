@@ -4,6 +4,7 @@ using Retruxel.Target.SMS.Modules.Enemy;
 using Retruxel.Target.SMS.Modules.Entity;
 using Retruxel.Target.SMS.Modules.Scroll;
 using Retruxel.Target.SMS.Modules.Graphics;
+using Retruxel.Target.SMS.Modules.Logic;
 
 namespace Retruxel.Target.SMS;
 
@@ -194,6 +195,42 @@ public class SmsTarget : ITarget
                     return InjectWarnings(codeGen.Validate(), [codeGen.GenerateCode(), codeGen.GenerateHeader()]);
                 }
 
+            case "sms.palette":
+                {
+                    var codeGen = new SmsPaletteCodeGen(module.Serialize());
+                    return InjectWarnings(codeGen.Validate(), [codeGen.GenerateCode(), codeGen.GenerateHeader()]);
+                }
+
+            case "sms.tilemap":
+                {
+                    var codeGen = new SmsTilemapCodeGen(module.Serialize());
+                    return InjectWarnings(codeGen.Validate(), [codeGen.GenerateCode(), codeGen.GenerateHeader()]);
+                }
+
+            case "sms.sprite":
+                {
+                    var codeGen = new SmsSpriteCodeGen(module.Serialize());
+                    return InjectWarnings(codeGen.Validate(), [codeGen.GenerateCode(), codeGen.GenerateHeader()]);
+                }
+
+            case "sms.input":
+                {
+                    var codeGen = new SmsInputCodeGen(module.Serialize());
+                    return InjectWarnings(codeGen.Validate(), [codeGen.GenerateCode(), codeGen.GenerateHeader()]);
+                }
+
+            case "sms.physics":
+                {
+                    var codeGen = new SmsPhysicsCodeGen(module.Serialize());
+                    return InjectWarnings(codeGen.Validate(), [codeGen.GenerateCode(), codeGen.GenerateHeader()]);
+                }
+
+            case "sms.animation":
+                {
+                    var codeGen = new SmsAnimationCodeGen(module.Serialize());
+                    return InjectWarnings(codeGen.Validate(), [codeGen.GenerateCode(), codeGen.GenerateHeader()]);
+                }
+
             default:
                 return [];
         }
@@ -215,7 +252,7 @@ public class SmsTarget : ITarget
             .ToList();
 
         // Modules that have init functions (not text.display)
-        var modulesWithInit = new HashSet<string> { "sms.entity", "sms.enemy", "sms.scroll" };
+        var modulesWithInit = new HashSet<string> { "sms.entity", "sms.enemy", "sms.scroll", "sms.palette", "sms.tilemap", "sms.sprite", "sms.input", "sms.physics", "sms.animation" };
         
         // Generate init calls - one per module type
         var initCalls = moduleGroups
@@ -223,7 +260,7 @@ public class SmsTarget : ITarget
             .Select(g => $"    {g.Key.Replace(".", "_")}_init();");
 
         // Modules that have update functions
-        var modulesWithUpdate = new HashSet<string> { "sms.entity", "sms.enemy", "sms.scroll" };
+        var modulesWithUpdate = new HashSet<string> { "sms.entity", "sms.enemy", "sms.scroll", "sms.input", "sms.physics", "sms.animation" };
         
         var updateCalls = moduleGroups
             .Where(g => modulesWithUpdate.Contains(g.Key))

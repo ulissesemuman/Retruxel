@@ -199,6 +199,13 @@
     "scene.context.rename": "Renomear",
     "scene.context.delete": "Excluir",
     "buildconsole.savelog.filter": "Arquivo de texto (*.txt)|*.txt",
-    "buildconsole.savelog.filename": "retruxel_build_log_{0}"
+    "buildconsole.savelog.filename": "retruxel_build_log_{0}",
+    "settings.section.editor": "EDITOR",
+    "settings.editor.undo_limit": "Limite do histórico de desfazer",
+    "settings.editor.undo_limit.desc": "Número máximo de ações que podem ser desfeitas (20-100)",
+    "settings.toolchain.warnings": "Mostrar avisos do toolchain",
+    "settings.toolchain.warnings.desc": "Exibe entradas de nível WARNING da saída do toolchain no Console de Build",
+    "settings.general.check_updates": "Verificar atualizações ao iniciar",
+    "settings.general.check_updates.desc": "Verifica automaticamente por novas versões do Retruxel ao iniciar"
   }
 }

@@ -1,6 +1,7 @@
 ﻿<UserControl x:Class="Retruxel.Views.SceneEditorView"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:loc="clr-namespace:Retruxel.Localization"
              Background="{StaticResource BrushSurface}">
 
     <Grid>
@@ -61,6 +62,7 @@
                             Style="{StaticResource ButtonTitleBar}"
                             Click="BtnRedo_Click"/>
                     <Button x:Name="BtnGenerateRom"
+                            Content="{loc:Tr Key='scene.generate_rom'}"
                             Style="{StaticResource ButtonPrimary}"
                             Padding="16,0" Height="28"
                             Click="GenerateRom_Click"/>
@@ -87,7 +89,7 @@
 
                     <Button x:Name="BtnTabModules"
                             Grid.Column="0"
-                            Content="MODULES"
+                            Content="{loc:Tr Key='scene.modules'}"
                             Click="BtnTabModules_Click"
                             Tag="active"
                             Style="{StaticResource SidebarTab}"/>
@@ -104,13 +106,13 @@
                               Grid.Row="1"
                               VerticalScrollBarVisibility="Auto">
                     <StackPanel Margin="0 8 0 0">
-                        <TextBlock x:Name="TxtSystemStatus"
+                        <TextBlock Text="{loc:Tr Key='scene.system_status'}"
                                    Style="{StaticResource TextLabel}"
                                    Foreground="{StaticResource BrushPrimary}"
                                    Margin="12,4,12,16"
                                    FontSize="9"/>
 
-                        <TextBlock x:Name="ModulePaletteHeader"
+                        <TextBlock Text="{loc:Tr Key='scene.modules'}"
                                    Style="{StaticResource TextLabel}"
                                    Foreground="{StaticResource BrushPrimary}"
                                    Margin="12,0,12,8"/>
@@ -161,6 +163,7 @@
                 <StackPanel Grid.Row="2">
                     <Separator Margin="0,0,0,16"/>
                     <Button x:Name="BtnNewScene"
+                            Content="{loc:Tr Key='scene.new_scene'}"
                             Style="{StaticResource ButtonSecondary}"
                             Margin="12,0,12,0"
                             HorizontalAlignment="Stretch"
@@ -169,10 +172,6 @@
 
                     <Separator Margin="0,0,0,4"/>
 
-                    <TextBlock x:Name="TxtDocumentation1"
-                                   Style="{StaticResource TextLabel}"
-                                   Margin="12,0,12,0"
-                                   Cursor="Hand"/>
                     <Button Style="{StaticResource ButtonToolbar}"
                             HorizontalAlignment="Left"
                             Click="Documentation_Click"
@@ -185,8 +184,8 @@
                             <TextBlock Grid.Column="0" Text="?"
                                        HorizontalAlignment="Center"
                                        VerticalAlignment="Center"/>
-                            <TextBlock x:Name="TxtDocumentation"
-                                       Grid.Column="1" 
+                            <TextBlock Grid.Column="1"
+                                       Text="{loc:Tr Key='scene.documentation'}"
                                        HorizontalAlignment="Left"
                                        VerticalAlignment="Center"/>
                         </Grid>
@@ -263,13 +262,14 @@
                 Background="{StaticResource BrushSurfaceContainerLow}"
                 Padding="16">
             <StackPanel>
-                <TextBlock x:Name="TxtPropertiesTitle"
+                <TextBlock Text="{loc:Tr Key='scene.properties'}"
                            Style="{StaticResource TextLabel}"
                            Foreground="{StaticResource BrushPrimary}"
                            Margin="0,0,0,16"/>
 
                 <!-- Empty state -->
-                <TextBlock x:Name="TxtNoSelection"
+                <TextBlock Text="{loc:Tr Key='scene.no_selection'}"
+                           x:Name="TxtNoSelection"
                            Style="{StaticResource TextBody}"
                            TextWrapping="Wrap"
                            Visibility="Visible"/>
@@ -291,7 +291,7 @@
                 </Grid.RowDefinitions>
 
                 <TextBlock Grid.Row="0"
-                           x:Name="TxtEventsTitle"
+                           Text="{loc:Tr Key='scene.events'}"
                            Style="{StaticResource TextLabel}"
                            Foreground="{StaticResource BrushPrimary}"
                            Margin="0,0,0,8"/>

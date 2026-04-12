@@ -42,20 +42,6 @@ public partial class SceneEditorView : UserControl
         InitializeComponent();
         KeyDown += SceneEditorView_KeyDown;
         Focusable = true;
-        ApplyLocalization();
-    }
-
-    private void ApplyLocalization()
-    {
-        var loc = LocalizationService.Instance;
-        BtnGenerateRom.Content = loc.Get("scene.generate_rom");
-        TxtSystemStatus.Text   = loc.Get("scene.system_status");
-        ModulePaletteHeader.Text = loc.Get("scene.modules");
-        BtnNewScene.Content    = loc.Get("scene.new_scene");
-        TxtDocumentation.Text  = loc.Get("scene.documentation");
-        TxtPropertiesTitle.Text = loc.Get("scene.properties");
-        TxtNoSelection.Text    = loc.Get("scene.no_selection");
-        TxtEventsTitle.Text    = loc.Get("scene.events");
     }
 
     public void SetProjectManager(ProjectManager manager) => _projectManager = manager;
@@ -63,16 +49,6 @@ public partial class SceneEditorView : UserControl
 
     private void BtnUndo_Click(object sender, RoutedEventArgs e) => _undoRedo.Undo();
     private void BtnRedo_Click(object sender, RoutedEventArgs e) => _undoRedo.Redo();
-    /// <summary>
-    /// Refreshes localization for all UI elements.
-    /// Called when language changes.
-    /// </summary>
-    public void RefreshLocalization()
-    {
-        ApplyLocalization();
-        if (_target != null) { LoadModulePalette(_target); LoadEvents(); }
-        if (_selectedElement != null) BuildPropertiesPanel(_selectedElement);
-    }
     
     // ── Sidebar tab switching ─────────────────────────────────────────────────
 

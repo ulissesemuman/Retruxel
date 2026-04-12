@@ -58,10 +58,93 @@ public partial class SettingsWindow : Window
         FindTextBlockIn(NavGeneral)!.Text = loc.Get("settings.nav.general");
         FindTextBlockIn(NavAppearance)!.Text = loc.Get("settings.nav.appearance");
         FindTextBlockIn(NavToolchain)!.Text = loc.Get("settings.nav.toolchain");
+        TxtNavTargets.Text = loc.Get("settings.nav.targets");
+        FindTextBlockIn(NavSms)!.Text = loc.Get("settings.nav.sms");
+        FindTextBlockIn(NavGg)!.Text = "GAME GEAR";
+        FindTextBlockIn(NavSg1000)!.Text = "SG-1000";
+        FindTextBlockIn(NavColeco)!.Text = "COLECOVISION";
+        FindTextBlockIn(NavNes)!.Text = loc.Get("settings.nav.nes");
         
         // Tabs
         TabGeneralInterface.Content = loc.Get("settings.tab.interface");
         TabGeneralBehavior.Content = loc.Get("settings.tab.behavior");
+        TabAppearanceEditor.Content = loc.Get("settings.tab.editor");
+        TabToolchainGeneral.Content = loc.Get("settings.tab.general");
+        TabSmsBuild.Content = loc.Get("settings.tab.build");
+        TabGgBuild.Content = loc.Get("settings.tab.build");
+        TabSg1000Build.Content = loc.Get("settings.tab.build");
+        TabColecoBuild.Content = loc.Get("settings.tab.build");
+        TabNesBuild.Content = loc.Get("settings.tab.build");
+        
+        // General - Interface
+        TxtSectionLanguage.Text = loc.Get("settings.section.language");
+        TxtLanguageLabel.Text = loc.Get("settings.general.language");
+        TxtLanguageDesc.Text = loc.Get("settings.general.language.desc");
+        
+        // General - Behavior
+        TxtSectionStartup.Text = loc.Get("settings.section.startup");
+        TxtWelcomeLabel.Text = loc.Get("settings.general.welcome");
+        TxtWelcomeDesc.Text = loc.Get("settings.general.welcome.desc");
+        TxtCheckUpdatesLabel.Text = loc.Get("settings.general.check_updates");
+        TxtCheckUpdatesDesc.Text = loc.Get("settings.general.check_updates.desc");
+        TxtSectionEditor.Text = loc.Get("settings.section.editor");
+        TxtUndoLimitLabel.Text = loc.Get("settings.editor.undo_limit");
+        TxtUndoLimitDesc.Text = loc.Get("settings.editor.undo_limit.desc");
+        
+        // Appearance
+        TxtSectionTheme.Text = loc.Get("settings.section.theme");
+        TxtThemeLabel.Text = loc.Get("settings.theme.current");
+        TxtThemeDesc.Text = loc.Get("settings.theme.desc");
+        
+        // Toolchain
+        TxtSectionBuildConsole.Text = loc.Get("settings.section.build_console");
+        TxtToolchainWarningsLabel.Text = loc.Get("settings.toolchain.warnings");
+        TxtToolchainWarningsDesc.Text = loc.Get("settings.toolchain.warnings.desc");
+        
+        // SMS
+        TxtSectionEmulatorSms.Text = loc.Get("settings.section.emulator");
+        TxtEmulatorPathLabelSms.Text = loc.Get("settings.emulator.path");
+        TxtEmulatorArgsLabelSms.Text = loc.Get("settings.emulator.arguments");
+        TxtEmulatorArgsDescSms.Text = loc.Get("settings.emulator.arguments.desc");
+        TxtLaunchEmulatorLabelSms.Text = loc.Get("settings.emulator.launch");
+        TxtLaunchEmulatorDescSms.Text = loc.Get("settings.emulator.launch.desc");
+        BtnBrowseSmsEmulator.Content = loc.Get("settings.browse");
+        
+        // Game Gear
+        TxtSectionEmulatorGg.Text = loc.Get("settings.section.emulator");
+        TxtEmulatorPathLabelGg.Text = loc.Get("settings.emulator.path");
+        TxtEmulatorArgsLabelGg.Text = loc.Get("settings.emulator.arguments");
+        TxtEmulatorArgsDescGg.Text = loc.Get("settings.emulator.arguments.desc");
+        TxtLaunchEmulatorLabelGg.Text = loc.Get("settings.emulator.launch");
+        TxtLaunchEmulatorDescGg.Text = loc.Get("settings.emulator.launch.desc");
+        BtnBrowseGgEmulator.Content = loc.Get("settings.browse");
+        
+        // SG-1000
+        TxtSectionEmulatorSg1000.Text = loc.Get("settings.section.emulator");
+        TxtEmulatorPathLabelSg1000.Text = loc.Get("settings.emulator.path");
+        TxtEmulatorArgsLabelSg1000.Text = loc.Get("settings.emulator.arguments");
+        TxtEmulatorArgsDescSg1000.Text = loc.Get("settings.emulator.arguments.desc");
+        TxtLaunchEmulatorLabelSg1000.Text = loc.Get("settings.emulator.launch");
+        TxtLaunchEmulatorDescSg1000.Text = loc.Get("settings.emulator.launch.desc");
+        BtnBrowseSg1000Emulator.Content = loc.Get("settings.browse");
+        
+        // ColecoVision
+        TxtSectionEmulatorColeco.Text = loc.Get("settings.section.emulator");
+        TxtEmulatorPathLabelColeco.Text = loc.Get("settings.emulator.path");
+        TxtEmulatorArgsLabelColeco.Text = loc.Get("settings.emulator.arguments");
+        TxtEmulatorArgsDescColeco.Text = loc.Get("settings.emulator.arguments.desc");
+        TxtLaunchEmulatorLabelColeco.Text = loc.Get("settings.emulator.launch");
+        TxtLaunchEmulatorDescColeco.Text = loc.Get("settings.emulator.launch.desc");
+        BtnBrowseColecoEmulator.Content = loc.Get("settings.browse");
+        
+        // NES
+        TxtSectionEmulatorNes.Text = loc.Get("settings.section.emulator");
+        TxtEmulatorPathLabelNes.Text = loc.Get("settings.emulator.path");
+        TxtEmulatorArgsLabelNes.Text = loc.Get("settings.emulator.arguments");
+        TxtEmulatorArgsDescNes.Text = loc.Get("settings.emulator.arguments.desc");
+        TxtLaunchEmulatorLabelNes.Text = loc.Get("settings.emulator.launch");
+        TxtLaunchEmulatorDescNes.Text = loc.Get("settings.emulator.launch.desc");
+        BtnBrowseNesEmulator.Content = loc.Get("settings.browse");
         
         // Close button
         BtnClose.Content = loc.Get("settings.close");
@@ -99,8 +182,13 @@ public partial class SettingsWindow : Window
 
     private void ApplySettingsToUi()
     {
+        var loc = LocalizationService.Instance;
+        
         // General - language already selected in PopulateLanguageCombo
         ChkShowWelcome.IsChecked = _settings.General.ShowWelcomeOnStartup;
+        ChkCheckUpdates.IsChecked = _settings.General.CheckUpdatesOnStartup;
+        SliderUndoHistory.Value = _settings.General.UndoHistoryLimit;
+        TxtUndoHistoryValue.Text = _settings.General.UndoHistoryLimit.ToString();
 
         // Toolchain
         ChkShowWarnings.IsChecked = _settings.Targets.Sms.ShowToolchainWarnings;
@@ -109,31 +197,31 @@ public partial class SettingsWindow : Window
         TxtSmsEmulatorArguments.Text = _settings.Targets.Sms.EmulatorArguments;
         ChkSmsLaunchEmulator.IsChecked = _settings.Targets.Sms.LaunchEmulatorAfterBuild;
         TxtSmsEmulatorPath.Text = string.IsNullOrEmpty(_settings.Targets.Sms.EmulatorPath)
-            ? "Not configured" : _settings.Targets.Sms.EmulatorPath;
+            ? loc.Get("settings.emulator.path.not_configured") : _settings.Targets.Sms.EmulatorPath;
 
         // Game Gear
         TxtGgEmulatorArguments.Text = _settings.Targets.Gg.EmulatorArguments;
         ChkGgLaunchEmulator.IsChecked = _settings.Targets.Gg.LaunchEmulatorAfterBuild;
         TxtGgEmulatorPath.Text = string.IsNullOrEmpty(_settings.Targets.Gg.EmulatorPath)
-            ? "Not configured" : _settings.Targets.Gg.EmulatorPath;
+            ? loc.Get("settings.emulator.path.not_configured") : _settings.Targets.Gg.EmulatorPath;
 
         // SG-1000
         TxtSg1000EmulatorArguments.Text = _settings.Targets.Sg1000.EmulatorArguments;
         ChkSg1000LaunchEmulator.IsChecked = _settings.Targets.Sg1000.LaunchEmulatorAfterBuild;
         TxtSg1000EmulatorPath.Text = string.IsNullOrEmpty(_settings.Targets.Sg1000.EmulatorPath)
-            ? "Not configured" : _settings.Targets.Sg1000.EmulatorPath;
+            ? loc.Get("settings.emulator.path.not_configured") : _settings.Targets.Sg1000.EmulatorPath;
 
         // ColecoVision
         TxtColecoEmulatorArguments.Text = _settings.Targets.Coleco.EmulatorArguments;
         ChkColecoLaunchEmulator.IsChecked = _settings.Targets.Coleco.LaunchEmulatorAfterBuild;
         TxtColecoEmulatorPath.Text = string.IsNullOrEmpty(_settings.Targets.Coleco.EmulatorPath)
-            ? "Not configured" : _settings.Targets.Coleco.EmulatorPath;
+            ? loc.Get("settings.emulator.path.not_configured") : _settings.Targets.Coleco.EmulatorPath;
 
         // NES
         TxtNesEmulatorArguments.Text = _settings.Targets.Nes.EmulatorArguments;
         ChkNesLaunchEmulator.IsChecked = _settings.Targets.Nes.LaunchEmulatorAfterBuild;
         TxtNesEmulatorPath.Text = string.IsNullOrEmpty(_settings.Targets.Nes.EmulatorPath)
-            ? "Not configured" : _settings.Targets.Nes.EmulatorPath;
+            ? loc.Get("settings.emulator.path.not_configured") : _settings.Targets.Nes.EmulatorPath;
     }
 
     // ── Navigation ────────────────────────────────────────────────────────────
@@ -207,14 +295,6 @@ public partial class SettingsWindow : Window
             
             // Refresh this window
             ApplyLocalization();
-            
-            // Refresh views if they exist
-            var mainWindow = Owner as MainWindow;
-            if (mainWindow != null)
-            {
-                var sceneEditorView = FindVisualChild<SceneEditorView>(mainWindow);
-                sceneEditorView?.RefreshLocalization();
-            }
         }
         AutoSave();
     }
@@ -223,6 +303,22 @@ public partial class SettingsWindow : Window
     {
         if (_loading) return;
         _settings.General.ShowWelcomeOnStartup = ChkShowWelcome.IsChecked == true;
+        AutoSave();
+    }
+
+    private void ChkCheckUpdates_Changed(object sender, RoutedEventArgs e)
+    {
+        if (_loading) return;
+        _settings.General.CheckUpdatesOnStartup = ChkCheckUpdates.IsChecked == true;
+        AutoSave();
+    }
+
+    private void SliderUndoHistory_Changed(object sender, RoutedPropertyChangedEventArgs<double> e)
+    {
+        if (_loading) return;
+        var value = (int)SliderUndoHistory.Value;
+        _settings.General.UndoHistoryLimit = value;
+        TxtUndoHistoryValue.Text = value.ToString();
         AutoSave();
     }
 

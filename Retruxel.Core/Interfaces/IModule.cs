@@ -27,6 +27,13 @@ public interface IModule
     /// </summary>
     string[] Compatibility { get; }
 
+    /// <summary>
+    /// Whether only one instance of this module can exist per project.
+    /// Singleton modules (entity, physics, input, scroll) are removed from the
+    /// sidebar palette when placed on the canvas and restored when deleted.
+    /// </summary>
+    bool IsSingleton { get; }
+
     /// <summary>Serializes the current module state to the .rtrxproject file.</summary>
     string Serialize();
 

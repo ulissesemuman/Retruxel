@@ -48,6 +48,18 @@
                 <StackPanel Grid.Column="2" Orientation="Horizontal"
                             VerticalAlignment="Center"
                             Margin="0 0 12 0">
+                    <Button x:Name="BtnUndo"
+                            Content="↩"
+                            IsEnabled="False"
+                            ToolTip="Nothing to undo"
+                            Style="{StaticResource ButtonTitleBar}"
+                            Click="BtnUndo_Click"/>
+                    <Button x:Name="BtnRedo"
+                            Content="↪"
+                            IsEnabled="False"
+                            ToolTip="Nothing to redo"
+                            Style="{StaticResource ButtonTitleBar}"
+                            Click="BtnRedo_Click"/>
                     <Button x:Name="BtnGenerateRom"
                             Style="{StaticResource ButtonPrimary}"
                             Padding="16,0" Height="28"
@@ -104,11 +116,6 @@
                                    Margin="12,0,12,8"/>
 
                         <StackPanel x:Name="ModulePalettePanel"/>
-
-                        <TextBlock x:Name="TxtDocumentation"
-                                   Style="{StaticResource TextLabel}"
-                                   Margin="12,16,12,0"
-                                   Cursor="Hand"/>
                     </StackPanel>
                 </ScrollViewer>
 
@@ -151,13 +158,40 @@
                 </ScrollViewer>
 
                 <!-- ── Bottom: New Scene button (always visible) ── -->
-                <Button x:Name="BtnNewScene"
-                        Grid.Row="2"
-                        Style="{StaticResource ButtonSecondary}"
-                        Margin="12 8"
-                        HorizontalAlignment="Stretch"
-                        Padding="0,8"
-                        Click="BtnNewScene_Click"/>
+                <StackPanel Grid.Row="2">
+                    <Separator Margin="0,0,0,16"/>
+                    <Button x:Name="BtnNewScene"
+                            Style="{StaticResource ButtonSecondary}"
+                            Margin="12,0,12,0"
+                            HorizontalAlignment="Stretch"
+                            Padding="0,8"
+                            Click="BtnNewScene_Click"/>
+
+                    <Separator Margin="0,0,0,4"/>
+
+                    <TextBlock x:Name="TxtDocumentation1"
+                                   Style="{StaticResource TextLabel}"
+                                   Margin="12,0,12,0"
+                                   Cursor="Hand"/>
+                    <Button Style="{StaticResource ButtonToolbar}"
+                            HorizontalAlignment="Left"
+                            Click="Documentation_Click"
+                            Margin="0,0,0,4">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="14"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Grid.Column="0" Text="?"
+                                       HorizontalAlignment="Center"
+                                       VerticalAlignment="Center"/>
+                            <TextBlock x:Name="TxtDocumentation"
+                                       Grid.Column="1" 
+                                       HorizontalAlignment="Left"
+                                       VerticalAlignment="Center"/>
+                        </Grid>
+                    </Button>
+                </StackPanel>
 
             </Grid>
         </Border>

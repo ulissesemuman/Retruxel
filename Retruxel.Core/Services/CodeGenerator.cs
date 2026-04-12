@@ -100,12 +100,25 @@ public class CodeGenerator
                         progress?.Report($"INFO: {moduleId} generated via plugin fallback.");
                 }
 
-                sourceFiles.AddRange(generatedFiles);
+                // Deduplicate by filename — singleton modules (entity, enemy, scroll, etc.)
+                // use fixed filenames and must not be compiled more than once.
+                // Multi-instance modules (text.display) use unique names via instance counter.
+                foreach (var file in generatedFiles)
+                {
+                    if (sourceFiles.Any(f => f.FileName == file.FileName))
+                    {
+                        progress?.Report($"INFO: Skipping duplicate file '{file.FileName}' for {moduleId}.");
+                        continue;
+                    }
+                    sourceFiles.Add(file);
+                }
 
                 if (module is IGraphicModule gfxModule)
                     assets.AddRange(gfxModule.GenerateAssets());
                 else if (module is IAudioModule audioModule)
                     assets.AddRange(audioModule.GenerateAssets());
+                else if (module is ILogicModule logicModule)
+                    assets.AddRange(logicModule.GenerateAssets());
             }
         }
 

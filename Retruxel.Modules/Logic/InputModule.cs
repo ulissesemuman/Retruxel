@@ -17,6 +17,7 @@ namespace Retruxel.Modules.Logic;
 ///
 /// JSON format:
 /// {
+///   "module":         "sms.input",
 ///   "holdThreshold": 60,     // frames before a button press is considered "held" (~1s at 60fps)
 ///   "port":          1       // joypad port (1 or 2)
 /// }
@@ -27,6 +28,7 @@ public class InputModule : ILogicModule
     public string     DisplayName  => "Input";
     public string     Category     => "Logic";
     public ModuleType Type         => ModuleType.Logic;
+    public bool     IsSingleton  => true;
     public string[]   Compatibility => ["sms", "gg"];
 
     private static readonly JsonSerializerOptions _jsonOptions = new()
@@ -66,6 +68,18 @@ public class InputModule : ILogicModule
             }
         ]
     };
+
+    /// <summary>
+    /// Creates the ViewModel for the property editor.
+    /// Returns null as this module uses auto-generated UI from manifest.
+    /// </summary>
+    public object CreateEditorViewModel() => null!;
+
+    /// <summary>
+    /// Generates font tiles as assets.
+    /// Each character in the text becomes a tile in the asset.
+    /// </summary>
+    public IEnumerable<GeneratedAsset> GenerateAssets() => [];
 
     public IEnumerable<GeneratedFile> GenerateCode() => [];
 

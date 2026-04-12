@@ -179,16 +179,16 @@ public partial class SettingsWindow : Window
     {
         TabContentGeneralInterface.Visibility = Visibility.Visible;
         TabContentGeneralBehavior.Visibility  = Visibility.Collapsed;
-        TabGeneralInterface.Style = (Style)FindResource("TabButtonActive");
-        TabGeneralBehavior.Style  = (Style)FindResource("TabButton");
+        TabGeneralInterface.Style = (Style)FindResource("ButtonTabActive");
+        TabGeneralBehavior.Style  = (Style)FindResource("ButtonTab");
     }
 
     private void TabGeneralBehavior_Click(object sender, RoutedEventArgs e)
     {
         TabContentGeneralInterface.Visibility = Visibility.Collapsed;
         TabContentGeneralBehavior.Visibility  = Visibility.Visible;
-        TabGeneralInterface.Style = (Style)FindResource("TabButton");
-        TabGeneralBehavior.Style  = (Style)FindResource("TabButtonActive");
+        TabGeneralInterface.Style = (Style)FindResource("ButtonTab");
+        TabGeneralBehavior.Style  = (Style)FindResource("ButtonTabActive");
     }
 
     // ── Change handlers ───────────────────────────────────────────────────────

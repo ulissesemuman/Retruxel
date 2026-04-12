@@ -155,4 +155,14 @@ public class ModuleLoader
         if (!_logicModules.ContainsKey(module.ModuleId))
             _logicModules[module.ModuleId] = module;
     }
+
+    /// <summary>
+    /// Manually registers a graphic module.
+    /// Used during development before auto-discovery is fully implemented.
+    /// </summary>
+    public void RegisterGraphicModule(IGraphicModule module)
+    {
+        if (!_graphicModules.ContainsKey(module.ModuleId))
+            _graphicModules[module.ModuleId] = module;
+    }
 }

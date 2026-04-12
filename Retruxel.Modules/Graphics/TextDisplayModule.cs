@@ -18,12 +18,13 @@ namespace Retruxel.Modules.Graphics;
 ///   "text": "HELLO WORLD"
 /// }
 /// </summary>
-public class TextDisplayModule : ILogicModule
+public class TextDisplayModule : IGraphicModule
 {
     public string ModuleId => "text.display";
     public string DisplayName => "Text Display";
     public string Category => "Output";
-    public ModuleType Type => ModuleType.Logic;
+    public ModuleType Type => ModuleType.Graphics;
+    public bool IsSingleton => false;
     public string[] Compatibility => ["all"];
 
     public int X { get; set; } = 0;
@@ -34,7 +35,7 @@ public class TextDisplayModule : ILogicModule
     {
         ModuleId = ModuleId,
         Version = "1.0.0",
-        Type = ModuleType.Logic,
+        Type = ModuleType.Graphics,
         Compatibility = ["all"],
         Parameters =
         [
@@ -68,6 +69,18 @@ public class TextDisplayModule : ILogicModule
             }
         ]
     };
+
+    /// <summary>
+    /// Creates the ViewModel for the property editor.
+    /// Returns null as this module uses auto-generated UI from manifest.
+    /// </summary>
+    public object CreateEditorViewModel() => null!;
+
+    /// <summary>
+    /// Generates font tiles as assets.
+    /// Each character in the text becomes a tile in the asset.
+    /// </summary>
+    public IEnumerable<GeneratedAsset> GenerateAssets() => [];
 
     /// <summary>
     /// Code generation is delegated to the target-specific code generator.

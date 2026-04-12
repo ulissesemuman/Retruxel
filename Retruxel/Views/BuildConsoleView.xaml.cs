@@ -17,6 +17,7 @@ public partial class BuildConsoleView : UserControl
 {
     private BuildResult? _lastResult;
     private RetruxelProject? _project;
+    private DateTime _buildStartTime;
 
     public BuildConsoleView()
     {
@@ -43,6 +44,8 @@ public partial class BuildConsoleView : UserControl
         TxtSha256Label.Text = loc.Get("buildconsole.verification.sha256");
         TxtChecks.Text = loc.Get("buildconsole.verification.passed");
         MemoryHeader.Text = loc.Get("buildconsole.memory");
+        TotalAssetsLabel.Text = loc.Get("buildconsole.total_assets");
+        TxtElapsedTimeLabel.Text = loc.Get("buildconsole.elapsed_time");
     }
 
     public void UpdateTooltips()
@@ -67,6 +70,10 @@ public partial class BuildConsoleView : UserControl
         VerificationPanel.Visibility = Visibility.Collapsed;
         MemoryHeader.Visibility = Visibility.Collapsed;
         MemoryPanel.Visibility = Visibility.Collapsed;
+        TotalAssetsPanel.Visibility = Visibility.Collapsed;
+        ElapsedTimePanel.Visibility = Visibility.Collapsed;
+
+        _buildStartTime = DateTime.Now;
 
         var loc = LocalizationService.Instance;
 
@@ -91,8 +98,8 @@ public partial class BuildConsoleView : UserControl
         // covered by built-ins or plugins (e.g. text.display from Retruxel.Modules)
         foreach (var moduleId in project.DefaultModules.Distinct())
         {
-            if (moduleId == "text.display" && !moduleLoader.LogicModules.ContainsKey(moduleId))
-                moduleLoader.RegisterLogicModule(new Retruxel.Modules.Graphics.TextDisplayModule());
+            if (moduleId == "text.display" && !moduleLoader.GraphicModules.ContainsKey(moduleId))
+                moduleLoader.RegisterGraphicModule(new Retruxel.Modules.Graphics.TextDisplayModule());
         }
 
         var progress = new Progress<string>(msg => Dispatcher.Invoke(() => AppendLog(msg)));
@@ -113,12 +120,16 @@ public partial class BuildConsoleView : UserControl
 
         if (_lastResult.Success)
         {
+            var elapsedTime = DateTime.Now - _buildStartTime;
+            var totalElements = project.Scenes.Sum(s => s.Elements.Count);
+
             if (_lastResult.RomPath != null)
                 AppendLog($"SAVED: {_lastResult.RomPath}");
 
             SetStatus(loc.Get("build.status.success"), true);
             ShowVerification(_lastResult);
             ShowMemoryStats(_lastResult, target);
+            ShowBuildStats(totalElements, elapsedTime);
             AppendLog($"SUCCESS: ROM generated — {_lastResult.RomSizeBytes / 1024}KB", isSuccess: true);
 
             await LaunchEmulatorIfConfiguredAsync(_lastResult.RomPath);
@@ -229,8 +240,12 @@ public partial class BuildConsoleView : UserControl
     private void ShowVerification(BuildResult result)
     {
         VerificationPanel.Visibility = Visibility.Visible;
-        TxtMd5.Text = result.RomMd5?[..8] + "...";
-        TxtSha256.Text = result.RomSha256?[..8] + "...";
+        TxtMd5.Text = result.RomMd5?[..16] + "...";
+        TxtMd5.Tag = result.RomMd5;
+        TxtMd5.ToolTip = result.RomMd5;
+        TxtSha256.Text = result.RomSha256?[..16] + "...";
+        TxtSha256.Tag = result.RomSha256;
+        TxtSha256.ToolTip = result.RomSha256;
     }
 
     private void ShowMemoryStats(BuildResult result, ITarget target)
@@ -298,6 +313,15 @@ public partial class BuildConsoleView : UserControl
             MemoryPanel.Children.Add(labelGrid);
             MemoryPanel.Children.Add(barContainer);
         }
+    }
+
+    private void ShowBuildStats(int totalElements, TimeSpan elapsedTime)
+    {
+        TotalAssetsPanel.Visibility = Visibility.Visible;
+        TotalAssets.Text = totalElements.ToString();
+
+        ElapsedTimePanel.Visibility = Visibility.Visible;
+        TxtElapsedTime.Text = $"{elapsedTime.TotalSeconds:F2}s";
     }
 
     private void ExportRom_Click(object sender, System.Windows.Input.MouseButtonEventArgs e)
@@ -376,6 +400,34 @@ public partial class BuildConsoleView : UserControl
         {
             Clipboard.SetText(logText);
             ShowToast(LocalizationService.Instance.Get("toast.log_copied"));
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(string.Format(LocalizationService.Instance.Get("buildconsole.error.clipboard"), ex.Message), "Retruxel");
+        }
+    }
+
+    private void CopyMd5_Click(object sender, RoutedEventArgs e)
+    {
+        if (TxtMd5.Text == "N/A") return;
+        try
+        {
+            Clipboard.SetText(TxtMd5.Tag.ToString());
+            ShowToast(LocalizationService.Instance.Get("toast.md5_copied"));
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(string.Format(LocalizationService.Instance.Get("buildconsole.error.clipboard"), ex.Message), "Retruxel");
+        }
+    }
+
+    private void CopySha256_Click(object sender, RoutedEventArgs e)
+    {
+        if (TxtSha256.Text == "N/A") return;
+        try
+        {
+            Clipboard.SetText(TxtSha256.Tag.ToString());
+            ShowToast(LocalizationService.Instance.Get("toast.sha256_copied"));
         }
         catch (Exception ex)
         {

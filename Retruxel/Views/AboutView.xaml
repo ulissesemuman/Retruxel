@@ -19,17 +19,17 @@
                 <Border Width="80" Height="80"
                         Background="Transparent"
                         HorizontalAlignment="Center"
-                        Margin="0,0,0,24">
+                        Margin="0,0,0,8">
                     <Image Source="/Assets/Images/Logo/logochip.png"
                            Stretch="Uniform"/>
                 </Border>
 
                 <!-- App name -->
-                <TextBlock Text="RETRUXEL"
-                           Style="{StaticResource TextDisplay}"
-                           Foreground="{StaticResource BrushPrimary}"
-                           HorizontalAlignment="Center"
-                           Margin="0,0,0,4"/>
+                <Image Source="pack://application:,,,/Assets/Images/Logo/RETRUXEL.png"
+                       Height="25"
+                       VerticalAlignment="Center"
+                       RenderOptions.BitmapScalingMode="HighQuality"
+                       Margin="0,0,0,10"/>
                 <TextBlock Text="RETRO_DEVELOPMENT_SUITE"
                            Style="{StaticResource TextLabel}"
                            HorizontalAlignment="Center"

@@ -8,20 +8,22 @@
     <UseWPF>true</UseWPF>
     
     <!-- Version -->
-    <Version>0.6.0-alpha</Version>
-    <AssemblyVersion>0.6.0.0</AssemblyVersion>
-    <FileVersion>0.6.0.0</FileVersion>
-    <InformationalVersion>0.6.0-alpha</InformationalVersion>
+    <Version>0.7.0-alpha</Version>
+    <AssemblyVersion>0.7.0.0</AssemblyVersion>
+    <FileVersion>0.7.0.0</FileVersion>
+    <InformationalVersion>0.7.0-alpha</InformationalVersion>
     
     <!-- Application Icon -->
-    <ApplicationIcon>Assets\icon.ico</ApplicationIcon>
+    <ApplicationIcon>Assets\Icons\icon.ico</ApplicationIcon>
   </PropertyGroup>
 
   <ItemGroup>
     <None Remove="Assets\Fonts\Inter\Inter-Italic-VariableFont_opsz,wght.ttf" />
     <None Remove="Assets\Fonts\Inter\Inter-VariableFont_opsz,wght.ttf" />
     <None Remove="Assets\Fonts\Space_Grotesk\SpaceGrotesk-VariableFont_wght.ttf" />
-    <None Remove="Assets\icon.ico" />
+    <None Remove="Assets\Icons\icon.ico" />
+    <None Remove="Assets\Images\Logo\logochip.png" />
+    <None Remove="Assets\Images\Logo\RETRUXEL.png" />
     <None Remove="Assets\Images\Splash\background.png" />
   </ItemGroup>
 
@@ -40,7 +42,9 @@
     <Resource Include="Assets\Fonts\Inter\Inter-Italic-VariableFont_opsz,wght.ttf" />
     <Resource Include="Assets\Fonts\Inter\Inter-VariableFont_opsz,wght.ttf" />
     <Resource Include="Assets\Fonts\Space_Grotesk\SpaceGrotesk-VariableFont_wght.ttf" />
-    <Resource Include="Assets\icon.ico" />
+    <Resource Include="Assets\Icons\icon.ico" />
+    <Resource Include="Assets\Images\Logo\logochip.png" />
+    <Resource Include="Assets\Images\Logo\RETRUXEL.png" />
     <Resource Include="Assets\Images\Splash\background.png" />
   </ItemGroup>
 
@@ -52,7 +56,7 @@
     <Content Include="Assets\Localization\*.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="Assets\icon.ico">
+    <Content Include="Assets\Icons\icon.ico">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
   </ItemGroup>

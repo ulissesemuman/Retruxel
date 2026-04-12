@@ -1,3 +1,4 @@
+using Retruxel.Core.Commands;
 using Retruxel.Core.Interfaces;
 using Retruxel.Core.Models;
 using Retruxel.Core.Services;
@@ -27,7 +28,14 @@ public partial class SceneEditorView : UserControl
     private bool _isUpdatingUI;
     private bool _isLoadingProject;
 
+    private readonly UndoRedoStack _undoRedo = new();
+
+    // Drag start position — stored when drag begins, used to create MoveElementCommand on release
+    private int _dragStartTileX;
+    private int _dragStartTileY;
+
     public event Action<RetruxelProject>? OnGenerateRomRequested;
+    public event Action? OnAboutRequested;
 
     public SceneEditorView()
     {
@@ -53,6 +61,8 @@ public partial class SceneEditorView : UserControl
     public void SetProjectManager(ProjectManager manager) => _projectManager = manager;
     public void SetModuleLoader(ModuleLoader loader)       => _moduleLoader   = loader;
 
+    private void BtnUndo_Click(object sender, RoutedEventArgs e) => _undoRedo.Undo();
+    private void BtnRedo_Click(object sender, RoutedEventArgs e) => _undoRedo.Redo();
     /// <summary>
     /// Refreshes localization for all UI elements.
     /// Called when language changes.
@@ -63,7 +73,7 @@ public partial class SceneEditorView : UserControl
         if (_target != null) { LoadModulePalette(_target); LoadEvents(); }
         if (_selectedElement != null) BuildPropertiesPanel(_selectedElement);
     }
-
+    
     // ── Sidebar tab switching ─────────────────────────────────────────────────
 
     private void BtnTabModules_Click(object sender, RoutedEventArgs e)
@@ -301,13 +311,35 @@ public partial class SceneEditorView : UserControl
     }
 
     /// <summary>
-    /// Activates a scene — switches the canvas to show its elements.
+    /// Activates a scene — clears the canvas and reloads elements for the selected scene.
     /// </summary>
     private void ActivateScene(SceneData scene)
     {
+        // Save current scene state before switching
+        SyncProjectModules();
+
+        // Switch active scene
         _currentScene = scene;
+
+        // Clear canvas and element list
+        _elements.Clear();
+        SceneCanvas.Children.Clear();
+        SelectElement(null);
+
+        // Clear events panel
+        LoadEvents();
+
+        // Clear undo stack — history is per-session, not per-scene
+        _undoRedo.Clear();
+
+        // Reload elements for the new scene
+        LoadFromProject();
+
+        // Refresh palette — singletons already on canvas must be hidden
+        RefreshModulePalette();
+
+        // Rebuild tabs to reflect active state
         RebuildSceneTabs();
-        // TODO: reload canvas elements for this scene
     }
 
     /// <summary>
@@ -376,6 +408,47 @@ public partial class SceneEditorView : UserControl
             RemoveElement(_selectedElement);
             e.Handled = true;
         }
+
+        // Undo: Ctrl+Z
+        if (e.Key == Key.Z && Keyboard.Modifiers == ModifierKeys.Control)
+        {
+            _undoRedo.Undo();
+            e.Handled = true;
+        }
+
+        // Redo: Ctrl+Y or Ctrl+Shift+Z
+        if ((e.Key == Key.Y && Keyboard.Modifiers == ModifierKeys.Control) ||
+            (e.Key == Key.Z && Keyboard.Modifiers == (ModifierKeys.Control | ModifierKeys.Shift)))
+        {
+            _undoRedo.Redo();
+            e.Handled = true;
+        }
+    }
+
+    /// <summary>
+    /// Updates the enabled state of the Undo/Redo buttons in the top bar.
+    /// Subscribed to UndoRedoStack.StateChanged.
+    /// </summary>
+    private void UpdateUndoRedoButtons()
+    {
+        Dispatcher.InvokeAsync(() =>
+        {
+            if (FindName("BtnUndo") is System.Windows.Controls.Button btnUndo)
+            {
+                btnUndo.IsEnabled = _undoRedo.CanUndo;
+                btnUndo.ToolTip   = _undoRedo.CanUndo
+                    ? $"Undo: {_undoRedo.NextUndoDescription}"
+                    : "Nothing to undo";
+            }
+
+            if (FindName("BtnRedo") is System.Windows.Controls.Button btnRedo)
+            {
+                btnRedo.IsEnabled = _undoRedo.CanRedo;
+                btnRedo.ToolTip   = _undoRedo.CanRedo
+                    ? $"Redo: {_undoRedo.NextRedoDescription}"
+                    : "Nothing to redo";
+            }
+        });
     }
 
     /// <summary>
@@ -390,6 +463,12 @@ public partial class SceneEditorView : UserControl
         _elements.Clear();
         SceneCanvas.Children.Clear();
         _selectedElement = null;
+
+        // Apply undo history limit from settings
+        var settings = SettingsService.Load();
+        _undoRedo.MaxHistorySize = Math.Clamp(settings.General.UndoHistoryLimit, 20, 100);
+        _undoRedo.Clear();
+        _undoRedo.StateChanged += UpdateUndoRedoButtons;
 
         // Get or create main scene
         _currentScene = project.Scenes.FirstOrDefault();
@@ -426,27 +505,46 @@ public partial class SceneEditorView : UserControl
     /// </summary>
     private void LoadModulePalette(ITarget target)
     {
+        RefreshModulePalette();
+    }
+
+    /// <summary>
+    /// Rebuilds the module palette sidebar, hiding singleton modules
+    /// that are already placed on the current canvas.
+    /// Called on scene load and whenever an element is added or removed.
+    /// </summary>
+    private void RefreshModulePalette()
+    {
         ModulePalettePanel.Children.Clear();
 
         if (_moduleLoader is null) return;
+
+        // Collect IDs of singleton modules already on the canvas
+        var usedSingletons = _elements
+            .Where(e => e.Module is IModule m && m.IsSingleton)
+            .Select(e => e.ModuleId)
+            .ToHashSet();
 
         var modules = new List<(string Category, string ModuleId, string DisplayName)>();
 
         foreach (var (moduleId, module) in _moduleLoader.LogicModules)
         {
             var m = (IModule)module;
+            if (m.IsSingleton && usedSingletons.Contains(moduleId)) continue;
             modules.Add((m.Category, moduleId, m.DisplayName));
         }
 
         foreach (var (moduleId, module) in _moduleLoader.GraphicModules)
         {
             var m = (IModule)module;
+            if (m.IsSingleton && usedSingletons.Contains(moduleId)) continue;
             modules.Add((m.Category, moduleId, m.DisplayName));
         }
 
         foreach (var (moduleId, module) in _moduleLoader.AudioModules)
         {
             var m = (IModule)module;
+            if (m.IsSingleton && usedSingletons.Contains(moduleId)) continue;
             modules.Add((m.Category, moduleId, m.DisplayName));
         }
 
@@ -456,8 +554,8 @@ public partial class SceneEditorView : UserControl
         {
             var header = new TextBlock
             {
-                Text = group.Key,
-                Style = (Style)FindResource("TextLabel"),
+                Text   = group.Key,
+                Style  = (Style)FindResource("TextLabel"),
                 Margin = new Thickness(12, 8, 12, 4)
             };
             ModulePalettePanel.Children.Add(header);
@@ -537,29 +635,50 @@ public partial class SceneEditorView : UserControl
     {
         if (e.Data.GetData(typeof(string)) is not string moduleId) return;
 
-        var pos = e.GetPosition(SceneCanvas);
+        var pos   = e.GetPosition(SceneCanvas);
         var tileX = (int)pos.X / 8;
         var tileY = (int)pos.Y / 8;
 
         AddModuleToCanvas(moduleId, tileX, tileY);
     }
 
+    private void Documentation_Click(object sender, RoutedEventArgs e)
+        => OnAboutRequested?.Invoke();
+
     /// <summary>
     /// Adds a module element to the canvas at the given tile position.
+    /// Wrapped in an AddElementCommand for undo support.
     /// </summary>
     private void AddModuleToCanvas(string moduleId, int tileX, int tileY)
     {
         var element = CreateSceneElement(moduleId, tileX, tileY);
-        _elements.Add(element);
 
-        var visual = BuildCanvasElement(element);
-        Canvas.SetLeft(visual, tileX * 8);
-        Canvas.SetTop(visual, tileY * 8);
-        SceneCanvas.Children.Add(visual);
+        var displayName = element.Module is IModule m ? m.DisplayName : moduleId;
 
-        // Also add to OnStart event
-        AddModuleToEvent("OnStart", moduleId, element);
-        SelectElement(element);
+        _undoRedo.Push(new AddElementCommand(
+            description: $"Add {displayName}",
+            add: () =>
+            {
+                _elements.Add(element);
+
+                var visual = BuildCanvasElement(element);
+                Canvas.SetLeft(visual, tileX * 8);
+                Canvas.SetTop(visual, tileY * 8);
+                SceneCanvas.Children.Add(visual);
+                element.CanvasVisual = visual;
+
+                AddModuleToEvent("OnStart", moduleId, element);
+                SelectElement(element);
+                SyncProjectModules();
+                RefreshModulePalette();
+            },
+            remove: () =>
+            {
+                RemoveElementCore(element);
+                SyncProjectModules();
+                RefreshModulePalette();
+            }
+        ));
     }
 
     private Border BuildCanvasElement(SceneElement element)
@@ -594,10 +713,12 @@ public partial class SceneEditorView : UserControl
         border.MouseLeftButtonDown += (s, e) =>
         {
             SelectElement(element);
-            _isDragging = true;
-            var clickPos = e.GetPosition(border);
-            _dragOffset = clickPos;
-            _draggedElement = element;
+            _isDragging      = true;
+            _dragStartTileX  = element.TileX;
+            _dragStartTileY  = element.TileY;
+            var clickPos     = e.GetPosition(border);
+            _dragOffset      = clickPos;
+            _draggedElement  = element;
             border.CaptureMouse();
             e.Handled = true;
         };
@@ -615,15 +736,15 @@ public partial class SceneEditorView : UserControl
 
                 var tileX = Math.Clamp((int)adjustedX / 8, 0, maxTileX);
                 var tileY = Math.Clamp((int)adjustedY / 8, 0, maxTileY);
-                
+
                 Canvas.SetLeft(border, tileX * 8);
-                Canvas.SetTop(border, tileY * 8);
-                
+                Canvas.SetTop(border,  tileY * 8);
+
                 element.TileX = tileX;
                 element.TileY = tileY;
-                
+
                 UpdateModulePosition(element.Module, tileX, tileY);
-                
+
                 if (_selectedElement == element)
                     BuildPropertiesPanel(element);
             }
@@ -633,9 +754,40 @@ public partial class SceneEditorView : UserControl
         {
             if (_isDragging && _draggedElement == element)
             {
-                _isDragging = false;
+                _isDragging     = false;
                 _draggedElement = null;
                 border.ReleaseMouseCapture();
+
+                var endTileX = element.TileX;
+                var endTileY = element.TileY;
+
+                // Only register a move command if position actually changed
+                if (endTileX != _dragStartTileX || endTileY != _dragStartTileY)
+                {
+                    var startX = _dragStartTileX;
+                    var startY = _dragStartTileY;
+
+                    var displayName = element.Module is IModule m ? m.DisplayName : element.ModuleId;
+
+                    // Push without re-executing — element already moved via MouseMove
+                    var cmd = new MoveElementCommand(
+                        description: $"Move {displayName}",
+                        moveTo: (tx, ty) =>
+                        {
+                            element.TileX = tx;
+                            element.TileY = ty;
+                            Canvas.SetLeft(border, tx * 8);
+                            Canvas.SetTop(border,  ty * 8);
+                            UpdateModulePosition(element.Module, tx, ty);
+                            SyncProjectModules();
+                        },
+                        prevX: startX, prevY: startY,
+                        newX:  endTileX, newY: endTileY);
+
+                    // Add to stack without calling Execute() — already done by drag
+                    _undoRedo.PushWithoutExecute(cmd);
+                }
+
                 SyncProjectModules();
                 e.Handled = true;
             }
@@ -935,27 +1087,67 @@ public partial class SceneEditorView : UserControl
         };
 
         var currentValue = GetModuleParameterValue(module, param.Name);
-
         var textBox = new TextBox
         {
-            Text = currentValue?.ToString() ?? param.DefaultValue?.ToString() ?? "",
-            Foreground = Brushes.White,
-            FontFamily = new FontFamily("Consolas"),
-            FontSize = 12,
+            Text              = currentValue?.ToString() ?? param.DefaultValue?.ToString() ?? "",
+            Foreground        = Brushes.White,
+            FontFamily        = new FontFamily("Consolas"),
+            FontSize          = 12,
             VerticalAlignment = VerticalAlignment.Center
         };
 
         if (param.Type == ParameterType.String)
-        {
             textBox.Loaded += (s, e) => textBox.Focus();
-        }
+
+        // Capture value when the TextBox gains focus — this is the "before" value
+        string valueOnFocus = textBox.Text;
+        textBox.GotFocus += (s, e) => valueOnFocus = textBox.Text;
+
+        textBox.LostFocus += (s, e) =>
+        {
+            if (_isUpdatingUI) return;
+
+            var previousValue = valueOnFocus;
+            var newValue      = textBox.Text;
+
+            if (previousValue == newValue) return;
+
+            var displayName = module.DisplayName;
+            _undoRedo.Push(new ChangePropertyCommand(
+                description: $"Change {param.DisplayName} on {displayName}",
+                apply: val =>
+                {
+                    _isUpdatingUI  = true;
+                    textBox.Text   = val;
+                    _isUpdatingUI  = false;
+
+                    SetModuleParameterValue(module, param.Name, val, param.Type);
+
+                    if (param.Name.Equals("x", StringComparison.OrdinalIgnoreCase) && int.TryParse(val, out var x))
+                    {
+                        element.TileX = x;
+                        UpdateElementPosition(element);
+                    }
+                    else if (param.Name.Equals("y", StringComparison.OrdinalIgnoreCase) && int.TryParse(val, out var y))
+                    {
+                        element.TileY = y;
+                        UpdateElementPosition(element);
+                    }
+
+                    UpdateElementLabel(element);
+                    RefreshElementVisual(element);
+                    SyncProjectModules();
+                },
+                previousValue: previousValue,
+                newValue:      newValue));
+        };
 
         textBox.TextChanged += (s, e) =>
         {
             if (!_isUpdatingUI)
             {
                 SetModuleParameterValue(module, param.Name, textBox.Text, param.Type);
-                
+
                 if (param.Name.Equals("x", StringComparison.OrdinalIgnoreCase) && int.TryParse(textBox.Text, out var x))
                 {
                     element.TileX = x;
@@ -966,8 +1158,6 @@ public partial class SceneEditorView : UserControl
                     element.TileY = y;
                     UpdateElementPosition(element);
                 }
-                
-                UpdateElementLabel(element);
                 RefreshElementVisual(element);
                 SyncProjectModules();
             }
@@ -1138,6 +1328,58 @@ public partial class SceneEditorView : UserControl
 
     private void RemoveElement(SceneElement element)
     {
+        var displayName = element.Module is IModule m ? m.DisplayName : element.ModuleId;
+
+        // Capture event panel reference before removal
+        Border? eventBlock = null;
+        foreach (Border block in EventsPanel.Children)
+        {
+            if (block.Child is not StackPanel outer) continue;
+            var actionsPanel = outer.Children.OfType<StackPanel>().FirstOrDefault();
+            if (actionsPanel?.Children.Contains(element.EventVisual) == true)
+            {
+                eventBlock = block;
+                break;
+            }
+        }
+
+        _undoRedo.Push(new RemoveElementCommand(
+            description: $"Remove {displayName}",
+            remove: () =>
+            {
+                RemoveElementCore(element);
+                SyncProjectModules();
+                RefreshModulePalette();
+            },
+            restore: () =>
+            {
+                _elements.Add(element);
+
+                if (element.CanvasVisual is not null)
+                {
+                    Canvas.SetLeft(element.CanvasVisual, element.TileX * 8);
+                    Canvas.SetTop(element.CanvasVisual,  element.TileY * 8);
+                    SceneCanvas.Children.Add(element.CanvasVisual);
+                }
+
+                if (element.EventVisual is not null && eventBlock?.Child is StackPanel sp)
+                {
+                    var ap = sp.Children.OfType<StackPanel>().FirstOrDefault();
+                    ap?.Children.Add(element.EventVisual);
+                }
+
+                SyncProjectModules();
+                RefreshModulePalette();
+            }
+        ));
+    }
+
+    /// <summary>
+    /// Core removal logic — removes from all collections without creating an undo entry.
+    /// Called by both RemoveElement (via command) and Undo of AddElementCommand.
+    /// </summary>
+    private void RemoveElementCore(SceneElement element)
+    {
         _elements.Remove(element);
 
         if (element.CanvasVisual is not null)
@@ -1147,15 +1389,12 @@ public partial class SceneEditorView : UserControl
         {
             if (block.Child is not StackPanel outer) continue;
             var actionsPanel = outer.Children.OfType<StackPanel>().FirstOrDefault();
-            if (actionsPanel is null) continue;
             if (element.EventVisual is not null)
-                actionsPanel.Children.Remove(element.EventVisual);
+                actionsPanel?.Children.Remove(element.EventVisual);
         }
 
         if (_selectedElement == element)
             SelectElement(null);
-
-        SyncProjectModules();
     }
 
     /// <summary>

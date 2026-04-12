@@ -14,17 +14,19 @@ namespace Retruxel.Modules.Graphics;
 ///
 /// JSON format:
 /// {
+///   "module":       "sms.sprite",
 ///   "tilesAssetId": "player_tiles",   // asset ID for sprite CHR data
 ///   "startTile":    256,              // first VRAM sprite tile slot (256–511 recommended)
 ///   "doubleHeight": false             // enable 8×16 sprite mode
 /// }
 /// </summary>
-public class SpriteModule : ILogicModule
+public class SpriteModule : IGraphicModule
 {
     public string     ModuleId     => "sms.sprite";
     public string     DisplayName  => "Sprite";
     public string     Category     => "Graphics";
     public ModuleType Type         => ModuleType.Logic;
+    public bool     IsSingleton  => false;
     public string[]   Compatibility => ["sms", "gg"];
 
     private static readonly JsonSerializerOptions _jsonOptions = new()
@@ -71,6 +73,18 @@ public class SpriteModule : ILogicModule
             }
         ]
     };
+
+    /// <summary>
+    /// Creates the ViewModel for the property editor.
+    /// Returns null as this module uses auto-generated UI from manifest.
+    /// </summary>
+    public object CreateEditorViewModel() => null!;
+
+    /// <summary>
+    /// Generates font tiles as assets.
+    /// Each character in the text becomes a tile in the asset.
+    /// </summary>
+    public IEnumerable<GeneratedAsset> GenerateAssets() => [];
 
     public IEnumerable<GeneratedFile> GenerateCode() => [];
 

@@ -34,6 +34,13 @@ public class GeneralSettings
     [JsonPropertyName("showWelcomeOnStartup")]
     public bool ShowWelcomeOnStartup { get; set; } = true;
 
+    /// <summary>
+    /// Maximum number of undoable actions retained in history.
+    /// Configurable between 20 and 100. Default: 32.
+    /// </summary>
+    [JsonPropertyName("undoHistoryLimit")]
+    public int UndoHistoryLimit { get; set; } = 32;
+
     /// <summary>Last folder used in the New Project dialog.</summary>
     [JsonPropertyName("lastProjectLocation")]
     public string LastProjectLocation { get; set; } = Path.Combine(

@@ -12,6 +12,7 @@ namespace Retruxel.Modules.Graphics;
 ///
 /// JSON format:
 /// {
+///   "module":       "sms.tilemap",
 ///   "tilesAssetId": "bg_tiles",       // asset ID for CHR tile data
 ///   "mapAssetId":   "bg_map",         // asset ID for nametable layout
 ///   "startTile":    0,                // first VRAM tile slot to load into (0–447)
@@ -21,12 +22,13 @@ namespace Retruxel.Modules.Graphics;
 ///   "mapHeight":    24                // height of the map in tiles
 /// }
 /// </summary>
-public class TilemapModule : ILogicModule
+public class TilemapModule : IGraphicModule
 {
     public string     ModuleId     => "sms.tilemap";
     public string     DisplayName  => "Tilemap";
     public string     Category     => "Graphics";
     public ModuleType Type         => ModuleType.Logic;
+    public bool     IsSingleton  => false;
     public string[]   Compatibility => ["sms", "gg"];
 
     private static readonly JsonSerializerOptions _jsonOptions = new()
@@ -113,6 +115,18 @@ public class TilemapModule : ILogicModule
             }
         ]
     };
+
+    /// <summary>
+    /// Creates the ViewModel for the property editor.
+    /// Returns null as this module uses auto-generated UI from manifest.
+    /// </summary>
+    public object CreateEditorViewModel() => null!;
+
+    /// <summary>
+    /// Generates font tiles as assets.
+    /// Each character in the text becomes a tile in the asset.
+    /// </summary>
+    public IEnumerable<GeneratedAsset> GenerateAssets() => [];
 
     public IEnumerable<GeneratedFile> GenerateCode() => [];
 

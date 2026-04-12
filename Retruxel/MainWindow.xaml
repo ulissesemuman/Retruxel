@@ -10,7 +10,7 @@
         AllowsTransparency="True"
         WindowStyle="None"
         ResizeMode="CanResizeWithGrip"
-        Icon="pack://application:,,,/Assets/icon.ico">
+        Icon="pack://application:,,,/assets/Icons/icon.ico">
 
     <Window.Resources>
         <DropShadowEffect x:Key="WindowShadow"
@@ -56,10 +56,10 @@
                                 Visibility="Collapsed"
                                 Margin="0,0,12,0"
                                 ToolTip="Back to Welcome"/>
-                        <TextBlock Text="RETRUXEL"
-                                   Style="{StaticResource TextHeadline}"
-                                   Foreground="{StaticResource BrushPrimary}"
-                                   VerticalAlignment="Center"/>
+                        <Image Source="pack://application:,,,/Assets/Images/Logo/RETRUXEL.png"
+                               Height="15"
+                               VerticalAlignment="Center"
+                               RenderOptions.BitmapScalingMode="HighQuality"/>
                     </StackPanel>
 
                     <!-- Nav tabs (not yet implemented) -->

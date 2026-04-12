@@ -16,16 +16,18 @@ namespace Retruxel.Modules.Graphics;
 ///
 /// JSON format:
 /// {
+///   "module": "sms.palette",
 ///   "bgColors":     [0,0,0,21,42,63, ...],   // 16 SMS color bytes for BG
 ///   "spriteColors": [0,0,0,21,42,63, ...]    // 16 SMS color bytes for sprites
 /// }
 /// </summary>
-public class PaletteModule : ILogicModule
+public class PaletteModule : IGraphicModule
 {
     public string     ModuleId     => "sms.palette";
     public string     DisplayName  => "Palette";
     public string     Category     => "Graphics";
     public ModuleType Type         => ModuleType.Logic;
+    public bool     IsSingleton  => false;
     public string[]   Compatibility => ["sms", "gg"];
 
     private static readonly JsonSerializerOptions _jsonOptions = new()
@@ -62,6 +64,18 @@ public class PaletteModule : ILogicModule
             }
         ]
     };
+
+    /// <summary>
+    /// Creates the ViewModel for the property editor.
+    /// Returns null as this module uses auto-generated UI from manifest.
+    /// </summary>
+    public object CreateEditorViewModel() => null!;
+
+    /// <summary>
+    /// Generates font tiles as assets.
+    /// Each character in the text becomes a tile in the asset.
+    /// </summary>
+    public IEnumerable<GeneratedAsset> GenerateAssets() => [];
 
     public IEnumerable<GeneratedFile> GenerateCode() => [];
 

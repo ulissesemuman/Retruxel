@@ -15,6 +15,7 @@ public class EntityModule : ILogicModule
     public string     DisplayName  => "Player Entity";
     public string     Category     => "Entities";
     public ModuleType Type         => ModuleType.Logic;
+    public bool       IsSingleton  => true;
     public string[]   Compatibility => ["sms"];
 
     private static readonly JsonSerializerOptions _jsonOptions = new()
@@ -83,6 +84,18 @@ public class EntityModule : ILogicModule
             }
         ]
     };
+
+    /// <summary>
+    /// Creates the ViewModel for the property editor.
+    /// Returns null as this module uses auto-generated UI from manifest.
+    /// </summary>
+    public object CreateEditorViewModel() => null!;
+
+    /// <summary>
+    /// Generates font tiles as assets.
+    /// Each character in the text becomes a tile in the asset.
+    /// </summary>
+    public IEnumerable<GeneratedAsset> GenerateAssets() => [];
 
     public IEnumerable<GeneratedFile> GenerateCode() => [];
 

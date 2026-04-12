@@ -8,7 +8,7 @@
         AllowsTransparency="True"
         WindowStyle="None"
         ResizeMode="NoResize"
-        Icon="pack://application:,,,/Assets/icon.ico">
+        Icon="pack://application:,,,/assets/Icons/icon.ico">
 
     <!-- Outer border — CornerRadius 6 permitido: moldura física da janela -->
     <Border CornerRadius="6"

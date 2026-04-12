@@ -161,28 +161,66 @@
                                    Style="{StaticResource TextLabelCaps}"/>
                         <TextBlock x:Name="TxtMd5"
                                    Style="{StaticResource TextCode}"
-                                   HorizontalAlignment="Right"/>
+                                   HorizontalAlignment="Right"
+                                   MouseLeftButtonDown="CopyMd5_Click"/>
                     </Grid>
                     <Grid Margin="0,0,0,12">
                         <TextBlock x:Name="TxtSha256Label"
                                    Style="{StaticResource TextLabelCaps}"/>
                         <TextBlock x:Name="TxtSha256"
                                    Style="{StaticResource TextCode}"
-                                   HorizontalAlignment="Right"/>
+                                   HorizontalAlignment="Right"
+                                   MouseLeftButtonDown="CopySha256_Click"/>
                     </Grid>
                     <TextBlock x:Name="TxtChecks"
-                               Style="{StaticResource TextPrimary}"/>
+                               Style="{StaticResource TextPrimary}"
+                               FontSize="10"/>
                 </StackPanel>
             </Border>
 
             <!-- Memory allocation stats (shown after build) -->
-            <TextBlock x:Name="MemoryHeader"
+            <Border Background="{StaticResource BrushSurfaceContainerHigh}"
+                    Padding="16" Margin="0,20,0,8">
+                <Grid Margin="0,0,0,4">
+                    <TextBlock x:Name="MemoryHeader"
                        Style="{StaticResource TextLabelCaps}"
-                       Margin="0,24,0,12"
+                       Margin="0,24,0,0"
                        Visibility="Collapsed"/>
 
-            <StackPanel x:Name="MemoryPanel" Visibility="Collapsed"/>
+                    <StackPanel x:Name="MemoryPanel" Visibility="Collapsed"/>
+                </Grid>
+            </Border>
 
+
+            <!-- Total assets (shown after build) -->
+            <Border Background="{StaticResource BrushSurfaceContainerHigh}"
+                    Padding="16" Margin="0,0,0,8"
+                    x:Name="TotalAssetsPanel"
+                    Visibility="Collapsed">
+                <StackPanel>
+                    <TextBlock x:Name="TotalAssetsLabel"
+                               Style="{StaticResource TextLabelCaps}"
+                               Margin="0,0,0,8"/>
+                    <TextBlock x:Name="TotalAssets"
+                               Style="{StaticResource TextDisplay}"
+                               HorizontalAlignment="Left"/>
+                </StackPanel>
+            </Border>
+
+            <!-- Elapsed time (shown after build) -->
+            <Border Background="{StaticResource BrushSurfaceContainerHigh}"
+                    Padding="16" Margin="0,0,0,8"
+                    x:Name="ElapsedTimePanel"
+                    Visibility="Collapsed">
+                <StackPanel>
+                    <TextBlock x:Name="TxtElapsedTimeLabel"
+                               Style="{StaticResource TextLabelCaps}"
+                               Margin="0,0,0,8"/>
+                    <TextBlock x:Name="TxtElapsedTime"
+                               Style="{StaticResource TextDisplay}"
+                               HorizontalAlignment="Left"/>
+                </StackPanel>
+            </Border>
         </StackPanel>
 
         <!-- Toast Notification -->

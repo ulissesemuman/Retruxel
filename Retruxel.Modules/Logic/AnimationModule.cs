@@ -13,6 +13,7 @@ namespace Retruxel.Modules.Logic;
 ///
 /// JSON format:
 /// {
+///   "module": "sms.animation",
 ///   "animations": [
 ///     { "name": "idle",  "frames": [0, 1],       "speed": 16 },
 ///     { "name": "walk",  "frames": [2, 3, 4, 5], "speed": 8  },
@@ -29,6 +30,7 @@ public class AnimationModule : ILogicModule
     public string     DisplayName  => "Animation";
     public string     Category     => "Logic";
     public ModuleType Type         => ModuleType.Logic;
+    public bool     IsSingleton  => false;
     public string[]   Compatibility => ["sms", "gg"];
 
     private static readonly JsonSerializerOptions _jsonOptions = new()
@@ -57,6 +59,18 @@ public class AnimationModule : ILogicModule
             }
         ]
     };
+
+    /// <summary>
+    /// Creates the ViewModel for the property editor.
+    /// Returns null as this module uses auto-generated UI from manifest.
+    /// </summary>
+    public object CreateEditorViewModel() => null!;
+
+    /// <summary>
+    /// Generates font tiles as assets.
+    /// Each character in the text becomes a tile in the asset.
+    /// </summary>
+    public IEnumerable<GeneratedAsset> GenerateAssets() => [];
 
     public IEnumerable<GeneratedFile> GenerateCode() => [];
 

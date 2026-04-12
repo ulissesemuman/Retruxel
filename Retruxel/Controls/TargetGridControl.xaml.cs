@@ -5,6 +5,7 @@ using System.Globalization;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
 using System.Windows.Media;
 
 namespace Retruxel.Controls;
@@ -173,9 +174,9 @@ public partial class TargetGridControl : UserControl
         {
             Width = 220,
             Height = 200,
-            Background = new SolidColorBrush(Color.FromRgb(0x1E, 0x1E, 0x1E)),
+            Background = (Brush)FindResource("BrushSurfaceContainerHigh"),
             Margin = new Thickness(0, 0, 8, 16),
-            Cursor = System.Windows.Input.Cursors.Hand,
+            Cursor = Cursors.Hand,
             Padding = new Thickness(16)
         };
 
@@ -191,15 +192,15 @@ public partial class TargetGridControl : UserControl
 
         var arch = new Border
         {
-            Background = new SolidColorBrush(Color.FromRgb(0x26, 0x26, 0x26)),
+            Background = (Brush)FindResource("BrushSurfaceContainerHighest"),
             Padding = new Thickness(8, 4, 8, 4),
             HorizontalAlignment = HorizontalAlignment.Left,
+            Margin = new Thickness(0, 0, 0, 16),
             Child = new TextBlock
             {
                 Text = $"{target.Specs.CPU.Split(' ').Last()} ARCH",
-                FontSize = 10,
-                Foreground = new SolidColorBrush(Color.FromRgb(0x8E, 0xFF, 0x71)),
-                FontFamily = new FontFamily("Consolas")
+                Style = (Style)FindResource("TextCode"),
+                Foreground = (Brush)FindResource("BrushTertiary")
             }
         };
 
@@ -230,9 +231,7 @@ public partial class TargetGridControl : UserControl
         var name = new TextBlock
         {
             Text = target.DisplayName.ToUpper(),
-            FontSize = 16,
-            FontWeight = FontWeights.Bold,
-            Foreground = Brushes.White,
+            Style = (Style)FindResource("TextTitle"),
             TextWrapping = TextWrapping.Wrap,
             Margin = new Thickness(0, 0, 0, 8)
         };

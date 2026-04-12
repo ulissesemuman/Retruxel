@@ -9,7 +9,7 @@
         AllowsTransparency="True"
         WindowStyle="None"
         ResizeMode="NoResize"
-        Icon="pack://application:,,,/Assets/icon.ico">
+        Icon="pack://application:,,,/assets/Icons/icon.ico">
 
     <Border CornerRadius="6"
             BorderBrush="#3a3a3a"
@@ -47,17 +47,16 @@
 
                 <!-- Chip icon -->
                 <Image Source="pack://application:,,,/Assets/Images/Logo/logochip.png"
-                       Width="80" Height="80"
-                       Margin="0,0,0,24"
+                       Width="105" Height="105"
+                       Margin="0,0,0,12"
                        HorizontalAlignment="Center"/>
 
                 <!-- App name -->
-                <TextBlock Text="{loc:Tr Key='splash.app_title'}"
-                           Style="{StaticResource TextDisplay}"
-                           FontSize="48"
-                           HorizontalAlignment="Center"
-                           Foreground="{StaticResource BrushPrimary}"
-                           Margin="0,0,0,8"/>
+                <Image Source="pack://application:,,,/Assets/Images/Logo/RETRUXEL.png"
+                               Height="36"
+                               VerticalAlignment="Center"
+                               RenderOptions.BitmapScalingMode="HighQuality"
+                               Margin="0,0,0,18"/>
 
                 <!-- Subtitle -->
                 <TextBlock Text="{loc:Tr Key='splash.subtitle'}"

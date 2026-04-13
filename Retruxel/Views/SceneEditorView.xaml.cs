@@ -146,6 +146,16 @@ public partial class SceneEditorView : UserControl
         grid.Children.Add(count);
         border.Child = grid;
 
+        // Enable drag from asset panel to canvas
+        border.MouseMove += (s, e) =>
+        {
+            if (e.LeftButton == System.Windows.Input.MouseButtonState.Pressed)
+            {
+                var data = new DataObject("RetruxelAssetDrop", asset);
+                DragDrop.DoDragDrop(border, data, DragDropEffects.Copy);
+            }
+        };
+
         return border;
     }
 
@@ -603,19 +613,103 @@ public partial class SceneEditorView : UserControl
 
     private void Canvas_DragOver(object sender, DragEventArgs e)
     {
-        e.Effects = DragDropEffects.Copy;
+        e.Effects = (e.Data.GetDataPresent(typeof(string)) || e.Data.GetDataPresent("RetruxelAssetDrop"))
+            ? DragDropEffects.Copy
+            : DragDropEffects.None;
         e.Handled = true;
     }
 
     private void Canvas_Drop(object sender, DragEventArgs e)
     {
-        if (e.Data.GetData(typeof(string)) is not string moduleId) return;
-
         var pos   = e.GetPosition(SceneCanvas);
         var tileX = (int)pos.X / 8;
         var tileY = (int)pos.Y / 8;
 
+        // Module drag from palette
+        if (e.Data.GetData(typeof(string)) is string moduleId)
+        {
+            AddModuleToCanvas(moduleId, tileX, tileY);
+            return;
+        }
+
+        // Asset drag from asset panel
+        if (e.Data.GetData("RetruxelAssetDrop") is AssetEntry asset)
+            DropAssetOnCanvas(asset, tileX, tileY);
+    }
+
+    /// <summary>
+    /// Handles an asset dropped from the asset panel onto the canvas.
+    /// Resolves the correct module for the asset type, creates it, and
+    /// sets tilesAssetId automatically — no manual typing required.
+    ///
+    /// Tilemap  ← AssetType.Tiles   (module with "tilemap" in ID + tilesAssetId param)
+    /// Sprite   ← AssetType.Sprites (module with "sprite"  in ID + tilesAssetId param)
+    ///
+    /// Singleton check: singletons already on canvas are hidden from the module palette
+    /// (handled by RefreshModulePalette). Since TilemapModule and SpriteModule are not
+    /// singletons, multiple instances are allowed — consistent with dragging from the palette.
+    /// </summary>
+    private void DropAssetOnCanvas(AssetEntry asset, int tileX, int tileY)
+    {
+        var moduleId = ResolveModuleForAsset(asset.Type);
+
+        if (moduleId is null)
+        {
+            MessageBox.Show(
+                $"No module available for asset type '{asset.Type}'. " +
+                $"Make sure the active target supports this asset type.",
+                "Retruxel", MessageBoxButton.OK, MessageBoxImage.Warning);
+            return;
+        }
+
+        // Create and place the module — uses existing undo stack, events panel, etc.
         AddModuleToCanvas(moduleId, tileX, tileY);
+
+        // The new element is always the last one added
+        var element = _elements.LastOrDefault();
+        if (element?.Module is not IModule module) return;
+
+        // Inject the asset ID directly into the module
+        SetModuleParameterValue(module, "tilesAssetId", asset.Id, ParameterType.String);
+
+        // Refresh the canvas visual (gray box → actual asset image)
+        RefreshElementVisual(element);
+
+        // Refresh properties panel to show the pre-filled tilesAssetId
+        if (_selectedElement == element)
+            BuildPropertiesPanel(element);
+
+        SyncProjectModules();
+        _ = _projectManager?.SaveAsync();
+    }
+
+    /// <summary>
+    /// Finds the appropriate module ID for the given asset type by searching
+    /// all loaded modules for one whose ID contains the expected keyword
+    /// and whose manifest declares a tilesAssetId parameter.
+    /// This approach is target-agnostic — works for SMS, GG, NES, etc.
+    /// </summary>
+    private string? ResolveModuleForAsset(AssetType assetType)
+    {
+        if (_moduleLoader is null) return null;
+
+        var keyword = assetType == AssetType.Tiles ? "tilemap" : "sprite";
+
+        foreach (var (id, m) in _moduleLoader.LogicModules)
+        {
+            if (!id.Contains(keyword, StringComparison.OrdinalIgnoreCase)) continue;
+            if (m is ILogicModule lm && lm.GetManifest().Parameters.Any(p => p.Name == "tilesAssetId"))
+                return id;
+        }
+
+        foreach (var (id, m) in _moduleLoader.GraphicModules)
+        {
+            if (!id.Contains(keyword, StringComparison.OrdinalIgnoreCase)) continue;
+            if (m is IGraphicModule gm && gm.GetManifest().Parameters.Any(p => p.Name == "tilesAssetId"))
+                return id;
+        }
+
+        return null;
     }
 
     private void Documentation_Click(object sender, RoutedEventArgs e)

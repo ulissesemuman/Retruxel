@@ -27,6 +27,10 @@ public partial class FontImporterWindow : Window
     public FontImporterWindow()
     {
         InitializeComponent();
+        
+        var loc = Retruxel.Core.Services.LocalizationService.Instance;
+        StatusLabel.Text = loc.Get("fontimporter.status.no_file");
+        
         BuildCharGrid();
         SelectAsciiBasicRange();   // pre-select ASCII basic on open
         UpdateStats();
@@ -48,6 +52,7 @@ public partial class FontImporterWindow : Window
 
     private void BrowseButton_Click(object sender, RoutedEventArgs e)
     {
+        var loc = Retruxel.Core.Services.LocalizationService.Instance;
         var dlg = new OpenFileDialog
         {
             Title  = "Select a TrueType font",
@@ -58,7 +63,7 @@ public partial class FontImporterWindow : Window
 
         _ttfPath         = dlg.FileName;
         TxtFileName.Text = System.IO.Path.GetFileName(_ttfPath);
-        StatusLabel.Text = "FONT LOADED";
+        StatusLabel.Text = loc.Get("fontimporter.status.loaded");
         StatusLabel.Foreground = (Brush)FindResource("BrushPrimary");
 
         RegenerateAllGlyphs();
@@ -266,8 +271,9 @@ public partial class FontImporterWindow : Window
 
     private void UpdateImportButton()
     {
+        var loc = Retruxel.Core.Services.LocalizationService.Instance;
         BtnImport.IsEnabled    = _ttfPath is not null && _selectedCodepoints.Count > 0;
-        LblFooterMessage.Text  = _ttfPath is null ? "Select a .ttf file to continue." : "";
+        LblFooterMessage.Text  = _ttfPath is null ? loc.Get("fontimporter.error.select_file") : "";
     }
 
     private void UpdateGlyphPreview(int codepoint)
@@ -321,7 +327,8 @@ public partial class FontImporterWindow : Window
 
         try
         {
-            LblFooterMessage.Text       = "GENERATING SPRITESHEET...";
+            var loc = Retruxel.Core.Services.LocalizationService.Instance;
+            LblFooterMessage.Text       = loc.Get("fontimporter.status.generating");
             LblFooterMessage.Foreground = (Brush)FindResource("BrushTertiary");
 
             var ordered = _selectedCodepoints.OrderBy(cp => cp).ToList();

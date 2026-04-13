@@ -42,29 +42,7 @@ public partial class SettingsWindow : Window
         _settings = await SettingsService.LoadAsync();
         PopulateLanguageCombo();
         ApplySettingsToUi();
-        ApplyLocalization();
         _loading = false;
-    }
-
-    private void ApplyLocalization()
-    {
-        var loc = LocalizationService.Instance;
-        
-        // Title
-        Title = loc.Get("settings.title");
-        TxtTitleSettings.Text = loc.Get("settings.title");
-        
-        // Navigation
-        FindTextBlockIn(NavGeneral)!.Text = loc.Get("settings.nav.general");
-        FindTextBlockIn(NavAppearance)!.Text = loc.Get("settings.nav.appearance");
-        FindTextBlockIn(NavToolchain)!.Text = loc.Get("settings.nav.toolchain");
-        
-        // Tabs
-        TabGeneralInterface.Content = loc.Get("settings.tab.interface");
-        TabGeneralBehavior.Content = loc.Get("settings.tab.behavior");
-        
-        // Close button
-        BtnClose.Content = loc.Get("settings.close");
     }
 
     // ── Populate language combo dynamically ──────────────────────────────────
@@ -99,8 +77,13 @@ public partial class SettingsWindow : Window
 
     private void ApplySettingsToUi()
     {
+        var loc = LocalizationService.Instance;
+        
         // General - language already selected in PopulateLanguageCombo
         ChkShowWelcome.IsChecked = _settings.General.ShowWelcomeOnStartup;
+        ChkCheckUpdates.IsChecked = _settings.General.CheckUpdatesOnStartup;
+        SliderUndoHistory.Value = _settings.General.UndoHistoryLimit;
+        TxtUndoHistoryValue.Text = _settings.General.UndoHistoryLimit.ToString();
 
         // Toolchain
         ChkShowWarnings.IsChecked = _settings.Targets.Sms.ShowToolchainWarnings;
@@ -109,31 +92,31 @@ public partial class SettingsWindow : Window
         TxtSmsEmulatorArguments.Text = _settings.Targets.Sms.EmulatorArguments;
         ChkSmsLaunchEmulator.IsChecked = _settings.Targets.Sms.LaunchEmulatorAfterBuild;
         TxtSmsEmulatorPath.Text = string.IsNullOrEmpty(_settings.Targets.Sms.EmulatorPath)
-            ? "Not configured" : _settings.Targets.Sms.EmulatorPath;
+            ? loc.Get("settings.emulator.path.not_configured") : _settings.Targets.Sms.EmulatorPath;
 
         // Game Gear
         TxtGgEmulatorArguments.Text = _settings.Targets.Gg.EmulatorArguments;
         ChkGgLaunchEmulator.IsChecked = _settings.Targets.Gg.LaunchEmulatorAfterBuild;
         TxtGgEmulatorPath.Text = string.IsNullOrEmpty(_settings.Targets.Gg.EmulatorPath)
-            ? "Not configured" : _settings.Targets.Gg.EmulatorPath;
+            ? loc.Get("settings.emulator.path.not_configured") : _settings.Targets.Gg.EmulatorPath;
 
         // SG-1000
         TxtSg1000EmulatorArguments.Text = _settings.Targets.Sg1000.EmulatorArguments;
         ChkSg1000LaunchEmulator.IsChecked = _settings.Targets.Sg1000.LaunchEmulatorAfterBuild;
         TxtSg1000EmulatorPath.Text = string.IsNullOrEmpty(_settings.Targets.Sg1000.EmulatorPath)
-            ? "Not configured" : _settings.Targets.Sg1000.EmulatorPath;
+            ? loc.Get("settings.emulator.path.not_configured") : _settings.Targets.Sg1000.EmulatorPath;
 
         // ColecoVision
         TxtColecoEmulatorArguments.Text = _settings.Targets.Coleco.EmulatorArguments;
         ChkColecoLaunchEmulator.IsChecked = _settings.Targets.Coleco.LaunchEmulatorAfterBuild;
         TxtColecoEmulatorPath.Text = string.IsNullOrEmpty(_settings.Targets.Coleco.EmulatorPath)
-            ? "Not configured" : _settings.Targets.Coleco.EmulatorPath;
+            ? loc.Get("settings.emulator.path.not_configured") : _settings.Targets.Coleco.EmulatorPath;
 
         // NES
         TxtNesEmulatorArguments.Text = _settings.Targets.Nes.EmulatorArguments;
         ChkNesLaunchEmulator.IsChecked = _settings.Targets.Nes.LaunchEmulatorAfterBuild;
         TxtNesEmulatorPath.Text = string.IsNullOrEmpty(_settings.Targets.Nes.EmulatorPath)
-            ? "Not configured" : _settings.Targets.Nes.EmulatorPath;
+            ? loc.Get("settings.emulator.path.not_configured") : _settings.Targets.Nes.EmulatorPath;
     }
 
     // ── Navigation ────────────────────────────────────────────────────────────
@@ -204,17 +187,6 @@ public partial class SettingsWindow : Window
             // Reload localization in runtime
             var localizationPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Assets", "Localization");
             LocalizationService.Instance.Load(selectedLanguage, localizationPath);
-            
-            // Refresh this window
-            ApplyLocalization();
-            
-            // Refresh views if they exist
-            var mainWindow = Owner as MainWindow;
-            if (mainWindow != null)
-            {
-                var sceneEditorView = FindVisualChild<SceneEditorView>(mainWindow);
-                sceneEditorView?.RefreshLocalization();
-            }
         }
         AutoSave();
     }
@@ -223,6 +195,22 @@ public partial class SettingsWindow : Window
     {
         if (_loading) return;
         _settings.General.ShowWelcomeOnStartup = ChkShowWelcome.IsChecked == true;
+        AutoSave();
+    }
+
+    private void ChkCheckUpdates_Changed(object sender, RoutedEventArgs e)
+    {
+        if (_loading) return;
+        _settings.General.CheckUpdatesOnStartup = ChkCheckUpdates.IsChecked == true;
+        AutoSave();
+    }
+
+    private void SliderUndoHistory_Changed(object sender, RoutedPropertyChangedEventArgs<double> e)
+    {
+        if (_loading) return;
+        var value = (int)SliderUndoHistory.Value;
+        _settings.General.UndoHistoryLimit = value;
+        TxtUndoHistoryValue.Text = value.ToString();
         AutoSave();
     }
 

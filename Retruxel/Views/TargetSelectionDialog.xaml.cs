@@ -12,16 +12,6 @@ public partial class TargetSelectionDialog : Window
     public TargetSelectionDialog()
     {
         InitializeComponent();
-        ApplyLocalization();
-    }
-
-    private void ApplyLocalization()
-    {
-        var loc = LocalizationService.Instance;
-        Title = loc.Get("targetselection.title");
-        TxtDialogTitle.Text = loc.Get("targetselection.title");
-        TxtDescription.Text = loc.Get("targetselection.description");
-        BtnCancel.Content = loc.Get("targetselection.cancel");
     }
 
     private void TargetGrid_TargetSelected(ITarget target)

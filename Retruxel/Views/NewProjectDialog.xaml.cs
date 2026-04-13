@@ -24,22 +24,7 @@ public partial class NewProjectDialog : Window
         TxtTarget.Text = target.DisplayName.ToUpper();
         var settings = SettingsService.Load();
         TxtLocation.Text = settings.General.LastProjectLocation;
-        ApplyLocalization();
         LoadTemplates();
-    }
-
-    private void ApplyLocalization()
-    {
-        var loc = LocalizationService.Instance;
-        Title = loc.Get("newproject.title");
-        TxtDialogTitle.Text = loc.Get("newproject.title");
-        TxtProjectNameLabel.Text = loc.Get("newproject.name");
-        TxtLocationLabel.Text = loc.Get("newproject.location");
-        BtnBrowse.Content = loc.Get("newproject.browse");
-        TxtTargetLabel.Text = loc.Get("newproject.target");
-        TxtTemplateLabel.Text = loc.Get("newproject.template");
-        BtnCancel.Content = loc.Get("newproject.cancel");
-        BtnCreate.Content = loc.Get("newproject.create");
     }
 
     private void LoadTemplates()

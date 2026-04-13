@@ -1,5 +1,7 @@
 using Retruxel.Core.Interfaces;
 using Retruxel.Core.Models;
+using System.Text.Json;
+using System.Text.Json.Nodes;
 
 namespace Retruxel.Core.Services;
 
@@ -29,10 +31,10 @@ public class CodeGenerator
         IProgress<string>? progress = null)
     {
         var sourceFiles = new List<GeneratedFile>();
-        var assets = new List<GeneratedAsset>();
+        var assets      = new List<GeneratedAsset>();
 
         progress?.Report("INIT: Starting code generation...");
-        
+
         // Reset target-specific state before generation
         _target.ResetCodeGenerationState();
 
@@ -66,10 +68,14 @@ public class CodeGenerator
 
                 if (!instancesByModule.ContainsKey(elementData.ModuleId))
                     instancesByModule[elementData.ModuleId] = new List<IModule>();
-                
+
                 instancesByModule[elementData.ModuleId].Add(module);
             }
         }
+
+        // Build a set of all module IDs present in the project.
+        // Used to inject context flags into modules that depend on other modules.
+        var presentModuleIds = instancesByModule.Keys.ToHashSet();
 
         // Generate code for each module type (passing all instances)
         foreach (var (moduleId, instances) in instancesByModule)
@@ -78,11 +84,16 @@ public class CodeGenerator
 
             foreach (var module in instances)
             {
+                // Inject context flags into the module's JSON before code generation.
+                // This allows CodeGens to produce different output depending on which
+                // other modules are present — e.g. entity uses physics when available.
+                var contextualModule = InjectContextFlags(module, presentModuleIds);
+
                 // 1. Ask the target to translate this module into target-specific C code.
                 // 2. If the target has no translator (returns empty), fall back to the
                 //    module's own GenerateCode() — used by external plugins that ship
                 //    their own C implementation directly.
-                var generatedFiles = _target.GenerateCodeForModule(module).ToList();
+                var generatedFiles = _target.GenerateCodeForModule(contextualModule).ToList();
 
                 if (generatedFiles.Count == 0)
                 {
@@ -131,13 +142,77 @@ public class CodeGenerator
 
         return new BuildContext
         {
-            TargetId = project.TargetId,
-            SourceFiles = sourceFiles,
-            Assets = assets,
+            TargetId        = project.TargetId,
+            SourceFiles     = sourceFiles,
+            Assets          = assets,
             OutputDirectory = outputDirectory,
             BuildParameters = project.Parameters
                 .Where(p => p.Key.StartsWith("target."))
                 .ToDictionary(p => p.Key.Replace("target.", ""), p => p.Value)
         };
+    }
+
+    /// <summary>
+    /// Wraps a module so that its Serialize() output includes context flags
+    /// about which other modules are present in the project.
+    ///
+    /// Current flags injected:
+    ///   sms.entity → "usePhysics": true/false, "useInput": true/false
+    ///
+    /// The wrapper only modifies Serialize() — all other IModule members
+    /// delegate to the original module unchanged.
+    /// </summary>
+    private static IModule InjectContextFlags(IModule module, HashSet<string> presentModuleIds)
+    {
+        if (module.ModuleId == "sms.entity")
+        {
+            var usePhysics = presentModuleIds.Contains("sms.physics");
+            var useInput   = presentModuleIds.Contains("sms.input");
+
+            if (usePhysics || useInput)
+                return new ContextualModule(module, json => InjectFlags(json, new()
+                {
+                    ["usePhysics"] = usePhysics,
+                    ["useInput"]   = useInput
+                }));
+        }
+
+        return module;
+    }
+
+    /// <summary>
+    /// Parses a JSON string, merges extra flags into the root object, and returns
+    /// the modified JSON string.
+    /// </summary>
+    private static string InjectFlags(string json, Dictionary<string, bool> flags)
+    {
+        try
+        {
+            var node = JsonNode.Parse(json) as JsonObject ?? new JsonObject();
+            foreach (var (key, value) in flags)
+                node[key] = value;
+            return node.ToJsonString();
+        }
+        catch
+        {
+            return json; // If parsing fails, return original unchanged
+        }
+    }
+
+    /// <summary>
+    /// Wraps an IModule, overriding Serialize() to inject additional JSON properties.
+    /// All other members delegate to the wrapped module.
+    /// </summary>
+    private sealed class ContextualModule(IModule inner, Func<string, string> serializeTransform) : IModule
+    {
+        public string      ModuleId            => inner.ModuleId;
+        public string      DisplayName         => inner.DisplayName;
+        public string      Category            => inner.Category;
+        public ModuleType  Type                => inner.Type;
+        public string[]    Compatibility       => inner.Compatibility;
+        public bool        IsSingleton         => inner.IsSingleton;
+        public string      Serialize()         => serializeTransform(inner.Serialize());
+        public void        Deserialize(string json) => inner.Deserialize(json);
+        public string      GetValidationSample() => inner.GetValidationSample();
     }
 }

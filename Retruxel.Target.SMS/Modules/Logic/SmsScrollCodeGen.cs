@@ -46,8 +46,8 @@ public class SmsScrollCodeGen
             #ifndef SCROLL_H
             #define SCROLL_H
 
-            void scroll_init(void);
-            void scroll_update(void);
+            void sms_scroll_init(void);
+            void sms_scroll_update(void);
 
             #endif // SCROLL_H
             """
@@ -83,12 +83,12 @@ public class SmsScrollCodeGen
 
                 static int scroll_x;
 
-                void scroll_init(void) {
+                void sms_scroll_init(void) {
                     scroll_x = 0;
                     SMS_setScrollX(0);
                 }
 
-                void scroll_update(void) {
+                void sms_scroll_update(void) {
                     scroll_x += {{delta}};
 
                 {{loopCode}}

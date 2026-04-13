@@ -1,7 +1,8 @@
 <Window x:Class="Retruxel.Views.SettingsWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Settings"
+        xmlns:loc="clr-namespace:Retruxel.Localization"
+        Title="{loc:Tr Key='settings.title'}"
         Height="620" Width="860"
         MinHeight="500" MinWidth="700"
         WindowStartupLocation="CenterOwner"
@@ -44,7 +45,7 @@
                                    Foreground="{StaticResource BrushOnSurfaceVariant}"
                                    VerticalAlignment="Center"
                                    Margin="0,0,12,0"/>
-                        <TextBlock x:Name="TxtTitleSettings"
+                        <TextBlock Text="{loc:Tr Key='settings.title'}"
                                    Style="{StaticResource TextHeadline}"
                                    VerticalAlignment="Center"/>
                     </StackPanel>
@@ -72,7 +73,7 @@
                             <Grid>
                                 <Border x:Name="AccentGeneral" Width="3" HorizontalAlignment="Left"
                                         Background="{StaticResource BrushPrimary}" Visibility="Visible"/>
-                                <TextBlock Text="GENERAL" Style="{StaticResource TextLabelCaps}"
+                                <TextBlock Text="{loc:Tr Key='settings.nav.general'}" Style="{StaticResource TextLabelCaps}"
                                            Foreground="{StaticResource BrushOnSurface}"
                                            Margin="12,0,0,0" VerticalAlignment="Center"/>
                             </Grid>
@@ -83,7 +84,7 @@
                             <Grid>
                                 <Border x:Name="AccentAppearance" Width="3" HorizontalAlignment="Left"
                                         Background="{StaticResource BrushPrimary}" Visibility="Collapsed"/>
-                                <TextBlock Text="APPEARANCE" Style="{StaticResource TextLabelCaps}"
+                                <TextBlock Text="{loc:Tr Key='settings.nav.appearance'}" Style="{StaticResource TextLabelCaps}"
                                            Margin="12,0,0,0" VerticalAlignment="Center"/>
                             </Grid>
                         </Border>
@@ -93,14 +94,14 @@
                             <Grid>
                                 <Border x:Name="AccentToolchain" Width="3" HorizontalAlignment="Left"
                                         Background="{StaticResource BrushPrimary}" Visibility="Collapsed"/>
-                                <TextBlock Text="TOOLCHAIN" Style="{StaticResource TextLabelCaps}"
+                                <TextBlock Text="{loc:Tr Key='settings.nav.toolchain'}" Style="{StaticResource TextLabelCaps}"
                                            Margin="12,0,0,0" VerticalAlignment="Center"/>
                             </Grid>
                         </Border>
 
                         <Separator Margin="16,12"/>
 
-                        <TextBlock Text="TARGETS" Style="{StaticResource TextLabelCaps}"
+                        <TextBlock Text="{loc:Tr Key='settings.nav.targets'}" Style="{StaticResource TextLabelCaps}"
                                    Foreground="{StaticResource BrushPrimary}"
                                    Margin="20,0,0,8"/>
 
@@ -109,7 +110,7 @@
                             <Grid>
                                 <Border x:Name="AccentSms" Width="3" HorizontalAlignment="Left"
                                         Background="{StaticResource BrushPrimary}" Visibility="Collapsed"/>
-                                <TextBlock Text="MASTER SYSTEM" Style="{StaticResource TextLabelCaps}"
+                                <TextBlock Text="{loc:Tr Key='settings.nav.sms'}" Style="{StaticResource TextLabelCaps}"
                                            Margin="12,0,0,0" VerticalAlignment="Center"/>
                             </Grid>
                         </Border>
@@ -169,10 +170,10 @@
                         <Border Grid.Row="0" Background="{StaticResource BrushSurfaceContainerLow}"
                                 Padding="16,0" Height="30">
                             <StackPanel Orientation="Horizontal">
-                                <Button x:Name="TabGeneralInterface" Content="INTERFACE"
+                                <Button x:Name="TabGeneralInterface" Content="{loc:Tr Key='settings.tab.interface'}"
                                         Style="{StaticResource ButtonTabActive}"
                                         Click="TabGeneralInterface_Click"/>
-                                <Button x:Name="TabGeneralBehavior" Content="BEHAVIOR"
+                                <Button x:Name="TabGeneralBehavior" Content="{loc:Tr Key='settings.tab.behavior'}"
                                         Style="{StaticResource ButtonTab}"
                                         Click="TabGeneralBehavior_Click"/>
                             </StackPanel>
@@ -181,7 +182,7 @@
                             <StackPanel>
 
                                 <StackPanel x:Name="TabContentGeneralInterface">
-                                    <TextBlock Text="LANGUAGE" Style="{StaticResource TextLabelCaps}"
+                                    <TextBlock Text="{loc:Tr Key='settings.section.language'}" Style="{StaticResource TextLabelCaps}"
                                                Foreground="{StaticResource BrushPrimary}" Margin="0,0,0,8"/>
                                     <Border Style="{StaticResource SettingRow}">
                                         <Grid>
@@ -190,9 +191,9 @@
                                                 <ColumnDefinition Width="180"/>
                                             </Grid.ColumnDefinitions>
                                             <StackPanel Grid.Column="0" VerticalAlignment="Center">
-                                                <TextBlock Text="Language" Style="{StaticResource TextBody}"
+                                                <TextBlock Text="{loc:Tr Key='settings.general.language'}" Style="{StaticResource TextBody}"
                                                            Foreground="{StaticResource BrushOnSurface}"/>
-                                                <TextBlock Text="UI display language" Style="{StaticResource TextLabel}"/>
+                                                <TextBlock Text="{loc:Tr Key='settings.general.language.desc'}" Style="{StaticResource TextLabel}"/>
                                             </StackPanel>
                                             <ComboBox x:Name="CmbLanguage" Grid.Column="1"
                                                       VerticalAlignment="Center"
@@ -202,7 +203,7 @@
                                 </StackPanel>
 
                                 <StackPanel x:Name="TabContentGeneralBehavior" Visibility="Collapsed">
-                                    <TextBlock Text="STARTUP" Style="{StaticResource TextLabelCaps}"
+                                    <TextBlock Text="{loc:Tr Key='settings.section.startup'}" Style="{StaticResource TextLabelCaps}"
                                                Foreground="{StaticResource BrushPrimary}" Margin="0,0,0,8"/>
                                     <Border Style="{StaticResource SettingRow}">
                                         <Grid>
@@ -211,10 +212,10 @@
                                                 <ColumnDefinition Width="Auto"/>
                                             </Grid.ColumnDefinitions>
                                             <StackPanel Grid.Column="0" VerticalAlignment="Center">
-                                                <TextBlock Text="Show Welcome on startup"
+                                                <TextBlock Text="{loc:Tr Key='settings.general.welcome'}"
                                                            Style="{StaticResource TextBody}"
                                                            Foreground="{StaticResource BrushOnSurface}"/>
-                                                <TextBlock Text="Opens the project selection screen when launching"
+                                                <TextBlock Text="{loc:Tr Key='settings.general.welcome.desc'}"
                                                            Style="{StaticResource TextLabel}"/>
                                             </StackPanel>
                                             <CheckBox x:Name="ChkShowWelcome" Grid.Column="1"
@@ -223,6 +224,56 @@
                                                       Checked="ChkShowWelcome_Changed"
                                                       Unchecked="ChkShowWelcome_Changed"/>
                                         </Grid>
+                                    </Border>
+                                    <Border Style="{StaticResource SettingRow}">
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="Auto"/>
+                                            </Grid.ColumnDefinitions>
+                                            <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                                                <TextBlock Text="{loc:Tr Key='settings.general.check_updates'}"
+                                                           Style="{StaticResource TextBody}"
+                                                           Foreground="{StaticResource BrushOnSurface}"/>
+                                                <TextBlock Text="{loc:Tr Key='settings.general.check_updates.desc'}"
+                                                           Style="{StaticResource TextLabel}"/>
+                                            </StackPanel>
+                                            <CheckBox x:Name="ChkCheckUpdates" Grid.Column="1"
+                                                      Style="{StaticResource ToggleSwitch}"
+                                                      VerticalAlignment="Center"
+                                                      Checked="ChkCheckUpdates_Changed"
+                                                      Unchecked="ChkCheckUpdates_Changed"/>
+                                        </Grid>
+                                    </Border>
+
+                                    <TextBlock Text="{loc:Tr Key='settings.section.editor'}" Style="{StaticResource TextLabelCaps}"
+                                               Foreground="{StaticResource BrushPrimary}" Margin="0,16,0,8"/>
+                                    <Border Style="{StaticResource SettingRow}">
+                                        <StackPanel>
+                                            <Grid Margin="0,0,0,8">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="*"/>
+                                                    <ColumnDefinition Width="Auto"/>
+                                                </Grid.ColumnDefinitions>
+                                                <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                                                    <TextBlock Text="{loc:Tr Key='settings.editor.undo_limit'}"
+                                                               Style="{StaticResource TextBody}"
+                                                               Foreground="{StaticResource BrushOnSurface}"/>
+                                                    <TextBlock Text="{loc:Tr Key='settings.editor.undo_limit.desc'}"
+                                                               Style="{StaticResource TextLabel}"/>
+                                                </StackPanel>
+                                                <TextBlock x:Name="TxtUndoHistoryValue" Grid.Column="1"
+                                                           Text="32"
+                                                           Style="{StaticResource TextBody}"
+                                                           Foreground="{StaticResource BrushPrimary}"
+                                                           VerticalAlignment="Center"
+                                                           FontWeight="Bold"/>
+                                            </Grid>
+                                            <Slider x:Name="SliderUndoHistory"
+                                                    Minimum="20" Maximum="100" Value="32"
+                                                    TickFrequency="1" IsSnapToTickEnabled="True"
+                                                    ValueChanged="SliderUndoHistory_Changed"/>
+                                        </StackPanel>
                                     </Border>
                                 </StackPanel>
 
@@ -239,12 +290,12 @@
                         <Border Grid.Row="0" Background="{StaticResource BrushSurfaceContainerLow}"
                                 Padding="16,0" Height="30">
                             <StackPanel Orientation="Horizontal">
-                                <Button Content="EDITOR" Style="{StaticResource ButtonTabActive}"/>
+                                <Button x:Name="TabAppearanceEditor" Content="{loc:Tr Key='settings.tab.editor'}" Style="{StaticResource ButtonTabActive}"/>
                             </StackPanel>
                         </Border>
                         <ScrollViewer Grid.Row="1" Padding="24,20" VerticalScrollBarVisibility="Auto">
                             <StackPanel>
-                                <TextBlock Text="THEME" Style="{StaticResource TextLabelCaps}"
+                                <TextBlock Text="{loc:Tr Key='settings.section.theme'}" Style="{StaticResource TextLabelCaps}"
                                            Foreground="{StaticResource BrushPrimary}" Margin="0,0,0,8"/>
                                 <Border Style="{StaticResource SettingRow}">
                                     <Grid>
@@ -253,9 +304,9 @@
                                             <ColumnDefinition Width="180"/>
                                         </Grid.ColumnDefinitions>
                                         <StackPanel Grid.Column="0" VerticalAlignment="Center">
-                                            <TextBlock Text="Current theme" Style="{StaticResource TextBody}"
+                                            <TextBlock Text="{loc:Tr Key='settings.theme.current'}" Style="{StaticResource TextBody}"
                                                        Foreground="{StaticResource BrushOnSurface}"/>
-                                            <TextBlock Text="Visual style and color scheme"
+                                            <TextBlock Text="{loc:Tr Key='settings.theme.desc'}"
                                                        Style="{StaticResource TextLabel}"/>
                                         </StackPanel>
                                         <TextBlock Grid.Column="1" Text="BitForge Pro"
@@ -278,12 +329,12 @@
                         <Border Grid.Row="0" Background="{StaticResource BrushSurfaceContainerLow}"
                                 Padding="16,0" Height="30">
                             <StackPanel Orientation="Horizontal">
-                                <Button Content="GENERAL" Style="{StaticResource ButtonTabActive}"/>
+                                <Button x:Name="TabToolchainGeneral" Content="{loc:Tr Key='settings.tab.general'}" Style="{StaticResource ButtonTabActive}"/>
                             </StackPanel>
                         </Border>
                         <ScrollViewer Grid.Row="1" Padding="24,20" VerticalScrollBarVisibility="Auto">
                             <StackPanel>
-                                <TextBlock Text="BUILD CONSOLE" Style="{StaticResource TextLabelCaps}"
+                                <TextBlock Text="{loc:Tr Key='settings.section.build_console'}" Style="{StaticResource TextLabelCaps}"
                                            Foreground="{StaticResource BrushPrimary}" Margin="0,0,0,8"/>
                                 <Border Style="{StaticResource SettingRow}">
                                     <Grid>
@@ -292,10 +343,10 @@
                                             <ColumnDefinition Width="Auto"/>
                                         </Grid.ColumnDefinitions>
                                         <StackPanel Grid.Column="0" VerticalAlignment="Center">
-                                            <TextBlock Text="Show toolchain warnings"
+                                            <TextBlock Text="{loc:Tr Key='settings.toolchain.warnings'}"
                                                        Style="{StaticResource TextBody}"
                                                        Foreground="{StaticResource BrushOnSurface}"/>
-                                            <TextBlock Text="Displays WARNING-level entries from toolchain output in the Build Console"
+                                            <TextBlock Text="{loc:Tr Key='settings.toolchain.warnings.desc'}"
                                                        Style="{StaticResource TextLabel}"
                                                        TextWrapping="Wrap" MaxWidth="400"/>
                                         </StackPanel>
@@ -322,12 +373,12 @@
                         <Border Grid.Row="0" Background="{StaticResource BrushSurfaceContainerLow}"
                                 Padding="16,0" Height="30">
                             <StackPanel Orientation="Horizontal">
-                                <Button Content="BUILD" Style="{StaticResource ButtonTabActive}"/>
+                                <Button x:Name="TabSmsBuild" Content="{loc:Tr Key='settings.tab.build'}" Style="{StaticResource ButtonTabActive}"/>
                             </StackPanel>
                         </Border>
                         <ScrollViewer Grid.Row="1" Padding="24,20" VerticalScrollBarVisibility="Auto">
                             <StackPanel>
-                                <TextBlock Text="EMULATOR" Style="{StaticResource TextLabelCaps}"
+                                <TextBlock Text="{loc:Tr Key='settings.section.emulator'}" Style="{StaticResource TextLabelCaps}"
                                            Foreground="{StaticResource BrushPrimary}" Margin="0,0,0,8"/>
                                 <Border Style="{StaticResource SettingRow}">
                                     <Grid>
@@ -336,24 +387,24 @@
                                             <ColumnDefinition Width="Auto"/>
                                         </Grid.ColumnDefinitions>
                                         <StackPanel Grid.Column="0" VerticalAlignment="Center">
-                                            <TextBlock Text="Emulator path" Style="{StaticResource TextBody}"
+                                            <TextBlock Text="{loc:Tr Key='settings.emulator.path'}" Style="{StaticResource TextBody}"
                                                        Foreground="{StaticResource BrushOnSurface}"/>
-                                            <TextBlock x:Name="TxtSmsEmulatorPath" Text="Not configured"
+                                            <TextBlock x:Name="TxtSmsEmulatorPath"
                                                        Style="{StaticResource TextLabel}"
                                                        TextTrimming="CharacterEllipsis"/>
                                         </StackPanel>
                                         <Button x:Name="BtnBrowseSmsEmulator" Grid.Column="1"
-                                                Content="BROWSE" Style="{StaticResource ButtonPrimary}"
+                                                Content="{loc:Tr Key='settings.browse'}"
+                                                Style="{StaticResource ButtonPrimary}"
                                                 Padding="16,0" Height="32"
                                                 Click="BtnBrowseSmsEmulator_Click"/>
                                     </Grid>
                                 </Border>
                                 <Border Style="{StaticResource SettingRow}">
                                     <StackPanel>
-                                        <TextBlock Text="Emulator arguments" Style="{StaticResource TextBody}"
+                                        <TextBlock Text="{loc:Tr Key='settings.emulator.arguments'}" Style="{StaticResource TextBody}"
                                                    Foreground="{StaticResource BrushOnSurface}" Margin="0,0,0,4"/>
-                                        <TextBlock Text="Optional command-line arguments (e.g., -fullscreen, -scale 2)"
-                                                   Style="{StaticResource TextLabel}" Margin="0,0,0,8"/>
+                                        <TextBlock Text="{loc:Tr Key='settings.emulator.arguments.desc'}" Style="{StaticResource TextLabel}" Margin="0,0,0,8"/>
                                         <TextBox x:Name="TxtSmsEmulatorArguments" Padding="8,6"
                                                  TextChanged="TxtSmsEmulatorArguments_Changed"/>
                                     </StackPanel>
@@ -365,10 +416,9 @@
                                             <ColumnDefinition Width="Auto"/>
                                         </Grid.ColumnDefinitions>
                                         <StackPanel Grid.Column="0" VerticalAlignment="Center">
-                                            <TextBlock Text="Launch emulator after build" Style="{StaticResource TextBody}"
+                                            <TextBlock Text="{loc:Tr Key='settings.emulator.launch'}" Style="{StaticResource TextBody}"
                                                        Foreground="{StaticResource BrushOnSurface}"/>
-                                            <TextBlock Text="Automatically opens the ROM in the emulator after a successful build"
-                                                       Style="{StaticResource TextLabel}"/>
+                                            <TextBlock Text="{loc:Tr Key='settings.emulator.launch.desc'}" Style="{StaticResource TextLabel}"/>
                                         </StackPanel>
                                         <CheckBox x:Name="ChkSmsLaunchEmulator" Grid.Column="1"
                                                   Style="{StaticResource ToggleSwitch}" VerticalAlignment="Center"
@@ -389,12 +439,12 @@
                         <Border Grid.Row="0" Background="{StaticResource BrushSurfaceContainerLow}"
                                 Padding="16,0" Height="30">
                             <StackPanel Orientation="Horizontal">
-                                <Button Content="BUILD" Style="{StaticResource ButtonTabActive}"/>
+                                <Button x:Name="TabGgBuild" Content="{loc:Tr Key='settings.tab.build'}" Style="{StaticResource ButtonTabActive}"/>
                             </StackPanel>
                         </Border>
                         <ScrollViewer Grid.Row="1" Padding="24,20" VerticalScrollBarVisibility="Auto">
                             <StackPanel>
-                                <TextBlock Text="EMULATOR" Style="{StaticResource TextLabelCaps}"
+                                <TextBlock Text="{loc:Tr Key='settings.section.emulator'}" Style="{StaticResource TextLabelCaps}"
                                            Foreground="{StaticResource BrushPrimary}" Margin="0,0,0,8"/>
                                 <Border Style="{StaticResource SettingRow}">
                                     <Grid>
@@ -403,22 +453,22 @@
                                             <ColumnDefinition Width="Auto"/>
                                         </Grid.ColumnDefinitions>
                                         <StackPanel Grid.Column="0" VerticalAlignment="Center">
-                                            <TextBlock Text="Emulator path" Style="{StaticResource TextBody}"
+                                            <TextBlock Text="{loc:Tr Key='settings.emulator.path'}" Style="{StaticResource TextBody}"
                                                        Foreground="{StaticResource BrushOnSurface}"/>
-                                            <TextBlock x:Name="TxtGgEmulatorPath" Text="Not configured"
+                                            <TextBlock x:Name="TxtGgEmulatorPath"
                                                        Style="{StaticResource TextLabel}" TextTrimming="CharacterEllipsis"/>
                                         </StackPanel>
-                                        <Button x:Name="BtnBrowseGgEmulator" Grid.Column="1" Content="BROWSE"
+                                        <Button x:Name="BtnBrowseGgEmulator" Grid.Column="1"
+                                                Content="{loc:Tr Key='settings.browse'}"
                                                 Style="{StaticResource ButtonPrimary}" Padding="16,0" Height="32"
                                                 Click="BtnBrowseGgEmulator_Click"/>
                                     </Grid>
                                 </Border>
                                 <Border Style="{StaticResource SettingRow}">
                                     <StackPanel>
-                                        <TextBlock Text="Emulator arguments" Style="{StaticResource TextBody}"
+                                        <TextBlock Text="{loc:Tr Key='settings.emulator.arguments'}" Style="{StaticResource TextBody}"
                                                    Foreground="{StaticResource BrushOnSurface}" Margin="0,0,0,4"/>
-                                        <TextBlock Text="Optional command-line arguments (e.g., -fullscreen, -scale 2)"
-                                                   Style="{StaticResource TextLabel}" Margin="0,0,0,8"/>
+                                        <TextBlock Text="{loc:Tr Key='settings.emulator.arguments.desc'}" Style="{StaticResource TextLabel}" Margin="0,0,0,8"/>
                                         <TextBox x:Name="TxtGgEmulatorArguments" Padding="8,6"
                                                  TextChanged="TxtGgEmulatorArguments_Changed"/>
                                     </StackPanel>
@@ -430,10 +480,9 @@
                                             <ColumnDefinition Width="Auto"/>
                                         </Grid.ColumnDefinitions>
                                         <StackPanel Grid.Column="0" VerticalAlignment="Center">
-                                            <TextBlock Text="Launch emulator after build" Style="{StaticResource TextBody}"
+                                            <TextBlock Text="{loc:Tr Key='settings.emulator.launch'}" Style="{StaticResource TextBody}"
                                                        Foreground="{StaticResource BrushOnSurface}"/>
-                                            <TextBlock Text="Automatically opens the ROM in the emulator after a successful build"
-                                                       Style="{StaticResource TextLabel}"/>
+                                            <TextBlock Text="{loc:Tr Key='settings.emulator.launch.desc'}" Style="{StaticResource TextLabel}"/>
                                         </StackPanel>
                                         <CheckBox x:Name="ChkGgLaunchEmulator" Grid.Column="1"
                                                   Style="{StaticResource ToggleSwitch}" VerticalAlignment="Center"
@@ -454,12 +503,12 @@
                         <Border Grid.Row="0" Background="{StaticResource BrushSurfaceContainerLow}"
                                 Padding="16,0" Height="30">
                             <StackPanel Orientation="Horizontal">
-                                <Button Content="BUILD" Style="{StaticResource ButtonTabActive}"/>
+                                <Button x:Name="TabSg1000Build" Content="{loc:Tr Key='settings.tab.build'}" Style="{StaticResource ButtonTabActive}"/>
                             </StackPanel>
                         </Border>
                         <ScrollViewer Grid.Row="1" Padding="24,20" VerticalScrollBarVisibility="Auto">
                             <StackPanel>
-                                <TextBlock Text="EMULATOR" Style="{StaticResource TextLabelCaps}"
+                                <TextBlock Text="{loc:Tr Key='settings.section.emulator'}" Style="{StaticResource TextLabelCaps}"
                                            Foreground="{StaticResource BrushPrimary}" Margin="0,0,0,8"/>
                                 <Border Style="{StaticResource SettingRow}">
                                     <Grid>
@@ -468,22 +517,22 @@
                                             <ColumnDefinition Width="Auto"/>
                                         </Grid.ColumnDefinitions>
                                         <StackPanel Grid.Column="0" VerticalAlignment="Center">
-                                            <TextBlock Text="Emulator path" Style="{StaticResource TextBody}"
+                                            <TextBlock Text="{loc:Tr Key='settings.emulator.path'}" Style="{StaticResource TextBody}"
                                                        Foreground="{StaticResource BrushOnSurface}"/>
-                                            <TextBlock x:Name="TxtSg1000EmulatorPath" Text="Not configured"
+                                            <TextBlock x:Name="TxtSg1000EmulatorPath"
                                                        Style="{StaticResource TextLabel}" TextTrimming="CharacterEllipsis"/>
                                         </StackPanel>
-                                        <Button x:Name="BtnBrowseSg1000Emulator" Grid.Column="1" Content="BROWSE"
+                                        <Button x:Name="BtnBrowseSg1000Emulator" Grid.Column="1"
+                                                Content="{loc:Tr Key='settings.browse'}"
                                                 Style="{StaticResource ButtonPrimary}" Padding="16,0" Height="32"
                                                 Click="BtnBrowseSg1000Emulator_Click"/>
                                     </Grid>
                                 </Border>
                                 <Border Style="{StaticResource SettingRow}">
                                     <StackPanel>
-                                        <TextBlock Text="Emulator arguments" Style="{StaticResource TextBody}"
+                                        <TextBlock Text="{loc:Tr Key='settings.emulator.arguments'}" Style="{StaticResource TextBody}"
                                                    Foreground="{StaticResource BrushOnSurface}" Margin="0,0,0,4"/>
-                                        <TextBlock Text="Optional command-line arguments (e.g., -fullscreen, -scale 2)"
-                                                   Style="{StaticResource TextLabel}" Margin="0,0,0,8"/>
+                                        <TextBlock Text="{loc:Tr Key='settings.emulator.arguments.desc'}" Style="{StaticResource TextLabel}" Margin="0,0,0,8"/>
                                         <TextBox x:Name="TxtSg1000EmulatorArguments" Padding="8,6"
                                                  TextChanged="TxtSg1000EmulatorArguments_Changed"/>
                                     </StackPanel>
@@ -495,10 +544,9 @@
                                             <ColumnDefinition Width="Auto"/>
                                         </Grid.ColumnDefinitions>
                                         <StackPanel Grid.Column="0" VerticalAlignment="Center">
-                                            <TextBlock Text="Launch emulator after build" Style="{StaticResource TextBody}"
+                                            <TextBlock Text="{loc:Tr Key='settings.emulator.launch'}" Style="{StaticResource TextBody}"
                                                        Foreground="{StaticResource BrushOnSurface}"/>
-                                            <TextBlock Text="Automatically opens the ROM in the emulator after a successful build"
-                                                       Style="{StaticResource TextLabel}"/>
+                                            <TextBlock Text="{loc:Tr Key='settings.emulator.launch.desc'}" Style="{StaticResource TextLabel}"/>
                                         </StackPanel>
                                         <CheckBox x:Name="ChkSg1000LaunchEmulator" Grid.Column="1"
                                                   Style="{StaticResource ToggleSwitch}" VerticalAlignment="Center"
@@ -519,12 +567,12 @@
                         <Border Grid.Row="0" Background="{StaticResource BrushSurfaceContainerLow}"
                                 Padding="16,0" Height="30">
                             <StackPanel Orientation="Horizontal">
-                                <Button Content="BUILD" Style="{StaticResource ButtonTabActive}"/>
+                                <Button x:Name="TabColecoBuild" Content="{loc:Tr Key='settings.tab.build'}" Style="{StaticResource ButtonTabActive}"/>
                             </StackPanel>
                         </Border>
                         <ScrollViewer Grid.Row="1" Padding="24,20" VerticalScrollBarVisibility="Auto">
                             <StackPanel>
-                                <TextBlock Text="EMULATOR" Style="{StaticResource TextLabelCaps}"
+                                <TextBlock Text="{loc:Tr Key='settings.section.emulator'}" Style="{StaticResource TextLabelCaps}"
                                            Foreground="{StaticResource BrushPrimary}" Margin="0,0,0,8"/>
                                 <Border Style="{StaticResource SettingRow}">
                                     <Grid>
@@ -533,22 +581,22 @@
                                             <ColumnDefinition Width="Auto"/>
                                         </Grid.ColumnDefinitions>
                                         <StackPanel Grid.Column="0" VerticalAlignment="Center">
-                                            <TextBlock Text="Emulator path" Style="{StaticResource TextBody}"
+                                            <TextBlock Text="{loc:Tr Key='settings.emulator.path'}" Style="{StaticResource TextBody}"
                                                        Foreground="{StaticResource BrushOnSurface}"/>
-                                            <TextBlock x:Name="TxtColecoEmulatorPath" Text="Not configured"
+                                            <TextBlock x:Name="TxtColecoEmulatorPath"
                                                        Style="{StaticResource TextLabel}" TextTrimming="CharacterEllipsis"/>
                                         </StackPanel>
-                                        <Button x:Name="BtnBrowseColecoEmulator" Grid.Column="1" Content="BROWSE"
+                                        <Button x:Name="BtnBrowseColecoEmulator" Grid.Column="1"
+                                                Content="{loc:Tr Key='settings.browse'}"
                                                 Style="{StaticResource ButtonPrimary}" Padding="16,0" Height="32"
                                                 Click="BtnBrowseColecoEmulator_Click"/>
                                     </Grid>
                                 </Border>
                                 <Border Style="{StaticResource SettingRow}">
                                     <StackPanel>
-                                        <TextBlock Text="Emulator arguments" Style="{StaticResource TextBody}"
+                                        <TextBlock Text="{loc:Tr Key='settings.emulator.arguments'}" Style="{StaticResource TextBody}"
                                                    Foreground="{StaticResource BrushOnSurface}" Margin="0,0,0,4"/>
-                                        <TextBlock Text="Optional command-line arguments (e.g., -fullscreen, -scale 2)"
-                                                   Style="{StaticResource TextLabel}" Margin="0,0,0,8"/>
+                                        <TextBlock Text="{loc:Tr Key='settings.emulator.arguments.desc'}" Style="{StaticResource TextLabel}" Margin="0,0,0,8"/>
                                         <TextBox x:Name="TxtColecoEmulatorArguments" Padding="8,6"
                                                  TextChanged="TxtColecoEmulatorArguments_Changed"/>
                                     </StackPanel>
@@ -560,10 +608,9 @@
                                             <ColumnDefinition Width="Auto"/>
                                         </Grid.ColumnDefinitions>
                                         <StackPanel Grid.Column="0" VerticalAlignment="Center">
-                                            <TextBlock Text="Launch emulator after build" Style="{StaticResource TextBody}"
+                                            <TextBlock Text="{loc:Tr Key='settings.emulator.launch'}" Style="{StaticResource TextBody}"
                                                        Foreground="{StaticResource BrushOnSurface}"/>
-                                            <TextBlock Text="Automatically opens the ROM in the emulator after a successful build"
-                                                       Style="{StaticResource TextLabel}"/>
+                                            <TextBlock Text="{loc:Tr Key='settings.emulator.launch.desc'}" Style="{StaticResource TextLabel}"/>
                                         </StackPanel>
                                         <CheckBox x:Name="ChkColecoLaunchEmulator" Grid.Column="1"
                                                   Style="{StaticResource ToggleSwitch}" VerticalAlignment="Center"
@@ -584,12 +631,12 @@
                         <Border Grid.Row="0" Background="{StaticResource BrushSurfaceContainerLow}"
                                 Padding="16,0" Height="30">
                             <StackPanel Orientation="Horizontal">
-                                <Button Content="BUILD" Style="{StaticResource ButtonTabActive}"/>
+                                <Button x:Name="TabNesBuild" Content="{loc:Tr Key='settings.tab.build'}" Style="{StaticResource ButtonTabActive}"/>
                             </StackPanel>
                         </Border>
                         <ScrollViewer Grid.Row="1" Padding="24,20" VerticalScrollBarVisibility="Auto">
                             <StackPanel>
-                                <TextBlock Text="EMULATOR" Style="{StaticResource TextLabelCaps}"
+                                <TextBlock Text="{loc:Tr Key='settings.section.emulator'}" Style="{StaticResource TextLabelCaps}"
                                            Foreground="{StaticResource BrushPrimary}" Margin="0,0,0,8"/>
                                 <Border Style="{StaticResource SettingRow}">
                                     <Grid>
@@ -598,22 +645,22 @@
                                             <ColumnDefinition Width="Auto"/>
                                         </Grid.ColumnDefinitions>
                                         <StackPanel Grid.Column="0" VerticalAlignment="Center">
-                                            <TextBlock Text="Emulator path" Style="{StaticResource TextBody}"
+                                            <TextBlock Text="{loc:Tr Key='settings.emulator.path'}" Style="{StaticResource TextBody}"
                                                        Foreground="{StaticResource BrushOnSurface}"/>
-                                            <TextBlock x:Name="TxtNesEmulatorPath" Text="Not configured"
+                                            <TextBlock x:Name="TxtNesEmulatorPath"
                                                        Style="{StaticResource TextLabel}" TextTrimming="CharacterEllipsis"/>
                                         </StackPanel>
-                                        <Button x:Name="BtnBrowseNesEmulator" Grid.Column="1" Content="BROWSE"
+                                        <Button x:Name="BtnBrowseNesEmulator" Grid.Column="1"
+                                                Content="{loc:Tr Key='settings.browse'}"
                                                 Style="{StaticResource ButtonPrimary}" Padding="16,0" Height="32"
                                                 Click="BtnBrowseNesEmulator_Click"/>
                                     </Grid>
                                 </Border>
                                 <Border Style="{StaticResource SettingRow}">
                                     <StackPanel>
-                                        <TextBlock Text="Emulator arguments" Style="{StaticResource TextBody}"
+                                        <TextBlock Text="{loc:Tr Key='settings.emulator.arguments'}" Style="{StaticResource TextBody}"
                                                    Foreground="{StaticResource BrushOnSurface}" Margin="0,0,0,4"/>
-                                        <TextBlock Text="Optional command-line arguments (e.g., -fullscreen, -scale 2)"
-                                                   Style="{StaticResource TextLabel}" Margin="0,0,0,8"/>
+                                        <TextBlock Text="{loc:Tr Key='settings.emulator.arguments.desc'}" Style="{StaticResource TextLabel}" Margin="0,0,0,8"/>
                                         <TextBox x:Name="TxtNesEmulatorArguments" Padding="8,6"
                                                  TextChanged="TxtNesEmulatorArguments_Changed"/>
                                     </StackPanel>
@@ -625,10 +672,9 @@
                                             <ColumnDefinition Width="Auto"/>
                                         </Grid.ColumnDefinitions>
                                         <StackPanel Grid.Column="0" VerticalAlignment="Center">
-                                            <TextBlock Text="Launch emulator after build" Style="{StaticResource TextBody}"
+                                            <TextBlock Text="{loc:Tr Key='settings.emulator.launch'}" Style="{StaticResource TextBody}"
                                                        Foreground="{StaticResource BrushOnSurface}"/>
-                                            <TextBlock Text="Automatically opens the ROM in the emulator after a successful build"
-                                                       Style="{StaticResource TextLabel}"/>
+                                            <TextBlock Text="{loc:Tr Key='settings.emulator.launch.desc'}" Style="{StaticResource TextLabel}"/>
                                         </StackPanel>
                                         <CheckBox x:Name="ChkNesLaunchEmulator" Grid.Column="1"
                                                   Style="{StaticResource ToggleSwitch}" VerticalAlignment="Center"
@@ -658,7 +704,7 @@
                                VerticalAlignment="Center"/>
                     <Button Grid.Column="1"
                             x:Name="BtnClose"
-                            Content="CLOSE"
+                            Content="{loc:Tr Key='settings.close'}"
                             Style="{StaticResource ButtonPrimary}"
                             Padding="32,0" Height="40"
                             Click="CloseButton_Click"/>

@@ -22,30 +22,7 @@ public partial class BuildConsoleView : UserControl
     public BuildConsoleView()
     {
         InitializeComponent();
-        ApplyLocalization();
         Loaded += (s, e) => UpdateTooltips();
-    }
-
-    private void ApplyLocalization()
-    {
-        var loc = LocalizationService.Instance;
-        TxtBuildTitle.Text = loc.Get("buildconsole.title.build");
-        TxtConsoleTitle.Text = loc.Get("buildconsole.title.console");
-        TxtDescription.Text = loc.Get("buildconsole.description.ready");
-        TxtStatusLabel.Text = loc.Get("buildconsole.status");
-        TxtStatus.Text = loc.Get("build.status.ready");
-        TxtExportOptions.Text = loc.Get("buildconsole.export_options");
-        TxtExportRom.Text = loc.Get("buildconsole.export_rom");
-        TxtExportRomDesc.Text = loc.Get("buildconsole.export_rom.desc");
-        TxtExportDebug.Text = loc.Get("buildconsole.export_debug");
-        TxtExportDebugDesc.Text = loc.Get("buildconsole.export_debug.desc");
-        TxtVerification.Text = loc.Get("buildconsole.verification");
-        TxtMd5Label.Text = loc.Get("buildconsole.verification.md5");
-        TxtSha256Label.Text = loc.Get("buildconsole.verification.sha256");
-        TxtChecks.Text = loc.Get("buildconsole.verification.passed");
-        MemoryHeader.Text = loc.Get("buildconsole.memory");
-        TotalAssetsLabel.Text = loc.Get("buildconsole.total_assets");
-        TxtElapsedTimeLabel.Text = loc.Get("buildconsole.elapsed_time");
     }
 
     public void UpdateTooltips()

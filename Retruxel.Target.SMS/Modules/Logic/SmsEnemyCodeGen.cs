@@ -89,8 +89,8 @@ public class SmsEnemyCodeGen
                 int patrolRange;
             } Enemy;
 
-            void enemy_init(void);
-            void enemy_update(void);
+            void sms_enemy_init(void);
+            void sms_enemy_update(void);
 
             #endif // ENEMY_H
             """
@@ -127,7 +127,7 @@ public class SmsEnemyCodeGen
 
                 static Enemy enemy;
 
-                void enemy_init(void) {
+                void sms_enemy_init(void) {
                     enemy.x            = {{_x}};
                     enemy.y            = {{_y}};
                     enemy.speed        = {{_speed}};
@@ -138,7 +138,7 @@ public class SmsEnemyCodeGen
                     enemy.patrolRange  = {{_patrolRange}};
                 }
 
-                void enemy_update(void) {
+                void sms_enemy_update(void) {
                     if (enemy.health <= 0) return;
 
                 {{movementCode}}

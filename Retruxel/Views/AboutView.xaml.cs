@@ -11,23 +11,6 @@ public partial class AboutView : UserControl
     {
         InitializeComponent();
         Loaded += OnLoaded;
-        ApplyLocalization();
-    }
-
-    private void ApplyLocalization()
-    {
-        var loc = Retruxel.Core.Services.LocalizationService.Instance;
-        TxtVersionLabel.Text = loc.Get("about.version");
-        TxtDeveloperLabel.Text = loc.Get("about.developer");
-        TxtProjectLabel.Text = loc.Get("about.project");
-        TxtBuildLabel.Text = loc.Get("about.build");
-        TxtSupportedTargets.Text = loc.Get("about.supported_targets");
-        TxtTargetSms.Text = loc.Get("about.target.sms");
-        TxtMoreTargets.Text = loc.Get("about.more_targets");
-        TxtCreditsTitle.Text = loc.Get("about.credits.title");
-        TxtCreditsSubtitle.Text = loc.Get("about.credits.subtitle");
-        TxtLicensesTitle.Text = loc.Get("about.licenses.title");
-        TxtLicensesSubtitle.Text = loc.Get("about.licenses.subtitle");
     }
 
     private void OnLoaded(object sender, System.Windows.RoutedEventArgs e)

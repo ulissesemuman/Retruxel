@@ -1,7 +1,8 @@
 <Window x:Class="Retruxel.Views.NewProjectDialog"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="New Project"
+        xmlns:loc="clr-namespace:Retruxel.Localization"
+        Title="{loc:Tr Key='newproject.title'}"
         Height="520" Width="680"
         WindowStartupLocation="CenterOwner"
         Background="Transparent"
@@ -29,7 +30,7 @@
                     MouseLeftButtonDown="TitleBar_MouseLeftButtonDown"
                     Padding="24,0">
                 <Grid>
-                    <TextBlock x:Name="TxtDialogTitle"
+                    <TextBlock Text="{loc:Tr Key='newproject.title'}"
                                Style="{StaticResource TextHeadline}"
                                VerticalAlignment="Center"/>
                     <Button Content="✕"
@@ -43,7 +44,7 @@
             <StackPanel Grid.Row="1" Margin="24,16">
 
                 <!-- Project name -->
-                <TextBlock x:Name="TxtProjectNameLabel"
+                <TextBlock Text="{loc:Tr Key='newproject.name'}"
                            Style="{StaticResource TextLabelCaps}"
                            Margin="0,0,0,8"/>
                 <Border Background="{StaticResource BrushSurfaceContainerHighest}"
@@ -55,7 +56,7 @@
                 </Border>
 
                 <!-- Project location -->
-                <TextBlock x:Name="TxtLocationLabel"
+                <TextBlock Text="{loc:Tr Key='newproject.location'}"
                            Style="{StaticResource TextLabelCaps}"
                            Margin="0,0,0,8"/>
                 <Grid Margin="0,0,0,24">
@@ -72,13 +73,14 @@
                     </Border>
                     <Button Grid.Column="1"
                             x:Name="BtnBrowse"
+                            Content="{loc:Tr Key='newproject.browse'}"
                             Style="{StaticResource ButtonToolbar}"
                             Padding="16,0" Height="40"
                             Click="BrowseButton_Click"/>
                 </Grid>
 
                 <!-- Target (read-only — set from console selection) -->
-                <TextBlock x:Name="TxtTargetLabel"
+                <TextBlock Text="{loc:Tr Key='newproject.target'}"
                            Style="{StaticResource TextLabelCaps}"
                            Margin="0,0,0,8"/>
                 <Border Background="{StaticResource BrushSurfaceContainerHighest}"
@@ -89,7 +91,7 @@
                 </Border>
 
                 <!-- Template selection -->
-                <TextBlock x:Name="TxtTemplateLabel"
+                <TextBlock Text="{loc:Tr Key='newproject.template'}"
                            Style="{StaticResource TextLabelCaps}"
                            Margin="0,0,0,8"/>
                 <ScrollViewer HorizontalScrollBarVisibility="Auto"
@@ -108,11 +110,13 @@
                     Padding="24,0">
                 <Grid>
                     <Button x:Name="BtnCancel"
+                            Content="{loc:Tr Key='newproject.cancel'}"
                             Style="{StaticResource ButtonGhost}"
                             HorizontalAlignment="Left"
                             Padding="24,0" Height="40"
                             Click="CloseButton_Click"/>
                     <Button x:Name="BtnCreate"
+                            Content="{loc:Tr Key='newproject.create'}"
                             Style="{StaticResource ButtonPrimary}"
                             HorizontalAlignment="Right"
                             Padding="24,0" Height="40"

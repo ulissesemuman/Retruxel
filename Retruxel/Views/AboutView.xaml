@@ -1,6 +1,7 @@
 <UserControl x:Class="Retruxel.Views.AboutView"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:loc="clr-namespace:Retruxel.Localization"
              Background="{StaticResource BrushSurface}">
 
     <Grid>
@@ -36,7 +37,7 @@
                            Margin="0,0,0,32"/>
 
                 <!-- Version -->
-                <TextBlock x:Name="TxtVersionLabel"
+                <TextBlock Text="{loc:Tr Key='about.version'}"
                            Style="{StaticResource TextLabelCaps}"
                            Margin="0,0,0,4"/>
                 <TextBlock x:Name="TxtVersion"
@@ -45,7 +46,7 @@
                            Margin="0,0,0,24"/>
 
                 <!-- Developer -->
-                <TextBlock x:Name="TxtDeveloperLabel"
+                <TextBlock Text="{loc:Tr Key='about.developer'}"
                            Style="{StaticResource TextLabelCaps}"
                            Margin="0,0,0,4"/>
                 <TextBlock Text="Ulisses Farias"
@@ -60,7 +61,7 @@
                            Margin="0,0,0,24"/>
 
                 <!-- Project -->
-                <TextBlock x:Name="TxtProjectLabel"
+                <TextBlock Text="{loc:Tr Key='about.project'}"
                            Style="{StaticResource TextLabelCaps}"
                            Margin="0,0,0,4"/>
                 <TextBlock Text="github.com/ulissesemuman/Retruxel"
@@ -71,7 +72,7 @@
                            Margin="0,0,0,32"/>
 
                 <!-- Build -->
-                <TextBlock x:Name="TxtBuildLabel"
+                <TextBlock Text="{loc:Tr Key='about.build'}"
                            Style="{StaticResource TextLabelCaps}"
                            Margin="0,0,0,4"/>
                 <TextBlock x:Name="TxtBuildDate"
@@ -81,16 +82,16 @@
                            Margin="0,0,0,32"/>
 
                 <!-- Supported targets -->
-                <TextBlock x:Name="TxtSupportedTargets"
+                <TextBlock Text="{loc:Tr Key='about.supported_targets'}"
                            Style="{StaticResource TextLabelCaps}"
                            Margin="0,0,0,8"/>
                 <Border Background="{StaticResource BrushSurfaceContainerHighest}"
                         Padding="8,4" Margin="0,0,0,4"
                         HorizontalAlignment="Left">
-                    <TextBlock x:Name="TxtTargetSms"
+                    <TextBlock Text="{loc:Tr Key='about.target.sms'}"
                                Style="{StaticResource TextCode}"/>
                 </Border>
-                <TextBlock x:Name="TxtMoreTargets"
+                <TextBlock Text="{loc:Tr Key='about.more_targets'}"
                            Style="{StaticResource TextLabel}"
                            Margin="0,8,0,0"/>
 
@@ -103,10 +104,10 @@
                       Padding="40,32">
             <StackPanel>
 
-                <TextBlock x:Name="TxtCreditsTitle"
+                <TextBlock Text="{loc:Tr Key='about.credits.title'}"
                            Style="{StaticResource TextDisplay}"
                            Margin="0,0,0,8"/>
-                <TextBlock x:Name="TxtCreditsSubtitle"
+                <TextBlock Text="{loc:Tr Key='about.credits.subtitle'}"
                            Style="{StaticResource TextBody}"
                            TextWrapping="Wrap"
                            Margin="0,0,0,32"/>
@@ -161,10 +162,10 @@
                 </ItemsControl>
 
                 <!-- Licenses section -->
-                <TextBlock x:Name="TxtLicensesTitle"
+                <TextBlock Text="{loc:Tr Key='about.licenses.title'}"
                            Style="{StaticResource TextHeadline}"
                            Margin="0,32,0,12"/>
-                <TextBlock x:Name="TxtLicensesSubtitle"
+                <TextBlock Text="{loc:Tr Key='about.licenses.subtitle'}"
                            Style="{StaticResource TextBody}"
                            TextWrapping="Wrap"
                            Margin="0,0,0,12"/>

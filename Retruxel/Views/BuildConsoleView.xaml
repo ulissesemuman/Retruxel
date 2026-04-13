@@ -1,6 +1,7 @@
 <UserControl x:Class="Retruxel.Views.BuildConsoleView"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:loc="clr-namespace:Retruxel.Localization"
              Background="{StaticResource BrushSurface}">
 
     <Grid>
@@ -20,14 +21,15 @@
 
             <!-- Title: "BUILD" + "CONSOLE" em primary -->
             <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,8">
-                <TextBlock x:Name="TxtBuildTitle"   Style="{StaticResource TextDisplay}"/>
-                <TextBlock Text=" "                  Style="{StaticResource TextDisplay}"/>
-                <TextBlock x:Name="TxtConsoleTitle" Style="{StaticResource TextDisplay}"
+                <TextBlock Text="{loc:Tr Key='buildconsole.title.build'}" Style="{StaticResource TextDisplay}"/>
+                <TextBlock Text=" " Style="{StaticResource TextDisplay}"/>
+                <TextBlock Text="{loc:Tr Key='buildconsole.title.console'}" Style="{StaticResource TextDisplay}"
                            Foreground="{StaticResource BrushPrimary}"/>
             </StackPanel>
 
             <TextBlock Grid.Row="1"
                        x:Name="TxtDescription"
+                       Text="{loc:Tr Key='buildconsole.description.ready'}"
                        Style="{StaticResource TextBody}"
                        Margin="0,0,0,16"
                        TextWrapping="Wrap"/>
@@ -38,7 +40,7 @@
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
-                <TextBlock x:Name="TxtStatusLabel" Grid.Column="0"
+                <TextBlock Text="{loc:Tr Key='buildconsole.status'}" Grid.Column="0"
                            Style="{StaticResource TextLabelCaps}"/>
                 <StackPanel Grid.Column="1" Orientation="Horizontal">
                     <Border x:Name="StatusDot"
@@ -46,6 +48,7 @@
                             Background="{StaticResource BrushPrimary}"
                             Margin="0,0,8,0" VerticalAlignment="Center"/>
                     <TextBlock x:Name="TxtStatus"
+                               Text="{loc:Tr Key='build.status.ready'}"
                                Style="{StaticResource TextLabel}"
                                Foreground="{StaticResource BrushPrimary}"/>
                 </StackPanel>
@@ -95,7 +98,7 @@
         <StackPanel Grid.Column="1" Margin="16,24,32,24">
 
             <!-- Export options -->
-            <TextBlock x:Name="TxtExportOptions"
+            <TextBlock Text="{loc:Tr Key='buildconsole.export_options'}"
                        Style="{StaticResource TextLabelCaps}"
                        Margin="0,48,0,12"/>
 
@@ -111,9 +114,9 @@
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
                     <StackPanel Grid.Column="0">
-                        <TextBlock x:Name="TxtExportRom"
+                        <TextBlock Text="{loc:Tr Key='buildconsole.export_rom'}"
                                    Style="{StaticResource TextTitle}"/>
-                        <TextBlock x:Name="TxtExportRomDesc"
+                        <TextBlock Text="{loc:Tr Key='buildconsole.export_rom.desc'}"
                                    Style="{StaticResource TextLabel}"/>
                     </StackPanel>
                     <TextBlock Grid.Column="1" Text="↓"
@@ -135,9 +138,9 @@
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
                     <StackPanel Grid.Column="0">
-                        <TextBlock x:Name="TxtExportDebug"
+                        <TextBlock Text="{loc:Tr Key='buildconsole.export_debug'}"
                                    Style="{StaticResource TextTitle}"/>
-                        <TextBlock x:Name="TxtExportDebugDesc"
+                        <TextBlock Text="{loc:Tr Key='buildconsole.export_debug.desc'}"
                                    Style="{StaticResource TextLabel}"/>
                     </StackPanel>
                     <TextBlock Grid.Column="1" Text="⬛"
@@ -152,12 +155,12 @@
                     Padding="16" x:Name="VerificationPanel"
                     Visibility="Collapsed">
                 <StackPanel>
-                    <TextBlock x:Name="TxtVerification"
+                    <TextBlock Text="{loc:Tr Key='buildconsole.verification'}"
                                Style="{StaticResource TextLabelCaps}"
                                Foreground="{StaticResource BrushOnSurface}"
                                Margin="0,0,0,12"/>
                     <Grid Margin="0,0,0,4">
-                        <TextBlock x:Name="TxtMd5Label"
+                        <TextBlock Text="{loc:Tr Key='buildconsole.verification.md5'}"
                                    Style="{StaticResource TextLabelCaps}"/>
                         <TextBlock x:Name="TxtMd5"
                                    Style="{StaticResource TextCode}"
@@ -165,14 +168,14 @@
                                    MouseLeftButtonDown="CopyMd5_Click"/>
                     </Grid>
                     <Grid Margin="0,0,0,12">
-                        <TextBlock x:Name="TxtSha256Label"
+                        <TextBlock Text="{loc:Tr Key='buildconsole.verification.sha256'}"
                                    Style="{StaticResource TextLabelCaps}"/>
                         <TextBlock x:Name="TxtSha256"
                                    Style="{StaticResource TextCode}"
                                    HorizontalAlignment="Right"
                                    MouseLeftButtonDown="CopySha256_Click"/>
                     </Grid>
-                    <TextBlock x:Name="TxtChecks"
+                    <TextBlock Text="{loc:Tr Key='buildconsole.verification.passed'}"
                                Style="{StaticResource TextPrimary}"
                                FontSize="10"/>
                 </StackPanel>
@@ -183,6 +186,7 @@
                     Padding="16" Margin="0,20,0,8">
                 <Grid Margin="0,0,0,4">
                     <TextBlock x:Name="MemoryHeader"
+                       Text="{loc:Tr Key='buildconsole.memory'}"
                        Style="{StaticResource TextLabelCaps}"
                        Margin="0,24,0,0"
                        Visibility="Collapsed"/>
@@ -198,7 +202,7 @@
                     x:Name="TotalAssetsPanel"
                     Visibility="Collapsed">
                 <StackPanel>
-                    <TextBlock x:Name="TotalAssetsLabel"
+                    <TextBlock Text="{loc:Tr Key='buildconsole.total_assets'}"
                                Style="{StaticResource TextLabelCaps}"
                                Margin="0,0,0,8"/>
                     <TextBlock x:Name="TotalAssets"
@@ -213,7 +217,7 @@
                     x:Name="ElapsedTimePanel"
                     Visibility="Collapsed">
                 <StackPanel>
-                    <TextBlock x:Name="TxtElapsedTimeLabel"
+                    <TextBlock Text="{loc:Tr Key='buildconsole.elapsed_time'}"
                                Style="{StaticResource TextLabelCaps}"
                                Margin="0,0,0,8"/>
                     <TextBlock x:Name="TxtElapsedTime"

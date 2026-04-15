@@ -15,7 +15,7 @@ namespace Retruxel.Modules.Logic;
 ///
 /// JSON format:
 /// {
-///   "module":       "sms.physics",
+///   "module":       "physics",
 ///   "gravity":      2,      // acceleration per frame (fixed-point units)
 ///   "maxFallSpeed": 24,     // terminal velocity (fixed-point units)
 ///   "jumpForce":    52,     // upward velocity when jumping (fixed-point units)

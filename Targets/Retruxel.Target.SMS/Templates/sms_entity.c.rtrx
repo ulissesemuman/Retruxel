@@ -1,4 +1,4 @@
-// @retruxel:module sms.entity
+// @retruxel:module entity
 // @retruxel:block init
 void sms_entity_init(void) {
     player.x        = {{x}};

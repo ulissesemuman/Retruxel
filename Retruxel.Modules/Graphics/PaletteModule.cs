@@ -16,7 +16,7 @@ namespace Retruxel.Modules.Graphics;
 ///
 /// JSON format:
 /// {
-///   "module": "sms.palette",
+///   "module": "palette",
 ///   "bgColors":     [0,0,0,21,42,63, ...],   // 16 SMS color bytes for BG
 ///   "spriteColors": [0,0,0,21,42,63, ...]    // 16 SMS color bytes for sprites
 /// }

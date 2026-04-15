@@ -6,7 +6,7 @@
 /// </summary>
 public interface IModule
 {
-    /// <summary>Unique module identifier. Ex: "text.display", "sms.vdp.scroll"</summary>
+    /// <summary>Unique module identifier. Ex: "text.display", "scroll"</summary>
     string ModuleId { get; }
 
     /// <summary>Display name shown in the UI.</summary>

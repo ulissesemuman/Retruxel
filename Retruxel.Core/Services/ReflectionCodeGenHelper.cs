@@ -25,7 +25,7 @@ public static class ReflectionCodeGenHelper
         {
             // Extract module name from class name
             // SmsTextDisplayCodeGen -> text.display
-            // SmsEntityCodeGen -> entity (then prefixed to sms.entity)
+            // SmsEntityCodeGen -> entity
             var className = type.Name
                 .Replace(targetPrefix, "", StringComparison.OrdinalIgnoreCase)
                 .Replace("CodeGen", "");

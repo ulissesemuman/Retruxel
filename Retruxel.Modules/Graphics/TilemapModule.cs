@@ -12,7 +12,7 @@ namespace Retruxel.Modules.Graphics;
 ///
 /// JSON format:
 /// {
-///   "module":       "sms.tilemap",
+///   "module":       "tilemap",
 ///   "tilesAssetId": "bg_tiles",       // asset ID for CHR tile data
 ///   "mapAssetId":   "bg_map",         // asset ID for nametable layout
 ///   "startTile":    0,                // first VRAM tile slot to load into (0–447)

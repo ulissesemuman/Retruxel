@@ -109,7 +109,7 @@ public class ColecoVisionTarget : ITarget
             TemplateId     = "coleco.platformer",
             DisplayName    = "Platformer",
             Description    = "Pre-configured with tiles, sprites, physics and input modules.",
-            DefaultModules = ["coleco.tiles", "coleco.sprites", "coleco.physics", "coleco.input"]
+            DefaultModules = ["tiles", "sprites", "physics", "input"]
         }
     ];
 

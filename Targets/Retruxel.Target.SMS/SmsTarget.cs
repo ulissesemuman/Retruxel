@@ -119,14 +119,14 @@ public class SmsTarget : ITarget
             TemplateId = "sms.platformer",
             DisplayName = "Platformer",
             Description = "Pre-configured with tiles, sprites, physics and input modules.",
-            DefaultModules = ["sms.tilemap", "sms.sprite", "sms.physics", "sms.input"]
+            DefaultModules = ["tilemap", "sprite", "physics", "input"]
         },
         new ProjectTemplate
         {
             TemplateId = "sms.beatemup",
             DisplayName = "Beat Em Up",
             Description = "Pre-configured for side-scrolling beat em up games.",
-            DefaultModules = ["sms.tilemap", "sms.sprite", "sms.physics", "sms.input", "sms.scroll"]
+            DefaultModules = ["tilemap", "sprite", "physics", "input", "scroll"]
         }
     ];
 
@@ -196,7 +196,7 @@ public class SmsTarget : ITarget
             .ToList();
 
         // Modules that have init functions (not text.display)
-        var modulesWithInit = new HashSet<string> { "sms.entity", "sms.enemy", "sms.scroll", "sms.palette", "sms.tilemap", "sms.sprite", "sms.input", "sms.physics", "sms.animation" };
+        var modulesWithInit = new HashSet<string> { "entity", "enemy", "scroll", "palette", "tilemap", "sprite", "input", "physics", "animation" };
         
         // Generate init calls - one per module type
         var initCalls = moduleGroups
@@ -204,7 +204,7 @@ public class SmsTarget : ITarget
             .Select(g => $"    {g.Key.Replace(".", "_")}_init();");
 
         // Modules that have update functions
-        var modulesWithUpdate = new HashSet<string> { "sms.entity", "sms.enemy", "sms.scroll", "sms.input", "sms.physics", "sms.animation" };
+        var modulesWithUpdate = new HashSet<string> { "entity", "enemy", "scroll", "input", "physics", "animation" };
         
         var updateCalls = moduleGroups
             .Where(g => modulesWithUpdate.Contains(g.Key))

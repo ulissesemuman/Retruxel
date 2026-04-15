@@ -14,7 +14,7 @@ namespace Retruxel.Modules.Graphics;
 ///
 /// JSON format:
 /// {
-///   "module":       "sms.sprite",
+///   "module":       "sprite",
 ///   "tilesAssetId": "player_tiles",   // asset ID for sprite CHR data
 ///   "startTile":    256,              // first VRAM sprite tile slot (256–511 recommended)
 ///   "doubleHeight": false             // enable 8×16 sprite mode

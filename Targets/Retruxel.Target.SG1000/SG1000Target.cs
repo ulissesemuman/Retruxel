@@ -109,7 +109,7 @@ public class SG1000Target : ITarget
             TemplateId     = "sg1000.platformer",
             DisplayName    = "Platformer",
             Description    = "Pre-configured with tiles, sprites, physics and input modules.",
-            DefaultModules = ["sg1000.tiles", "sg1000.sprites", "sg1000.physics", "sg1000.input"]
+            DefaultModules = ["tiles", "sprites", "physics", "input"]
         }
     ];
 

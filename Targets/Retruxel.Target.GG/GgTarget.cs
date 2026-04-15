@@ -110,7 +110,7 @@ public class GgTarget : ITarget
             TemplateId = "gg.platformer",
             DisplayName = "Platformer",
             Description = "Pre-configured with tiles, sprites, physics and input modules.",
-            DefaultModules = ["gg.tiles", "gg.sprites", "gg.physics", "gg.input"]
+            DefaultModules = ["tiles", "sprites", "physics", "input"]
         }
     ];
 

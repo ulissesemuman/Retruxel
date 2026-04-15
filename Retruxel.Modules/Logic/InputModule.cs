@@ -17,7 +17,7 @@ namespace Retruxel.Modules.Logic;
 ///
 /// JSON format:
 /// {
-///   "module":         "sms.input",
+///   "module":         "input",
 ///   "holdThreshold": 60,     // frames before a button press is considered "held" (~1s at 60fps)
 ///   "port":          1       // joypad port (1 or 2)
 /// }

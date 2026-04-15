@@ -23,7 +23,7 @@ public partial class SceneEditorView : UserControl
     private Point _dragOffset;
     private SceneElement? _draggedElement;
     private ProjectManager? _projectManager;
-    private ModuleLoader? _moduleLoader;
+    private ModuleRegistry? _moduleRegistry;
     private bool _isUpdatingUI;
     private bool _isLoadingProject;
 
@@ -44,7 +44,7 @@ public partial class SceneEditorView : UserControl
     }
 
     public void SetProjectManager(ProjectManager manager) => _projectManager = manager;
-    public void SetModuleLoader(ModuleLoader loader) => _moduleLoader = loader;
+    public void SetModuleRegistry(ModuleRegistry registry) => _moduleRegistry = registry;
 
     private void BtnUndo_Click(object sender, RoutedEventArgs e) => _undoRedo.Undo();
     private void BtnRedo_Click(object sender, RoutedEventArgs e) => _undoRedo.Redo();
@@ -502,7 +502,7 @@ public partial class SceneEditorView : UserControl
     {
         ModulePalettePanel.Children.Clear();
 
-        if (_moduleLoader is null) return;
+        if (_moduleRegistry is null) return;
 
         // Collect IDs of singleton modules already on the canvas
         var usedSingletons = _elements
@@ -512,21 +512,21 @@ public partial class SceneEditorView : UserControl
 
         var modules = new List<(string Category, string ModuleId, string DisplayName)>();
 
-        foreach (var (moduleId, module) in _moduleLoader.LogicModules)
+        foreach (var (moduleId, module) in _moduleRegistry.LogicModules)
         {
             var m = (IModule)module;
             if (m.IsSingleton && usedSingletons.Contains(moduleId)) continue;
             modules.Add((m.Category, moduleId, m.DisplayName));
         }
 
-        foreach (var (moduleId, module) in _moduleLoader.GraphicModules)
+        foreach (var (moduleId, module) in _moduleRegistry.GraphicModules)
         {
             var m = (IModule)module;
             if (m.IsSingleton && usedSingletons.Contains(moduleId)) continue;
             modules.Add((m.Category, moduleId, m.DisplayName));
         }
 
-        foreach (var (moduleId, module) in _moduleLoader.AudioModules)
+        foreach (var (moduleId, module) in _moduleRegistry.AudioModules)
         {
             var m = (IModule)module;
             if (m.IsSingleton && usedSingletons.Contains(moduleId)) continue;
@@ -690,18 +690,18 @@ public partial class SceneEditorView : UserControl
     /// </summary>
     private string? ResolveModuleForAsset(AssetType assetType)
     {
-        if (_moduleLoader is null) return null;
+        if (_moduleRegistry is null) return null;
 
         var keyword = assetType == AssetType.Tiles ? "tilemap" : "sprite";
 
-        foreach (var (id, m) in _moduleLoader.LogicModules)
+        foreach (var (id, m) in _moduleRegistry.LogicModules)
         {
             if (!id.Contains(keyword, StringComparison.OrdinalIgnoreCase)) continue;
             if (m is ILogicModule lm && lm.GetManifest().Parameters.Any(p => p.Name == "tilesAssetId"))
                 return id;
         }
 
-        foreach (var (id, m) in _moduleLoader.GraphicModules)
+        foreach (var (id, m) in _moduleRegistry.GraphicModules)
         {
             if (!id.Contains(keyword, StringComparison.OrdinalIgnoreCase)) continue;
             if (m is IGraphicModule gm && gm.GetManifest().Parameters.Any(p => p.Name == "tilesAssetId"))
@@ -1305,16 +1305,16 @@ public partial class SceneEditorView : UserControl
 
     private SceneElement CreateSceneElement(string moduleId, int tileX, int tileY)
     {
-        if (_moduleLoader is null)
-            throw new InvalidOperationException("ModuleLoader not initialized");
+        if (_moduleRegistry is null)
+            throw new InvalidOperationException("ModuleRegistry not initialized");
 
         IModule? moduleTemplate = null;
 
-        if (_moduleLoader.LogicModules.TryGetValue(moduleId, out var lm))
+        if (_moduleRegistry.LogicModules.TryGetValue(moduleId, out var lm))
             moduleTemplate = lm;
-        else if (_moduleLoader.GraphicModules.TryGetValue(moduleId, out var gm))
+        else if (_moduleRegistry.GraphicModules.TryGetValue(moduleId, out var gm))
             moduleTemplate = gm;
-        else if (_moduleLoader.AudioModules.TryGetValue(moduleId, out var am))
+        else if (_moduleRegistry.AudioModules.TryGetValue(moduleId, out var am))
             moduleTemplate = am;
 
         if (moduleTemplate is null)
@@ -1567,15 +1567,15 @@ public partial class SceneEditorView : UserControl
     /// </summary>
     private IModule? DeserializeModule(string moduleId, string moduleState)
     {
-        if (_moduleLoader is null) return null;
+        if (_moduleRegistry is null) return null;
 
         IModule? moduleTemplate = null;
 
-        if (_moduleLoader.LogicModules.TryGetValue(moduleId, out var lm))
+        if (_moduleRegistry.LogicModules.TryGetValue(moduleId, out var lm))
             moduleTemplate = lm;
-        else if (_moduleLoader.GraphicModules.TryGetValue(moduleId, out var gm))
+        else if (_moduleRegistry.GraphicModules.TryGetValue(moduleId, out var gm))
             moduleTemplate = gm;
-        else if (_moduleLoader.AudioModules.TryGetValue(moduleId, out var am))
+        else if (_moduleRegistry.AudioModules.TryGetValue(moduleId, out var am))
             moduleTemplate = am;
 
         if (moduleTemplate is null) return null;

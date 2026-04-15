@@ -186,11 +186,11 @@ public partial class MainWindow : Window
             return;
         }
 
-        // Initialize ModuleLoader
+        // Initialize ModuleRegistry
         var basePath = AppDomain.CurrentDomain.BaseDirectory;
-        var moduleLoader = new ModuleLoader(basePath);
-        moduleLoader.RegisterBuiltinModules(target);
-        moduleLoader.LoadCompatible(target.TargetId);
+        var moduleRegistry = new ModuleRegistry(basePath);
+        moduleRegistry.RegisterBuiltinModules(target);
+        moduleRegistry.LoadForTarget(target.TargetId);
 
         _projectManager.CurrentProject = project;
 
@@ -199,7 +199,7 @@ public partial class MainWindow : Window
         SceneEditorView.Visibility = Visibility.Visible;
         BtnHome.Visibility = Visibility.Visible;
         SceneEditorView.SetProjectManager(_projectManager);
-        SceneEditorView.SetModuleLoader(moduleLoader);
+        SceneEditorView.SetModuleRegistry(moduleRegistry);
         SceneEditorView.Initialize(project, target);
 
         // Save after initialization

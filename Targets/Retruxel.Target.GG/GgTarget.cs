@@ -92,7 +92,22 @@ public class GgTarget : ITarget
         return new GgToolchainAdapter(builder);
     }
 
-    public IEnumerable<IModule> GetBuiltinModules() => [];
+    public IEnumerable<IModule> GetBuiltinModules()
+    {
+        return
+        [
+            new Retruxel.Modules.Logic.EntityModule(),
+            new Retruxel.Modules.Logic.EnemyModule(),
+            new Retruxel.Modules.Logic.PhysicsModule(),
+            new Retruxel.Modules.Logic.InputModule(),
+            new Retruxel.Modules.Logic.AnimationModule(),
+            new Retruxel.Modules.Logic.ScrollModule(),
+            new Retruxel.Modules.Graphics.PaletteModule(),
+            new Retruxel.Modules.Graphics.TilemapModule(),
+            new Retruxel.Modules.Graphics.SpriteModule(),
+            new Retruxel.Modules.Graphics.TextDisplayModule()
+        ];
+    }
 
     // Templates
 

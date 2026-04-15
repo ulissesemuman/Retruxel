@@ -547,7 +547,7 @@ public partial class SceneEditorView : UserControl
 
             foreach (var module in group)
             {
-                var item = BuildModulePaletteItem(module.ModuleId, module.DisplayName);
+            var item = BuildModulePaletteItem(module.ModuleId, module.DisplayName);
                 ModulePalettePanel.Children.Add(item);
             }
         }

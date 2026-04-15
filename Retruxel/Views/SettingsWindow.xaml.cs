@@ -1,3 +1,4 @@
+using Microsoft.Win32;
 using Retruxel.Core.Models;
 using Retruxel.Core.Services;
 using System.IO;
@@ -5,7 +6,6 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
-using Microsoft.Win32;
 
 namespace Retruxel.Views;
 
@@ -82,6 +82,7 @@ public partial class SettingsWindow : Window
         // General - language already selected in PopulateLanguageCombo
         ChkShowWelcome.IsChecked = _settings.General.ShowWelcomeOnStartup;
         ChkCheckUpdates.IsChecked = _settings.General.CheckUpdatesOnStartup;
+        ChkShowMadeWithSplash.IsChecked = _settings.General.ShowMadeWithSplash;
         SliderUndoHistory.Value = _settings.General.UndoHistoryLimit;
         TxtUndoHistoryValue.Text = _settings.General.UndoHistoryLimit.ToString();
 
@@ -202,6 +203,38 @@ public partial class SettingsWindow : Window
     {
         if (_loading) return;
         _settings.General.CheckUpdatesOnStartup = ChkCheckUpdates.IsChecked == true;
+        AutoSave();
+    }
+
+    private void ChkShowMadeWithSplash_Changed(object sender, RoutedEventArgs e)
+    {
+        if (_loading) return;
+
+        var isEnabling = ChkShowMadeWithSplash.IsChecked == true;
+
+        if (!isEnabling)
+        {
+            var result = MessageBox.Show(
+                "Retruxel is completely free and built with a lot of dedication " +
+                "and care for the retro dev community.\n\n" +
+                "The \"MADE WITH RETRUXEL\" splash screen is the only way this " +
+                "tool gets noticed by other developers.\n\n" +
+                "Are you sure you want to disable it?",
+                "Retruxel",
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Question);
+
+            if (result != MessageBoxResult.Yes)
+            {
+                // User changed their mind — restore the toggle visually
+                _loading = true;
+                ChkShowMadeWithSplash.IsChecked = true;
+                _loading = false;
+                return;
+            }
+        }
+
+        _settings.General.ShowMadeWithSplash = isEnabling;
         AutoSave();
     }
 

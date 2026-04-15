@@ -21,12 +21,12 @@ public class AddElementCommand : IUndoableCommand
     public AddElementCommand(string description, Action add, Action remove)
     {
         Description = description;
-        _add        = add;
-        _remove     = remove;
+        _add = add;
+        _remove = remove;
     }
 
     public void Execute() => _add();
-    public void Undo()    => _remove();
+    public void Undo() => _remove();
 }
 
 // ── RemoveElementCommand ──────────────────────────────────────────────────────
@@ -48,12 +48,12 @@ public class RemoveElementCommand : IUndoableCommand
     public RemoveElementCommand(string description, Action remove, Action restore)
     {
         Description = description;
-        _remove     = remove;
-        _restore    = restore;
+        _remove = remove;
+        _restore = restore;
     }
 
     public void Execute() => _remove();
-    public void Undo()    => _restore();
+    public void Undo() => _restore();
 }
 
 // ── MoveElementCommand ────────────────────────────────────────────────────────
@@ -82,18 +82,18 @@ public class MoveElementCommand : IUndoableCommand
         string description,
         Action<int, int> moveTo,
         int prevX, int prevY,
-        int newX,  int newY)
+        int newX, int newY)
     {
         Description = description;
-        _moveTo     = moveTo;
-        _prevX      = prevX;
-        _prevY      = prevY;
-        _newX       = newX;
-        _newY       = newY;
+        _moveTo = moveTo;
+        _prevX = prevX;
+        _prevY = prevY;
+        _newX = newX;
+        _newY = newY;
     }
 
-    public void Execute() => _moveTo(_newX,  _newY);
-    public void Undo()    => _moveTo(_prevX, _prevY);
+    public void Execute() => _moveTo(_newX, _newY);
+    public void Undo() => _moveTo(_prevX, _prevY);
 }
 
 // ── ChangePropertyCommand ─────────────────────────────────────────────────────
@@ -120,12 +120,12 @@ public class ChangePropertyCommand : IUndoableCommand
         string previousValue,
         string newValue)
     {
-        Description    = description;
-        _apply         = apply;
+        Description = description;
+        _apply = apply;
         _previousValue = previousValue;
-        _newValue      = newValue;
+        _newValue = newValue;
     }
 
     public void Execute() => _apply(_newValue);
-    public void Undo()    => _apply(_previousValue);
+    public void Undo() => _apply(_previousValue);
 }

@@ -71,10 +71,4 @@ public interface ITarget
     /// Each target knows its own required headers, init calls and ROM metadata.
     /// </summary>
     GeneratedFile GenerateMainFile(RetruxelProject project, IEnumerable<GeneratedFile> moduleFiles);
-    
-    /// <summary>
-    /// Resets any static state used during code generation.
-    /// Called before each build to ensure clean state.
-    /// </summary>
-    void ResetCodeGenerationState();
 }

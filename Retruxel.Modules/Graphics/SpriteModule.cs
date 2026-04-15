@@ -22,16 +22,16 @@ namespace Retruxel.Modules.Graphics;
 /// </summary>
 public class SpriteModule : IGraphicModule
 {
-    public string     ModuleId     => "sms.sprite";
-    public string     DisplayName  => "Sprite";
-    public string     Category     => "Graphics";
-    public ModuleType Type         => ModuleType.Logic;
-    public bool     IsSingleton  => false;
-    public string[]   Compatibility => ["sms", "gg"];
+    public string ModuleId => "sms.sprite";
+    public string DisplayName => "Sprite";
+    public string Category => "Graphics";
+    public ModuleType Type => ModuleType.Logic;
+    public bool IsSingleton => false;
+    public string[] Compatibility => ["sms", "gg"];
 
     private static readonly JsonSerializerOptions _jsonOptions = new()
     {
-        PropertyNamingPolicy        = JsonNamingPolicy.CamelCase,
+        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
         PropertyNameCaseInsensitive = true
     };
 
@@ -39,11 +39,11 @@ public class SpriteModule : IGraphicModule
 
     public ModuleManifest GetManifest() => new()
     {
-        ModuleId      = ModuleId,
-        Version       = "1.0.0",
-        Type          = ModuleType.Logic,
+        ModuleId = ModuleId,
+        Version = "1.0.0",
+        Type = ModuleType.Logic,
         Compatibility = Compatibility,
-        Parameters    =
+        Parameters =
         [
             new ParameterDefinition
             {
@@ -88,14 +88,14 @@ public class SpriteModule : IGraphicModule
 
     public IEnumerable<GeneratedFile> GenerateCode() => [];
 
-    public string Serialize()              => JsonSerializer.Serialize(_state, _jsonOptions);
-    public void   Deserialize(string json) => _state = JsonSerializer.Deserialize<SpriteState>(json, _jsonOptions) ?? new();
-    public string GetValidationSample()    => JsonSerializer.Serialize(new SpriteState(), _jsonOptions);
+    public string Serialize() => JsonSerializer.Serialize(_state, _jsonOptions);
+    public void Deserialize(string json) => _state = JsonSerializer.Deserialize<SpriteState>(json, _jsonOptions) ?? new();
+    public string GetValidationSample() => JsonSerializer.Serialize(new SpriteState(), _jsonOptions);
 
     private class SpriteState
     {
         public string TilesAssetId { get; set; } = string.Empty;
-        public int    StartTile    { get; set; } = 256;
-        public bool   DoubleHeight { get; set; } = false;
+        public int StartTile { get; set; } = 256;
+        public bool DoubleHeight { get; set; } = false;
     }
 }

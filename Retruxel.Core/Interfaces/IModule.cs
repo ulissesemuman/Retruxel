@@ -1,6 +1,4 @@
-﻿using Retruxel.Core.Models;
-
-namespace Retruxel.Core.Interfaces;
+﻿namespace Retruxel.Core.Interfaces;
 
 /// <summary>
 /// Base contract for all Retruxel modules.

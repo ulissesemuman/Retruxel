@@ -1,7 +1,6 @@
 using Retruxel.Core.Interfaces;
 using Retruxel.Core.Models;
 using System.Text.Json;
-using System.Text.Json.Serialization;
 
 namespace Retruxel.Modules.Logic;
 
@@ -26,16 +25,16 @@ namespace Retruxel.Modules.Logic;
 /// </summary>
 public class AnimationModule : ILogicModule
 {
-    public string     ModuleId     => "sms.animation";
-    public string     DisplayName  => "Animation";
-    public string     Category     => "Logic";
-    public ModuleType Type         => ModuleType.Logic;
-    public bool     IsSingleton  => false;
-    public string[]   Compatibility => ["sms", "gg"];
+    public string ModuleId => "sms.animation";
+    public string DisplayName => "Animation";
+    public string Category => "Logic";
+    public ModuleType Type => ModuleType.Logic;
+    public bool IsSingleton => false;
+    public string[] Compatibility => ["sms", "gg"];
 
     private static readonly JsonSerializerOptions _jsonOptions = new()
     {
-        PropertyNamingPolicy        = JsonNamingPolicy.CamelCase,
+        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
         PropertyNameCaseInsensitive = true
     };
 
@@ -43,11 +42,11 @@ public class AnimationModule : ILogicModule
 
     public ModuleManifest GetManifest() => new()
     {
-        ModuleId      = ModuleId,
-        Version       = "1.0.0",
-        Type          = ModuleType.Logic,
+        ModuleId = ModuleId,
+        Version = "1.0.0",
+        Type = ModuleType.Logic,
         Compatibility = Compatibility,
-        Parameters    =
+        Parameters =
         [
             new ParameterDefinition
             {
@@ -74,9 +73,9 @@ public class AnimationModule : ILogicModule
 
     public IEnumerable<GeneratedFile> GenerateCode() => [];
 
-    public string Serialize()              => JsonSerializer.Serialize(_state, _jsonOptions);
-    public void   Deserialize(string json) => _state = JsonSerializer.Deserialize<AnimationState>(json, _jsonOptions) ?? new();
-    public string GetValidationSample()    => JsonSerializer.Serialize(new AnimationState(), _jsonOptions);
+    public string Serialize() => JsonSerializer.Serialize(_state, _jsonOptions);
+    public void Deserialize(string json) => _state = JsonSerializer.Deserialize<AnimationState>(json, _jsonOptions) ?? new();
+    public string GetValidationSample() => JsonSerializer.Serialize(new AnimationState(), _jsonOptions);
 
     private class AnimationState
     {

@@ -1,4 +1,4 @@
-﻿using Microsoft.Win32;
+using Microsoft.Win32;
 using Retruxel.Core.Interfaces;
 using Retruxel.Core.Models;
 using Retruxel.Core.Services;
@@ -155,6 +155,24 @@ public partial class NewProjectDialog : Window
 
         var settings = SettingsService.Load();
         settings.General.LastProjectLocation = TxtLocation.Text.Trim();
+
+        // If splash is disabled, remind the user they can re-enable it
+        if (!settings.General.ShowMadeWithSplash)
+        {
+            var result = MessageBox.Show(
+                "The \"MADE WITH RETRUXEL\" splash screen is currently disabled.\n\n" +
+                "Would you like to enable it for this and future projects?\n\n" +
+                "You can always change this in Settings → General.",
+                "Retruxel",
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Question);
+
+            if (result == MessageBoxResult.Yes)
+            {
+                settings.General.ShowMadeWithSplash = true;
+            }
+        }
+
         SettingsService.Save(settings);
 
         DialogResult = true;

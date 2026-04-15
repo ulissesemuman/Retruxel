@@ -1,7 +1,6 @@
 using Retruxel.Core.Models;
 using Retruxel.Core.Services;
 using System.Diagnostics;
-using System.Reflection;
 
 namespace Retruxel.Toolchain.Builders;
 
@@ -111,12 +110,12 @@ public class GameGearToolchainBuilder : IToolchainBuilder
 
             result.Success = convertOk && File.Exists(romPath);
             result.RomPath = result.Success ? romPath : null;
-            
+
             if (result.Success)
             {
                 var romSize = (int)new FileInfo(romPath).Length;
                 result.BankUsage["rom"] = romSize;
-                
+
                 result.RomMd5 = await ComputeMd5Async(romPath);
                 result.RomSha256 = await ComputeSha256Async(romPath);
                 log.Add(new BuildLogEntry

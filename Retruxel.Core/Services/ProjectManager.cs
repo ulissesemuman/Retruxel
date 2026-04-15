@@ -1,6 +1,5 @@
 ﻿using Retruxel.Core.Interfaces;
 using Retruxel.Core.Models;
-using System.IO;
 using System.Text.Json;
 
 namespace Retruxel.Core.Services;
@@ -86,7 +85,7 @@ public class ProjectManager
             CurrentProject.Name + ProjectFileExtension);
 
         await File.WriteAllTextAsync(filePath, json);
-        
+
         // Garantir que o arquivo tenha o nome correto (case-sensitive)
         var actualFileName = Path.GetFileName(filePath);
         var expectedFileName = CurrentProject.Name + ProjectFileExtension;
@@ -96,7 +95,7 @@ public class ProjectManager
             File.Move(filePath, tempPath);
             File.Move(tempPath, Path.Combine(CurrentProject.ProjectPath, expectedFileName));
         }
-        
+
         HasUnsavedChanges = false;
     }
 

@@ -1,11 +1,14 @@
 ﻿using Retruxel.Core.Interfaces;
+using Retruxel.Core.Models;
 using System.Reflection;
+using System.Text.Json;
 
 namespace Retruxel.Core.Services;
 
 /// <summary>
 /// Discovers and loads module DLLs from the internal modules folder
 /// and the user plugins folder.
+/// Reads modules.json to compute Compatibility[] dynamically based on available CodeGens.
 /// Internal modules take precedence over user plugins with the same ModuleId.
 /// </summary>
 public class ModuleLoader
@@ -39,6 +42,8 @@ public class ModuleLoader
         _basePath = basePath;
     }
 
+
+
     /// <summary>
     /// Loads all modules from internal and user plugin folders,
     /// filtering by compatibility with the given target.
@@ -46,7 +51,7 @@ public class ModuleLoader
     public void LoadCompatible(string targetId, IProgress<string>? progress = null)
     {
         var internalPath = Path.Combine(_basePath, InternalModulesFolder);
-        var pluginsPath  = Path.Combine(_basePath, UserPluginsFolder);
+        var pluginsPath = Path.Combine(_basePath, UserPluginsFolder);
 
         if (Directory.Exists(internalPath))
             LoadFromPath(internalPath, progress, targetId);
@@ -54,6 +59,8 @@ public class ModuleLoader
         if (Directory.Exists(pluginsPath))
             LoadFromPath(pluginsPath, progress, targetId);
     }
+
+
 
     /// <summary>
     /// Registers all built-in modules provided by the target.
@@ -90,7 +97,7 @@ public class ModuleLoader
             {
                 progress?.Report($"LOADING_MODULE: {Path.GetFileName(dll)}");
                 var assembly = Assembly.LoadFrom(dll);
-                RegisterModulesFromAssembly(assembly, targetId);
+                RegisterModulesFromAssembly(assembly, targetId, progress);
             }
             catch (Exception ex)
             {
@@ -102,9 +109,8 @@ public class ModuleLoader
     /// <summary>
     /// Scans an assembly for types implementing IGraphicModule, ILogicModule or IAudioModule
     /// and registers them. Skips duplicates — first loaded wins.
-    /// When targetId is provided, skips modules incompatible with that target.
     /// </summary>
-    private void RegisterModulesFromAssembly(Assembly assembly, string? targetId = null)
+    private void RegisterModulesFromAssembly(Assembly assembly, string? targetId, IProgress<string>? progress)
     {
         var types = assembly.GetTypes()
             .Where(t => !t.IsAbstract && !t.IsInterface);
@@ -139,6 +145,8 @@ public class ModuleLoader
         }
     }
 
+
+
     private static bool IsCompatible(IModule module, string? targetId)
     {
         if (targetId is null) return true;
@@ -164,5 +172,15 @@ public class ModuleLoader
     {
         if (!_graphicModules.ContainsKey(module.ModuleId))
             _graphicModules[module.ModuleId] = module;
+    }
+
+    /// <summary>
+    /// Manually registers an audio module.
+    /// Used during development before auto-discovery is fully implemented.
+    /// </summary>
+    public void RegisterAudioModule(IAudioModule module)
+    {
+        if (!_audioModules.ContainsKey(module.ModuleId))
+            _audioModules[module.ModuleId] = module;
     }
 }

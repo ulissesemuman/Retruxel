@@ -206,19 +206,19 @@ public class NesToolchainBuilder : IToolchainBuilder
             if (result.Success)
             {
                 var romSize = (int)new FileInfo(romPath).Length;
-                
+
                 // NES ROM structure: 16-byte header + PRG-ROM + CHR-ROM
                 // Header bytes 4-5 indicate PRG/CHR bank counts
                 var romBytes = await File.ReadAllBytesAsync(romPath);
                 var prgBanks = romBytes[4]; // Each bank = 16KB
                 var chrBanks = romBytes[5]; // Each bank = 8KB
-                
+
                 var prgSize = prgBanks * 16384;
                 var chrSize = chrBanks * 8192;
-                
+
                 result.BankUsage["prg"] = prgSize;
                 result.BankUsage["chr"] = chrSize;
-                
+
                 result.RomMd5 = await ComputeHashAsync(romPath, MD5.Create());
                 result.RomSha256 = await ComputeHashAsync(romPath, SHA256.Create());
                 log.Add(new BuildLogEntry

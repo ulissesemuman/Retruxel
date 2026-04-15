@@ -14,7 +14,7 @@ namespace Retruxel.Core.Services;
 public class UndoRedoStack
 {
     private readonly LinkedList<IUndoableCommand> _undoStack = new();
-    private readonly Stack<IUndoableCommand>      _redoStack = new();
+    private readonly Stack<IUndoableCommand> _redoStack = new();
 
     /// <summary>
     /// Maximum number of undoable actions retained in history.

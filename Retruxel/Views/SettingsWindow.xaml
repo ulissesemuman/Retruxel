@@ -232,6 +232,26 @@
                                                 <ColumnDefinition Width="Auto"/>
                                             </Grid.ColumnDefinitions>
                                             <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                                                <TextBlock Text="{loc:Tr Key='settings.general.made_with_splash'}"
+                                                           Style="{StaticResource TextBody}"
+                                                           Foreground="{StaticResource BrushOnSurface}"/>
+                                                <TextBlock Text="{loc:Tr Key='settings.general.made_with_splash.desc'}"
+                                                           Style="{StaticResource TextLabel}"/>
+                                            </StackPanel>
+                                            <CheckBox x:Name="ChkShowMadeWithSplash" Grid.Column="1"
+                                                      Style="{StaticResource ToggleSwitch}"
+                                                      VerticalAlignment="Center"
+                                                      Checked="ChkShowMadeWithSplash_Changed"
+                                                      Unchecked="ChkShowMadeWithSplash_Changed"/>
+                                        </Grid>
+                                    </Border>
+                                    <Border Style="{StaticResource SettingRow}">
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="Auto"/>
+                                            </Grid.ColumnDefinitions>
+                                            <StackPanel Grid.Column="0" VerticalAlignment="Center">
                                                 <TextBlock Text="{loc:Tr Key='settings.general.check_updates'}"
                                                            Style="{StaticResource TextBody}"
                                                            Foreground="{StaticResource BrushOnSurface}"/>

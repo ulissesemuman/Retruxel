@@ -14,7 +14,7 @@ public partial class WelcomeView : UserControl
 {
     private bool _isGridView = true;
     private Border? _dropOverlay;
-    
+
     public event Action<RetruxelProject>? OnProjectCreated;
     public event Action? OnAboutRequested;
 
@@ -28,7 +28,7 @@ public partial class WelcomeView : UserControl
     {
         // Connect TargetGridControl event
         TargetGrid.TargetSelected += OnTargetSelected;
-        
+
         UpdateTargetCount();
         RenderRecentProjects();
         RenderSidebarRecentProjects();
@@ -37,14 +37,13 @@ public partial class WelcomeView : UserControl
     private void UpdateTargetCount()
     {
         var count = TargetRegistry.GetAllTargets().Count;
-        var loc = LocalizationService.Instance;
-        TargetCount.Text = string.Format(loc.Get("welcome.count"), count);
+        TargetCount.Text = count.ToString();
     }
 
     private void RenderRecentProjects()
     {
         RecentProjectsPanel.Children.Clear();
-        
+
         var settings = SettingsService.Load();
         var recentProjects = settings.General.RecentProjects
             .Where(File.Exists)
@@ -109,7 +108,7 @@ public partial class WelcomeView : UserControl
         mainGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
         mainGrid.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
         mainGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
-        
+
         // Target badge at top right
         var targetBadge = new Border
         {
@@ -186,7 +185,7 @@ public partial class WelcomeView : UserControl
         var grid = new Grid();
         grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
         grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-        
+
         var panel = new StackPanel();
 
         panel.Children.Add(new TextBlock
@@ -199,9 +198,9 @@ public partial class WelcomeView : UserControl
         {
             Text = projectDir,
             Style = (Style)FindResource("TextLabel"),
-			TextTrimming = TextTrimming.CharacterEllipsis
+            TextTrimming = TextTrimming.CharacterEllipsis
         });
-        
+
         var targetBadge = new Border
         {
             Background = (Brush)FindResource("BrushSurfaceContainerHighest"),
@@ -214,7 +213,7 @@ public partial class WelcomeView : UserControl
                 Foreground = (Brush)FindResource("BrushTertiary")
             }
         };
-        
+
         Grid.SetColumn(panel, 0);
         Grid.SetColumn(targetBadge, 1);
         grid.Children.Add(panel);
@@ -235,7 +234,7 @@ public partial class WelcomeView : UserControl
     {
         try
         {
-            var json    = File.ReadAllText(projectPath);
+            var json = File.ReadAllText(projectPath);
             var project = System.Text.Json.JsonSerializer.Deserialize<RetruxelProject>(json);
             if (project != null)
             {
@@ -336,7 +335,7 @@ public partial class WelcomeView : UserControl
     private void RenderSidebarRecentProjects()
     {
         SidebarRecentProjects.Children.Clear();
-        
+
         var settings = SettingsService.Load();
         var recentProjects = settings.General.RecentProjects
             .Where(File.Exists)

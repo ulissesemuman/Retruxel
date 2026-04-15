@@ -24,16 +24,16 @@ namespace Retruxel.Modules.Logic;
 /// </summary>
 public class InputModule : ILogicModule
 {
-    public string     ModuleId     => "sms.input";
-    public string     DisplayName  => "Input";
-    public string     Category     => "Logic";
-    public ModuleType Type         => ModuleType.Logic;
-    public bool     IsSingleton  => true;
-    public string[]   Compatibility => ["sms", "gg"];
+    public string ModuleId => "sms.input";
+    public string DisplayName => "Input";
+    public string Category => "Logic";
+    public ModuleType Type => ModuleType.Logic;
+    public bool IsSingleton => true;
+    public string[] Compatibility => ["sms", "gg"];
 
     private static readonly JsonSerializerOptions _jsonOptions = new()
     {
-        PropertyNamingPolicy        = JsonNamingPolicy.CamelCase,
+        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
         PropertyNameCaseInsensitive = true
     };
 
@@ -41,11 +41,11 @@ public class InputModule : ILogicModule
 
     public ModuleManifest GetManifest() => new()
     {
-        ModuleId      = ModuleId,
-        Version       = "1.0.0",
-        Type          = ModuleType.Logic,
+        ModuleId = ModuleId,
+        Version = "1.0.0",
+        Type = ModuleType.Logic,
         Compatibility = Compatibility,
-        Parameters    =
+        Parameters =
         [
             new ParameterDefinition
             {
@@ -83,9 +83,9 @@ public class InputModule : ILogicModule
 
     public IEnumerable<GeneratedFile> GenerateCode() => [];
 
-    public string Serialize()              => JsonSerializer.Serialize(_state, _jsonOptions);
-    public void   Deserialize(string json) => _state = JsonSerializer.Deserialize<InputState>(json, _jsonOptions) ?? new();
-    public string GetValidationSample()    => JsonSerializer.Serialize(new InputState(), _jsonOptions);
+    public string Serialize() => JsonSerializer.Serialize(_state, _jsonOptions);
+    public void Deserialize(string json) => _state = JsonSerializer.Deserialize<InputState>(json, _jsonOptions) ?? new();
+    public string GetValidationSample() => JsonSerializer.Serialize(new InputState(), _jsonOptions);
 
     private class InputState
     {

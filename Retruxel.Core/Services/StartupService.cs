@@ -1,5 +1,3 @@
-using System.IO;
-
 namespace Retruxel.Core.Services;
 
 /// <summary>
@@ -63,7 +61,7 @@ public static class StartupService
             foreach (var (targetId, binaryPaths) in GetToolchainBinaries())
             {
                 var allFound = binaryPaths.All(File.Exists);
-                var status   = allFound ? "OK" : "NOT EXTRACTED";
+                var status = allFound ? "OK" : "NOT EXTRACTED";
                 progress.Report($"  TOOLCHAIN [{targetId.ToUpper()}]: {status}");
 
                 if (!allFound)

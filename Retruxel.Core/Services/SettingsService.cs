@@ -20,7 +20,7 @@ public static class SettingsService
 
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
-        WriteIndented    = true,
+        WriteIndented = true,
         AllowTrailingCommas = true,
         ReadCommentHandling = JsonCommentHandling.Skip
     };
@@ -36,7 +36,7 @@ public static class SettingsService
             if (!File.Exists(SettingsPath))
                 return new AppSettings();
 
-            var json     = await File.ReadAllTextAsync(SettingsPath);
+            var json = await File.ReadAllTextAsync(SettingsPath);
             var settings = JsonSerializer.Deserialize<AppSettings>(json, JsonOptions);
             return settings ?? new AppSettings();
         }
@@ -58,7 +58,7 @@ public static class SettingsService
             if (!File.Exists(SettingsPath))
                 return new AppSettings();
 
-            var json     = File.ReadAllText(SettingsPath);
+            var json = File.ReadAllText(SettingsPath);
             var settings = JsonSerializer.Deserialize<AppSettings>(json, JsonOptions);
             return settings ?? new AppSettings();
         }

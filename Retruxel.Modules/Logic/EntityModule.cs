@@ -11,16 +11,16 @@ namespace Retruxel.Modules.Logic;
 /// </summary>
 public class EntityModule : ILogicModule
 {
-    public string     ModuleId     => "sms.entity";
-    public string     DisplayName  => "Player Entity";
-    public string     Category     => "Entities";
-    public ModuleType Type         => ModuleType.Logic;
-    public bool       IsSingleton  => true;
-    public string[]   Compatibility => ["sms"];
+    public string ModuleId => "sms.entity";
+    public string DisplayName => "Player Entity";
+    public string Category => "Entities";
+    public ModuleType Type => ModuleType.Logic;
+    public bool IsSingleton => true;
+    public string[] Compatibility => ["sms"];
 
     private static readonly JsonSerializerOptions _jsonOptions = new()
     {
-        PropertyNamingPolicy        = JsonNamingPolicy.CamelCase,
+        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
         PropertyNameCaseInsensitive = true
     };
 
@@ -28,11 +28,11 @@ public class EntityModule : ILogicModule
 
     public ModuleManifest GetManifest() => new()
     {
-        ModuleId      = ModuleId,
-        Version       = "1.0.0",
-        Type          = ModuleType.Logic,
+        ModuleId = ModuleId,
+        Version = "1.0.0",
+        Type = ModuleType.Logic,
         Compatibility = ["sms"],
-        Parameters    =
+        Parameters =
         [
             new ParameterDefinition
             {
@@ -99,16 +99,16 @@ public class EntityModule : ILogicModule
 
     public IEnumerable<GeneratedFile> GenerateCode() => [];
 
-    public string Serialize()              => JsonSerializer.Serialize(_state, _jsonOptions);
-    public void   Deserialize(string json) => _state = JsonSerializer.Deserialize<EntityState>(json, _jsonOptions) ?? new();
-    public string GetValidationSample()    => JsonSerializer.Serialize(new EntityState(), _jsonOptions);
+    public string Serialize() => JsonSerializer.Serialize(_state, _jsonOptions);
+    public void Deserialize(string json) => _state = JsonSerializer.Deserialize<EntityState>(json, _jsonOptions) ?? new();
+    public string GetValidationSample() => JsonSerializer.Serialize(new EntityState(), _jsonOptions);
 
     private class EntityState
     {
         public int SpriteId { get; set; } = 0;
-        public int X        { get; set; } = 32;
-        public int Y        { get; set; } = 144;
-        public int Speed    { get; set; } = 2;
-        public int Health   { get; set; } = 3;
+        public int X { get; set; } = 32;
+        public int Y { get; set; } = 144;
+        public int Speed { get; set; } = 2;
+        public int Health { get; set; } = 3;
     }
 }

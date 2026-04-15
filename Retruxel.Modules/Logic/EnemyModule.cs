@@ -12,16 +12,16 @@ namespace Retruxel.Modules.Logic;
 /// </summary>
 public class EnemyModule : ILogicModule
 {
-    public string     ModuleId     => "sms.enemy";
-    public string     DisplayName  => "Enemy Entity";
-    public string     Category     => "Entities";
-    public ModuleType Type         => ModuleType.Logic;
-    public bool       IsSingleton  => false;
-    public string[]   Compatibility => ["sms"];
+    public string ModuleId => "sms.enemy";
+    public string DisplayName => "Enemy Entity";
+    public string Category => "Entities";
+    public ModuleType Type => ModuleType.Logic;
+    public bool IsSingleton => false;
+    public string[] Compatibility => ["sms"];
 
     private static readonly JsonSerializerOptions _jsonOptions = new()
     {
-        PropertyNamingPolicy        = JsonNamingPolicy.CamelCase,
+        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
         PropertyNameCaseInsensitive = true
     };
 
@@ -29,11 +29,11 @@ public class EnemyModule : ILogicModule
 
     public ModuleManifest GetManifest() => new()
     {
-        ModuleId      = ModuleId,
-        Version       = "1.0.0",
-        Type          = ModuleType.Logic,
+        ModuleId = ModuleId,
+        Version = "1.0.0",
+        Type = ModuleType.Logic,
         Compatibility = ["sms"],
-        Parameters    =
+        Parameters =
         [
             new ParameterDefinition
             {
@@ -119,18 +119,18 @@ public class EnemyModule : ILogicModule
 
     public IEnumerable<GeneratedFile> GenerateCode() => [];
 
-    public string Serialize()              => JsonSerializer.Serialize(_state, _jsonOptions);
-    public void   Deserialize(string json) => _state = JsonSerializer.Deserialize<EnemyState>(json, _jsonOptions) ?? new();
-    public string GetValidationSample()    => JsonSerializer.Serialize(new EnemyState(), _jsonOptions);
+    public string Serialize() => JsonSerializer.Serialize(_state, _jsonOptions);
+    public void Deserialize(string json) => _state = JsonSerializer.Deserialize<EnemyState>(json, _jsonOptions) ?? new();
+    public string GetValidationSample() => JsonSerializer.Serialize(new EnemyState(), _jsonOptions);
 
     private class EnemyState
     {
-        public int    SpriteId    { get; set; } = 1;
-        public int    X           { get; set; } = 120;
-        public int    Y           { get; set; } = 144;
-        public int    Speed       { get; set; } = 1;
-        public int    Health      { get; set; } = 1;
-        public string Pattern     { get; set; } = "Patrol";
-        public int    PatrolRange { get; set; } = 64;
+        public int SpriteId { get; set; } = 1;
+        public int X { get; set; } = 120;
+        public int Y { get; set; } = 144;
+        public int Speed { get; set; } = 1;
+        public int Health { get; set; } = 1;
+        public string Pattern { get; set; } = "Patrol";
+        public int PatrolRange { get; set; } = 64;
     }
 }

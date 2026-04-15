@@ -27,7 +27,7 @@ public class SpriteModule : IGraphicModule
     public string Category => "Graphics";
     public ModuleType Type => ModuleType.Logic;
     public bool IsSingleton => false;
-    public string[] Compatibility => ["sms", "gg"];
+    public string[] Compatibility { get; set; } = [];
 
     private static readonly JsonSerializerOptions _jsonOptions = new()
     {
@@ -42,7 +42,6 @@ public class SpriteModule : IGraphicModule
         ModuleId = ModuleId,
         Version = "1.0.0",
         Type = ModuleType.Logic,
-        Compatibility = Compatibility,
         Parameters =
         [
             new ParameterDefinition

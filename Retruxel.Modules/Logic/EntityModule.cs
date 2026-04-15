@@ -16,7 +16,7 @@ public class EntityModule : ILogicModule
     public string Category => "Entities";
     public ModuleType Type => ModuleType.Logic;
     public bool IsSingleton => true;
-    public string[] Compatibility => ["sms"];
+    public string[] Compatibility { get; set; } = [];
 
     private static readonly JsonSerializerOptions _jsonOptions = new()
     {
@@ -31,7 +31,6 @@ public class EntityModule : ILogicModule
         ModuleId = ModuleId,
         Version = "1.0.0",
         Type = ModuleType.Logic,
-        Compatibility = ["sms"],
         Parameters =
         [
             new ParameterDefinition

@@ -30,7 +30,7 @@ public class AnimationModule : ILogicModule
     public string Category => "Logic";
     public ModuleType Type => ModuleType.Logic;
     public bool IsSingleton => false;
-    public string[] Compatibility => ["sms", "gg"];
+    public string[] Compatibility { get; set; } = [];
 
     private static readonly JsonSerializerOptions _jsonOptions = new()
     {
@@ -45,7 +45,6 @@ public class AnimationModule : ILogicModule
         ModuleId = ModuleId,
         Version = "1.0.0",
         Type = ModuleType.Logic,
-        Compatibility = Compatibility,
         Parameters =
         [
             new ParameterDefinition

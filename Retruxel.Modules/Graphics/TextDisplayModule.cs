@@ -25,7 +25,7 @@ public class TextDisplayModule : IGraphicModule
     public string Category => "Output";
     public ModuleType Type => ModuleType.Graphics;
     public bool IsSingleton => false;
-    public string[] Compatibility => ["all"];
+    public string[] Compatibility { get; set; } = [];
 
     public int X { get; set; } = 0;
     public int Y { get; set; } = 0;
@@ -36,7 +36,6 @@ public class TextDisplayModule : IGraphicModule
         ModuleId = ModuleId,
         Version = "1.0.0",
         Type = ModuleType.Graphics,
-        Compatibility = ["all"],
         Parameters =
         [
             new ParameterDefinition

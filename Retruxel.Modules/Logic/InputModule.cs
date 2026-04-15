@@ -24,7 +24,7 @@ namespace Retruxel.Modules.Logic;
 /// </summary>
 public class InputModule : ILogicModule
 {
-    public string ModuleId => "sms.input";
+    public string ModuleId => "input";
     public string DisplayName => "Input";
     public string Category => "Logic";
     public ModuleType Type => ModuleType.Logic;

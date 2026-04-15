@@ -11,7 +11,7 @@ namespace Retruxel.Modules.Logic;
 /// </summary>
 public class EntityModule : ILogicModule
 {
-    public string ModuleId => "sms.entity";
+    public string ModuleId => "entity";
     public string DisplayName => "Player Entity";
     public string Category => "Entities";
     public ModuleType Type => ModuleType.Logic;

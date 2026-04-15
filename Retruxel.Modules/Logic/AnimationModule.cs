@@ -25,7 +25,7 @@ namespace Retruxel.Modules.Logic;
 /// </summary>
 public class AnimationModule : ILogicModule
 {
-    public string ModuleId => "sms.animation";
+    public string ModuleId => "animation";
     public string DisplayName => "Animation";
     public string Category => "Logic";
     public ModuleType Type => ModuleType.Logic;

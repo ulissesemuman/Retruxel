@@ -22,7 +22,7 @@ namespace Retruxel.Modules.Graphics;
 /// </summary>
 public class SpriteModule : IGraphicModule
 {
-    public string ModuleId => "sms.sprite";
+    public string ModuleId => "sprite";
     public string DisplayName => "Sprite";
     public string Category => "Graphics";
     public ModuleType Type => ModuleType.Logic;

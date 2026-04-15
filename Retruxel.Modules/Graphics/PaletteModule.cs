@@ -23,7 +23,7 @@ namespace Retruxel.Modules.Graphics;
 /// </summary>
 public class PaletteModule : IGraphicModule
 {
-    public string ModuleId => "sms.palette";
+    public string ModuleId => "palette";
     public string DisplayName => "Palette";
     public string Category => "Graphics";
     public ModuleType Type => ModuleType.Logic;

@@ -24,7 +24,7 @@ namespace Retruxel.Modules.Graphics;
 /// </summary>
 public class TilemapModule : IGraphicModule
 {
-    public string ModuleId => "sms.tilemap";
+    public string ModuleId => "tilemap";
     public string DisplayName => "Tilemap";
     public string Category => "Graphics";
     public ModuleType Type => ModuleType.Logic;

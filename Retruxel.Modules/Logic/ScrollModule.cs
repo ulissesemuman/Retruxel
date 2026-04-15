@@ -11,7 +11,7 @@ namespace Retruxel.Modules.Logic;
 /// </summary>
 public class ScrollModule : ILogicModule
 {
-    public string ModuleId => "sms.scroll";
+    public string ModuleId => "scroll";
     public string DisplayName => "Background Scroll";
     public string Category => "Background";
     public ModuleType Type => ModuleType.Logic;

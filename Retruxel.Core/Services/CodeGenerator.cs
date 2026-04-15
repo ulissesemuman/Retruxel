@@ -167,17 +167,17 @@ public class CodeGenerator
     /// about which other modules are present in the project.
     ///
     /// Current flags injected:
-    ///   sms.entity → "usePhysics": true/false, "useInput": true/false
+    ///   entity → "usePhysics": true/false, "useInput": true/false
     ///
     /// The wrapper only modifies Serialize() — all other IModule members
     /// delegate to the original module unchanged.
     /// </summary>
     private static IModule InjectContextFlags(IModule module, HashSet<string> presentModuleIds)
     {
-        if (module.ModuleId == "sms.entity")
+        if (module.ModuleId == "entity")
         {
-            var usePhysics = presentModuleIds.Contains("sms.physics");
-            var useInput = presentModuleIds.Contains("sms.input");
+            var usePhysics = presentModuleIds.Contains("physics");
+            var useInput = presentModuleIds.Contains("input");
 
             if (usePhysics || useInput)
                 return new ContextualModule(module, json => InjectFlags(json, new()

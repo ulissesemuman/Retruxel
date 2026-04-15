@@ -12,7 +12,7 @@ namespace Retruxel.Modules.Logic;
 /// </summary>
 public class EnemyModule : ILogicModule
 {
-    public string ModuleId => "sms.enemy";
+    public string ModuleId => "enemy";
     public string DisplayName => "Enemy Entity";
     public string Category => "Entities";
     public ModuleType Type => ModuleType.Logic;

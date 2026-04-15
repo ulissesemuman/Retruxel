@@ -27,7 +27,7 @@ namespace Retruxel.Modules.Logic;
 /// </summary>
 public class PhysicsModule : ILogicModule
 {
-    public string ModuleId => "sms.physics";
+    public string ModuleId => "physics";
     public string DisplayName => "Physics";
     public string Category => "Logic";
     public ModuleType Type => ModuleType.Logic;

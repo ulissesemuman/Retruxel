@@ -223,23 +223,64 @@ Create a folder in `Plugins/CodeGens/[module_id]/[target_id]/` with:
 **codegen.json** — manifest describing inputs and outputs:
 ```json
 {
-  "moduleId": "mymodule",
+  "moduleId": "sprite",
   "targetId": "sms",
   "templates": [
-    { "template": "mymodule.c.rtrx", "output": "mymodule.c" },
-    { "template": "mymodule.h.rtrx", "output": "mymodule.h" }
+    { "template": "sprite.c.rtrx", "output": "sprite.c" },
+    { "template": "sprite.h.rtrx", "output": "sprite.h" }
+  ],
+  "tools": [
+    {
+      "toolId": "png_to_tiles_sms",
+      "input": {
+        "imagePath": "{{spritePath}}",
+        "tileWidth": 8,
+        "tileHeight": 8
+      },
+      "output": "spriteData"
+    }
   ]
 }
 ```
 
-**mymodule.c.rtrx** — C template with variable substitution:
+**sprite.c.rtrx** — C template with variable substitution:
 ```c
-void {{functionName}}() {
-    {{#if enabled}}
-    // Generated code
-    {{#each items}}
-    process_item({{this}});
+// Sprite: {{spriteName}}
+// Size: {{width}}x{{height}} pixels
+// Tiles: {{spriteData.tileCount}}
+
+const unsigned char {{spriteName}}_tiles[] = {
+    {{spriteData.tilesArray}}
+};
+
+const unsigned char {{spriteName}}_palette[] = {
+    {{spriteData.palette}}
+};
+
+void {{spriteName}}_init() {
+    {{#if animated}}
+    // Animation setup
+    sprite_frame = 0;
+    sprite_frame_count = {{frameCount}};
+    {{/if}}
+    
+    {{#ifnot visible}}
+    // Sprite hidden by default
+    sprite_visible = 0;
+    {{/ifnot}}
+}
+
+void {{spriteName}}_update() {
+    {{#if animated}}
+    {{#each frames}}
+    if (sprite_frame == {{@index}}) {
+        load_tiles({{this.offset}}, {{this.count}});
+    }
     {{/each}}
+    {{/if}}
+    
+    {{#if speed > 0}}
+    sprite_x += {{speed * direction}};
     {{/if}}
 }
 ```

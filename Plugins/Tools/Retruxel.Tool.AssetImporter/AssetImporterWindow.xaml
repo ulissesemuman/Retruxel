@@ -1,7 +1,6 @@
 <Window x:Class="Retruxel.Tool.AssetImporter.AssetImporterWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        xmlns:loc="clr-namespace:Retruxel.Services;assembly=Retruxel"
         Title="Asset Importer"
         Height="600" Width="860"
         MinHeight="500" MinWidth="720"
@@ -44,7 +43,7 @@
                 <Grid Margin="24,0,8,0">
                     <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                         <TextBlock x:Name="TxtTitle"
-                                   Text="{loc:Tr Key='assetimporter.title'}"
+                                   Text="ASSET IMPORTER"
                                    Style="{StaticResource TextHeadline}"
                                    Foreground="{StaticResource BrushPrimary}"
                                    VerticalAlignment="Center"
@@ -78,24 +77,24 @@
 
                 <!-- Asset type selector -->
                 <StackPanel Grid.Row="0" Grid.ColumnSpan="3" Orientation="Horizontal">
-                    <TextBlock Text="{loc:Tr Key='assetimporter.type'}"
+                    <TextBlock Text="TYPE"
                                Style="{StaticResource TextLabelCaps}"
                                Foreground="{StaticResource BrushOnSurfaceVariant}"
                                VerticalAlignment="Center"
                                Margin="0,0,8,0"/>
-                    <RadioButton x:Name="RbTiles" Content="{loc:Tr Key='assetimporter.type.tiles'}"
+                    <RadioButton x:Name="RbTiles" Content="TILES"
                                  IsChecked="True"
                                  GroupName="AssetType"
                                  Style="{StaticResource SegmentedRadio}"
                                  Margin="0,0,8,0"/>
-                    <RadioButton x:Name="RbSprites" Content="{loc:Tr Key='assetimporter.type.sprites'}"
+                    <RadioButton x:Name="RbSprites" Content="SPRITES"
                                  GroupName="AssetType"
                                  Style="{StaticResource SegmentedRadio}"/>
                 </StackPanel>
 
                 <!-- BEFORE preview -->
                 <StackPanel Grid.Row="2" Grid.Column="0">
-                    <TextBlock Text="{loc:Tr Key='assetimporter.source'}"
+                    <TextBlock Text="SOURCE"
                                Style="{StaticResource TextLabelCaps}"
                                Foreground="{StaticResource BrushOnSurfaceVariant}"
                                Margin="0,0,0,8"/>
@@ -110,16 +109,16 @@
                             <StackPanel x:Name="DropHint"
                                         VerticalAlignment="Center"
                                         HorizontalAlignment="Center">
-                                <TextBlock Text="{loc:Tr Key='assetimporter.drop_hint'}"
+                                <TextBlock Text="Drop PNG here"
                                            Style="{StaticResource TextBody}"
                                            Foreground="{StaticResource BrushOnSurfaceVariant}"
                                            HorizontalAlignment="Center"/>
-                                <TextBlock Text="{loc:Tr Key='assetimporter.drop_hint.or'}"
+                                <TextBlock Text="or"
                                            Style="{StaticResource TextLabel}"
                                            Foreground="{StaticResource BrushOnSurfaceVariant}"
                                            HorizontalAlignment="Center"
                                            Margin="0,4"/>
-                                <Button Content="{loc:Tr Key='assetimporter.browse'}"
+                                <Button Content="BROWSE"
                                         HorizontalAlignment="Center"
                                         Click="BtnBrowse_Click"
                                         Style="{StaticResource ButtonSecondary}"/>
@@ -141,7 +140,7 @@
 
                 <!-- AFTER preview -->
                 <StackPanel Grid.Row="2" Grid.Column="2">
-                    <TextBlock Text="{loc:Tr Key='assetimporter.reduced'}"
+                    <TextBlock Text="REDUCED"
                                Style="{StaticResource TextLabelCaps}"
                                Foreground="{StaticResource BrushOnSurfaceVariant}"
                                Margin="0,0,0,8"/>
@@ -149,7 +148,7 @@
                             MinHeight="200">
                         <Grid>
                             <TextBlock x:Name="ReducedHint"
-                                       Text="{loc:Tr Key='assetimporter.preview_hint'}"
+                                       Text="Preview will appear here"
                                        Style="{StaticResource TextLabel}"
                                        Foreground="{StaticResource BrushOnSurfaceVariant}"
                                        VerticalAlignment="Center"
@@ -170,7 +169,7 @@
                 <!-- Asset name + validation -->
                 <StackPanel Grid.Row="4" Grid.ColumnSpan="3">
                     <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,0,6">
-                        <TextBlock Text="{loc:Tr Key='assetimporter.asset_name'}"
+                        <TextBlock Text="ASSET NAME"
                                    Style="{StaticResource TextLabelCaps}"
                                    Foreground="{StaticResource BrushOnSurfaceVariant}"
                                    VerticalAlignment="Center"
@@ -199,13 +198,13 @@
                     <StackPanel Orientation="Horizontal"
                                 HorizontalAlignment="Right"
                                 VerticalAlignment="Center">
-                        <Button Content="{loc:Tr Key='assetimporter.cancel'}"
+                        <Button Content="CANCEL"
                                 Click="BtnCancel_Click"
                                 Style="{StaticResource ButtonGhost}"
                                 Padding="24,0" Height="40"
                                 Margin="0,0,8,0"/>
                         <Button x:Name="BtnImport"
-                                Content="{loc:Tr Key='assetimporter.import'}"
+                                Content="IMPORT"
                                 IsEnabled="False"
                                 Click="BtnImport_Click"
                                 Style="{StaticResource ButtonPrimary}"

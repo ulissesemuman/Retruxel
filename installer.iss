@@ -1,5 +1,5 @@
 #define MyAppName "Retruxel"
-#define MyAppVersion "0.7.1-alpha"
+#define MyAppVersion "0.7.2-beta"
 #define MyAppPublisher "Ulisses Emuman"
 #define MyAppURL "https://github.com/ulissesemuman/Retruxel"
 #define MyAppExeName "Retruxel.exe"

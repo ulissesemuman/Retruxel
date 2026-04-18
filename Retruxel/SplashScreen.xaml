@@ -1,7 +1,7 @@
 ﻿<Window x:Class="Retruxel.SplashScreen"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        xmlns:loc="clr-namespace:Retruxel.Localization"
+        xmlns:loc="clr-namespace:Retruxel.Services"
         Title="Retruxel"
         Height="600" Width="900"
         WindowStartupLocation="CenterScreen"

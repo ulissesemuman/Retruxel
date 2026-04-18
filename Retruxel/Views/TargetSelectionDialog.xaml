@@ -2,7 +2,7 @@
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:controls="clr-namespace:Retruxel.Controls"
-        xmlns:loc="clr-namespace:Retruxel.Localization"
+        xmlns:loc="clr-namespace:Retruxel.Services"
         Title="{loc:Tr Key='targetselection.title'}"
         Height="600" Width="759"
         WindowStartupLocation="CenterOwner"

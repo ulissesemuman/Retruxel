@@ -109,7 +109,7 @@ Each module exposes a `ModuleManifest` that describes its parameters. The shell 
 
 **Standard modules** (`Retruxel.Modules`) are portable definitions designed for cross-platform migration. These modules generate platform-agnostic JSON that can be rendered to any target.
 
-**Console-specific modules** can be added via plugins in `Plugins/Targets/` to leverage unique hardware features (e.g., SMS VDP modes, NES PPU attributes).
+**Console-specific modules** can be added to leverage unique hardware features (e.g., SMS VDP modes, NES PPU attributes). These are defined in `Retruxel.Modules` with target-specific parameters.
 
 Code generation is declarative: each module has a `codegen.json` manifest and `.c.rtrx` template files in `Plugins/CodeGens/[module]/[target]/`. The `ModuleRenderer` processes templates with variable substitution, conditionals, loops, and tool invocation.
 

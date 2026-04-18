@@ -4,14 +4,14 @@ using SkiaSharp;
 namespace Retruxel.Tool.TilePacker;
 
 /// <summary>
-/// Optimizes tilemaps by detecting duplicate tiles with flip/rotation support.
-/// Analyzes 8x8 tiles and creates an optimized tilemap with transformation flags.
+/// Platform-agnostic tile packer that analyzes images and detects tile patterns.
+/// Returns raw tile data and transformation flags without platform-specific formatting.
 /// </summary>
 public class TilePackerTool : ITool
 {
     public string ToolId => "retruxel.tool.tilepacker";
     public string DisplayName => "Tile Packer";
-    public string Description => "Optimize tilemaps by detecting duplicate tiles with flip/rotation support";
+    public string Description => "Platform-agnostic tilemap optimizer with pattern detection";
     public string Category => "Optimization";
     public bool IsStandalone => false;
     public bool RequiresProject => false;
@@ -21,14 +21,15 @@ public class TilePackerTool : ITool
         var imagePath = input["imagePath"] as string ?? throw new ArgumentException("imagePath is required");
         var tileWidth = input.ContainsKey("tileWidth") ? Convert.ToInt32(input["tileWidth"]) : 8;
         var tileHeight = input.ContainsKey("tileHeight") ? Convert.ToInt32(input["tileHeight"]) : 8;
-        var enableFlip = input.ContainsKey("enableFlip") && Convert.ToBoolean(input["enableFlip"]);
+        var enableFlipH = input.ContainsKey("enableFlipH") && Convert.ToBoolean(input["enableFlipH"]);
+        var enableFlipV = input.ContainsKey("enableFlipV") && Convert.ToBoolean(input["enableFlipV"]);
         var enableRotation = input.ContainsKey("enableRotation") && Convert.ToBoolean(input["enableRotation"]);
 
         using var bitmap = SKBitmap.Decode(imagePath);
         if (bitmap == null)
             throw new InvalidOperationException($"Failed to load image: {imagePath}");
 
-        var result = PackTiles(bitmap, tileWidth, tileHeight, enableFlip, enableRotation);
+        var result = PackTiles(bitmap, tileWidth, tileHeight, enableFlipH, enableFlipV, enableRotation);
 
         return new Dictionary<string, object>
         {
@@ -38,12 +39,11 @@ public class TilePackerTool : ITool
             ["tilemapHeight"] = result.TilemapHeight,
             ["originalTileCount"] = result.OriginalTileCount,
             ["optimizedTileCount"] = result.OptimizedTileCount,
-            ["compressionRatio"] = result.CompressionRatio,
-            ["tileData"] = result.TileData
+            ["compressionRatio"] = result.CompressionRatio
         };
     }
 
-    private PackResult PackTiles(SKBitmap bitmap, int tileWidth, int tileHeight, bool enableFlip, bool enableRotation)
+    private PackResult PackTiles(SKBitmap bitmap, int tileWidth, int tileHeight, bool enableFlipH, bool enableFlipV, bool enableRotation)
     {
         var tilesX = bitmap.Width / tileWidth;
         var tilesY = bitmap.Height / tileHeight;
@@ -58,7 +58,7 @@ public class TilePackerTool : ITool
             for (int tx = 0; tx < tilesX; tx++)
             {
                 var tile = ExtractTile(bitmap, tx * tileWidth, ty * tileHeight, tileWidth, tileHeight);
-                var (tileIndex, flipH, flipV, rotate) = FindOrAddTile(tile, uniqueTiles, tileHashes, enableFlip, enableRotation);
+                var (tileIndex, flipH, flipV, rotate) = FindOrAddTile(tile, uniqueTiles, tileHashes, enableFlipH, enableFlipV, enableRotation);
 
                 tilemap.Add(new TilemapEntry
                 {
@@ -82,8 +82,7 @@ public class TilePackerTool : ITool
             TilemapHeight = tilesY,
             OriginalTileCount = totalTiles,
             OptimizedTileCount = uniqueTiles.Count,
-            CompressionRatio = compressionRatio,
-            TileData = SerializeTileData(uniqueTiles)
+            CompressionRatio = compressionRatio
         };
     }
 
@@ -107,37 +106,45 @@ public class TilePackerTool : ITool
         return tile;
     }
 
-    private (int tileIndex, bool flipH, bool flipV, bool rotate) FindOrAddTile(
+    private (int tileIndex, bool flipH, bool flipV, int rotation) FindOrAddTile(
         byte[] tile,
         List<byte[]> uniqueTiles,
         Dictionary<string, int> tileHashes,
-        bool enableFlip,
+        bool enableFlipH,
+        bool enableFlipV,
         bool enableRotation)
     {
         // Try original
         var hash = ComputeHash(tile);
         if (tileHashes.TryGetValue(hash, out var index))
-            return (index, false, false, false);
+            return (index, false, false, 0);
 
         // Try horizontal flip
-        if (enableFlip)
+        if (enableFlipH)
         {
             var flippedH = FlipHorizontal(tile);
             hash = ComputeHash(flippedH);
             if (tileHashes.TryGetValue(hash, out index))
-                return (index, true, false, false);
+                return (index, true, false, 0);
+        }
 
-            // Try vertical flip
+        // Try vertical flip
+        if (enableFlipV)
+        {
             var flippedV = FlipVertical(tile);
             hash = ComputeHash(flippedV);
             if (tileHashes.TryGetValue(hash, out index))
-                return (index, false, true, false);
+                return (index, false, true, 0);
+        }
 
-            // Try both flips
+        // Try both flips
+        if (enableFlipH && enableFlipV)
+        {
+            var flippedH = FlipHorizontal(tile);
             var flippedHV = FlipVertical(flippedH);
             hash = ComputeHash(flippedHV);
             if (tileHashes.TryGetValue(hash, out index))
-                return (index, true, true, false);
+                return (index, true, true, 0);
         }
 
         // Try rotations (90, 180, 270 degrees)
@@ -146,24 +153,24 @@ public class TilePackerTool : ITool
             var rotated90 = Rotate90(tile);
             hash = ComputeHash(rotated90);
             if (tileHashes.TryGetValue(hash, out index))
-                return (index, false, false, true); // Simplified: just mark as rotated
+                return (index, false, false, 90);
 
             var rotated180 = Rotate90(rotated90);
             hash = ComputeHash(rotated180);
             if (tileHashes.TryGetValue(hash, out index))
-                return (index, false, false, true);
+                return (index, false, false, 180);
 
             var rotated270 = Rotate90(rotated180);
             hash = ComputeHash(rotated270);
             if (tileHashes.TryGetValue(hash, out index))
-                return (index, false, false, true);
+                return (index, false, false, 270);
         }
 
         // Add as new unique tile
         var newIndex = uniqueTiles.Count;
         uniqueTiles.Add(tile);
         tileHashes[ComputeHash(tile)] = newIndex;
-        return (newIndex, false, false, false);
+        return (newIndex, false, false, 0);
     }
 
     private byte[] FlipHorizontal(byte[] tile)
@@ -230,34 +237,7 @@ public class TilePackerTool : ITool
         return Convert.ToBase64String(hash);
     }
 
-    private string SerializeTileData(List<byte[]> tiles)
-    {
-        var lines = new List<string>();
-        
-        for (int i = 0; i < tiles.Count; i++)
-        {
-            var tile = tiles[i];
-            var hexValues = new List<string>();
-            
-            // Convert RGBA to indexed color or grayscale for SMS
-            for (int j = 0; j < tile.Length; j += 4)
-            {
-                var r = tile[j];
-                var g = tile[j + 1];
-                var b = tile[j + 2];
-                var a = tile[j + 3];
-                
-                // Simple grayscale conversion for now
-                var gray = (byte)((r + g + b) / 3);
-                hexValues.Add($"0x{gray:X2}");
-            }
-            
-            lines.Add($"    // Tile {i}");
-            lines.Add($"    {string.Join(", ", hexValues)}");
-        }
-        
-        return string.Join(",\n", lines);
-    }
+
 
     private class PackResult
     {
@@ -268,7 +248,6 @@ public class TilePackerTool : ITool
         public int OriginalTileCount { get; set; }
         public int OptimizedTileCount { get; set; }
         public double CompressionRatio { get; set; }
-        public string TileData { get; set; } = string.Empty;
     }
 
     private class TilemapEntry
@@ -276,7 +255,7 @@ public class TilePackerTool : ITool
         public int TileIndex { get; set; }
         public bool FlipH { get; set; }
         public bool FlipV { get; set; }
-        public bool Rotate { get; set; }
+        public int Rotation { get; set; }
         public int X { get; set; }
         public int Y { get; set; }
     }

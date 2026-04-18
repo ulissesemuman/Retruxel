@@ -1,6 +1,4 @@
-﻿using Retruxel.Core.Models;
-
-namespace Retruxel.Core.Interfaces;
+﻿namespace Retruxel.Core.Interfaces;
 
 /// <summary>
 /// Base contract for all Retruxel modules.
@@ -8,7 +6,7 @@ namespace Retruxel.Core.Interfaces;
 /// </summary>
 public interface IModule
 {
-    /// <summary>Unique module identifier. Ex: "text.display", "sms.vdp.scroll"</summary>
+    /// <summary>Unique module identifier. Ex: "text.display", "scroll"</summary>
     string ModuleId { get; }
 
     /// <summary>Display name shown in the UI.</summary>

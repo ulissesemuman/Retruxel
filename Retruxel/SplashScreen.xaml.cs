@@ -1,9 +1,9 @@
-﻿using System.Reflection;
+﻿using Retruxel.Core.Services;
+using System.Reflection;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
-using Retruxel.Core.Services;
 
 namespace Retruxel;
 

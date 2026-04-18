@@ -12,7 +12,7 @@ namespace Retruxel.Modules.Graphics;
 ///
 /// JSON format:
 /// {
-///   "module":       "sms.tilemap",
+///   "module":       "tilemap",
 ///   "tilesAssetId": "bg_tiles",       // asset ID for CHR tile data
 ///   "mapAssetId":   "bg_map",         // asset ID for nametable layout
 ///   "startTile":    0,                // first VRAM tile slot to load into (0–447)
@@ -24,16 +24,16 @@ namespace Retruxel.Modules.Graphics;
 /// </summary>
 public class TilemapModule : IGraphicModule
 {
-    public string     ModuleId     => "sms.tilemap";
-    public string     DisplayName  => "Tilemap";
-    public string     Category     => "Graphics";
-    public ModuleType Type         => ModuleType.Logic;
-    public bool     IsSingleton  => false;
-    public string[]   Compatibility => ["sms", "gg"];
+    public string ModuleId => "tilemap";
+    public string DisplayName => "Tilemap";
+    public string Category => "Graphics";
+    public ModuleType Type => ModuleType.Logic;
+    public bool IsSingleton => false;
+    public string[] Compatibility { get; set; } = [];
 
     private static readonly JsonSerializerOptions _jsonOptions = new()
     {
-        PropertyNamingPolicy        = JsonNamingPolicy.CamelCase,
+        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
         PropertyNameCaseInsensitive = true
     };
 
@@ -41,11 +41,10 @@ public class TilemapModule : IGraphicModule
 
     public ModuleManifest GetManifest() => new()
     {
-        ModuleId      = ModuleId,
-        Version       = "1.0.0",
-        Type          = ModuleType.Logic,
-        Compatibility = Compatibility,
-        Parameters    =
+        ModuleId = ModuleId,
+        Version = "1.0.0",
+        Type = ModuleType.Logic,
+        Parameters =
         [
             new ParameterDefinition
             {
@@ -112,6 +111,22 @@ public class TilemapModule : IGraphicModule
                 DefaultValue = 24,
                 MinValue     = 1,
                 MaxValue     = 28
+            },
+            new ParameterDefinition
+            {
+                Name         = "mapData",
+                DisplayName  = "Map Data",
+                Description  = "Tile indices for the map layout.",
+                Type         = ParameterType.IntArray,
+                DefaultValue = Array.Empty<int>()
+            },
+            new ParameterDefinition
+            {
+                Name         = "solidTiles",
+                DisplayName  = "Solid Tiles",
+                Description  = "List of tile indices that are solid for collision.",
+                Type         = ParameterType.IntArray,
+                DefaultValue = Array.Empty<int>()
             }
         ]
     };
@@ -130,18 +145,20 @@ public class TilemapModule : IGraphicModule
 
     public IEnumerable<GeneratedFile> GenerateCode() => [];
 
-    public string Serialize()              => JsonSerializer.Serialize(_state, _jsonOptions);
-    public void   Deserialize(string json) => _state = JsonSerializer.Deserialize<TilemapState>(json, _jsonOptions) ?? new();
-    public string GetValidationSample()    => JsonSerializer.Serialize(new TilemapState(), _jsonOptions);
+    public string Serialize() => JsonSerializer.Serialize(_state, _jsonOptions);
+    public void Deserialize(string json) => _state = JsonSerializer.Deserialize<TilemapState>(json, _jsonOptions) ?? new();
+    public string GetValidationSample() => JsonSerializer.Serialize(new TilemapState(), _jsonOptions);
 
     private class TilemapState
     {
         public string TilesAssetId { get; set; } = string.Empty;
-        public string MapAssetId   { get; set; } = string.Empty;
-        public int    StartTile    { get; set; } = 0;
-        public int    MapX         { get; set; } = 0;
-        public int    MapY         { get; set; } = 0;
-        public int    MapWidth     { get; set; } = 32;
-        public int    MapHeight    { get; set; } = 24;
+        public string MapAssetId { get; set; } = string.Empty;
+        public int StartTile { get; set; } = 0;
+        public int MapX { get; set; } = 0;
+        public int MapY { get; set; } = 0;
+        public int MapWidth { get; set; } = 32;
+        public int MapHeight { get; set; } = 24;
+        public int[] MapData { get; set; } = [];
+        public int[] SolidTiles { get; set; } = [];
     }
 }

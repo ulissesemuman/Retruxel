@@ -1,7 +1,6 @@
 using System.ComponentModel;
 using System.Globalization;
 using System.Text.Json;
-using System.Text.Json.Serialization;
 
 namespace Retruxel.Core.Services;
 
@@ -35,19 +34,19 @@ public class LocalizationService : INotifyPropertyChanged
     public string DetectSystemLanguage()
     {
         var systemCulture = CultureInfo.CurrentUICulture.Name; // e.g., "pt-BR", "en-US"
-        
+
         // Try exact match
         if (_availableLanguages.Any(l => l.Code.Equals(systemCulture, StringComparison.OrdinalIgnoreCase)))
             return systemCulture;
-        
+
         // Try language family match (pt-BR -> pt, pt-PT -> pt)
         var languageFamily = systemCulture.Split('-')[0]; // "pt-BR" -> "pt"
-        var familyMatch = _availableLanguages.FirstOrDefault(l => 
+        var familyMatch = _availableLanguages.FirstOrDefault(l =>
             l.Code.Split('-')[0].Equals(languageFamily, StringComparison.OrdinalIgnoreCase));
-        
+
         if (familyMatch != null)
             return familyMatch.Code;
-        
+
         // Fallback to English
         return "en";
     }
@@ -78,7 +77,7 @@ public class LocalizationService : INotifyPropertyChanged
                 if (doc.RootElement.TryGetProperty("_metadata", out var metadata))
                 {
                     code = metadata.GetProperty("code").GetString() ?? "unknown";
-                    
+
                     // Try to get native name from CultureInfo
                     try
                     {

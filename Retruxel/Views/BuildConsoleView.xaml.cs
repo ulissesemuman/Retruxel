@@ -66,21 +66,26 @@ public partial class BuildConsoleView : UserControl
         SetStatus(loc.Get("build.status.building"), false);
         TxtDescription.Text = string.Format(loc.Get("buildconsole.compiling"), project.Name, project.TargetId.ToUpper());
 
-        // Build module loader: built-in modules first, then compatible plugins
-        var moduleLoader = new ModuleLoader(AppDomain.CurrentDomain.BaseDirectory);
-        moduleLoader.RegisterBuiltinModules(target);
-        moduleLoader.LoadCompatible(project.TargetId);
+        // Build module registry: orchestrates module loading and codegen discovery
+        var moduleRegistry = new ModuleRegistry(AppDomain.CurrentDomain.BaseDirectory);
+        moduleRegistry.RegisterBuiltinModules(target);
+        
+        var progress = new Progress<string>(msg => Dispatcher.Invoke(() => AppendLog(msg)));
+        moduleRegistry.LoadForTarget(project.TargetId, progress);
+
+        // Create ModuleRenderer for declarative CodeGens
+        var pluginsPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Plugins");
+        var moduleRenderer = new ModuleRenderer(pluginsPath);
 
         // Register universal modules present in the project that weren't
         // covered by built-ins or plugins (e.g. text.display from Retruxel.Modules)
         foreach (var moduleId in project.DefaultModules.Distinct())
         {
-            if (moduleId == "text.display" && !moduleLoader.GraphicModules.ContainsKey(moduleId))
-                moduleLoader.RegisterGraphicModule(new Retruxel.Modules.Graphics.TextDisplayModule());
+            if (moduleId == "text.display" && !moduleRegistry.GraphicModules.ContainsKey(moduleId))
+                moduleRegistry.RegisterGraphicModule(new Retruxel.Modules.Graphics.TextDisplayModule());
         }
 
-        var progress = new Progress<string>(msg => Dispatcher.Invoke(() => AppendLog(msg)));
-        var codeGen = new CodeGenerator(moduleLoader, target);
+        var codeGen = new CodeGenerator(moduleRegistry, moduleRenderer, target);
 
         var outputDir = Path.Combine(project.ProjectPath, "build");
         Directory.CreateDirectory(outputDir);
@@ -123,28 +128,28 @@ public partial class BuildConsoleView : UserControl
         if (romPath is null || _project is null) return;
 
         var settings = await SettingsService.LoadAsync();
-        
+
         // Get settings for the current target
         var (launchEnabled, emulatorPath, emulatorArgs) = _project.TargetId.ToLower() switch
         {
-            "sms" => (settings.Targets.Sms.LaunchEmulatorAfterBuild, 
-                      settings.Targets.Sms.EmulatorPath, 
+            "sms" => (settings.Targets.Sms.LaunchEmulatorAfterBuild,
+                      settings.Targets.Sms.EmulatorPath,
                       settings.Targets.Sms.EmulatorArguments),
-            "nes" => (settings.Targets.Nes.LaunchEmulatorAfterBuild, 
-                      settings.Targets.Nes.EmulatorPath, 
+            "nes" => (settings.Targets.Nes.LaunchEmulatorAfterBuild,
+                      settings.Targets.Nes.EmulatorPath,
                       settings.Targets.Nes.EmulatorArguments),
-            "gg" => (settings.Targets.Gg.LaunchEmulatorAfterBuild, 
-                     settings.Targets.Gg.EmulatorPath, 
+            "gg" => (settings.Targets.Gg.LaunchEmulatorAfterBuild,
+                     settings.Targets.Gg.EmulatorPath,
                      settings.Targets.Gg.EmulatorArguments),
-            "sg1000" => (settings.Targets.Sg1000.LaunchEmulatorAfterBuild, 
-                         settings.Targets.Sg1000.EmulatorPath, 
+            "sg1000" => (settings.Targets.Sg1000.LaunchEmulatorAfterBuild,
+                         settings.Targets.Sg1000.EmulatorPath,
                          settings.Targets.Sg1000.EmulatorArguments),
-            "coleco" => (settings.Targets.Coleco.LaunchEmulatorAfterBuild, 
-                         settings.Targets.Coleco.EmulatorPath, 
+            "coleco" => (settings.Targets.Coleco.LaunchEmulatorAfterBuild,
+                         settings.Targets.Coleco.EmulatorPath,
                          settings.Targets.Coleco.EmulatorArguments),
             _ => (false, string.Empty, string.Empty)
         };
-        
+
         if (!launchEnabled)
             return;
 
@@ -162,10 +167,10 @@ public partial class BuildConsoleView : UserControl
 
         try
         {
-            var args = string.IsNullOrEmpty(emulatorArgs) 
+            var args = string.IsNullOrEmpty(emulatorArgs)
                 ? $"\"{romPath}\""
                 : $"{emulatorArgs} \"{romPath}\"";
-            
+
             Process.Start(new ProcessStartInfo
             {
                 FileName = emulatorPath,
@@ -386,10 +391,10 @@ public partial class BuildConsoleView : UserControl
 
     private void CopyMd5_Click(object sender, RoutedEventArgs e)
     {
-        if (TxtMd5.Text == "N/A") return;
+        if (TxtMd5.Text == "N/A" || TxtMd5.Tag is null) return;
         try
         {
-            Clipboard.SetText(TxtMd5.Tag.ToString());
+            Clipboard.SetText(TxtMd5.Tag.ToString()!);
             ShowToast(LocalizationService.Instance.Get("toast.md5_copied"));
         }
         catch (Exception ex)
@@ -400,10 +405,10 @@ public partial class BuildConsoleView : UserControl
 
     private void CopySha256_Click(object sender, RoutedEventArgs e)
     {
-        if (TxtSha256.Text == "N/A") return;
+        if (TxtSha256.Text == "N/A" || TxtSha256.Tag is null) return;
         try
         {
-            Clipboard.SetText(TxtSha256.Tag.ToString());
+            Clipboard.SetText(TxtSha256.Tag.ToString()!);
             ShowToast(LocalizationService.Instance.Get("toast.sha256_copied"));
         }
         catch (Exception ex)

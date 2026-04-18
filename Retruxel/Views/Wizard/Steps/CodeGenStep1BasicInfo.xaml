@@ -1,0 +1,67 @@
+<UserControl x:Class="Retruxel.Views.Wizard.Steps.CodeGenStep1BasicInfo"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <StackPanel>
+        <TextBlock Text="Basic Information" FontSize="16" FontWeight="Bold" Foreground="#FFFFFF" Margin="0,0,0,16"/>
+        <TextBlock Text="Provide basic information about your CodeGen." TextWrapping="Wrap" Margin="0,0,0,24"/>
+
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="16"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+
+            <!-- Module ID -->
+            <Label Grid.Row="0" Grid.Column="0" Content="Module ID *" Margin="0,0,0,4"/>
+            <TextBox Grid.Row="1" Grid.Column="0" x:Name="ModuleIdTextBox" Margin="0,0,0,16"/>
+
+            <!-- Target ID -->
+            <Label Grid.Row="0" Grid.Column="2" Content="Target ID *" Margin="0,0,0,4"/>
+            <Grid Grid.Row="1" Grid.Column="2" Margin="0,0,0,16">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <ComboBox Grid.Column="0" x:Name="TargetIdComboBox" Margin="0,0,8,0"/>
+                <Button Grid.Column="1" Content="Install..." Click="InstallTarget_Click" Padding="8"/>
+            </Grid>
+
+            <!-- Display Name -->
+            <Label Grid.Row="2" Grid.Column="0" Content="Display Name *" Margin="0,0,0,4"/>
+            <TextBox Grid.Row="3" Grid.Column="0" x:Name="DisplayNameTextBox" Margin="0,0,0,16"/>
+        </Grid>
+
+        <!-- Description -->
+        <Label Content="Description" Margin="0,8,0,4"/>
+        <TextBox x:Name="DescriptionTextBox" 
+                 TextWrapping="Wrap" 
+                 AcceptsReturn="True" 
+                 Height="80" 
+                 VerticalScrollBarVisibility="Auto"/>
+
+        <!-- Info box -->
+        <Border Background="#2D2D30" BorderBrush="#3F3F46" BorderThickness="1" Padding="16" Margin="0,24,0,0">
+            <StackPanel>
+                <TextBlock Text="ℹ️ Module and Target IDs" FontWeight="Bold" Foreground="#FFFFFF" Margin="0,0,0,8"/>
+                <TextBlock TextWrapping="Wrap" Foreground="#CCCCCC">
+                    Module ID should match the module you're generating code for (e.g., "text.display", "sprite", "tilemap").
+                </TextBlock>
+                <TextBlock TextWrapping="Wrap" Foreground="#CCCCCC" Margin="0,8,0,0">
+                    Target ID should match the console target (e.g., "sms", "nes", "gg").
+                </TextBlock>
+            </StackPanel>
+        </Border>
+
+        <TextBlock Text="* Required fields" 
+                   FontSize="10" 
+                   Foreground="#888888" 
+                   Margin="0,16,0,0"/>
+    </StackPanel>
+</UserControl>

@@ -1,4 +1,4 @@
-﻿using Retruxel.Core.Models;
+using Retruxel.Core.Models;
 using Retruxel.Core.Services;
 using Retruxel.Views;
 using System.IO;
@@ -12,6 +12,7 @@ public partial class MainWindow : Window
 {
     private readonly BuildConsoleView _buildConsoleView = new();
     private readonly ProjectManager _projectManager = new();
+    private readonly ToolLoader _toolLoader;
     private bool _isDraggingOverlay = false;
     private Point _overlayDragStart;
 
@@ -21,10 +22,17 @@ public partial class MainWindow : Window
         TxtVersion.Text = $"v{GetAppVersion()}";
         WelcomeView.OnProjectCreated += OnProjectCreated;
         WelcomeView.OnAboutRequested += () => ShowOverlay("ABOUT", new AboutView());
-        
+
+        // Initialize ToolLoader with base path
+        var basePath = AppDomain.CurrentDomain.BaseDirectory;
+        _toolLoader = new ToolLoader(basePath);
+
+        // Discover tools on startup
+        _toolLoader.DiscoverTools();
+
         // Ctrl+S to save
         KeyDown += MainWindow_KeyDown;
-        
+
         // Restore window state
         Loaded += MainWindow_Loaded;
         Closing += MainWindow_Closing;
@@ -43,7 +51,7 @@ public partial class MainWindow : Window
     private void RestoreWindowState()
     {
         var settings = SettingsService.Load();
-        
+
         if (settings.Window.IsFirstRun)
         {
             // First run: center on screen
@@ -54,7 +62,7 @@ public partial class MainWindow : Window
         }
 
         // Validate if position is visible on any screen
-        var bounds = new Rect(settings.Window.Left, settings.Window.Top, 
+        var bounds = new Rect(settings.Window.Left, settings.Window.Top,
                               settings.Window.Width, settings.Window.Height);
 
         // Total area of all combined monitors (Virtual Screen)
@@ -74,7 +82,7 @@ public partial class MainWindow : Window
             Height = settings.Window.Height;
             Left = settings.Window.Left;
             Top = settings.Window.Top;
-            
+
             if (settings.Window.IsMaximized)
                 WindowState = WindowState.Maximized;
         }
@@ -88,9 +96,9 @@ public partial class MainWindow : Window
     private void SaveWindowState()
     {
         var settings = SettingsService.Load();
-        
+
         settings.Window.IsMaximized = WindowState == WindowState.Maximized;
-        
+
         // Save normal bounds (not maximized size)
         if (WindowState == WindowState.Normal)
         {
@@ -106,7 +114,7 @@ public partial class MainWindow : Window
             settings.Window.Left = RestoreBounds.Left;
             settings.Window.Top = RestoreBounds.Top;
         }
-        
+
         SettingsService.Save(settings);
     }
 
@@ -143,7 +151,7 @@ public partial class MainWindow : Window
         OverlayContentPresenter.Content = content;
         OverlayContent.Margin = new Thickness(40); // Reset position
         OverlayLayer.Visibility = Visibility.Visible;
-        
+
         // Block interaction with background
         TitleBar.IsEnabled = false;
         StatusBar.IsEnabled = false;
@@ -158,7 +166,7 @@ public partial class MainWindow : Window
     {
         OverlayLayer.Visibility = Visibility.Collapsed;
         OverlayContentPresenter.Content = null;
-        
+
         // Re-enable interaction with background
         TitleBar.IsEnabled = true;
         StatusBar.IsEnabled = true;
@@ -177,29 +185,29 @@ public partial class MainWindow : Window
             MessageBox.Show($"Target '{project.TargetId}' not found.", "Retruxel", MessageBoxButton.OK, MessageBoxImage.Error);
             return;
         }
-        
-        // Initialize ModuleLoader
+
+        // Initialize ModuleRegistry
         var basePath = AppDomain.CurrentDomain.BaseDirectory;
-        var moduleLoader = new ModuleLoader(basePath);
-        moduleLoader.RegisterBuiltinModules(target);
-        moduleLoader.LoadCompatible(target.TargetId);
-        
+        var moduleRegistry = new ModuleRegistry(basePath);
+        moduleRegistry.RegisterBuiltinModules(target);
+        moduleRegistry.LoadForTarget(target.TargetId);
+
         _projectManager.CurrentProject = project;
-        
+
         // Show Scene Editor as main view
         WelcomeView.Visibility = Visibility.Collapsed;
         SceneEditorView.Visibility = Visibility.Visible;
         BtnHome.Visibility = Visibility.Visible;
         SceneEditorView.SetProjectManager(_projectManager);
-        SceneEditorView.SetModuleLoader(moduleLoader);
+        SceneEditorView.SetModuleRegistry(moduleRegistry);
         SceneEditorView.Initialize(project, target);
-        
+
         // Save after initialization
         await _projectManager.SaveAsync();
-        
+
         // Add to recent projects
         AddToRecentProjects(project);
-        
+
         // Connect Generate ROM button
         SceneEditorView.OnGenerateRomRequested -= OnGenerateRomRequested;
         SceneEditorView.OnGenerateRomRequested += OnGenerateRomRequested;
@@ -209,17 +217,17 @@ public partial class MainWindow : Window
     {
         var settings = SettingsService.Load();
         var projectPath = Path.GetFullPath(Path.Combine(project.ProjectPath, project.Name + ".rtrxproject"));
-        
+
         // Remove duplicatas case-insensitive
         settings.General.RecentProjects = settings.General.RecentProjects
             .Where(p => !p.Equals(projectPath, StringComparison.OrdinalIgnoreCase))
             .ToList();
-        
+
         settings.General.RecentProjects.Insert(0, projectPath);
-        
+
         if (settings.General.RecentProjects.Count > 5)
             settings.General.RecentProjects = settings.General.RecentProjects.Take(5).ToList();
-        
+
         SettingsService.Save(settings);
         WelcomeView.RefreshRecentProjects();
     }
@@ -253,10 +261,10 @@ public partial class MainWindow : Window
         SceneEditorView.Visibility = Visibility.Collapsed;
         WelcomeView.Visibility = Visibility.Visible;
         BtnHome.Visibility = Visibility.Collapsed;
-        
+
         // Clear current project
         _projectManager.CurrentProject = null;
-        
+
         // Refresh recent projects list
         WelcomeView.RefreshRecentProjects();
     }
@@ -265,6 +273,12 @@ public partial class MainWindow : Window
     {
         var settingsWindow = new SettingsWindow { Owner = this };
         settingsWindow.ShowDialog();
+    }
+
+    private void TestWizard_Click(object sender, RoutedEventArgs e)
+    {
+        var wizardWindow = new Views.Wizard.WizardMainWindow { Owner = this };
+        wizardWindow.ShowDialog();
     }
 
     private void TitleBar_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)

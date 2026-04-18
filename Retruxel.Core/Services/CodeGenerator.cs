@@ -1,6 +1,5 @@
 using Retruxel.Core.Interfaces;
 using Retruxel.Core.Models;
-using System.Text.Json;
 using System.Text.Json.Nodes;
 
 namespace Retruxel.Core.Services;
@@ -12,12 +11,14 @@ namespace Retruxel.Core.Services;
 /// </summary>
 public class CodeGenerator
 {
-    private readonly ModuleLoader _moduleLoader;
+    private readonly ModuleRegistry _moduleRegistry;
+    private readonly ModuleRenderer _moduleRenderer;
     private readonly ITarget _target;
 
-    public CodeGenerator(ModuleLoader moduleLoader, ITarget target)
+    public CodeGenerator(ModuleRegistry moduleRegistry, ModuleRenderer moduleRenderer, ITarget target)
     {
-        _moduleLoader = moduleLoader;
+        _moduleRegistry = moduleRegistry;
+        _moduleRenderer = moduleRenderer;
         _target = target;
     }
 
@@ -31,12 +32,13 @@ public class CodeGenerator
         IProgress<string>? progress = null)
     {
         var sourceFiles = new List<GeneratedFile>();
-        var assets      = new List<GeneratedAsset>();
+        var assets = new List<GeneratedAsset>();
 
         progress?.Report("INIT: Starting code generation...");
 
-        // Reset target-specific state before generation
-        _target.ResetCodeGenerationState();
+        // Reset codegen state before generation
+        _moduleRegistry.ResetCodeGenState();
+        _moduleRenderer.ResetState();
 
         // Collect all module instances from scenes
         var instancesByModule = new Dictionary<string, List<IModule>>();
@@ -49,11 +51,11 @@ public class CodeGenerator
 
                 IModule? moduleTemplate = null;
 
-                if (_moduleLoader.GraphicModules.TryGetValue(elementData.ModuleId, out var gm))
+                if (_moduleRegistry.GraphicModules.TryGetValue(elementData.ModuleId, out var gm))
                     moduleTemplate = gm;
-                else if (_moduleLoader.LogicModules.TryGetValue(elementData.ModuleId, out var lm))
+                else if (_moduleRegistry.LogicModules.TryGetValue(elementData.ModuleId, out var lm))
                     moduleTemplate = lm;
-                else if (_moduleLoader.AudioModules.TryGetValue(elementData.ModuleId, out var am))
+                else if (_moduleRegistry.AudioModules.TryGetValue(elementData.ModuleId, out var am))
                     moduleTemplate = am;
 
                 if (moduleTemplate is null)
@@ -85,24 +87,42 @@ public class CodeGenerator
             foreach (var module in instances)
             {
                 // Inject context flags into the module's JSON before code generation.
-                // This allows CodeGens to produce different output depending on which
-                // other modules are present — e.g. entity uses physics when available.
                 var contextualModule = InjectContextFlags(module, presentModuleIds);
+                var moduleJson = contextualModule.Serialize();
 
-                // 1. Ask the target to translate this module into target-specific C code.
-                // 2. If the target has no translator (returns empty), fall back to the
-                //    module's own GenerateCode() — used by external plugins that ship
-                //    their own C implementation directly.
-                var generatedFiles = _target.GenerateCodeForModule(contextualModule).ToList();
+                List<GeneratedFile> generatedFiles;
 
-                if (generatedFiles.Count == 0)
+                // Priority 1: Try ModuleRenderer (declarative CodeGens)
+                if (_moduleRenderer.CanRender(module.ModuleId, project.TargetId))
+                {
+                    generatedFiles = _moduleRenderer.Render(
+                        module.ModuleId,
+                        project.TargetId,
+                        moduleJson,
+                        module.IsSingleton).ToList();
+                    progress?.Report($"INFO: {module.ModuleId} generated via ModuleRenderer.");
+                }
+                // Priority 2: Try CodeGen from registry (legacy DLL-based)
+                else if (_moduleRegistry.GetCodeGen(module.ModuleId, project.TargetId) is var codegen && codegen != null)
+                {
+                    generatedFiles = codegen.Generate(moduleJson).ToList();
+                    progress?.Report($"INFO: {module.ModuleId} generated via CodeGen plugin.");
+                }
+                // Priority 3: Ask target to translate (legacy)
+                else if (_target.GenerateCodeForModule(contextualModule).ToList() is var targetFiles && targetFiles.Count > 0)
+                {
+                    generatedFiles = targetFiles;
+                    progress?.Report($"INFO: {module.ModuleId} generated via target.");
+                }
+                // Priority 4: Module's own GenerateCode() (external plugins)
+                else
                 {
                     generatedFiles = module switch
                     {
-                        ILogicModule lm   => lm.GenerateCode().ToList(),
+                        ILogicModule lm => lm.GenerateCode().ToList(),
                         IGraphicModule gm => gm.GenerateCode().ToList(),
-                        IAudioModule am   => am.GenerateCode().ToList(),
-                        _                 => []
+                        IAudioModule am => am.GenerateCode().ToList(),
+                        _ => []
                     };
 
                     if (generatedFiles.Count == 0)
@@ -134,6 +154,12 @@ public class CodeGenerator
         }
 
         // Generate target-specific main entry point
+        // First, check if target wants to inject additional files (like splash screens)
+        var systemFiles = _target.GenerateSystemFiles();
+        sourceFiles.AddRange(systemFiles);
+        if (systemFiles.Any())
+            progress?.Report($"INFO: {systemFiles.Count()} system files generated.");
+
         var mainFile = _target.GenerateMainFile(project, sourceFiles);
         sourceFiles.Insert(0, mainFile);
 
@@ -142,9 +168,9 @@ public class CodeGenerator
 
         return new BuildContext
         {
-            TargetId        = project.TargetId,
-            SourceFiles     = sourceFiles,
-            Assets          = assets,
+            TargetId = project.TargetId,
+            SourceFiles = sourceFiles,
+            Assets = assets,
             OutputDirectory = outputDirectory,
             BuildParameters = project.Parameters
                 .Where(p => p.Key.StartsWith("target."))
@@ -157,23 +183,23 @@ public class CodeGenerator
     /// about which other modules are present in the project.
     ///
     /// Current flags injected:
-    ///   sms.entity → "usePhysics": true/false, "useInput": true/false
+    ///   entity → "usePhysics": true/false, "useInput": true/false
     ///
     /// The wrapper only modifies Serialize() — all other IModule members
     /// delegate to the original module unchanged.
     /// </summary>
     private static IModule InjectContextFlags(IModule module, HashSet<string> presentModuleIds)
     {
-        if (module.ModuleId == "sms.entity")
+        if (module.ModuleId == "entity")
         {
-            var usePhysics = presentModuleIds.Contains("sms.physics");
-            var useInput   = presentModuleIds.Contains("sms.input");
+            var usePhysics = presentModuleIds.Contains("physics");
+            var useInput = presentModuleIds.Contains("input");
 
             if (usePhysics || useInput)
                 return new ContextualModule(module, json => InjectFlags(json, new()
                 {
                     ["usePhysics"] = usePhysics,
-                    ["useInput"]   = useInput
+                    ["useInput"] = useInput
                 }));
         }
 
@@ -205,14 +231,14 @@ public class CodeGenerator
     /// </summary>
     private sealed class ContextualModule(IModule inner, Func<string, string> serializeTransform) : IModule
     {
-        public string      ModuleId            => inner.ModuleId;
-        public string      DisplayName         => inner.DisplayName;
-        public string      Category            => inner.Category;
-        public ModuleType  Type                => inner.Type;
-        public string[]    Compatibility       => inner.Compatibility;
-        public bool        IsSingleton         => inner.IsSingleton;
-        public string      Serialize()         => serializeTransform(inner.Serialize());
-        public void        Deserialize(string json) => inner.Deserialize(json);
-        public string      GetValidationSample() => inner.GetValidationSample();
+        public string ModuleId => inner.ModuleId;
+        public string DisplayName => inner.DisplayName;
+        public string Category => inner.Category;
+        public ModuleType Type => inner.Type;
+        public string[] Compatibility => inner.Compatibility;
+        public bool IsSingleton => inner.IsSingleton;
+        public string Serialize() => serializeTransform(inner.Serialize());
+        public void Deserialize(string json) => inner.Deserialize(json);
+        public string GetValidationSample() => inner.GetValidationSample();
     }
 }

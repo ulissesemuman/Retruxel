@@ -1,8 +1,6 @@
 using Retruxel.Core.Interfaces;
 using Retruxel.Core.Services;
 using Retruxel.Services;
-using System.Globalization;
-using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -13,7 +11,7 @@ namespace Retruxel.Controls;
 public partial class TargetGridControl : UserControl
 {
     public static event Action? FavoritesChanged;
-    
+
     public event Action<ITarget>? TargetSelected;
 
     private string _currentSort = "name";
@@ -33,7 +31,7 @@ public partial class TargetGridControl : UserControl
         ApplyLocalization();
         UpdateViewModeButtons();
         RenderTargets();
-        
+
         FavoritesChanged += OnFavoritesChanged;
     }
 
@@ -87,7 +85,7 @@ public partial class TargetGridControl : UserControl
     private void OnLanguageChanged()
     {
         var loc = LocalizationService.Instance;
-        
+
         TxtSortLabel.Text = loc.Get("welcome.sort");
         TxtFilterLabel.Text = loc.Get("welcome.filter");
 
@@ -111,12 +109,12 @@ public partial class TargetGridControl : UserControl
             var key = $"welcome.filter.{manufacturer.ToLower()}";
             var displayName = loc.Get(key);
             FilterComboBox.Items.Add(new ComboBoxItem { Content = displayName, Tag = manufacturer.ToLower() });
-            
+
             if (manufacturer.ToLower() == currentFilter)
                 selectedIndex = index;
             index++;
         }
-        
+
         if (currentFilter == "all")
             FilterComboBox.SelectedIndex = 0;
         else if (currentFilter == "favorites")
@@ -284,7 +282,7 @@ public partial class TargetGridControl : UserControl
 
         SaveFavorites();
         RenderTargets();
-        
+
         FavoritesChanged?.Invoke();
     }
 

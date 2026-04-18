@@ -15,7 +15,7 @@ namespace Retruxel.Modules.Logic;
 ///
 /// JSON format:
 /// {
-///   "module":       "sms.physics",
+///   "module":       "physics",
 ///   "gravity":      2,      // acceleration per frame (fixed-point units)
 ///   "maxFallSpeed": 24,     // terminal velocity (fixed-point units)
 ///   "jumpForce":    52,     // upward velocity when jumping (fixed-point units)
@@ -27,16 +27,16 @@ namespace Retruxel.Modules.Logic;
 /// </summary>
 public class PhysicsModule : ILogicModule
 {
-    public string     ModuleId     => "sms.physics";
-    public string     DisplayName  => "Physics";
-    public string     Category     => "Logic";
-    public ModuleType Type         => ModuleType.Logic;
-    public bool     IsSingleton  => true;
-    public string[]   Compatibility => ["sms", "gg"];
+    public string ModuleId => "physics";
+    public string DisplayName => "Physics";
+    public string Category => "Logic";
+    public ModuleType Type => ModuleType.Logic;
+    public bool IsSingleton => true;
+    public string[] Compatibility { get; set; } = [];
 
     private static readonly JsonSerializerOptions _jsonOptions = new()
     {
-        PropertyNamingPolicy        = JsonNamingPolicy.CamelCase,
+        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
         PropertyNameCaseInsensitive = true
     };
 
@@ -44,11 +44,10 @@ public class PhysicsModule : ILogicModule
 
     public ModuleManifest GetManifest() => new()
     {
-        ModuleId      = ModuleId,
-        Version       = "1.0.0",
-        Type          = ModuleType.Logic,
-        Compatibility = Compatibility,
-        Parameters    =
+        ModuleId = ModuleId,
+        Version = "1.0.0",
+        Type = ModuleType.Logic,
+        Parameters =
         [
             new ParameterDefinition
             {
@@ -123,9 +122,9 @@ public class PhysicsModule : ILogicModule
 
     public IEnumerable<GeneratedFile> GenerateCode() => [];
 
-    public string Serialize()              => JsonSerializer.Serialize(_state, _jsonOptions);
-    public void   Deserialize(string json) => _state = JsonSerializer.Deserialize<PhysicsState>(json, _jsonOptions) ?? new();
-    public string GetValidationSample()    => JsonSerializer.Serialize(new PhysicsState(), _jsonOptions);
+    public string Serialize() => JsonSerializer.Serialize(_state, _jsonOptions);
+    public void Deserialize(string json) => _state = JsonSerializer.Deserialize<PhysicsState>(json, _jsonOptions) ?? new();
+    public string GetValidationSample() => JsonSerializer.Serialize(new PhysicsState(), _jsonOptions);
 
     private class PhysicsState
     {

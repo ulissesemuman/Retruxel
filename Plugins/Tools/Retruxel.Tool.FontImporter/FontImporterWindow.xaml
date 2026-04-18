@@ -1,0 +1,435 @@
+<Window x:Class="Retruxel.Tool.FontImporter.FontImporterWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Font Importer"
+        Height="740" Width="1000"
+        MinHeight="600" MinWidth="800"
+        WindowStartupLocation="CenterOwner"
+        Background="Transparent"
+        AllowsTransparency="True"
+        WindowStyle="None"
+        ResizeMode="CanResizeWithGrip">
+
+    <Window.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="pack://application:,,,/Retruxel;component/Themes/RetruxelTheme.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+
+            <DropShadowEffect x:Key="WindowShadow"
+                              Color="Black" Direction="270"
+                              ShadowDepth="8" BlurRadius="32" Opacity="0.6"/>
+
+            <!-- Char cell styles — specific to this window, acceptable as local resources -->
+            <Style x:Key="CharCell" TargetType="Border">
+                <Setter Property="Width" Value="40"/>
+                <Setter Property="Height" Value="40"/>
+                <Setter Property="Background" Value="{StaticResource BrushSurfaceContainerHigh}"/>
+                <Setter Property="Margin" Value="2"/>
+                <Setter Property="Cursor" Value="Hand"/>
+            </Style>
+
+            <Style x:Key="CharCellSelected" TargetType="Border" BasedOn="{StaticResource CharCell}">
+                <Setter Property="Background" Value="{StaticResource BrushSurfaceContainerHighest}"/>
+            </Style>
+        </ResourceDictionary>
+    </Window.Resources>
+
+    <!-- Outer border — CornerRadius 6 permitido: moldura física da janela -->
+    <Border CornerRadius="6"
+            Background="{StaticResource BrushSurface}"
+            BorderBrush="#3a3a3a"
+            BorderThickness="1"
+            Effect="{StaticResource WindowShadow}">
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="48"/>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="64"/>
+            </Grid.RowDefinitions>
+
+            <!-- ===== TITLE BAR ===== -->
+            <Border Grid.Row="0"
+                    Background="{StaticResource BrushSurfaceContainerLow}"
+                    CornerRadius="6,6,0,0"
+                    MouseLeftButtonDown="TitleBar_MouseLeftButtonDown"
+                    Padding="24,0">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+
+                    <!-- Title + status badge -->
+                    <StackPanel Grid.Column="0" Orientation="Horizontal"
+                                VerticalAlignment="Center">
+                        <TextBlock Text="FONT IMPORTER"
+                                   Style="{StaticResource TextHeadline}"
+                                   VerticalAlignment="Center"
+                                   Margin="0,0,16,0"/>
+                        <Border x:Name="StatusBadge"
+                                Background="{StaticResource BrushSurfaceContainerHighest}"
+                                Padding="8,4" VerticalAlignment="Center">
+                            <TextBlock x:Name="StatusLabel"
+                                       Text="NO FILE SELECTED"
+                                       Style="{StaticResource TextLabel}"
+                                       Foreground="{StaticResource BrushOnSurfaceVariant}"/>
+                        </Border>
+                    </StackPanel>
+
+                    <!-- Close -->
+                    <Button Grid.Column="2"
+                            Content="✕"
+                            Style="{StaticResource ButtonTitleBarClose}"
+                            Click="CloseButton_Click"/>
+                </Grid>
+            </Border>
+
+            <!-- ===== MAIN CONTENT ===== -->
+            <Grid Grid.Row="1">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="260"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="220"/>
+                </Grid.ColumnDefinitions>
+
+                <!-- ── LEFT PANEL: CONFIG ── -->
+                <Border Grid.Column="0"
+                        Background="{StaticResource BrushSurfaceContainerLow}"
+                        Padding="20,24">
+                    <StackPanel>
+
+                        <!-- Section: File -->
+                        <TextBlock Text="SOURCE FILE"
+                                   Style="{StaticResource TextLabelCaps}"
+                                   Foreground="{StaticResource BrushPrimary}"
+                                   Margin="0,0,0,8"/>
+
+                        <Grid Margin="0,0,0,24">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <Border Grid.Column="0"
+                                    Background="{StaticResource BrushSurfaceContainerHighest}"
+                                    Padding="10,0" Height="36" Margin="0,0,8,0">
+                                <TextBlock x:Name="TxtFileName"
+                                           Text="—"
+                                           Style="{StaticResource TextBody}"
+                                           VerticalAlignment="Center"
+                                           TextTrimming="CharacterEllipsis"/>
+                            </Border>
+                            <Button Grid.Column="1"
+                                    Content="BROWSE"
+                                    Style="{StaticResource ButtonSecondary}"
+                                    Padding="12,0" Height="36"
+                                    Click="BrowseButton_Click"/>
+                        </Grid>
+
+                        <!-- Section: Tile size -->
+                        <TextBlock Text="TILE SIZE"
+                                   Style="{StaticResource TextLabelCaps}"
+                                   Foreground="{StaticResource BrushPrimary}"
+                                   Margin="0,0,0,8"/>
+
+                        <!-- Size presets -->
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
+                            <Button x:Name="BtnSize8"  Content="8×8"
+                                    Tag="8"  Click="SizePreset_Click"
+                                    Style="{StaticResource ButtonPrimary}"
+                                    Padding="12,6" Margin="0,0,4,0"/>
+                            <Button x:Name="BtnSize16" Content="16×16"
+                                    Tag="16" Click="SizePreset_Click"
+                                    Style="{StaticResource ButtonSecondary}"
+                                    Padding="12,6" Margin="0,0,4,0"/>
+                            <Button x:Name="BtnSize32" Content="32×32"
+                                    Tag="32" Click="SizePreset_Click"
+                                    Style="{StaticResource ButtonSecondary}"
+                                    Padding="12,6"/>
+                        </StackPanel>
+
+                        <!-- Custom size -->
+                        <TextBlock Text="CUSTOM SIZE"
+                                   Style="{StaticResource TextLabelCaps}"
+                                   Foreground="{StaticResource BrushOnSurfaceVariant}"
+                                   Margin="0,0,0,6"/>
+                        <Grid Margin="0,0,0,24">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <Border Grid.Column="0"
+                                    Background="{StaticResource BrushSurfaceContainerHighest}"
+                                    Padding="8,0" Height="36">
+                                <TextBox x:Name="TxtWidth"
+                                         Text="8"
+                                         Background="Transparent"
+                                         Foreground="{StaticResource BrushOnSurface}"
+                                         BorderThickness="0"
+                                         FontSize="13"
+                                         VerticalAlignment="Center"
+                                         TextAlignment="Center"
+                                         TextChanged="TileSize_Changed"/>
+                            </Border>
+                            <TextBlock Grid.Column="1"
+                                       Text="×"
+                                       Style="{StaticResource TextBody}"
+                                       VerticalAlignment="Center"
+                                       Margin="8,0"/>
+                            <Border Grid.Column="2"
+                                    Background="{StaticResource BrushSurfaceContainerHighest}"
+                                    Padding="8,0" Height="36">
+                                <TextBox x:Name="TxtHeight"
+                                         Text="8"
+                                         Background="Transparent"
+                                         Foreground="{StaticResource BrushOnSurface}"
+                                         BorderThickness="0"
+                                         FontSize="13"
+                                         VerticalAlignment="Center"
+                                         TextAlignment="Center"
+                                         TextChanged="TileSize_Changed"/>
+                            </Border>
+                        </Grid>
+
+                        <!-- Section: Selection info -->
+                        <TextBlock Text="SELECTION"
+                                   Style="{StaticResource TextLabelCaps}"
+                                   Foreground="{StaticResource BrushPrimary}"
+                                   Margin="0,0,0,8"/>
+
+                        <Border Background="{StaticResource BrushSurfaceContainerHighest}"
+                                Padding="12,10" Margin="0,0,0,4">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="SELECTED"
+                                           Style="{StaticResource TextLabel}"/>
+                                <TextBlock x:Name="LblSelectedCount"
+                                           Grid.Column="1"
+                                           Text="95"
+                                           Style="{StaticResource TextLabel}"
+                                           Foreground="{StaticResource BrushPrimary}"/>
+                            </Grid>
+                        </Border>
+
+                        <Border Background="{StaticResource BrushSurfaceContainerHighest}"
+                                Padding="12,10" Margin="0,0,0,24">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="SPRITESHEET"
+                                           Style="{StaticResource TextLabel}"/>
+                                <TextBlock x:Name="LblSpritesheetSize"
+                                           Grid.Column="1"
+                                           Text="16×6 tiles"
+                                           Style="{StaticResource TextLabel}"
+                                           Foreground="{StaticResource BrushTertiary}"/>
+                            </Grid>
+                        </Border>
+
+                        <!-- Quick select -->
+                        <TextBlock Text="QUICK SELECT"
+                                   Style="{StaticResource TextLabelCaps}"
+                                   Foreground="{StaticResource BrushPrimary}"
+                                   Margin="0,0,0,8"/>
+
+                        <Button Content="SELECT ASCII BASIC (32–126)"
+                                Style="{StaticResource ButtonSecondary}"
+                                HorizontalAlignment="Stretch"
+                                Margin="0,0,0,4"
+                                Click="SelectAsciiBasic_Click"/>
+                        <Button Content="SELECT ALL"
+                                Style="{StaticResource ButtonSecondary}"
+                                HorizontalAlignment="Stretch"
+                                Margin="0,0,0,4"
+                                Click="SelectAll_Click"/>
+                        <Button Content="CLEAR SELECTION"
+                                Style="{StaticResource ButtonGhost}"
+                                HorizontalAlignment="Stretch"
+                                Click="ClearSelection_Click"/>
+
+                    </StackPanel>
+                </Border>
+
+                <!-- ── CENTER: CHARACTER GRID ── -->
+                <Grid Grid.Column="1" Background="{StaticResource BrushSurface}">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="40"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+
+                    <!-- Grid header — tonal shift, sem border-line -->
+                    <Border Grid.Row="0"
+                            Background="{StaticResource BrushSurfaceContainerLow}"
+                            Padding="20,0">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="CHARACTER MAP"
+                                       Style="{StaticResource TextLabelCaps}"
+                                       VerticalAlignment="Center"/>
+                            <TextBlock Grid.Column="1"
+                                       Text="Click to toggle selection"
+                                       Style="{StaticResource TextLabel}"
+                                       Foreground="{StaticResource BrushOnSurfaceVariant}"
+                                       VerticalAlignment="Center"/>
+                        </Grid>
+                    </Border>
+
+                    <!-- Scrollable character grid -->
+                    <ScrollViewer Grid.Row="1"
+                                  VerticalScrollBarVisibility="Auto"
+                                  HorizontalScrollBarVisibility="Disabled"
+                                  Padding="16">
+                        <WrapPanel x:Name="CharGrid"
+                                   Orientation="Horizontal"/>
+                    </ScrollViewer>
+                </Grid>
+
+                <!-- ── RIGHT PANEL: PREVIEW ── -->
+                <Border Grid.Column="2"
+                        Background="{StaticResource BrushSurfaceContainerLow}"
+                        Padding="16,24">
+                    <StackPanel>
+
+                        <TextBlock Text="PREVIEW"
+                                   Style="{StaticResource TextLabelCaps}"
+                                   Foreground="{StaticResource BrushPrimary}"
+                                   Margin="0,0,0,16"/>
+
+                        <!-- Glyph zoom preview -->
+                        <Border Background="{StaticResource BrushSurfaceContainerHighest}"
+                                Width="120" Height="120"
+                                HorizontalAlignment="Left"
+                                Margin="0,0,0,8">
+                            <Viewbox>
+                                <Image x:Name="GlyphPreview"
+                                       Width="64" Height="64"
+                                       RenderOptions.BitmapScalingMode="NearestNeighbor"/>
+                            </Viewbox>
+                        </Border>
+
+                        <TextBlock x:Name="LblGlyphChar"
+                                   Text="—"
+                                   Style="{StaticResource TextLabel}"
+                                   Foreground="{StaticResource BrushOnSurface}"
+                                   Margin="0,0,0,2"/>
+                        <TextBlock x:Name="LblGlyphCode"
+                                   Text="U+0000"
+                                   Style="{StaticResource TextLabel}"
+                                   Margin="0,0,0,24"/>
+
+                        <!-- Spritesheet info -->
+                        <TextBlock Text="OUTPUT"
+                                   Style="{StaticResource TextLabelCaps}"
+                                   Foreground="{StaticResource BrushPrimary}"
+                                   Margin="0,0,0,12"/>
+
+                        <StackPanel>
+                            <Grid Margin="0,0,0,6">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="COLS" Style="{StaticResource TextLabel}"/>
+                                <TextBlock Grid.Column="1" Text="16"
+                                           Style="{StaticResource TextLabel}"
+                                           Foreground="{StaticResource BrushOnSurface}"/>
+                            </Grid>
+                            <Grid Margin="0,0,0,6">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="ROWS" Style="{StaticResource TextLabel}"/>
+                                <TextBlock x:Name="LblRows" Grid.Column="1" Text="—"
+                                           Style="{StaticResource TextLabel}"
+                                           Foreground="{StaticResource BrushOnSurface}"/>
+                            </Grid>
+                            <Grid Margin="0,0,0,6">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="SIZE (PX)" Style="{StaticResource TextLabel}"/>
+                                <TextBlock x:Name="LblOutputSize" Grid.Column="1" Text="—"
+                                           Style="{StaticResource TextLabel}"
+                                           Foreground="{StaticResource BrushTertiary}"/>
+                            </Grid>
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="FORMAT" Style="{StaticResource TextLabel}"/>
+                                <TextBlock Grid.Column="1" Text="PNG"
+                                           Style="{StaticResource TextLabel}"
+                                           Foreground="{StaticResource BrushOnSurface}"/>
+                            </Grid>
+                        </StackPanel>
+
+                        <!-- Spritesheet mini-preview -->
+                        <TextBlock Text="SHEET PREVIEW"
+                                   Style="{StaticResource TextLabelCaps}"
+                                   Foreground="{StaticResource BrushPrimary}"
+                                   Margin="0,24,0,8"/>
+
+                        <Border Background="{StaticResource BrushSurfaceContainerHighest}"
+                                Height="120" HorizontalAlignment="Stretch">
+                            <Viewbox Stretch="Uniform" Margin="4">
+                                <Image x:Name="SheetPreview"
+                                       RenderOptions.BitmapScalingMode="NearestNeighbor"/>
+                            </Viewbox>
+                        </Border>
+
+                    </StackPanel>
+                </Border>
+
+            </Grid>
+
+            <!-- ===== FOOTER ===== -->
+            <Border Grid.Row="2"
+                    Background="{StaticResource BrushSurfaceContainerLow}"
+                    CornerRadius="0,0,6,6"
+                    Padding="24,0">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+
+                    <Button Grid.Column="0"
+                            Content="CANCEL"
+                            Style="{StaticResource ButtonGhost}"
+                            Padding="24,0" Height="40"
+                            Click="CloseButton_Click"/>
+
+                    <TextBlock x:Name="LblFooterMessage"
+                               Grid.Column="1"
+                               Style="{StaticResource TextLabel}"
+                               Foreground="{StaticResource BrushError}"
+                               VerticalAlignment="Center"
+                               Margin="16,0"/>
+
+                    <Button x:Name="BtnImport"
+                            Grid.Column="2"
+                            Content="IMPORT"
+                            Style="{StaticResource ButtonPrimary}"
+                            Padding="32,0" Height="40"
+                            IsEnabled="False"
+                            Click="ImportButton_Click"/>
+                </Grid>
+            </Border>
+
+        </Grid>
+    </Border>
+</Window>

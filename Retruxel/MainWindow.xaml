@@ -71,6 +71,15 @@
                     <StackPanel Grid.Column="2" Orientation="Horizontal"
                                 VerticalAlignment="Center" Margin="8,0">
 
+                        <!-- Test Wizard -->
+                        <Button x:Name="BtnTestWizard"
+                                Content="🧙"
+                                Style="{StaticResource ButtonTitleBar}"
+                                FontSize="16"
+                                Margin="0,0,8,0"
+                                Click="TestWizard_Click"
+                                ToolTip="Test Wizard"/>
+
                         <!-- Settings -->
                         <Button Content="&#xE713;"
                                 Style="{StaticResource ButtonTitleBar}"

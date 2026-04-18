@@ -1,0 +1,60 @@
+{
+  "version": "1.0",
+  "targets": [
+    {
+      "targetId": "sms",
+      "displayName": "Sega Master System",
+      "manufacturer": "Sega",
+      "description": "Z80 @ 3.58MHz — 8KB RAM — SN76489 sound chip",
+      "version": "0.7.1",
+      "sizeBytes": 15728640,
+      "downloadUrl": "https://github.com/ulissesemuman/Retruxel/releases/download/v0.7.1/sms-0.7.1.zip",
+      "checksum": "abc123...",
+      "minRetruxelVersion": "0.7.0"
+    },
+    {
+      "targetId": "nes",
+      "displayName": "Nintendo NES",
+      "manufacturer": "Nintendo",
+      "description": "6502 @ 1.79MHz — 2KB RAM — 2A03 sound chip",
+      "version": "0.7.1",
+      "sizeBytes": 12582912,
+      "downloadUrl": "https://github.com/ulissesemuman/Retruxel/releases/download/v0.7.1/nes-0.7.1.zip",
+      "checksum": "def456...",
+      "minRetruxelVersion": "0.7.0"
+    },
+    {
+      "targetId": "gg",
+      "displayName": "Sega Game Gear",
+      "manufacturer": "Sega",
+      "description": "Z80 @ 3.58MHz — 8KB RAM — SN76489 sound chip",
+      "version": "0.7.1",
+      "sizeBytes": 15728640,
+      "downloadUrl": "https://github.com/ulissesemuman/Retruxel/releases/download/v0.7.1/gg-0.7.1.zip",
+      "checksum": "ghi789...",
+      "minRetruxelVersion": "0.7.0"
+    },
+    {
+      "targetId": "sg1000",
+      "displayName": "Sega SG-1000",
+      "manufacturer": "Sega",
+      "description": "Z80 @ 3.58MHz — 1KB RAM — SN76489 sound chip",
+      "version": "0.7.1",
+      "sizeBytes": 15728640,
+      "downloadUrl": "https://github.com/ulissesemuman/Retruxel/releases/download/v0.7.1/sg1000-0.7.1.zip",
+      "checksum": "jkl012...",
+      "minRetruxelVersion": "0.7.0"
+    },
+    {
+      "targetId": "coleco",
+      "displayName": "ColecoVision",
+      "manufacturer": "Coleco",
+      "description": "Z80 @ 3.58MHz — 1KB RAM — SN76489 sound chip",
+      "version": "0.7.1",
+      "sizeBytes": 15728640,
+      "downloadUrl": "https://github.com/ulissesemuman/Retruxel/releases/download/v0.7.1/coleco-0.7.1.zip",
+      "checksum": "mno345...",
+      "minRetruxelVersion": "0.7.0"
+    }
+  ]
+}

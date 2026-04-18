@@ -1,6 +1,6 @@
+using Retruxel.Core.Services;
 using System.Windows.Data;
 using System.Windows.Markup;
-using Retruxel.Core.Services;
 
 namespace Retruxel.Localization;
 

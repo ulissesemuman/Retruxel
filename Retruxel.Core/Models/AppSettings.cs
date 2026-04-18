@@ -39,6 +39,14 @@ public class GeneralSettings
     public bool CheckUpdatesOnStartup { get; set; } = true;
 
     /// <summary>
+    /// Whether to show the "MADE WITH RETRUXEL" splash screen at the start
+    /// of every compiled ROM. Enabled by default — helps spread the word about
+    /// the tool. Can be disabled in Settings, with a confirmation prompt.
+    /// </summary>
+    [JsonPropertyName("showMadeWithSplash")]
+    public bool ShowMadeWithSplash { get; set; } = true;
+
+    /// <summary>
     /// Maximum number of undoable actions retained in history.
     /// Configurable between 20 and 100. Default: 32.
     /// </summary>

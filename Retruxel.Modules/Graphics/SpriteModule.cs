@@ -14,7 +14,7 @@ namespace Retruxel.Modules.Graphics;
 ///
 /// JSON format:
 /// {
-///   "module":       "sms.sprite",
+///   "module":       "sprite",
 ///   "tilesAssetId": "player_tiles",   // asset ID for sprite CHR data
 ///   "startTile":    256,              // first VRAM sprite tile slot (256–511 recommended)
 ///   "doubleHeight": false             // enable 8×16 sprite mode
@@ -22,16 +22,16 @@ namespace Retruxel.Modules.Graphics;
 /// </summary>
 public class SpriteModule : IGraphicModule
 {
-    public string     ModuleId     => "sms.sprite";
-    public string     DisplayName  => "Sprite";
-    public string     Category     => "Graphics";
-    public ModuleType Type         => ModuleType.Logic;
-    public bool     IsSingleton  => false;
-    public string[]   Compatibility => ["sms", "gg"];
+    public string ModuleId => "sprite";
+    public string DisplayName => "Sprite";
+    public string Category => "Graphics";
+    public ModuleType Type => ModuleType.Logic;
+    public bool IsSingleton => false;
+    public string[] Compatibility { get; set; } = [];
 
     private static readonly JsonSerializerOptions _jsonOptions = new()
     {
-        PropertyNamingPolicy        = JsonNamingPolicy.CamelCase,
+        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
         PropertyNameCaseInsensitive = true
     };
 
@@ -39,11 +39,10 @@ public class SpriteModule : IGraphicModule
 
     public ModuleManifest GetManifest() => new()
     {
-        ModuleId      = ModuleId,
-        Version       = "1.0.0",
-        Type          = ModuleType.Logic,
-        Compatibility = Compatibility,
-        Parameters    =
+        ModuleId = ModuleId,
+        Version = "1.0.0",
+        Type = ModuleType.Logic,
+        Parameters =
         [
             new ParameterDefinition
             {
@@ -88,14 +87,14 @@ public class SpriteModule : IGraphicModule
 
     public IEnumerable<GeneratedFile> GenerateCode() => [];
 
-    public string Serialize()              => JsonSerializer.Serialize(_state, _jsonOptions);
-    public void   Deserialize(string json) => _state = JsonSerializer.Deserialize<SpriteState>(json, _jsonOptions) ?? new();
-    public string GetValidationSample()    => JsonSerializer.Serialize(new SpriteState(), _jsonOptions);
+    public string Serialize() => JsonSerializer.Serialize(_state, _jsonOptions);
+    public void Deserialize(string json) => _state = JsonSerializer.Deserialize<SpriteState>(json, _jsonOptions) ?? new();
+    public string GetValidationSample() => JsonSerializer.Serialize(new SpriteState(), _jsonOptions);
 
     private class SpriteState
     {
         public string TilesAssetId { get; set; } = string.Empty;
-        public int    StartTile    { get; set; } = 256;
-        public bool   DoubleHeight { get; set; } = false;
+        public int StartTile { get; set; } = 256;
+        public bool DoubleHeight { get; set; } = false;
     }
 }

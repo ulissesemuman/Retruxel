@@ -11,16 +11,16 @@ namespace Retruxel.Modules.Logic;
 /// </summary>
 public class ScrollModule : ILogicModule
 {
-    public string     ModuleId     => "sms.scroll";
-    public string     DisplayName  => "Background Scroll";
-    public string     Category     => "Background";
-    public ModuleType Type         => ModuleType.Logic;
-    public bool       IsSingleton  => true;
-    public string[]   Compatibility => ["sms"];
+    public string ModuleId => "scroll";
+    public string DisplayName => "Background Scroll";
+    public string Category => "Background";
+    public ModuleType Type => ModuleType.Logic;
+    public bool IsSingleton => true;
+    public string[] Compatibility { get; set; } = [];
 
     private static readonly JsonSerializerOptions _jsonOptions = new()
     {
-        PropertyNamingPolicy        = JsonNamingPolicy.CamelCase,
+        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
         PropertyNameCaseInsensitive = true
     };
 
@@ -28,11 +28,10 @@ public class ScrollModule : ILogicModule
 
     public ModuleManifest GetManifest() => new()
     {
-        ModuleId      = ModuleId,
-        Version       = "1.0.0",
-        Type          = ModuleType.Logic,
-        Compatibility = ["sms"],
-        Parameters    =
+        ModuleId = ModuleId,
+        Version = "1.0.0",
+        Type = ModuleType.Logic,
+        Parameters =
         [
             new ParameterDefinition
             {
@@ -78,14 +77,14 @@ public class ScrollModule : ILogicModule
 
     public IEnumerable<GeneratedFile> GenerateCode() => [];
 
-    public string Serialize()              => JsonSerializer.Serialize(_state, _jsonOptions);
-    public void   Deserialize(string json) => _state = JsonSerializer.Deserialize<ScrollState>(json, _jsonOptions) ?? new();
-    public string GetValidationSample()    => JsonSerializer.Serialize(new ScrollState(), _jsonOptions);
+    public string Serialize() => JsonSerializer.Serialize(_state, _jsonOptions);
+    public void Deserialize(string json) => _state = JsonSerializer.Deserialize<ScrollState>(json, _jsonOptions) ?? new();
+    public string GetValidationSample() => JsonSerializer.Serialize(new ScrollState(), _jsonOptions);
 
     private class ScrollState
     {
-        public int    Speed     { get; set; } = 1;
+        public int Speed { get; set; } = 1;
         public string Direction { get; set; } = "Left";
-        public bool   Loop      { get; set; } = true;
+        public bool Loop { get; set; } = true;
     }
 }

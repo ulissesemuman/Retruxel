@@ -12,7 +12,15 @@
 
   <!-- SDCC Compiler -->
   <ItemGroup>
+    <EmbeddedResource Include="Compilers\Sdcc\Resources\bin\cc1.exe" />
+    <EmbeddedResource Include="Compilers\Sdcc\Resources\bin\libgcc_s_seh-1.dll" />
+    <EmbeddedResource Include="Compilers\Sdcc\Resources\bin\libgcc_s_sjlj-1.dll" />
+    <EmbeddedResource Include="Compilers\Sdcc\Resources\bin\libstdc++-6.dll" />
+    <EmbeddedResource Include="Compilers\Sdcc\Resources\bin\libwinpthread-1.dll" />
+    <EmbeddedResource Include="Compilers\Sdcc\Resources\bin\sdasz80.exe" />
     <EmbeddedResource Include="Compilers\Sdcc\Resources\bin\sdcc.exe" />
+    <EmbeddedResource Include="Compilers\Sdcc\Resources\bin\sdcpp.exe" />
+    <EmbeddedResource Include="Compilers\Sdcc\Resources\bin\sdldz80.exe" />
     <EmbeddedResource Include="Compilers\Sdcc\Resources\lib\z80\z80.lib" />
   </ItemGroup>
 
@@ -38,6 +46,24 @@
   <!-- Sega Utils -->
   <ItemGroup>
     <EmbeddedResource Include="Utils\Sega\Resources\bin\*.exe" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Remove="Compilers\Sdcc\Resources\bin\cc1.exe" />
+    <None Remove="Compilers\Sdcc\Resources\bin\libgcc_s_seh-1.dll" />
+    <None Remove="Compilers\Sdcc\Resources\bin\libgcc_s_sjlj-1.dll" />
+    <None Remove="Compilers\Sdcc\Resources\bin\libstdc++-6.dll" />
+    <None Remove="Compilers\Sdcc\Resources\bin\libwinpthread-1.dll" />
+    <None Remove="Compilers\Sdcc\Resources\bin\sdasz80.exe" />
+    <None Remove="Compilers\Sdcc\Resources\bin\sdcpp.exe" />
+    <None Remove="Compilers\Sdcc\Resources\bin\sdldz80.exe" />
+    <None Remove="Compilers\Sdcc\Resources\licenses\COPYING.txt" />
+    <None Remove="Compilers\Sdcc\Resources\licenses\COPYING3.txt" />
+    <None Remove="Compilers\Sdcc\Resources\licenses\README.TXT" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="Compilers\Sdcc\Resources\licenses\COPYING.txt" />
+    <Content Include="Compilers\Sdcc\Resources\licenses\COPYING3.txt" />
+    <Content Include="Compilers\Sdcc\Resources\licenses\README.TXT" />
   </ItemGroup>
 
 </Project>

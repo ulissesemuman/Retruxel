@@ -37,7 +37,7 @@ No terminal. No Makefile. No toolchain setup. Just open and start building.
 - 🎮 **Visual game editor** — place modules on canvas and configure them through auto-generated UI
 - 🎯 **Multi-target support** — build for multiple retro consoles from a single project
 - ⚙️ **Zero setup** — toolchains embedded and extracted automatically on first run
-- 🧩 **Module system** — graphic, logic and audio modules as building blocks
+- 🧩 **Module system** — graphic, logic and audio modules as building blocks (early stage)
 - 🔁 **Portable modules** — universal modules keep your project target-agnostic for future migration
 - 🏗️ **Auto-generated UI** — module parameters are described via `ModuleManifest`, no UI code needed
 - 📦 **One-click ROM export** — full build pipeline from project to ROM file
@@ -49,44 +49,53 @@ No terminal. No Makefile. No toolchain setup. Just open and start building.
 
 ## 🎯 Supported Targets
 
-| Console | Status | Toolchain |
-|---|---|---|
-| Sega Master System | 🟢 Active | SDCC 4.5.24 + devkitSMS + SMSlib |
-| Nintendo NES | 🟢 Active | cc65 + neslib |
-| Sega Game Gear | 🟡 Scaffolding | SDCC 4.5.24 + devkitSMS + SMSlib |
-| Sega SG-1000 | 🟡 Scaffolding | SDCC 4.5.24 + devkitSMS + SMSlib |
-| ColecoVision | 🟡 Scaffolding | SDCC 4.5.24 + devkitSMS + SMSlib |
-| SNES | 🔮 Planned | — |
+| Console | Status | Progress | Toolchain |
+|---|---|---|---|
+| Sega Master System | 🟢 Active | ~60% | SDCC 4.5.24 + devkitSMS + SMSlib |
+| Sega Game Gear | 🟡 Scaffolding | ~15% | SDCC 4.5.24 + devkitSMS + SMSlib |
+| Sega SG-1000 | 🟡 Scaffolding | ~15% | SDCC 4.5.24 + devkitSMS + SMSlib |
+| ColecoVision | 🟡 Scaffolding | ~15% | SDCC 4.5.24 + devkitSMS + SMSlib |
+| Nintendo NES | 🟢 Active | ~5% | cc65 + neslib |
+| SNES | 🔮 Planned | 0% | — |
 
 ---
 
 ## 🏛️ Architecture
 
-Retruxel is built on .NET / WPF and organized as a multi-project solution:
+Retruxel is built on .NET 10 / WPF and organized as a multi-project solution with a plugin-based architecture:
 
 | Project | Type | Role |
 |---|---|---|
-| `Retruxel` | WPF Application | Main shell — UI and navigation |
-| `Retruxel.Core` | Class Library | Interfaces, models and core services |
+| `Retruxel` | WPF Application | Main shell — UI, navigation and orchestration |
+| `Retruxel.Core` | Class Library | Interfaces, models, services and code generation engine |
 | `Retruxel.SDK` | Class Library | Public interfaces for plugin developers |
-| `Retruxel.Toolchain` | Class Library | Embedded toolchains (SDCC + devkitSMS for Sega/Coleco, cc65 for NES) |
-| `Retruxel.Target.SMS` | Class Library | SMS-specific modules and target implementation |
-| `Retruxel.Target.NES` | Class Library | NES-specific modules and target implementation |
-| `Retruxel.Target.GameGear` | Class Library | Game Gear target implementation (scaffolding) |
-| `Retruxel.Target.SG1000` | Class Library | SG-1000 target implementation (scaffolding) |
-| `Retruxel.Target.ColecoVision` | Class Library | ColecoVision target implementation (scaffolding) |
+| `Retruxel.Toolchain` | Class Library | Embedded toolchains with centralized adapter |
+| `Retruxel.Modules` | Class Library | Standard portable module definitions |
+| `Plugins/Targets/*` | Class Libraries | Platform-specific implementations (SMS, NES, GG, SG-1000, ColecoVision) |
+| `Plugins/Tools/*` | Class Libraries | Standalone tools (image processing, preprocessors, asset converters) |
+| `Plugins/CodeGens/*` | JSON + Templates | Declarative code generators (`.c.rtrx` templates + `codegen.json` manifests) |
 
 ### Build Pipeline
 
 **SMS / Game Gear / SG-1000 / ColecoVision:**
 ```
-.rtrxproject  →  CodeGenerator  →  .c / .h files  →  SDCC  →  ihx2sms  →  .sms ROM
+.rtrxproject  →  ModuleRenderer (JSON+templates)  →  .c / .h files  →  SDCC  →  ihx2sms  →  ROM
+                      ↓
+              Tool invocation (preprocessors, asset converters)
 ```
 
 **NES:**
 ```
-.rtrxproject  →  CodeGenerator  →  .c / .h files  →  cc65  →  ld65  →  .nes ROM
+.rtrxproject  →  ModuleRenderer (JSON+templates)  →  .c / .h files  →  cc65  →  ld65  →  .nes ROM
+                      ↓
+              Tool invocation (preprocessors, asset converters)
 ```
+
+**Generation Priority:**
+1. ModuleRenderer (declarative JSON + `.c.rtrx` templates)
+2. CodeGen DLL (legacy compiled generators)
+3. Target.GenerateCodeForModule() (target-specific fallback)
+4. Module.GenerateCode() (module-level fallback)
 
 ### Module System
 
@@ -98,7 +107,11 @@ Modules are the building blocks of every Retruxel project. There are three types
 
 Each module exposes a `ModuleManifest` that describes its parameters. The shell reads this manifest and auto-generates the configuration UI — no WPF knowledge required to write a module.
 
-Modules are distributed as DLLs. Official modules live in `/modules/`, user plugins in `/plugins/`.
+**Standard modules** (`Retruxel.Modules`) are portable definitions designed for cross-platform migration. These modules generate platform-agnostic JSON that can be rendered to any target.
+
+**Console-specific modules** can be added via plugins in `Plugins/Targets/` to leverage unique hardware features (e.g., SMS VDP modes, NES PPU attributes).
+
+Code generation is declarative: each module has a `codegen.json` manifest and `.c.rtrx` template files in `Plugins/CodeGens/[module]/[target]/`. The `ModuleRenderer` processes templates with variable substitution, conditionals, loops, and tool invocation.
 
 #### Portability categories
 
@@ -124,7 +137,13 @@ Retruxel uses a custom design system called **Neo-Technical Archive** — a mode
 
 ## 🚀 Getting Started
 
-> ⚠️ Retruxel is currently in early alpha development (v0.4.0-alpha). Builds are not yet available for download.
+> ⚠️ Retruxel is currently in alpha development (v0.7.2-alpha).
+
+### Option 1: Download Installer (Recommended)
+
+Download the latest installer from [Releases](https://github.com/ulissesemuman/Retruxel/releases). The toolchain is extracted automatically on first run to `%AppData%\Retruxel\toolchain\`.
+
+### Option 2: Build from Source
 
 1. Clone the repository
 2. Open `Retruxel.slnx` in Visual Studio 2022+
@@ -134,19 +153,23 @@ Retruxel uses a custom design system called **Neo-Technical Archive** — a mode
 ### Current Status
 
 - ✅ Project creation and management
-- ✅ Multi-target infrastructure with 5 platforms
+- ✅ Multi-target infrastructure with 6 platforms (SMS, GG, SG-1000, ColecoVision, NES, SNES planned)
 - ✅ Visual scene editor with canvas
-- ✅ Text display module (SMS + NES)
+- ✅ Declarative code generation system (JSON + `.c.rtrx` templates)
+- ✅ Tool system with preprocessors and asset converters
+- ✅ ModuleRenderer with template engine (conditionals, loops, nested properties, arithmetic)
 - ✅ Event system (OnStart, OnVBlank, OnInput)
-- ✅ Code generation and ROM compilation (SMS + NES)
+- ✅ ROM compilation pipeline (SMS + NES)
+- ✅ SMS splash screen with fade effects
 - ✅ Build console with real-time output and toast notifications
 - ✅ Emulator integration with configurable launch settings
 - ✅ Favorites system with sort and filter capabilities
 - ✅ Internationalization (i18n) system with runtime language switching
 - ✅ Dynamic manufacturer discovery and filtering
-- 🚧 Additional modules (in progress)
-- 🚧 Plugin system (planned)
+- ✅ Centralized toolchain adapter
+- 🚧 Standard modules (text display, tilemap, sprite, palette — early stage)
 - 🚧 Asset editors (planned)
+- 🚧 Visual scripting system (planned)
 
 ---
 
@@ -191,18 +214,74 @@ Retruxel supports multiple languages with automatic detection and runtime switch
 
 ## 🧩 Writing a Plugin
 
-> 🚧 Plugin system is planned but not yet implemented.
+Retruxel supports three types of plugins:
 
-Retruxel plugins will be standard .NET class libraries that reference `Retruxel.SDK`. Implement one of the module interfaces (`IGraphicModule`, `ILogicModule`, `IAudioModule`), drop the compiled DLL into the `/plugins/` folder, and Retruxel will discover and load it automatically.
+### 1. Declarative Code Generators (Recommended)
 
-```csharp
-public class MyModule : ILogicModule
+Create a folder in `Plugins/CodeGens/[module_id]/[target_id]/` with:
+
+**codegen.json** — manifest describing inputs and outputs:
+```json
 {
-    public string ModuleId => "myplugin.mymodule";
-    public string DisplayName => "My Module";
-    // ...
+  "moduleId": "mymodule",
+  "targetId": "sms",
+  "templates": [
+    { "template": "mymodule.c.rtrx", "output": "mymodule.c" },
+    { "template": "mymodule.h.rtrx", "output": "mymodule.h" }
+  ]
 }
 ```
+
+**mymodule.c.rtrx** — C template with variable substitution:
+```c
+void {{functionName}}() {
+    {{#if enabled}}
+    // Generated code
+    {{#each items}}
+    process_item({{this}});
+    {{/each}}
+    {{/if}}
+}
+```
+
+Supports: `{{variable}}`, `{{#if}}`, `{{#ifnot}}`, `{{#each}}`, `{{object.property}}`, `{{a * b}}`, tool invocation.
+
+### 2. Tools (Asset Converters, Preprocessors)
+
+Create a .NET class library in `Plugins/Tools/` that implements `ITool`:
+
+```csharp
+public class MyTool : ITool
+{
+    public string ToolId => "mytool";
+    public string DisplayName => "My Tool";
+    public string Category => "Conversion";
+    public bool IsStandalone => true;
+    public bool RequiresProject => false;
+    
+    public Dictionary<string, object> Execute(Dictionary<string, object> input)
+    {
+        // Process input and return results
+        return new Dictionary<string, object> { ["output"] = result };
+    }
+}
+```
+
+### 3. Target Platforms
+
+Create a .NET class library in `Plugins/Targets/` that implements `ITarget`:
+
+```csharp
+public class MyTarget : ITarget
+{
+    public string TargetId => "myconsole";
+    public string DisplayName => "My Console";
+    public string Manufacturer => "MyCompany";
+    // Implement ITarget interface methods
+}
+```
+
+Retruxel discovers plugins automatically via reflection on startup.
 
 ---
 

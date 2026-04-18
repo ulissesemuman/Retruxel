@@ -1,0 +1,25 @@
+// @retruxel:module entity
+// @retruxel:block init
+void sms_entity_init(void) {
+    player.x        = {{x}};
+    player.y        = {{y}};
+    player.speed    = {{speed}};
+    player.health   = {{health}};
+    player.spriteId = {{spriteId}};
+}
+// @retruxel:end
+
+// @retruxel:block update:mode=standalone
+void sms_entity_update(void) {
+    unsigned int keys = SMS_getKeysStatus();
+    if (keys & PORT_A_KEY_LEFT)  player.x -= player.speed;
+    ...
+}
+// @retruxel:end
+
+// @retruxel:block update:mode=physics+input
+void sms_entity_update(void) {
+    if (sms_input_left()) sms_physics_set_vx(-PHYS_WALK_SPEED_EXPORT);
+    ...
+}
+// @retruxel:end

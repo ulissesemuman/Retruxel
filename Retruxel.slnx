@@ -1,13 +1,44 @@
 <Solution>
+  <Folder Name="/Plugins/">
+    <Project Path="Plugins/Plugins.csproj" />
+  </Folder>
+  <Folder Name="/Plugins/Targets/">
+    <Project Path="Plugins/Targets/Retruxel.Target.ColecoVision/Retruxel.Target.ColecoVision.csproj" />
+    <Project Path="Plugins/Targets/Retruxel.Target.GG/Retruxel.Target.GG.csproj" />
+    <Project Path="Plugins/Targets/Retruxel.Target.NES/Retruxel.Target.NES.csproj" />
+    <Project Path="Plugins/Targets/Retruxel.Target.SG1000/Retruxel.Target.SG1000.csproj" />
+    <Project Path="Plugins/Targets/Retruxel.Target.SMS/Retruxel.Target.SMS.csproj" Id="d5b51d71-c123-45c1-a7ec-2fb4fa048e08" />
+  </Folder>
+  <Folder Name="/Plugins/Tools/">
+    <Project Path="Plugins/Tools/Retruxel.Tool.AnimationPreprocessor/Retruxel.Tool.AnimationPreprocessor.csproj" />
+    <Project Path="Plugins/Tools/Retruxel.Tool.AssetImporter/Retruxel.Tool.AssetImporter.csproj" />
+    <Project Path="Plugins/Tools/Retruxel.Tool.AudioEditor/Retruxel.Tool.AudioEditor.csproj" />
+    <Project Path="Plugins/Tools/Retruxel.Tool.AutoPorting/Retruxel.Tool.AutoPorting.csproj" />
+    <Project Path="Plugins/Tools/Retruxel.Tool.BankManager/Retruxel.Tool.BankManager.csproj" />
+    <Project Path="Plugins/Tools/Retruxel.Tool.CodeAnalyzer/Retruxel.Tool.CodeAnalyzer.csproj" />
+    <Project Path="Plugins/Tools/Retruxel.Tool.Collaboration/Retruxel.Tool.Collaboration.csproj" />
+    <Project Path="Plugins/Tools/Retruxel.Tool.CompressionEngine/Retruxel.Tool.CompressionEngine.csproj" />
+    <Project Path="Plugins/Tools/Retruxel.Tool.ConstraintAnalyzer/Retruxel.Tool.ConstraintAnalyzer.csproj" />
+    <Project Path="Plugins/Tools/Retruxel.Tool.CreationAssistant/Retruxel.Tool.CreationAssistant.csproj" />
+    <Project Path="Plugins/Tools/Retruxel.Tool.FontImporter/Retruxel.Tool.FontImporter.csproj" />
+    <Project Path="Plugins/Tools/Retruxel.Tool.HardwareSimulator/Retruxel.Tool.HardwareSimulator.csproj" />
+    <Project Path="Plugins/Tools/Retruxel.Tool.HybridCodeEditor/Retruxel.Tool.HybridCodeEditor.csproj" />
+    <Project Path="Plugins/Tools/Retruxel.Tool.IntelligenceEngine/Retruxel.Tool.IntelligenceEngine.csproj" />
+    <Project Path="Plugins/Tools/Retruxel.Tool.LiveLink/Retruxel.Tool.LiveLink.csproj" />
+    <Project Path="Plugins/Tools/Retruxel.Tool.MarketingKit/Retruxel.Tool.MarketingKit.csproj" />
+    <Project Path="Plugins/Tools/Retruxel.Tool.PixelArtEditor/Retruxel.Tool.PixelArtEditor.csproj" />
+    <Project Path="Plugins/Tools/Retruxel.Tool.PlaytestBot/Retruxel.Tool.PlaytestBot.csproj" />
+    <Project Path="Plugins/Tools/Retruxel.Tool.TilemapPreprocessor/Retruxel.Tool.TilemapPreprocessor.csproj" />
+    <Project Path="Plugins/Tools/Retruxel.Tool.TilemapReducer/Retruxel.Tool.TilemapReducer.csproj" />
+    <Project Path="Plugins/Tools/Retruxel.Tool.VisualScripting/Retruxel.Tool.VisualScripting.csproj" />
+  </Folder>
+  <Folder Name="/Plugins/Tools/ImageProcessing/">
+    <Project Path="Plugins/Tools/ImageProcessing/Retruxel.Lib.ImageProcessing/Retruxel.Lib.ImageProcessing.csproj" />
+    <Project Path="Plugins/Tools/ImageProcessing/Retruxel.Tool.PngToTiles.Sms/Retruxel.Tool.PngToTiles.Sms.csproj" />
+  </Folder>
   <Project Path="Retruxel.Core/Retruxel.Core.csproj" Id="57a90c60-69b1-4159-98bb-db3d8b36ed42" />
   <Project Path="Retruxel.Modules/Retruxel.Modules.csproj" />
   <Project Path="Retruxel.SDK/Retruxel.SDK.csproj" Id="77d05622-a6f7-4660-927d-95faa479e4aa" />
-  <Project Path="Retruxel.Target.ColecoVision/Retruxel.Target.ColecoVision.csproj" />
-  <Project Path="Retruxel.Target.GG/Retruxel.Target.GG.csproj" />
-  <Project Path="Retruxel.Target.NES/Retruxel.Target.NES.csproj" />
-  <Project Path="Retruxel.Target.SG1000/Retruxel.Target.SG1000.csproj" />
-  <Project Path="Retruxel.Target.SMS/Retruxel.Target.SMS.csproj" Id="d5b51d71-c123-45c1-a7ec-2fb4fa048e08" />
   <Project Path="Retruxel.Toolchain/Retruxel.Toolchain.csproj" Id="d17d81ab-b325-4aa9-9d0d-a41eeb5a9de8" />
-  <Project Path="Retruxel.Tools/Retruxel.Tools.csproj" />
   <Project Path="Retruxel/Retruxel.csproj" />
 </Solution>

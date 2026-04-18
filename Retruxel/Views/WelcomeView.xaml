@@ -1,4 +1,4 @@
-﻿<UserControl x:Class="Retruxel.Views.WelcomeView"
+<UserControl x:Class="Retruxel.Views.WelcomeView"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:loc="clr-namespace:Retruxel.Localization"
@@ -121,9 +121,15 @@
                     </StackPanel>
 
                     <!-- Target count: total targets registered in this installation -->
-                    <TextBlock x:Name="TargetCount" Grid.Column="2"
-                               Style="{StaticResource TextCode}"
-                               VerticalAlignment="Center"/>
+                    <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
+                        <TextBlock Text="{loc:Tr Key='welcome.count'}"
+                                   Style="{StaticResource TextCode}"
+                                   VerticalAlignment="Center"/>
+                        <TextBlock x:Name="TargetCount"
+                                   Style="{StaticResource TextCode}"
+                                   VerticalAlignment="Center"
+                                   Margin="4,0,0,0"/>
+                    </StackPanel>                    
                     
                 </Grid>
 

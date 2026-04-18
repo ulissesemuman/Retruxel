@@ -1,0 +1,53 @@
+<UserControl x:Class="Retruxel.Views.Wizard.Steps.TargetStep5VariableMapping"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <StackPanel>
+        <TextBlock Text="Variable Mapping" FontSize="16" FontWeight="Bold" Foreground="#FFFFFF" Margin="0,0,0,16"/>
+        <TextBlock Text="Map template variables to data sources. These will be resolved at build time." TextWrapping="Wrap" Margin="0,0,0,24"/>
+
+        <!-- Detected variables -->
+        <Label Content="Detected Variables"/>
+        <Border Background="#2D2D30" BorderBrush="#3F3F46" BorderThickness="1" Padding="16" Margin="0,0,0,16">
+            <ScrollViewer Height="200" VerticalScrollBarVisibility="Auto">
+                <ItemsControl x:Name="VariablesListBox">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Border Background="#252526" BorderBrush="#3F3F46" BorderThickness="1" Padding="12" Margin="0,0,0,8">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="200"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    
+                                    <TextBlock Grid.Column="0" 
+                                               Text="{Binding VariableName}" 
+                                               FontFamily="Consolas" 
+                                               Foreground="#4EC9B0"
+                                               VerticalAlignment="Center"/>
+                                    
+                                    <TextBox Grid.Column="1" 
+                                             Text="{Binding Mapping, UpdateSourceTrigger=PropertyChanged}"
+                                             ToolTip="Enter the data source path (e.g., project.Name, targetId)"/>
+                                </Grid>
+                            </Border>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </ScrollViewer>
+        </Border>
+
+        <!-- Common mappings reference -->
+        <Border Background="#2D2D30" BorderBrush="#3F3F46" BorderThickness="1" Padding="16">
+            <StackPanel x:Name="ExamplesPanel">
+                <TextBlock Text="📋 Common Mappings" FontWeight="Bold" Foreground="#FFFFFF" Margin="0,0,0,8"/>
+                <!-- Content will be added via code-behind -->
+            </StackPanel>
+        </Border>
+
+        <TextBlock Text="Note: Variable mapping is optional. Unmapped variables will be left as-is in the template." 
+                   FontSize="10" 
+                   Foreground="#888888" 
+                   Margin="0,16,0,0"
+                   TextWrapping="Wrap"/>
+    </StackPanel>
+</UserControl>

@@ -1,9 +1,9 @@
 using Retruxel.Core.Interfaces;
-using Retruxel.Target.SMS;
-using Retruxel.Target.NES;
-using Retruxel.Target.GG;
-using Retruxel.Target.SG1000;
 using Retruxel.Target.ColecoVision;
+using Retruxel.Target.GG;
+using Retruxel.Target.NES;
+using Retruxel.Target.SG1000;
+using Retruxel.Target.SMS;
 
 namespace Retruxel.Services;
 
@@ -13,7 +13,7 @@ namespace Retruxel.Services;
 /// </summary>
 public static class TargetRegistry
 {
-    private static readonly List<ITarget> _targets = 
+    private static readonly List<ITarget> _targets =
     [
         new SmsTarget(),
         new NesTarget(),

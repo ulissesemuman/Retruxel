@@ -151,7 +151,7 @@
     "scene.scene_name.default": "cena_01",
     "scene.coordinates.format": "X: {0} | Y: {1}",
     "scene.canvas_size.format": "{0} × {1} px",
-    "welcome.count": "CONTAGEM: {0:D2}",
+    "welcome.count": "CONTAGEM:",
     "startup.init": "INIT: Iniciando sequência de boot...",
     "startup.scan_targets": "SCAN: Descobrindo targets...",
     "startup.load_localization": "LOAD: Carregando localização...",
@@ -246,6 +246,23 @@
     "fontimporter.cancel": "CANCELAR",
     "fontimporter.import": "IMPORTAR FONTE",
     "fontimporter.error.select_file": "Selecione um arquivo .ttf para continuar.",
-    "fontimporter.status.generating": "GERANDO SPRITESHEET..."
+    "fontimporter.status.generating": "GERANDO SPRITESHEET...",
+    "fontimporter.dialog.select_font": "Selecione uma fonte TrueType",
+    "fontimporter.dialog.font_filter": "Fonte TrueType (*.ttf)|*.ttf|Fonte OpenType (*.otf)|*.otf",
+    "fontimporter.error.generation": "ERRO: {0}",
+    "assetimporter.dialog.select_png": "Selecionar imagem PNG",
+    "assetimporter.dialog.png_filter": "Imagens PNG|*.png",
+    "assetimporter.error.only_png": "Apenas arquivos PNG são suportados.",
+    "assetimporter.error.decode_failed": "Falha ao decodificar imagem.",
+    "assetimporter.error.dimensions": "Dimensões da imagem ({0}×{1}) devem ser múltiplos de 8.",
+    "assetimporter.info.source": "{0}×{1}px — {2} tiles",
+    "assetimporter.info.tiles": "{0} tiles",
+    "assetimporter.error.loading": "Erro ao carregar imagem: {0}",
+    "assetimporter.info.colors": "{0} cores usadas da paleta {1}",
+    "assetimporter.error.preview": "Erro no preview: {0}",
+    "assetimporter.error.name_empty": "Nome do asset não pode estar vazio.",
+    "assetimporter.error.name_invalid": "Nome do asset contém caracteres inválidos.",
+    "assetimporter.error.name_spaces": "Nome do asset não pode conter espaços. Use underscores: bg_tiles",
+    "assetimporter.error.unexpected": "Erro inesperado: {0}"
   }
 }

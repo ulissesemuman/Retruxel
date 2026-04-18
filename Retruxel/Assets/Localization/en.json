@@ -151,7 +151,7 @@
     "scene.scene_name.default": "scene_01",
     "scene.coordinates.format": "X: {0} | Y: {1}",
     "scene.canvas_size.format": "{0} × {1} px",
-    "welcome.count": "COUNT: {0:D2}",
+    "welcome.count": "COUNT:",
     "startup.init": "INIT: Starting boot sequence...",
     "startup.scan_targets": "SCAN: Discovering targets...",
     "startup.load_localization": "LOAD: Loading localization...",
@@ -246,6 +246,23 @@
     "fontimporter.cancel": "CANCEL",
     "fontimporter.import": "IMPORT FONT",
     "fontimporter.error.select_file": "Select a .ttf file to continue.",
-    "fontimporter.status.generating": "GENERATING SPRITESHEET..."
+    "fontimporter.status.generating": "GENERATING SPRITESHEET...",
+    "fontimporter.dialog.select_font": "Select a TrueType font",
+    "fontimporter.dialog.font_filter": "TrueType Font (*.ttf)|*.ttf|OpenType Font (*.otf)|*.otf",
+    "fontimporter.error.generation": "ERROR: {0}",
+    "assetimporter.dialog.select_png": "Select PNG image",
+    "assetimporter.dialog.png_filter": "PNG Images|*.png",
+    "assetimporter.error.only_png": "Only PNG files are supported.",
+    "assetimporter.error.decode_failed": "Failed to decode image.",
+    "assetimporter.error.dimensions": "Image dimensions ({0}×{1}) must be multiples of 8.",
+    "assetimporter.info.source": "{0}×{1}px — {2} tiles",
+    "assetimporter.info.tiles": "{0} tiles",
+    "assetimporter.error.loading": "Error loading image: {0}",
+    "assetimporter.info.colors": "{0} colors used from {1} palette",
+    "assetimporter.error.preview": "Preview error: {0}",
+    "assetimporter.error.name_empty": "Asset name cannot be empty.",
+    "assetimporter.error.name_invalid": "Asset name contains invalid characters.",
+    "assetimporter.error.name_spaces": "Asset name cannot contain spaces. Use underscores: bg_tiles",
+    "assetimporter.error.unexpected": "Unexpected error: {0}"
   }
 }

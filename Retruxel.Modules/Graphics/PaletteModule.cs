@@ -16,23 +16,23 @@ namespace Retruxel.Modules.Graphics;
 ///
 /// JSON format:
 /// {
-///   "module": "sms.palette",
+///   "module": "palette",
 ///   "bgColors":     [0,0,0,21,42,63, ...],   // 16 SMS color bytes for BG
 ///   "spriteColors": [0,0,0,21,42,63, ...]    // 16 SMS color bytes for sprites
 /// }
 /// </summary>
 public class PaletteModule : IGraphicModule
 {
-    public string     ModuleId     => "sms.palette";
-    public string     DisplayName  => "Palette";
-    public string     Category     => "Graphics";
-    public ModuleType Type         => ModuleType.Logic;
-    public bool     IsSingleton  => false;
-    public string[]   Compatibility => ["sms", "gg"];
+    public string ModuleId => "palette";
+    public string DisplayName => "Palette";
+    public string Category => "Graphics";
+    public ModuleType Type => ModuleType.Logic;
+    public bool IsSingleton => false;
+    public string[] Compatibility { get; set; } = [];
 
     private static readonly JsonSerializerOptions _jsonOptions = new()
     {
-        PropertyNamingPolicy        = JsonNamingPolicy.CamelCase,
+        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
         PropertyNameCaseInsensitive = true
     };
 
@@ -40,11 +40,10 @@ public class PaletteModule : IGraphicModule
 
     public ModuleManifest GetManifest() => new()
     {
-        ModuleId      = ModuleId,
-        Version       = "1.0.0",
-        Type          = ModuleType.Logic,
-        Compatibility = Compatibility,
-        Parameters    =
+        ModuleId = ModuleId,
+        Version = "1.0.0",
+        Type = ModuleType.Logic,
+        Parameters =
         [
             new ParameterDefinition
             {
@@ -79,14 +78,14 @@ public class PaletteModule : IGraphicModule
 
     public IEnumerable<GeneratedFile> GenerateCode() => [];
 
-    public string Serialize()              => JsonSerializer.Serialize(_state, _jsonOptions);
-    public void   Deserialize(string json) => _state = JsonSerializer.Deserialize<PaletteState>(json, _jsonOptions) ?? new();
-    public string GetValidationSample()    => JsonSerializer.Serialize(new PaletteState(), _jsonOptions);
+    public string Serialize() => JsonSerializer.Serialize(_state, _jsonOptions);
+    public void Deserialize(string json) => _state = JsonSerializer.Deserialize<PaletteState>(json, _jsonOptions) ?? new();
+    public string GetValidationSample() => JsonSerializer.Serialize(new PaletteState(), _jsonOptions);
 
     private class PaletteState
     {
         // Default: black background (0x00), white foreground (0x3F), remaining black
-        public byte[] BgColors     { get; set; } = [0x00, 0x3F, 0,0,0,0,0,0,0,0,0,0,0,0,0,0];
-        public byte[] SpriteColors { get; set; } = [0x00, 0x3F, 0,0,0,0,0,0,0,0,0,0,0,0,0,0];
+        public byte[] BgColors { get; set; } = [0x00, 0x3F, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+        public byte[] SpriteColors { get; set; } = [0x00, 0x3F, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
     }
 }

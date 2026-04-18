@@ -1,7 +1,7 @@
-using System.IO;
-using System.Windows;
 using Retruxel.Core.Services;
 using Retruxel.Services;
+using System.IO;
+using System.Windows;
 
 namespace Retruxel;
 
@@ -31,7 +31,7 @@ public partial class App : Application
         var targetIds = TargetRegistry.GetAllTargets().Select(t => t.TargetId);
 
         // 4. Splash + real startup tasks
-        var splash     = new SplashScreen();
+        var splash = new SplashScreen();
         var mainWindow = new MainWindow();
 
         splash.Show();

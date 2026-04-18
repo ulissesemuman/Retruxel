@@ -17,9 +17,9 @@ public partial class AboutView : UserControl
     {
         var assembly = Assembly.GetExecutingAssembly();
         var version = assembly.GetName().Version;
-        
+
         // Format: 0.2.0-alpha (using only Major.Minor.Build + manual suffix)
-        TxtVersion.Text = version != null 
+        TxtVersion.Text = version != null
             ? $"{version.Major}.{version.Minor}.{version.Build}-alpha"
             : "dev";
 

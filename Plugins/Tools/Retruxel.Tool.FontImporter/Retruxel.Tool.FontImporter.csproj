@@ -9,7 +9,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\..\Retruxel.SDK\Retruxel.SDK.csproj" />
-    <ProjectReference Include="..\..\..\Retruxel.Core\Retruxel.Core.csproj" />
   </ItemGroup>
 
   <ItemGroup>

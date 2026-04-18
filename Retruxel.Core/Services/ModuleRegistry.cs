@@ -10,7 +10,7 @@ namespace Retruxel.Core.Services;
 /// </summary>
 public class ModuleRegistry
 {
-    private const string ModulesRegistryFile = "modules.json";
+    private const string ModulesRegistryFile = "Assets/Data/modules.json";
 
     private readonly string _basePath;
     private readonly ModuleLoader _moduleLoader;

@@ -77,7 +77,8 @@
 
                 <!-- Asset type selector -->
                 <StackPanel Grid.Row="0" Grid.ColumnSpan="3" Orientation="Horizontal">
-                    <TextBlock Text="TYPE"
+                    <TextBlock x:Name="LblType"
+                               Text="TYPE"
                                Style="{StaticResource TextLabelCaps}"
                                Foreground="{StaticResource BrushOnSurfaceVariant}"
                                VerticalAlignment="Center"
@@ -94,7 +95,8 @@
 
                 <!-- BEFORE preview -->
                 <StackPanel Grid.Row="2" Grid.Column="0">
-                    <TextBlock Text="SOURCE"
+                    <TextBlock x:Name="LblSource"
+                               Text="SOURCE"
                                Style="{StaticResource TextLabelCaps}"
                                Foreground="{StaticResource BrushOnSurfaceVariant}"
                                Margin="0,0,0,8"/>
@@ -109,16 +111,19 @@
                             <StackPanel x:Name="DropHint"
                                         VerticalAlignment="Center"
                                         HorizontalAlignment="Center">
-                                <TextBlock Text="Drop PNG here"
+                                <TextBlock x:Name="TxtDropHint"
+                                           Text="Drop PNG here"
                                            Style="{StaticResource TextBody}"
                                            Foreground="{StaticResource BrushOnSurfaceVariant}"
                                            HorizontalAlignment="Center"/>
-                                <TextBlock Text="or"
+                                <TextBlock x:Name="TxtDropOr"
+                                           Text="or"
                                            Style="{StaticResource TextLabel}"
                                            Foreground="{StaticResource BrushOnSurfaceVariant}"
                                            HorizontalAlignment="Center"
                                            Margin="0,4"/>
-                                <Button Content="BROWSE"
+                                <Button x:Name="BtnBrowse"
+                                        Content="BROWSE"
                                         HorizontalAlignment="Center"
                                         Click="BtnBrowse_Click"
                                         Style="{StaticResource ButtonSecondary}"/>
@@ -140,7 +145,8 @@
 
                 <!-- AFTER preview -->
                 <StackPanel Grid.Row="2" Grid.Column="2">
-                    <TextBlock Text="REDUCED"
+                    <TextBlock x:Name="LblReduced"
+                               Text="REDUCED"
                                Style="{StaticResource TextLabelCaps}"
                                Foreground="{StaticResource BrushOnSurfaceVariant}"
                                Margin="0,0,0,8"/>
@@ -169,7 +175,8 @@
                 <!-- Asset name + validation -->
                 <StackPanel Grid.Row="4" Grid.ColumnSpan="3">
                     <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,0,6">
-                        <TextBlock Text="ASSET NAME"
+                        <TextBlock x:Name="LblAssetName"
+                                   Text="ASSET NAME"
                                    Style="{StaticResource TextLabelCaps}"
                                    Foreground="{StaticResource BrushOnSurfaceVariant}"
                                    VerticalAlignment="Center"
@@ -198,7 +205,8 @@
                     <StackPanel Orientation="Horizontal"
                                 HorizontalAlignment="Right"
                                 VerticalAlignment="Center">
-                        <Button Content="CANCEL"
+                        <Button x:Name="BtnCancel"
+                                Content="CANCEL"
                                 Click="BtnCancel_Click"
                                 Style="{StaticResource ButtonGhost}"
                                 Padding="24,0" Height="40"

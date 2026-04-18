@@ -42,6 +42,25 @@ public partial class AssetImporterWindow : Window
         _projectPath = projectPath;
 
         TxtTargetLabel.Text = target.DisplayName.ToUpper();
+        ApplyLocalization();
+    }
+
+    private void ApplyLocalization()
+    {
+        var loc = LocalizationService.Instance;
+        TxtTitle.Text = loc.Get("assetimporter.title");
+        LblType.Text = loc.Get("assetimporter.type");
+        RbTiles.Content = loc.Get("assetimporter.type.tiles");
+        RbSprites.Content = loc.Get("assetimporter.type.sprites");
+        LblSource.Text = loc.Get("assetimporter.source");
+        TxtDropHint.Text = loc.Get("assetimporter.drop_hint");
+        TxtDropOr.Text = loc.Get("assetimporter.drop_hint.or");
+        BtnBrowse.Content = loc.Get("assetimporter.browse");
+        LblReduced.Text = loc.Get("assetimporter.reduced");
+        ReducedHint.Text = loc.Get("assetimporter.preview_hint");
+        LblAssetName.Text = loc.Get("assetimporter.asset_name");
+        BtnCancel.Content = loc.Get("assetimporter.cancel");
+        BtnImport.Content = loc.Get("assetimporter.import");
     }
 
     /// <summary>Pre-selects the Sprites radio button before the window is shown.</summary>

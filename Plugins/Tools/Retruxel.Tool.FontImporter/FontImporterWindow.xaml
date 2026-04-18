@@ -64,7 +64,8 @@
                     <!-- Title + status badge -->
                     <StackPanel Grid.Column="0" Orientation="Horizontal"
                                 VerticalAlignment="Center">
-                        <TextBlock Text="FONT IMPORTER"
+                        <TextBlock x:Name="LblTitle"
+                                   Text="FONT IMPORTER"
                                    Style="{StaticResource TextHeadline}"
                                    VerticalAlignment="Center"
                                    Margin="0,0,16,0"/>
@@ -101,7 +102,8 @@
                     <StackPanel>
 
                         <!-- Section: File -->
-                        <TextBlock Text="SOURCE FILE"
+                        <TextBlock x:Name="LblSourceFile"
+                                   Text="SOURCE FILE"
                                    Style="{StaticResource TextLabelCaps}"
                                    Foreground="{StaticResource BrushPrimary}"
                                    Margin="0,0,0,8"/>
@@ -120,7 +122,8 @@
                                            VerticalAlignment="Center"
                                            TextTrimming="CharacterEllipsis"/>
                             </Border>
-                            <Button Grid.Column="1"
+                            <Button x:Name="BtnBrowse"
+                                    Grid.Column="1"
                                     Content="BROWSE"
                                     Style="{StaticResource ButtonSecondary}"
                                     Padding="12,0" Height="36"
@@ -128,7 +131,8 @@
                         </Grid>
 
                         <!-- Section: Tile size -->
-                        <TextBlock Text="TILE SIZE"
+                        <TextBlock x:Name="LblTileSize"
+                                   Text="TILE SIZE"
                                    Style="{StaticResource TextLabelCaps}"
                                    Foreground="{StaticResource BrushPrimary}"
                                    Margin="0,0,0,8"/>
@@ -150,7 +154,8 @@
                         </StackPanel>
 
                         <!-- Custom size -->
-                        <TextBlock Text="CUSTOM SIZE"
+                        <TextBlock x:Name="LblCustomSize"
+                                   Text="CUSTOM SIZE"
                                    Style="{StaticResource TextLabelCaps}"
                                    Foreground="{StaticResource BrushOnSurfaceVariant}"
                                    Margin="0,0,0,6"/>
@@ -194,7 +199,8 @@
                         </Grid>
 
                         <!-- Section: Selection info -->
-                        <TextBlock Text="SELECTION"
+                        <TextBlock x:Name="LblSelection"
+                                   Text="SELECTION"
                                    Style="{StaticResource TextLabelCaps}"
                                    Foreground="{StaticResource BrushPrimary}"
                                    Margin="0,0,0,8"/>
@@ -206,7 +212,8 @@
                                     <ColumnDefinition Width="*"/>
                                     <ColumnDefinition Width="Auto"/>
                                 </Grid.ColumnDefinitions>
-                                <TextBlock Text="SELECTED"
+                                <TextBlock x:Name="LblSelected"
+                                           Text="SELECTED"
                                            Style="{StaticResource TextLabel}"/>
                                 <TextBlock x:Name="LblSelectedCount"
                                            Grid.Column="1"
@@ -223,7 +230,8 @@
                                     <ColumnDefinition Width="*"/>
                                     <ColumnDefinition Width="Auto"/>
                                 </Grid.ColumnDefinitions>
-                                <TextBlock Text="SPRITESHEET"
+                                <TextBlock x:Name="LblSpritesheet"
+                                           Text="SPRITESHEET"
                                            Style="{StaticResource TextLabel}"/>
                                 <TextBlock x:Name="LblSpritesheetSize"
                                            Grid.Column="1"
@@ -234,22 +242,26 @@
                         </Border>
 
                         <!-- Quick select -->
-                        <TextBlock Text="QUICK SELECT"
+                        <TextBlock x:Name="LblQuickSelect"
+                                   Text="QUICK SELECT"
                                    Style="{StaticResource TextLabelCaps}"
                                    Foreground="{StaticResource BrushPrimary}"
                                    Margin="0,0,0,8"/>
 
-                        <Button Content="SELECT ASCII BASIC (32–126)"
+                        <Button x:Name="BtnSelectAscii"
+                                Content="SELECT ASCII BASIC (32–126)"
                                 Style="{StaticResource ButtonSecondary}"
                                 HorizontalAlignment="Stretch"
                                 Margin="0,0,0,4"
                                 Click="SelectAsciiBasic_Click"/>
-                        <Button Content="SELECT ALL"
+                        <Button x:Name="BtnSelectAll"
+                                Content="SELECT ALL"
                                 Style="{StaticResource ButtonSecondary}"
                                 HorizontalAlignment="Stretch"
                                 Margin="0,0,0,4"
                                 Click="SelectAll_Click"/>
-                        <Button Content="CLEAR SELECTION"
+                        <Button x:Name="BtnClearSelection"
+                                Content="CLEAR SELECTION"
                                 Style="{StaticResource ButtonGhost}"
                                 HorizontalAlignment="Stretch"
                                 Click="ClearSelection_Click"/>
@@ -273,10 +285,12 @@
                                 <ColumnDefinition Width="*"/>
                                 <ColumnDefinition Width="Auto"/>
                             </Grid.ColumnDefinitions>
-                            <TextBlock Text="CHARACTER MAP"
+                            <TextBlock x:Name="LblCharacterMap"
+                                       Text="CHARACTER MAP"
                                        Style="{StaticResource TextLabelCaps}"
                                        VerticalAlignment="Center"/>
-                            <TextBlock Grid.Column="1"
+                            <TextBlock x:Name="LblCharHint"
+                                       Grid.Column="1"
                                        Text="Click to toggle selection"
                                        Style="{StaticResource TextLabel}"
                                        Foreground="{StaticResource BrushOnSurfaceVariant}"
@@ -300,7 +314,8 @@
                         Padding="16,24">
                     <StackPanel>
 
-                        <TextBlock Text="PREVIEW"
+                        <TextBlock x:Name="LblPreview"
+                                   Text="PREVIEW"
                                    Style="{StaticResource TextLabelCaps}"
                                    Foreground="{StaticResource BrushPrimary}"
                                    Margin="0,0,0,16"/>
@@ -328,7 +343,8 @@
                                    Margin="0,0,0,24"/>
 
                         <!-- Spritesheet info -->
-                        <TextBlock Text="OUTPUT"
+                        <TextBlock x:Name="LblOutput"
+                                   Text="OUTPUT"
                                    Style="{StaticResource TextLabelCaps}"
                                    Foreground="{StaticResource BrushPrimary}"
                                    Margin="0,0,0,12"/>
@@ -339,7 +355,8 @@
                                     <ColumnDefinition Width="*"/>
                                     <ColumnDefinition Width="Auto"/>
                                 </Grid.ColumnDefinitions>
-                                <TextBlock Text="COLS" Style="{StaticResource TextLabel}"/>
+                                <TextBlock x:Name="LblCols"
+                                           Text="COLS" Style="{StaticResource TextLabel}"/>
                                 <TextBlock Grid.Column="1" Text="16"
                                            Style="{StaticResource TextLabel}"
                                            Foreground="{StaticResource BrushOnSurface}"/>
@@ -349,7 +366,8 @@
                                     <ColumnDefinition Width="*"/>
                                     <ColumnDefinition Width="Auto"/>
                                 </Grid.ColumnDefinitions>
-                                <TextBlock Text="ROWS" Style="{StaticResource TextLabel}"/>
+                                <TextBlock x:Name="LblRowsLabel"
+                                           Text="ROWS" Style="{StaticResource TextLabel}"/>
                                 <TextBlock x:Name="LblRows" Grid.Column="1" Text="—"
                                            Style="{StaticResource TextLabel}"
                                            Foreground="{StaticResource BrushOnSurface}"/>
@@ -359,7 +377,8 @@
                                     <ColumnDefinition Width="*"/>
                                     <ColumnDefinition Width="Auto"/>
                                 </Grid.ColumnDefinitions>
-                                <TextBlock Text="SIZE (PX)" Style="{StaticResource TextLabel}"/>
+                                <TextBlock x:Name="LblSizePx"
+                                           Text="SIZE (PX)" Style="{StaticResource TextLabel}"/>
                                 <TextBlock x:Name="LblOutputSize" Grid.Column="1" Text="—"
                                            Style="{StaticResource TextLabel}"
                                            Foreground="{StaticResource BrushTertiary}"/>
@@ -369,7 +388,8 @@
                                     <ColumnDefinition Width="*"/>
                                     <ColumnDefinition Width="Auto"/>
                                 </Grid.ColumnDefinitions>
-                                <TextBlock Text="FORMAT" Style="{StaticResource TextLabel}"/>
+                                <TextBlock x:Name="LblFormat"
+                                           Text="FORMAT" Style="{StaticResource TextLabel}"/>
                                 <TextBlock Grid.Column="1" Text="PNG"
                                            Style="{StaticResource TextLabel}"
                                            Foreground="{StaticResource BrushOnSurface}"/>
@@ -377,7 +397,8 @@
                         </StackPanel>
 
                         <!-- Spritesheet mini-preview -->
-                        <TextBlock Text="SHEET PREVIEW"
+                        <TextBlock x:Name="LblSheetPreview"
+                                   Text="SHEET PREVIEW"
                                    Style="{StaticResource TextLabelCaps}"
                                    Foreground="{StaticResource BrushPrimary}"
                                    Margin="0,24,0,8"/>
@@ -407,7 +428,8 @@
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
 
-                    <Button Grid.Column="0"
+                    <Button x:Name="BtnCancel"
+                            Grid.Column="0"
                             Content="CANCEL"
                             Style="{StaticResource ButtonGhost}"
                             Padding="24,0" Height="40"

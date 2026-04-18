@@ -225,6 +225,23 @@ Create a folder in `Plugins/CodeGens/[module_id]/[target_id]/` with:
 {
   "moduleId": "sprite",
   "targetId": "sms",
+  "variables": {
+    "spriteName": "player",
+    "spritePath": "assets/player.png",
+    "width": 16,
+    "height": 16,
+    "animated": true,
+    "frameCount": 4,
+    "visible": true,
+    "speed": 2,
+    "direction": 1,
+    "frames": [
+      { "offset": 0, "count": 4 },
+      { "offset": 4, "count": 4 },
+      { "offset": 8, "count": 4 },
+      { "offset": 12, "count": 4 }
+    ]
+  },
   "templates": [
     { "template": "sprite.c.rtrx", "output": "sprite.c" },
     { "template": "sprite.h.rtrx", "output": "sprite.h" }

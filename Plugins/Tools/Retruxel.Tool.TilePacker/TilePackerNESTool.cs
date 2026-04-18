@@ -11,8 +11,11 @@ public class TilePackerNESTool : ITool
     public string ToolId => "retruxel.tool.tilepacker.nes";
     public string DisplayName => "Tile Packer (NES)";
     public string Description => "Tilemap optimizer for NES with H/V flip support";
+    public object? Icon => null;
     public string Category => "Optimization";
+    public string? Shortcut => null;
     public bool IsStandalone => false;
+    public string? TargetId => "nes";
     public bool RequiresProject => false;
 
     private readonly TilePackerTool _baseTool = new();

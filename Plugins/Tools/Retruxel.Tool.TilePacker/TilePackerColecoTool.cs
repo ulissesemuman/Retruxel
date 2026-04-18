@@ -11,8 +11,11 @@ public class TilePackerColecoTool : ITool
     public string ToolId => "retruxel.tool.tilepacker.coleco";
     public string DisplayName => "Tile Packer (ColecoVision)";
     public string Description => "Tilemap optimizer for ColecoVision (no flip support)";
+    public object? Icon => null;
     public string Category => "Optimization";
+    public string? Shortcut => null;
     public bool IsStandalone => false;
+    public string? TargetId => "coleco";
     public bool RequiresProject => false;
 
     private readonly TilePackerTool _baseTool = new();

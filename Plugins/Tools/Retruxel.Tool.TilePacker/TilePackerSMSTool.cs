@@ -11,8 +11,11 @@ public class TilePackerSMSTool : ITool
     public string ToolId => "retruxel.tool.tilepacker.sms";
     public string DisplayName => "Tile Packer (SMS/GG/SG-1000)";
     public string Description => "Tilemap optimizer for SMS/Game Gear/SG-1000 with H/V flip support";
+    public object? Icon => null;
     public string Category => "Optimization";
+    public string? Shortcut => null;
     public bool IsStandalone => false;
+    public string? TargetId => "sms";
     public bool RequiresProject => false;
 
     private readonly TilePackerTool _baseTool = new();

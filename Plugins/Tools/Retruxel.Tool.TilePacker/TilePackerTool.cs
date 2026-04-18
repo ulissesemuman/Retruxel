@@ -12,8 +12,11 @@ public class TilePackerTool : ITool
     public string ToolId => "retruxel.tool.tilepacker";
     public string DisplayName => "Tile Packer";
     public string Description => "Platform-agnostic tilemap optimizer with pattern detection";
+    public object? Icon => null;
     public string Category => "Optimization";
+    public string? Shortcut => null;
     public bool IsStandalone => false;
+    public string? TargetId => null;
     public bool RequiresProject => false;
 
     public Dictionary<string, object> Execute(Dictionary<string, object> input)

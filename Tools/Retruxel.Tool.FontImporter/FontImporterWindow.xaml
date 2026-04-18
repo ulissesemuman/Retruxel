@@ -20,7 +20,7 @@
                               Color="Black" Direction="270"
                               ShadowDepth="8" BlurRadius="32" Opacity="0.6"/>
 
-            <!-- Char cell style — each character preview button -->
+            <!-- Char cell styles — specific to this window, acceptable as local resources -->
             <Style x:Key="CharCell" TargetType="Border">
                 <Setter Property="Width" Value="40"/>
                 <Setter Property="Height" Value="40"/>
@@ -35,10 +35,12 @@
         </ResourceDictionary>
     </Window.Resources>
 
+    <!-- Outer border — CornerRadius 6 permitido: moldura física da janela -->
     <Border CornerRadius="6"
             Background="{StaticResource BrushSurface}"
-            Effect="{StaticResource WindowShadow}"
-            Margin="16">
+            BorderBrush="#3a3a3a"
+            BorderThickness="1"
+            Effect="{StaticResource WindowShadow}">
         <Grid>
             <Grid.RowDefinitions>
                 <RowDefinition Height="48"/>
@@ -59,7 +61,7 @@
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
 
-                    <!-- Title + status tag -->
+                    <!-- Title + status badge -->
                     <StackPanel Grid.Column="0" Orientation="Horizontal"
                                 VerticalAlignment="Center">
                         <TextBlock Text="FONT IMPORTER"
@@ -78,28 +80,21 @@
 
                     <!-- Close -->
                     <Button Grid.Column="2"
-                            Width="32" Height="32"
                             Content="✕"
-                            Background="Transparent"
-                            Foreground="{StaticResource BrushOnSurfaceVariant}"
-                            BorderThickness="0"
-                            Click="CloseButton_Click"
-                            Cursor="Hand"/>
+                            Style="{StaticResource ButtonTitleBarClose}"
+                            Click="CloseButton_Click"/>
                 </Grid>
             </Border>
 
             <!-- ===== MAIN CONTENT ===== -->
             <Grid Grid.Row="1">
                 <Grid.ColumnDefinitions>
-                    <!-- Left panel: config -->
                     <ColumnDefinition Width="260"/>
-                    <!-- Center: character grid -->
                     <ColumnDefinition Width="*"/>
-                    <!-- Right panel: preview -->
                     <ColumnDefinition Width="220"/>
                 </Grid.ColumnDefinitions>
 
-                <!-- ── LEFT PANEL ── -->
+                <!-- ── LEFT PANEL: CONFIG ── -->
                 <Border Grid.Column="0"
                         Background="{StaticResource BrushSurfaceContainerLow}"
                         Padding="20,24">
@@ -107,7 +102,7 @@
 
                         <!-- Section: File -->
                         <TextBlock Text="SOURCE FILE"
-                                   Style="{StaticResource TextLabel}"
+                                   Style="{StaticResource TextLabelCaps}"
                                    Foreground="{StaticResource BrushPrimary}"
                                    Margin="0,0,0,8"/>
 
@@ -134,7 +129,7 @@
 
                         <!-- Section: Tile size -->
                         <TextBlock Text="TILE SIZE"
-                                   Style="{StaticResource TextLabel}"
+                                   Style="{StaticResource TextLabelCaps}"
                                    Foreground="{StaticResource BrushPrimary}"
                                    Margin="0,0,0,8"/>
 
@@ -143,20 +138,21 @@
                             <Button x:Name="BtnSize8"  Content="8×8"
                                     Tag="8"  Click="SizePreset_Click"
                                     Style="{StaticResource ButtonPrimary}"
-                                    Padding="12,6" FontSize="11" Margin="0,0,4,0"/>
+                                    Padding="12,6" Margin="0,0,4,0"/>
                             <Button x:Name="BtnSize16" Content="16×16"
                                     Tag="16" Click="SizePreset_Click"
                                     Style="{StaticResource ButtonSecondary}"
-                                    Padding="12,6" FontSize="11" Margin="0,0,4,0"/>
+                                    Padding="12,6" Margin="0,0,4,0"/>
                             <Button x:Name="BtnSize32" Content="32×32"
                                     Tag="32" Click="SizePreset_Click"
                                     Style="{StaticResource ButtonSecondary}"
-                                    Padding="12,6" FontSize="11"/>
+                                    Padding="12,6"/>
                         </StackPanel>
 
                         <!-- Custom size -->
                         <TextBlock Text="CUSTOM SIZE"
-                                   Style="{StaticResource TextLabel}"
+                                   Style="{StaticResource TextLabelCaps}"
+                                   Foreground="{StaticResource BrushOnSurfaceVariant}"
                                    Margin="0,0,0,6"/>
                         <Grid Margin="0,0,0,24">
                             <Grid.ColumnDefinitions>
@@ -172,7 +168,6 @@
                                          Background="Transparent"
                                          Foreground="{StaticResource BrushOnSurface}"
                                          BorderThickness="0"
-                                         FontFamily="{StaticResource FontBody}"
                                          FontSize="13"
                                          VerticalAlignment="Center"
                                          TextAlignment="Center"
@@ -191,7 +186,6 @@
                                          Background="Transparent"
                                          Foreground="{StaticResource BrushOnSurface}"
                                          BorderThickness="0"
-                                         FontFamily="{StaticResource FontBody}"
                                          FontSize="13"
                                          VerticalAlignment="Center"
                                          TextAlignment="Center"
@@ -201,7 +195,7 @@
 
                         <!-- Section: Selection info -->
                         <TextBlock Text="SELECTION"
-                                   Style="{StaticResource TextLabel}"
+                                   Style="{StaticResource TextLabelCaps}"
                                    Foreground="{StaticResource BrushPrimary}"
                                    Margin="0,0,0,8"/>
 
@@ -239,13 +233,13 @@
                             </Grid>
                         </Border>
 
-                        <!-- Quick select buttons -->
+                        <!-- Quick select -->
                         <TextBlock Text="QUICK SELECT"
-                                   Style="{StaticResource TextLabel}"
+                                   Style="{StaticResource TextLabelCaps}"
                                    Foreground="{StaticResource BrushPrimary}"
                                    Margin="0,0,0,8"/>
 
-                        <Button Content="SELECT ASCII BASIC (32-126)"
+                        <Button Content="SELECT ASCII BASIC (32–126)"
                                 Style="{StaticResource ButtonSecondary}"
                                 HorizontalAlignment="Stretch"
                                 Margin="0,0,0,4"
@@ -256,14 +250,8 @@
                                 Margin="0,0,0,4"
                                 Click="SelectAll_Click"/>
                         <Button Content="CLEAR SELECTION"
-                                Background="{StaticResource BrushSurfaceContainerHighest}"
-                                Foreground="{StaticResource BrushOnSurfaceVariant}"
-                                BorderThickness="0"
-                                FontFamily="{StaticResource FontBody}"
-                                FontSize="12"
-                                Padding="0,8"
+                                Style="{StaticResource ButtonGhost}"
                                 HorizontalAlignment="Stretch"
-                                Cursor="Hand"
                                 Click="ClearSelection_Click"/>
 
                     </StackPanel>
@@ -276,7 +264,7 @@
                         <RowDefinition Height="*"/>
                     </Grid.RowDefinitions>
 
-                    <!-- Grid header -->
+                    <!-- Grid header — tonal shift, sem border-line -->
                     <Border Grid.Row="0"
                             Background="{StaticResource BrushSurfaceContainerLow}"
                             Padding="20,0">
@@ -286,7 +274,7 @@
                                 <ColumnDefinition Width="Auto"/>
                             </Grid.ColumnDefinitions>
                             <TextBlock Text="CHARACTER MAP"
-                                       Style="{StaticResource TextLabel}"
+                                       Style="{StaticResource TextLabelCaps}"
                                        VerticalAlignment="Center"/>
                             <TextBlock Grid.Column="1"
                                        Text="Click to toggle selection"
@@ -313,7 +301,7 @@
                     <StackPanel>
 
                         <TextBlock Text="PREVIEW"
-                                   Style="{StaticResource TextLabel}"
+                                   Style="{StaticResource TextLabelCaps}"
                                    Foreground="{StaticResource BrushPrimary}"
                                    Margin="0,0,0,16"/>
 
@@ -339,14 +327,9 @@
                                    Style="{StaticResource TextLabel}"
                                    Margin="0,0,0,24"/>
 
-                        <!-- Separator -->
-                        <Border Height="1"
-                                Background="{StaticResource BrushGhostBorder}"
-                                Margin="0,0,0,24"/>
-
                         <!-- Spritesheet info -->
                         <TextBlock Text="OUTPUT"
-                                   Style="{StaticResource TextLabel}"
+                                   Style="{StaticResource TextLabelCaps}"
                                    Foreground="{StaticResource BrushPrimary}"
                                    Margin="0,0,0,12"/>
 
@@ -393,16 +376,11 @@
                             </Grid>
                         </StackPanel>
 
-                        <!-- Separator -->
-                        <Border Height="1"
-                                Background="{StaticResource BrushGhostBorder}"
-                                Margin="0,24,0,24"/>
-
                         <!-- Spritesheet mini-preview -->
                         <TextBlock Text="SHEET PREVIEW"
-                                   Style="{StaticResource TextLabel}"
+                                   Style="{StaticResource TextLabelCaps}"
                                    Foreground="{StaticResource BrushPrimary}"
-                                   Margin="0,0,0,8"/>
+                                   Margin="0,24,0,8"/>
 
                         <Border Background="{StaticResource BrushSurfaceContainerHighest}"
                                 Height="120" HorizontalAlignment="Stretch">
@@ -431,14 +409,12 @@
 
                     <Button Grid.Column="0"
                             Content="CANCEL"
-                            Style="{StaticResource ButtonSecondary}"
+                            Style="{StaticResource ButtonGhost}"
                             Padding="24,0" Height="40"
                             Click="CloseButton_Click"/>
 
-                    <!-- Error / info message -->
                     <TextBlock x:Name="LblFooterMessage"
                                Grid.Column="1"
-                               Text=""
                                Style="{StaticResource TextLabel}"
                                Foreground="{StaticResource BrushError}"
                                VerticalAlignment="Center"
@@ -448,7 +424,7 @@
                             Grid.Column="2"
                             Content="IMPORT"
                             Style="{StaticResource ButtonPrimary}"
-                            Padding="24,0" Height="40"
+                            Padding="32,0" Height="40"
                             IsEnabled="False"
                             Click="ImportButton_Click"/>
                 </Grid>

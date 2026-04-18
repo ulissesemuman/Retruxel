@@ -36,11 +36,6 @@
     <ProjectReference Include="..\Targets\Retruxel.Target.SG1000\Retruxel.Target.SG1000.csproj" />
     <ProjectReference Include="..\Targets\Retruxel.Target.ColecoVision\Retruxel.Target.ColecoVision.csproj" />
     <ProjectReference Include="..\Tools\Retruxel.Tool.AssetImporter\Retruxel.Tool.AssetImporter.csproj" />
-    <ProjectReference Include="..\CodeGens\Retruxel.CodeGen.TextDisplay.SMS\Retruxel.CodeGen.TextDisplay.SMS.csproj" />
-    <ProjectReference Include="..\CodeGens\Retruxel.CodeGen.TextDisplay.NES\Retruxel.CodeGen.TextDisplay.NES.csproj" />
-    <ProjectReference Include="..\CodeGens\Retruxel.CodeGen.TextDisplay.GG\Retruxel.CodeGen.TextDisplay.GG.csproj" />
-    <ProjectReference Include="..\CodeGens\Retruxel.CodeGen.TextDisplay.SG1000\Retruxel.CodeGen.TextDisplay.SG1000.csproj" />
-    <ProjectReference Include="..\CodeGens\Retruxel.CodeGen.TextDisplay.ColecoVision\Retruxel.CodeGen.TextDisplay.ColecoVision.csproj" />
   </ItemGroup>
 
   <ItemGroup>
@@ -74,16 +69,6 @@
   <Target Name="CopyModulesToFolder" AfterTargets="Build">
     <MakeDir Directories="$(OutputPath)modules" />
     <Copy SourceFiles="$(OutputPath)Retruxel.Modules.dll" DestinationFolder="$(OutputPath)modules" />
-  </Target>
-
-  <!-- Copy CodeGen DLLs to codegens folder after build -->
-  <Target Name="CopyCodeGensToFolder" AfterTargets="Build">
-    <MakeDir Directories="$(OutputPath)codegens" />
-    <Copy SourceFiles="$(OutputPath)Retruxel.CodeGen.TextDisplay.SMS.dll" DestinationFolder="$(OutputPath)codegens" />
-    <Copy SourceFiles="$(OutputPath)Retruxel.CodeGen.TextDisplay.NES.dll" DestinationFolder="$(OutputPath)codegens" />
-    <Copy SourceFiles="$(OutputPath)Retruxel.CodeGen.TextDisplay.GG.dll" DestinationFolder="$(OutputPath)codegens" />
-    <Copy SourceFiles="$(OutputPath)Retruxel.CodeGen.TextDisplay.SG1000.dll" DestinationFolder="$(OutputPath)codegens" />
-    <Copy SourceFiles="$(OutputPath)Retruxel.CodeGen.TextDisplay.ColecoVision.dll" DestinationFolder="$(OutputPath)codegens" />
   </Target>
 
 </Project>

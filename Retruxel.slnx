@@ -1,4 +1,7 @@
 <Solution>
+  <Folder Name="/Plugins/">
+    <Project Path="Plugins/Plugins.csproj" />
+  </Folder>
   <Folder Name="/Targets/">
     <Project Path="Targets/Retruxel.Target.ColecoVision/Retruxel.Target.ColecoVision.csproj" />
     <Project Path="Targets/Retruxel.Target.GG/Retruxel.Target.GG.csproj" />
@@ -28,13 +31,6 @@
     <Project Path="Tools/Retruxel.Tool.TilemapPreprocessor/Retruxel.Tool.TilemapPreprocessor.csproj" />
     <Project Path="Tools/Retruxel.Tool.TilemapReducer/Retruxel.Tool.TilemapReducer.csproj" />
     <Project Path="Tools/Retruxel.Tool.VisualScripting/Retruxel.Tool.VisualScripting.csproj" />
-  </Folder>
-  <Folder Name="/CodeGens/">
-    <Project Path="CodeGens/Retruxel.CodeGen.TextDisplay.ColecoVision/Retruxel.CodeGen.TextDisplay.ColecoVision.csproj" />
-    <Project Path="CodeGens/Retruxel.CodeGen.TextDisplay.GG/Retruxel.CodeGen.TextDisplay.GG.csproj" />
-    <Project Path="CodeGens/Retruxel.CodeGen.TextDisplay.NES/Retruxel.CodeGen.TextDisplay.NES.csproj" />
-    <Project Path="CodeGens/Retruxel.CodeGen.TextDisplay.SG1000/Retruxel.CodeGen.TextDisplay.SG1000.csproj" />
-    <Project Path="CodeGens/Retruxel.CodeGen.TextDisplay.SMS/Retruxel.CodeGen.TextDisplay.SMS.csproj" />
   </Folder>
   <Folder Name="/Tools/ImageProcessing/">
     <Project Path="Tools/ImageProcessing/Retruxel.Lib.ImageProcessing/Retruxel.Lib.ImageProcessing.csproj" />

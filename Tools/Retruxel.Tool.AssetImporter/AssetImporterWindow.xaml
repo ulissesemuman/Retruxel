@@ -22,10 +22,12 @@
         </ResourceDictionary>
     </Window.Resources>
 
+    <!-- Outer border — CornerRadius 6 permitido: moldura física da janela -->
     <Border CornerRadius="6"
             Background="{StaticResource BrushSurface}"
-            Effect="{StaticResource WindowShadow}"
-            Margin="16">
+            BorderBrush="#3a3a3a"
+            BorderThickness="1"
+            Effect="{StaticResource WindowShadow}">
         <Grid>
             <Grid.RowDefinitions>
                 <RowDefinition Height="48"/>
@@ -36,31 +38,30 @@
             <!-- ===== TITLE BAR ===== -->
             <Border Grid.Row="0"
                     Background="{StaticResource BrushSurfaceContainerLow}"
-                    CornerRadius="6 6 0 0"
+                    CornerRadius="6,6,0,0"
                     MouseLeftButtonDown="TitleBar_MouseLeftButtonDown">
-                <Grid Margin="16 0">
+                <Grid Margin="24,0,8,0">
                     <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                        <TextBlock x:Name="TxtTitle" Text="ASSET IMPORTER"
-                                   FontFamily="{StaticResource FontDisplay}"
-                                   FontSize="13" FontWeight="Bold"
+                        <TextBlock x:Name="TxtTitle"
+                                   Text="ASSET IMPORTER"
+                                   Style="{StaticResource TextHeadline}"
                                    Foreground="{StaticResource BrushPrimary}"
                                    VerticalAlignment="Center"
-                                   Margin="0 0 12 0"/>
+                                   Margin="0,0,12,0"/>
                         <TextBlock x:Name="TxtTargetLabel"
-                                   FontFamily="{StaticResource FontBody}"
-                                   FontSize="11"
+                                   Style="{StaticResource TextLabel}"
                                    Foreground="{StaticResource BrushOnSurfaceVariant}"
                                    VerticalAlignment="Center"/>
                     </StackPanel>
                     <Button Content="✕"
                             HorizontalAlignment="Right"
                             Click="BtnClose_Click"
-                            Style="{StaticResource ButtonTitleBar}"/>
+                            Style="{StaticResource ButtonTitleBarClose}"/>
                 </Grid>
             </Border>
 
             <!-- ===== CONTENT ===== -->
-            <Grid Grid.Row="1" Margin="24 20">
+            <Grid Grid.Row="1" Margin="24,20">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="20"/>
@@ -77,16 +78,15 @@
                 <!-- Asset type selector -->
                 <StackPanel Grid.Row="0" Grid.ColumnSpan="3" Orientation="Horizontal">
                     <TextBlock Text="TYPE"
-                               FontFamily="{StaticResource FontDisplay}"
-                               FontSize="11" FontWeight="Bold"
+                               Style="{StaticResource TextLabelCaps}"
                                Foreground="{StaticResource BrushOnSurfaceVariant}"
                                VerticalAlignment="Center"
-                               Margin="0 0 8 0"/>
+                               Margin="0,0,8,0"/>
                     <RadioButton x:Name="RbTiles" Content="TILES"
                                  IsChecked="True"
                                  GroupName="AssetType"
                                  Style="{StaticResource SegmentedRadio}"
-                                 Margin="0 0 8 0"/>
+                                 Margin="0,0,8,0"/>
                     <RadioButton x:Name="RbSprites" Content="SPRITES"
                                  GroupName="AssetType"
                                  Style="{StaticResource SegmentedRadio}"/>
@@ -95,10 +95,9 @@
                 <!-- BEFORE preview -->
                 <StackPanel Grid.Row="2" Grid.Column="0">
                     <TextBlock Text="SOURCE"
-                               FontFamily="{StaticResource FontDisplay}"
-                               FontSize="11" FontWeight="Bold"
+                               Style="{StaticResource TextLabelCaps}"
                                Foreground="{StaticResource BrushOnSurfaceVariant}"
-                               Margin="0 0 0 8"/>
+                               Margin="0,0,0,8"/>
                     <Border Background="{StaticResource BrushSurfaceContainerHigh}"
                             MinHeight="200"
                             AllowDrop="True"
@@ -111,16 +110,14 @@
                                         VerticalAlignment="Center"
                                         HorizontalAlignment="Center">
                                 <TextBlock Text="Drop PNG here"
-                                           FontFamily="{StaticResource FontDisplay}"
-                                           FontSize="12" FontWeight="Bold"
+                                           Style="{StaticResource TextBody}"
                                            Foreground="{StaticResource BrushOnSurfaceVariant}"
                                            HorizontalAlignment="Center"/>
                                 <TextBlock Text="or"
-                                           FontFamily="{StaticResource FontBody}"
-                                           FontSize="11"
+                                           Style="{StaticResource TextLabel}"
                                            Foreground="{StaticResource BrushOnSurfaceVariant}"
                                            HorizontalAlignment="Center"
-                                           Margin="0 4"/>
+                                           Margin="0,4"/>
                                 <Button Content="BROWSE"
                                         HorizontalAlignment="Center"
                                         Click="BtnBrowse_Click"
@@ -136,26 +133,23 @@
                         </Grid>
                     </Border>
                     <TextBlock x:Name="TxtSourceInfo"
-                               FontFamily="{StaticResource FontBody}"
-                               FontSize="11"
+                               Style="{StaticResource TextLabel}"
                                Foreground="{StaticResource BrushOnSurfaceVariant}"
-                               Margin="0 6 0 0"/>
+                               Margin="0,6,0,0"/>
                 </StackPanel>
 
                 <!-- AFTER preview -->
                 <StackPanel Grid.Row="2" Grid.Column="2">
                     <TextBlock Text="REDUCED"
-                               FontFamily="{StaticResource FontDisplay}"
-                               FontSize="11" FontWeight="Bold"
+                               Style="{StaticResource TextLabelCaps}"
                                Foreground="{StaticResource BrushOnSurfaceVariant}"
-                               Margin="0 0 0 8"/>
+                               Margin="0,0,0,8"/>
                     <Border Background="{StaticResource BrushSurfaceContainerHigh}"
                             MinHeight="200">
                         <Grid>
                             <TextBlock x:Name="ReducedHint"
                                        Text="Preview will appear here"
-                                       FontFamily="{StaticResource FontDisplay}"
-                                       FontSize="11"
+                                       Style="{StaticResource TextLabel}"
                                        Foreground="{StaticResource BrushOnSurfaceVariant}"
                                        VerticalAlignment="Center"
                                        HorizontalAlignment="Center"/>
@@ -167,29 +161,25 @@
                         </Grid>
                     </Border>
                     <TextBlock x:Name="TxtReducedInfo"
-                               FontFamily="{StaticResource FontBody}"
-                               FontSize="11"
+                               Style="{StaticResource TextLabel}"
                                Foreground="{StaticResource BrushOnSurfaceVariant}"
-                               Margin="0 6 0 0"/>
+                               Margin="0,6,0,0"/>
                 </StackPanel>
 
                 <!-- Asset name + validation -->
-                <StackPanel Grid.Row="4" Grid.ColumnSpan="3" Orientation="Vertical">
-                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0 0 0 6">
+                <StackPanel Grid.Row="4" Grid.ColumnSpan="3">
+                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,0,6">
                         <TextBlock Text="ASSET NAME"
                                    Style="{StaticResource TextLabelCaps}"
-                                   FontFamily="{StaticResource FontDisplay}"
-                                   FontSize="11" FontWeight="Bold"
                                    Foreground="{StaticResource BrushOnSurfaceVariant}"
                                    VerticalAlignment="Center"
-                                   Margin="0 0 12 0"/>
+                                   Margin="0,0,12,0"/>
                         <TextBox x:Name="TxtAssetName"
                                  Width="220"
                                  TextChanged="TxtAssetName_TextChanged"/>
                     </StackPanel>
                     <TextBlock x:Name="TxtValidation"
-                               FontFamily="{StaticResource FontBody}"
-                               FontSize="11"
+                               Style="{StaticResource TextLabel}"
                                Foreground="{StaticResource BrushWarning}"/>
                 </StackPanel>
             </Grid>
@@ -197,29 +187,28 @@
             <!-- ===== FOOTER ===== -->
             <Border Grid.Row="2"
                     Background="{StaticResource BrushSurfaceContainerLow}"
-                    CornerRadius="0 0 6 6">
-                <Grid Margin="24 0">
-                    <StackPanel Orientation="Horizontal"
-                                VerticalAlignment="Center"
-                                HorizontalAlignment="Left">
-                        <TextBlock x:Name="TxtTileCount"
-                                   FontFamily="{StaticResource FontBody}"
-                                   FontSize="11"
-                                   Foreground="{StaticResource BrushOnSurfaceVariant}"
-                                   VerticalAlignment="Center"/>
-                    </StackPanel>
+                    CornerRadius="0,0,6,6"
+                    Padding="24,0">
+                <Grid>
+                    <TextBlock x:Name="TxtTileCount"
+                               Style="{StaticResource TextLabel}"
+                               Foreground="{StaticResource BrushOnSurfaceVariant}"
+                               HorizontalAlignment="Left"
+                               VerticalAlignment="Center"/>
                     <StackPanel Orientation="Horizontal"
                                 HorizontalAlignment="Right"
                                 VerticalAlignment="Center">
                         <Button Content="CANCEL"
                                 Click="BtnCancel_Click"
-                                Style="{StaticResource ButtonSecondary}"
-                                Margin="0 0 12 0"/>
+                                Style="{StaticResource ButtonGhost}"
+                                Padding="24,0" Height="40"
+                                Margin="0,0,8,0"/>
                         <Button x:Name="BtnImport"
                                 Content="IMPORT"
                                 IsEnabled="False"
                                 Click="BtnImport_Click"
-                                Style="{StaticResource ButtonPrimary}"/>
+                                Style="{StaticResource ButtonPrimary}"
+                                Padding="32,0" Height="40"/>
                     </StackPanel>
                 </Grid>
             </Border>

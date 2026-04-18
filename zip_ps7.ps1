@@ -3,7 +3,7 @@ $tempDir = Join-Path $env:TEMP "export_cs_$(Get-Random)"
 
 # 1. Busca os arquivos ignorando bin e obj
 # O -Exclude não funciona bem com -Recurse para pastas, por isso usamos o Where-Object
-$arquivos = Get-ChildItem -Filter "*.cs" -Recurse | Where-Object { 
+$arquivos = Get-ChildItem -Path ".\" -Include "*.cs", "*.xaml", "*.json", "*.c.rtrx" -Recurse | Where-Object { 
     $_.FullName -notmatch '\\bin\\' -and $_.FullName -notmatch '\\obj\\' 
 }
 

@@ -111,6 +111,22 @@ public class TilemapModule : IGraphicModule
                 DefaultValue = 24,
                 MinValue     = 1,
                 MaxValue     = 28
+            },
+            new ParameterDefinition
+            {
+                Name         = "mapData",
+                DisplayName  = "Map Data",
+                Description  = "Tile indices for the map layout.",
+                Type         = ParameterType.IntArray,
+                DefaultValue = Array.Empty<int>()
+            },
+            new ParameterDefinition
+            {
+                Name         = "solidTiles",
+                DisplayName  = "Solid Tiles",
+                Description  = "List of tile indices that are solid for collision.",
+                Type         = ParameterType.IntArray,
+                DefaultValue = Array.Empty<int>()
             }
         ]
     };
@@ -142,5 +158,7 @@ public class TilemapModule : IGraphicModule
         public int MapY { get; set; } = 0;
         public int MapWidth { get; set; } = 32;
         public int MapHeight { get; set; } = 24;
+        public int[] MapData { get; set; } = [];
+        public int[] SolidTiles { get; set; } = [];
     }
 }

@@ -185,33 +185,65 @@ public class ModuleRenderer
             return new();
 
         if (!_tools.TryGetValue(varDef.ToolId, out var tool))
-        {
-            // Tool not found — return empty rather than crash the build
             return new() { [varDef.Name] = $"/* tool '{varDef.ToolId}' not found */" };
-        }
 
-        // Build tool input: resolve each declared input key from the module JSON
         var input = new Dictionary<string, object>();
         if (varDef.ToolInput is not null)
         {
             foreach (var (inputKey, moduleJsonPath) in varDef.ToolInput)
             {
                 if (moduleRoot.TryGetProperty(moduleJsonPath, out var v))
-                    input[inputKey] = v.GetString() ?? "";
+                {
+                    input[inputKey] = v.ValueKind switch
+                    {
+                        JsonValueKind.Number => v.TryGetInt32(out var i) ? (object)i : v.GetDouble(),
+                        JsonValueKind.True => true,
+                        JsonValueKind.False => false,
+                        JsonValueKind.Array => v.EnumerateArray()
+                            .Select(e => e.ValueKind == JsonValueKind.Number 
+                                ? (e.TryGetInt32(out var ai) ? (object)ai : e.GetDouble())
+                                : e.GetString() ?? "")
+                            .ToArray(),
+                        _ => v.GetString() ?? ""
+                    };
+                }
             }
         }
 
-        // For now, tools used by ModuleRenderer need a different interface
-        // This is a temporary solution until we unify the tool system
-        return new();
+        return tool.Execute(input);
     }
 
     // ── Discovery ─────────────────────────────────────────────────────────────
 
     private Dictionary<string, ITool> DiscoverTools()
     {
-        // Tools discovery disabled for now - different interface needed
-        return new Dictionary<string, ITool>(StringComparer.OrdinalIgnoreCase);
+        var result = new Dictionary<string, ITool>(StringComparer.OrdinalIgnoreCase);
+        var toolsDir = Path.Combine(_pluginsPath, "Tools");
+
+        if (!Directory.Exists(toolsDir))
+            return result;
+
+        foreach (var dllPath in Directory.GetFiles(toolsDir, "*.dll", SearchOption.AllDirectories))
+        {
+            try
+            {
+                var asm = Assembly.LoadFrom(dllPath);
+                foreach (var type in asm.GetTypes())
+                {
+                    if (!type.IsClass || type.IsAbstract || !typeof(ITool).IsAssignableFrom(type))
+                        continue;
+
+                    if (Activator.CreateInstance(type) is ITool tool)
+                        result[tool.ToolId] = tool;
+                }
+            }
+            catch
+            {
+                // Skip malformed DLLs
+            }
+        }
+
+        return result;
     }
 
     private Dictionary<string, CodeGenManifest> DiscoverCodeGens()

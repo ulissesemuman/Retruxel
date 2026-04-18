@@ -109,5 +109,11 @@ public enum ParameterType
     AudioRef,
 
     /// <summary>Free text input</summary>
-    String
+    String,
+
+    /// <summary>Array of integers</summary>
+    IntArray,
+
+    /// <summary>Array of strings</summary>
+    StringArray
 }

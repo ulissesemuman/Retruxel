@@ -56,6 +56,14 @@
     <None Remove="Compilers\Sdcc\Resources\bin\sdasz80.exe" />
     <None Remove="Compilers\Sdcc\Resources\bin\sdcpp.exe" />
     <None Remove="Compilers\Sdcc\Resources\bin\sdldz80.exe" />
+    <None Remove="Compilers\Sdcc\Resources\licenses\COPYING.txt" />
+    <None Remove="Compilers\Sdcc\Resources\licenses\COPYING3.txt" />
+    <None Remove="Compilers\Sdcc\Resources\licenses\README.TXT" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="Compilers\Sdcc\Resources\licenses\COPYING.txt" />
+    <Content Include="Compilers\Sdcc\Resources\licenses\COPYING3.txt" />
+    <Content Include="Compilers\Sdcc\Resources\licenses\README.TXT" />
   </ItemGroup>
 
 </Project>

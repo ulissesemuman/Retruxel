@@ -7,11 +7,11 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\Retruxel.Core\Retruxel.Core.csproj" />
-    <ProjectReference Include="..\..\Retruxel.Modules\Retruxel.Modules.csproj" />
-    <ProjectReference Include="..\..\Retruxel.Toolchain\Retruxel.Toolchain.csproj" />
-    <ProjectReference Include="..\..\Plugins\Tools\ImageProcessing\Retruxel.Lib.ImageProcessing\Retruxel.Lib.ImageProcessing.csproj" />
-    <ProjectReference Include="..\..\Plugins\Tools\ImageProcessing\Retruxel.Tool.PngToTiles.Sms\Retruxel.Tool.PngToTiles.Sms.csproj" />
+    <ProjectReference Include="..\..\..\Retruxel.Core\Retruxel.Core.csproj" />
+    <ProjectReference Include="..\..\..\Retruxel.Modules\Retruxel.Modules.csproj" />
+    <ProjectReference Include="..\..\..\Retruxel.Toolchain\Retruxel.Toolchain.csproj" />
+    <ProjectReference Include="..\..\..\Plugins\Tools\ImageProcessing\Retruxel.Lib.ImageProcessing\Retruxel.Lib.ImageProcessing.csproj" />
+    <ProjectReference Include="..\..\..\Plugins\Tools\ImageProcessing\Retruxel.Tool.PngToTiles.Sms\Retruxel.Tool.PngToTiles.Sms.csproj" />
   </ItemGroup>
 
   <ItemGroup>

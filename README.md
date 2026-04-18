@@ -109,7 +109,7 @@ Each module exposes a `ModuleManifest` that describes its parameters. The shell 
 
 **Standard modules** (`Retruxel.Modules`) are portable definitions designed for cross-platform migration. These modules generate platform-agnostic JSON that can be rendered to any target.
 
-**Console-specific modules** can be added via plugins in `Plugins/Targets/` to leverage unique hardware features (e.g., SMS VDP modes, NES PPU attributes).
+**Console-specific modules** can be added to leverage unique hardware features (e.g., SMS VDP modes, NES PPU attributes). These are defined in `Retruxel.Modules` with target-specific parameters.
 
 Code generation is declarative: each module has a `codegen.json` manifest and `.c.rtrx` template files in `Plugins/CodeGens/[module]/[target]/`. The `ModuleRenderer` processes templates with variable substitution, conditionals, loops, and tool invocation.
 
@@ -223,28 +223,84 @@ Create a folder in `Plugins/CodeGens/[module_id]/[target_id]/` with:
 **codegen.json** — manifest describing inputs and outputs:
 ```json
 {
-  "moduleId": "mymodule",
+  "moduleId": "sprite",
   "targetId": "sms",
-  "templates": [
-    { "template": "mymodule.c.rtrx", "output": "mymodule.c" },
-    { "template": "mymodule.h.rtrx", "output": "mymodule.h" }
-  ]
+  "displayName": "SMS Sprite CodeGen",
+  "description": "Generates C code for SMS sprite rendering with animation support",
+  "version": "1.0.0",
+  "template": "sprite.c.rtrx",
+  "variables": {
+    "spriteName": { "from": "module", "path": "name", "default": "sprite" },
+    "spritePath": { "from": "module", "path": "imagePath", "default": "" },
+    "width": { "from": "module", "path": "width", "default": 16 },
+    "height": { "from": "module", "path": "height", "default": 16 },
+    "animated": { "from": "module", "path": "animated", "default": false },
+    "frameCount": { "from": "module", "path": "frameCount", "default": 1 },
+    "visible": { "from": "module", "path": "visible", "default": true },
+    "speed": { "from": "module", "path": "speed", "default": 0 },
+    "direction": { "from": "module", "path": "direction", "default": 1 },
+    "frames": { "from": "module", "path": "frames", "default": [] },
+    "spriteData": {
+      "from": "tool",
+      "tool": "png_to_tiles_sms",
+      "toolInput": {
+        "imagePath": "spritePath",
+        "tileWidth": 8,
+        "tileHeight": 8
+      }
+    }
+  }
 }
 ```
 
-**mymodule.c.rtrx** — C template with variable substitution:
+**sprite.c.rtrx** — C template with variable substitution:
 ```c
-void {{functionName}}() {
-    {{#if enabled}}
-    // Generated code
-    {{#each items}}
-    process_item({{this}});
+// Sprite: {{spriteName}}
+// Size: {{width}}x{{height}} pixels
+// Tiles: {{spriteData.tileCount}}
+
+const unsigned char {{spriteName}}_tiles[] = {
+    {{spriteData.tilesArray}}
+};
+
+const unsigned char {{spriteName}}_palette[] = {
+    {{spriteData.palette}}
+};
+
+void {{spriteName}}_init() {
+    {{#if animated}}
+    // Animation setup
+    sprite_frame = 0;
+    sprite_frame_count = {{frameCount}};
+    {{/if}}
+    
+    {{#ifnot visible}}
+    // Sprite hidden by default
+    sprite_visible = 0;
+    {{/ifnot}}
+}
+
+void {{spriteName}}_update() {
+    {{#if animated}}
+    {{#each frames}}
+    if (sprite_frame == {{@index}}) {
+        load_tiles({{this.offset}}, {{this.count}});
+    }
     {{/each}}
+    {{/if}}
+    
+    {{#if speed > 0}}
+    sprite_x += {{speed * direction}};
     {{/if}}
 }
 ```
 
-Supports: `{{variable}}`, `{{#if}}`, `{{#ifnot}}`, `{{#each}}`, `{{object.property}}`, `{{a * b}}`, tool invocation.
+**Variable sources:**
+- `"from": "module"` - Value comes from module's property at `"path"`
+- `"from": "tool"` - Value comes from tool execution result
+- `"toolInput"` - Maps variable names to tool input parameters
+
+Supports: `{{variable}}`, `{{#if}}`, `{{#ifnot}}`, `{{#each}}`, `{{object.property}}`, `{{a * b}}`.
 
 ### 2. Tools (Asset Converters, Preprocessors)
 

@@ -225,38 +225,31 @@ Create a folder in `Plugins/CodeGens/[module_id]/[target_id]/` with:
 {
   "moduleId": "sprite",
   "targetId": "sms",
+  "displayName": "SMS Sprite CodeGen",
+  "description": "Generates C code for SMS sprite rendering with animation support",
+  "version": "1.0.0",
+  "template": "sprite.c.rtrx",
   "variables": {
-    "spriteName": "player",
-    "spritePath": "assets/player.png",
-    "width": 16,
-    "height": 16,
-    "animated": true,
-    "frameCount": 4,
-    "visible": true,
-    "speed": 2,
-    "direction": 1,
-    "frames": [
-      { "offset": 0, "count": 4 },
-      { "offset": 4, "count": 4 },
-      { "offset": 8, "count": 4 },
-      { "offset": 12, "count": 4 }
-    ]
-  },
-  "templates": [
-    { "template": "sprite.c.rtrx", "output": "sprite.c" },
-    { "template": "sprite.h.rtrx", "output": "sprite.h" }
-  ],
-  "tools": [
-    {
-      "toolId": "png_to_tiles_sms",
-      "input": {
-        "imagePath": "{{spritePath}}",
+    "spriteName": { "from": "module", "path": "name", "default": "sprite" },
+    "spritePath": { "from": "module", "path": "imagePath", "default": "" },
+    "width": { "from": "module", "path": "width", "default": 16 },
+    "height": { "from": "module", "path": "height", "default": 16 },
+    "animated": { "from": "module", "path": "animated", "default": false },
+    "frameCount": { "from": "module", "path": "frameCount", "default": 1 },
+    "visible": { "from": "module", "path": "visible", "default": true },
+    "speed": { "from": "module", "path": "speed", "default": 0 },
+    "direction": { "from": "module", "path": "direction", "default": 1 },
+    "frames": { "from": "module", "path": "frames", "default": [] },
+    "spriteData": {
+      "from": "tool",
+      "tool": "png_to_tiles_sms",
+      "toolInput": {
+        "imagePath": "spritePath",
         "tileWidth": 8,
         "tileHeight": 8
-      },
-      "output": "spriteData"
+      }
     }
-  ]
+  }
 }
 ```
 
@@ -302,7 +295,12 @@ void {{spriteName}}_update() {
 }
 ```
 
-Supports: `{{variable}}`, `{{#if}}`, `{{#ifnot}}`, `{{#each}}`, `{{object.property}}`, `{{a * b}}`, tool invocation.
+**Variable sources:**
+- `"from": "module"` - Value comes from module's property at `"path"`
+- `"from": "tool"` - Value comes from tool execution result
+- `"toolInput"` - Maps variable names to tool input parameters
+
+Supports: `{{variable}}`, `{{#if}}`, `{{#ifnot}}`, `{{#each}}`, `{{object.property}}`, `{{a * b}}`.
 
 ### 2. Tools (Asset Converters, Preprocessors)
 

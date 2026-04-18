@@ -9,7 +9,7 @@
   <img src="https://img.shields.io/badge/WPF-Windows-0078D4?logo=windows&logoColor=white" alt="WPF">
   <img src="https://img.shields.io/github/v/release/ulissesemuman/Retruxel?include_prereleases&label=version" alt="Version">
   <img src="https://img.shields.io/badge/License-MIT-green" alt="License">
-  <img src="https://img.shields.io/badge/Status-Beta-blue" alt="Status">
+  <img src="https://img.shields.io/badge/Status-Alpha-orange" alt="Status">
   <img src="https://img.shields.io/badge/Platforms-SMS%20%7C%20NES%20%7C%20GG%20%7C%20SG1000%20%7C%20Coleco-blueviolet" alt="Platforms">
 </p>
 
@@ -137,7 +137,7 @@ Retruxel uses a custom design system called **Neo-Technical Archive** — a mode
 
 ## 🚀 Getting Started
 
-> ⚠️ Retruxel is currently in beta development (v0.7.2-beta).
+> ⚠️ Retruxel is currently in alpha development (v0.7.2-alpha).
 
 ### Option 1: Download Installer (Recommended)
 

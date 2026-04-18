@@ -1,13 +1,13 @@
-# Release Notes — v0.7.2-beta
+# Release Notes — v0.7.2-alpha
 
 **Release Date:** 2025-01-XX  
-**Build:** 0.7.2-beta
+**Build:** 0.7.2-alpha
 
 ---
 
 ## 🎯 Overview
 
-Major refactoring release focusing on plugin architecture reorganization, declarative code generation improvements, and comprehensive documentation updates. This is the first **beta** release, indicating increased stability and feature completeness.
+Major refactoring release focusing on plugin architecture reorganization, declarative code generation improvements, and comprehensive documentation updates.
 
 ---
 
@@ -103,12 +103,12 @@ Major refactoring release focusing on plugin architecture reorganization, declar
 ## 📦 Installation
 
 **Installer (Recommended):**
-1. Download `Retruxel-0.7.2-beta-setup.exe`
+1. Download `Retruxel-0.7.2-alpha-setup.exe`
 2. Run the installer
 3. Follow the installation wizard
 
 **Portable Version (ZIP):**
-1. Download `Retruxel-0.7.2-beta-portable.zip`
+1. Download `Retruxel-0.7.2-alpha-portable.zip`
 2. Extract to any folder
 3. Run `Retruxel.exe`
 
@@ -145,7 +145,7 @@ The toolchain will be extracted automatically on first run to `%AppData%\Retruxe
 - ✅ Internationalization (i18n) with runtime switching
 - ✅ Dynamic manufacturer discovery
 
-### New in v0.7.2-beta
+### New in v0.7.2-alpha
 - ✅ Declarative code generation system (JSON + `.c.rtrx` templates)
 - ✅ Tool system with preprocessors and asset converters
 - ✅ ModuleRenderer with advanced template engine
@@ -155,7 +155,7 @@ The toolchain will be extracted automatically on first run to `%AppData%\Retruxe
 
 ---
 
-## 🚀 What's Next (v0.8.0-beta)
+## 🚀 What's Next (v0.8.0-alpha)
 
 Based on the [Retruxel Roadmap](docs/Retruxel_Roadmap.md), v0.8.0 will focus on completing **Phase 1**:
 
@@ -189,4 +189,4 @@ This project is licensed under the MIT License. See [LICENSE](LICENSE) for detai
 
 ---
 
-**Full Changelog:** https://github.com/ulissesemuman/Retruxel/compare/v0.7.1-alpha...v0.7.2-beta
+**Full Changelog:** https://github.com/ulissesemuman/Retruxel/compare/v0.7.1-alpha...v0.7.2-alpha

@@ -195,12 +195,18 @@ public class TemplateEngine
             return doubleVal;
 
         // Arithmetic operations: *, /, +, -
-        var arithmeticOps = new[] { ("*", (a, b) => a * b), ("/", (a, b) => a / b), ("+", (a, b) => a + b), ("-", (a, b) => a - b) };
+        var arithmeticOps = new (string op, Func<double, double, double> func)[] 
+        { 
+            ("*", (a, b) => a * b), 
+            ("/", (a, b) => a / b), 
+            ("+", (a, b) => a + b), 
+            ("-", (a, b) => a - b) 
+        };
         foreach (var (op, func) in arithmeticOps)
         {
             if (expr.Contains(op))
             {
-                var parts = expr.Split(new[] { op }, StringSplitOptions.None);
+                var parts = expr.Split(op, StringSplitOptions.None);
                 if (parts.Length == 2)
                 {
                     var left = EvaluateExpression(parts[0].Trim(), variables);

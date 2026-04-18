@@ -4,6 +4,7 @@
   },
   "strings": {
     "app.title": "RETRUXEL",
+    "wizard.codegen.no_tools_selected": "Nenhuma ferramenta selecionada",
     "nav.assets": "Recursos",
     "nav.blocks": "Blocos",
     "nav.logic": "Lógica",

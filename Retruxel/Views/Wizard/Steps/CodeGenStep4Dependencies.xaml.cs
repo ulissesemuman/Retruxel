@@ -1,5 +1,6 @@
 using System.Windows.Controls;
 using Retruxel.Core.Models.Wizard;
+using Retruxel.Services;
 
 namespace Retruxel.Views.Wizard.Steps;
 
@@ -57,7 +58,7 @@ public partial class CodeGenStep4Dependencies : UserControl
     {
         if (_data.RequiredTools.Count == 0)
         {
-            SelectedToolsText.Text = "No tools selected";
+            SelectedToolsText.Text = LocalizationService.Instance.Get("wizard.codegen.no_tools_selected");
             SelectedToolsText.Foreground = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(136, 136, 136));
         }
         else

@@ -28,11 +28,12 @@ public partial class TargetGridControl : UserControl
     private void Initialize()
     {
         LoadFavorites();
-        ApplyLocalization();
+        RebuildComboBoxes();
         UpdateViewModeButtons();
         RenderTargets();
 
         FavoritesChanged += OnFavoritesChanged;
+        LocalizationService.LanguageChanged += OnLanguageChanged;
     }
 
     private void OnFavoritesChanged()
@@ -54,73 +55,54 @@ public partial class TargetGridControl : UserControl
         SettingsService.Save(settings);
     }
 
-    private void ApplyLocalization()
-    {
-        var loc = LocalizationService.Instance;
-
-        TxtSortLabel.Text = loc.Get("welcome.sort");
-        TxtFilterLabel.Text = loc.Get("welcome.filter");
-
-        SortComboBox.Items.Clear();
-        SortComboBox.Items.Add(new ComboBoxItem { Content = loc.Get("welcome.sort.name"), Tag = "name" });
-        SortComboBox.Items.Add(new ComboBoxItem { Content = loc.Get("welcome.sort.manufacturer"), Tag = "manufacturer" });
-        SortComboBox.SelectedIndex = 0;
-
-        FilterComboBox.Items.Clear();
-        FilterComboBox.Items.Add(new ComboBoxItem { Content = loc.Get("welcome.filter.all"), Tag = "all" });
-        FilterComboBox.Items.Add(new ComboBoxItem { Content = loc.Get("welcome.filter.favorites"), Tag = "favorites" });
-
-        var manufacturers = TargetRegistry.GetManufacturers().OrderBy(m => m);
-        foreach (var manufacturer in manufacturers)
-        {
-            var key = $"welcome.filter.{manufacturer.ToLower()}";
-            var displayName = loc.Get(key);
-            FilterComboBox.Items.Add(new ComboBoxItem { Content = displayName, Tag = manufacturer.ToLower() });
-        }
-        FilterComboBox.SelectedIndex = 0;
-
-        LocalizationService.LanguageChanged += OnLanguageChanged;
-    }
-
     private void OnLanguageChanged()
     {
-        var loc = LocalizationService.Instance;
-
-        TxtSortLabel.Text = loc.Get("welcome.sort");
-        TxtFilterLabel.Text = loc.Get("welcome.filter");
-
         var currentSort = _currentSort;
         var currentFilter = _currentFilter;
-
-        SortComboBox.Items.Clear();
-        SortComboBox.Items.Add(new ComboBoxItem { Content = loc.Get("welcome.sort.name"), Tag = "name" });
-        SortComboBox.Items.Add(new ComboBoxItem { Content = loc.Get("welcome.sort.manufacturer"), Tag = "manufacturer" });
+        
+        RebuildComboBoxes();
+        
         SortComboBox.SelectedIndex = currentSort == "manufacturer" ? 1 : 0;
-
-        FilterComboBox.Items.Clear();
-        FilterComboBox.Items.Add(new ComboBoxItem { Content = loc.Get("welcome.filter.all"), Tag = "all" });
-        FilterComboBox.Items.Add(new ComboBoxItem { Content = loc.Get("welcome.filter.favorites"), Tag = "favorites" });
-
-        var manufacturers = TargetRegistry.GetManufacturers().OrderBy(m => m);
-        int selectedIndex = 0;
-        int index = 2;
-        foreach (var manufacturer in manufacturers)
-        {
-            var key = $"welcome.filter.{manufacturer.ToLower()}";
-            var displayName = loc.Get(key);
-            FilterComboBox.Items.Add(new ComboBoxItem { Content = displayName, Tag = manufacturer.ToLower() });
-
-            if (manufacturer.ToLower() == currentFilter)
-                selectedIndex = index;
-            index++;
-        }
-
+        
         if (currentFilter == "all")
             FilterComboBox.SelectedIndex = 0;
         else if (currentFilter == "favorites")
             FilterComboBox.SelectedIndex = 1;
         else
-            FilterComboBox.SelectedIndex = selectedIndex;
+        {
+            for (int i = 2; i < FilterComboBox.Items.Count; i++)
+            {
+                if (FilterComboBox.Items[i] is ComboBoxItem item && 
+                    item.Tag?.ToString() == currentFilter)
+                {
+                    FilterComboBox.SelectedIndex = i;
+                    break;
+                }
+            }
+        }
+    }
+    
+    private void RebuildComboBoxes()
+    {
+        var loc = LocalizationService.Instance;
+        
+        SortComboBox.Items.Clear();
+        SortComboBox.Items.Add(new ComboBoxItem { Content = loc.Get("welcome.sort.name"), Tag = "name" });
+        SortComboBox.Items.Add(new ComboBoxItem { Content = loc.Get("welcome.sort.manufacturer"), Tag = "manufacturer" });
+        if (SortComboBox.SelectedIndex == -1) SortComboBox.SelectedIndex = 0;
+        
+        FilterComboBox.Items.Clear();
+        FilterComboBox.Items.Add(new ComboBoxItem { Content = loc.Get("welcome.filter.all"), Tag = "all" });
+        FilterComboBox.Items.Add(new ComboBoxItem { Content = loc.Get("welcome.filter.favorites"), Tag = "favorites" });
+        
+        var manufacturers = TargetRegistry.GetManufacturers().OrderBy(m => m);
+        foreach (var manufacturer in manufacturers)
+        {
+            var key = $"welcome.filter.{manufacturer.ToLower()}";
+            var displayName = loc.Get(key);
+            FilterComboBox.Items.Add(new ComboBoxItem { Content = displayName, Tag = manufacturer.ToLower() });
+        }
+        if (FilterComboBox.SelectedIndex == -1) FilterComboBox.SelectedIndex = 0;
     }
 
     private void RenderTargets()

@@ -13,7 +13,7 @@ public partial class CodeGenStep4Dependencies : UserControl
         "retruxel.tool.assetimporter",
         "retruxel.tool.fontimporter",
         "retruxel.tool.pixelarteditor",
-        "retruxel.tool.tilemapReducer"
+        "retruxel.tool.TilePacker"
     };
 
     public CodeGenStep4Dependencies(CodeGenWizardData data)

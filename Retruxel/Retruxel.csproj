@@ -30,12 +30,12 @@
   <ItemGroup>
     <ProjectReference Include="..\Retruxel.Core\Retruxel.Core.csproj" />
     <ProjectReference Include="..\Retruxel.Modules\Retruxel.Modules.csproj" />
-    <ProjectReference Include="..\Targets\Retruxel.Target.SMS\Retruxel.Target.SMS.csproj" />
-    <ProjectReference Include="..\Targets\Retruxel.Target.NES\Retruxel.Target.NES.csproj" />
-    <ProjectReference Include="..\Targets\Retruxel.Target.GG\Retruxel.Target.GG.csproj" />
-    <ProjectReference Include="..\Targets\Retruxel.Target.SG1000\Retruxel.Target.SG1000.csproj" />
-    <ProjectReference Include="..\Targets\Retruxel.Target.ColecoVision\Retruxel.Target.ColecoVision.csproj" />
-    <ProjectReference Include="..\Tools\Retruxel.Tool.AssetImporter\Retruxel.Tool.AssetImporter.csproj" />
+    <ProjectReference Include="..\Plugins\Targets\Retruxel.Target.SMS\Retruxel.Target.SMS.csproj" />
+    <ProjectReference Include="..\Plugins\Targets\Retruxel.Target.NES\Retruxel.Target.NES.csproj" />
+    <ProjectReference Include="..\Plugins\Targets\Retruxel.Target.GG\Retruxel.Target.GG.csproj" />
+    <ProjectReference Include="..\Plugins\Targets\Retruxel.Target.SG1000\Retruxel.Target.SG1000.csproj" />
+    <ProjectReference Include="..\Plugins\Targets\Retruxel.Target.ColecoVision\Retruxel.Target.ColecoVision.csproj" />
+    <ProjectReference Include="..\Plugins\Tools\Retruxel.Tool.AssetImporter\Retruxel.Tool.AssetImporter.csproj" />
   </ItemGroup>
 
   <ItemGroup>

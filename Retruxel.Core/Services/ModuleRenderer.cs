@@ -140,10 +140,9 @@ public class ModuleRenderer
 
                 case "tool":
                     var toolValues = InvokeTool(varDef, root);
-                    // Merge all keys returned by the tool into the variable dict.
-                    // The .rtrx author is responsible for using the correct key names.
-                    foreach (var (k, v) in toolValues)
-                        result[k] = v;
+                    // Store tool output as nested object under the variable name
+                    // so template can access as {{varName.property}}
+                    result[varName] = toolValues;
                     break;
             }
         }
@@ -218,6 +217,19 @@ public class ModuleRenderer
     private Dictionary<string, ITool> DiscoverTools()
     {
         var result = new Dictionary<string, ITool>(StringComparer.OrdinalIgnoreCase);
+
+        // Register built-in preprocessor tools directly
+        // These are compiled into the main project and need explicit registration
+        var builtinTools = new ITool[]
+        {
+            new Retruxel.Tool.TilemapPreprocessor.TilemapPreprocessorTool(),
+            new Retruxel.Tool.AnimationPreprocessor.AnimationPreprocessorTool()
+        };
+
+        foreach (var tool in builtinTools)
+            result[tool.ToolId] = tool;
+
+        // Also scan plugin DLLs for third-party tools
         var toolsDir = Path.Combine(_pluginsPath, "Tools");
 
         if (!Directory.Exists(toolsDir))

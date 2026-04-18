@@ -7,7 +7,11 @@ namespace Retruxel.Core.Services;
 /// Lightweight template engine for .c.rtrx files.
 /// Supports:
 /// - Variable substitution: {{variableName}}
+/// - Property access: {{object.property}}
+/// - Arithmetic: {{a * b}}, {{a + b}}
 /// - Conditional blocks: {{#if condition}}...{{/if}}
+/// - Negated conditionals: {{#ifnot condition}}...{{/ifnot}}
+/// - Comparisons: {{#if a > b}}, {{#if a == b}}
 /// - Block selection: @retruxel:block name:mode=value
 /// </summary>
 public class TemplateEngine
@@ -18,12 +22,17 @@ public class TemplateEngine
     );
 
     private static readonly Regex VariableRegex = new(
-        @"\{\{(?<var>\w+)\}\}",
+        @"\{\{(?<expr>[^}]+)\}\}",
         RegexOptions.Compiled
     );
 
     private static readonly Regex ConditionalRegex = new(
-        @"\{\{#if\s+(?<condition>\w+)\}\}(?<content>.*?)\{\{/if\}\}",
+        @"\{\{#if\s+(?<condition>[^}]+)\}\}(?<content>.*?)\{\{/if\}\}",
+        RegexOptions.Singleline | RegexOptions.Compiled
+    );
+
+    private static readonly Regex NegatedConditionalRegex = new(
+        @"\{\{#ifnot\s+(?<condition>[^}]+)\}\}(?<content>.*?)\{\{/ifnot\}\}",
         RegexOptions.Singleline | RegexOptions.Compiled
     );
 
@@ -87,36 +96,28 @@ public class TemplateEngine
     {
         var result = template;
 
-        // 1. Process conditionals first
-        result = ConditionalRegex.Replace(result, match =>
+        // 1. Process negated conditionals first
+        result = NegatedConditionalRegex.Replace(result, match =>
         {
-            var condition = match.Groups["condition"].Value;
+            var condition = match.Groups["condition"].Value.Trim();
             var content = match.Groups["content"].Value;
-
-            // Check if condition variable exists and is truthy
-            if (variables.TryGetValue(condition, out var value))
-            {
-                if (value is bool boolValue && boolValue)
-                    return content;
-                if (value is int intValue && intValue != 0)
-                    return content;
-                if (value is string strValue && !string.IsNullOrEmpty(strValue))
-                    return content;
-            }
-
-            return string.Empty; // Condition false, remove block
+            return EvaluateCondition(condition, variables) ? string.Empty : content;
         });
 
-        // 2. Substitute variables
+        // 2. Process conditionals
+        result = ConditionalRegex.Replace(result, match =>
+        {
+            var condition = match.Groups["condition"].Value.Trim();
+            var content = match.Groups["content"].Value;
+            return EvaluateCondition(condition, variables) ? content : string.Empty;
+        });
+
+        // 3. Substitute variables and expressions
         result = VariableRegex.Replace(result, match =>
         {
-            var varName = match.Groups["var"].Value;
-            
-            if (variables.TryGetValue(varName, out var value))
-                return value?.ToString() ?? string.Empty;
-
-            // Variable not found, keep placeholder
-            return match.Value;
+            var expr = match.Groups["expr"].Value.Trim();
+            var value = EvaluateExpression(expr, variables);
+            return value?.ToString() ?? string.Empty;
         });
 
         return result;
@@ -129,5 +130,133 @@ public class TemplateEngine
     {
         var block = ExtractBlock(template, blockName, mode);
         return Render(block, variables);
+    }
+
+    private static bool EvaluateCondition(string condition, Dictionary<string, object> variables)
+    {
+        // Handle comparisons: >, <, >=, <=, ==, !=
+        var comparisonOps = new[] { "==", "!=", ">=", "<=", ">", "<" };
+        foreach (var op in comparisonOps)
+        {
+            if (condition.Contains(op))
+            {
+                var parts = condition.Split(new[] { op }, StringSplitOptions.None);
+                if (parts.Length == 2)
+                {
+                    var left = EvaluateExpression(parts[0].Trim(), variables);
+                    var right = EvaluateExpression(parts[1].Trim(), variables);
+                    return CompareValues(left, right, op);
+                }
+            }
+        }
+
+        // Simple boolean check
+        var value = EvaluateExpression(condition, variables);
+        return value switch
+        {
+            bool b => b,
+            int i => i != 0,
+            double d => d != 0,
+            string s => !string.IsNullOrEmpty(s),
+            Array a => a.Length > 0,
+            _ => value != null
+        };
+    }
+
+    private static bool CompareValues(object? left, object? right, string op)
+    {
+        if (left == null || right == null)
+            return op == "!=" ? left != right : left == right;
+
+        // Convert to double for numeric comparisons
+        var leftNum = Convert.ToDouble(left);
+        var rightNum = Convert.ToDouble(right);
+
+        return op switch
+        {
+            "==" => Math.Abs(leftNum - rightNum) < 0.0001,
+            "!=" => Math.Abs(leftNum - rightNum) >= 0.0001,
+            ">" => leftNum > rightNum,
+            "<" => leftNum < rightNum,
+            ">=" => leftNum >= rightNum,
+            "<=" => leftNum <= rightNum,
+            _ => false
+        };
+    }
+
+    private static object? EvaluateExpression(string expr, Dictionary<string, object> variables)
+    {
+        expr = expr.Trim();
+
+        // Literal numbers
+        if (int.TryParse(expr, out var intVal))
+            return intVal;
+        if (double.TryParse(expr, out var doubleVal))
+            return doubleVal;
+
+        // Arithmetic operations: *, /, +, -
+        var arithmeticOps = new[] { ("*", (a, b) => a * b), ("/", (a, b) => a / b), ("+", (a, b) => a + b), ("-", (a, b) => a - b) };
+        foreach (var (op, func) in arithmeticOps)
+        {
+            if (expr.Contains(op))
+            {
+                var parts = expr.Split(new[] { op }, StringSplitOptions.None);
+                if (parts.Length == 2)
+                {
+                    var left = EvaluateExpression(parts[0].Trim(), variables);
+                    var right = EvaluateExpression(parts[1].Trim(), variables);
+                    if (left != null && right != null)
+                        return func(Convert.ToDouble(left), Convert.ToDouble(right));
+                }
+            }
+        }
+
+        // Property access: object.property or object.property.subproperty
+        if (expr.Contains('.'))
+        {
+            var parts = expr.Split('.');
+            object? current = null;
+
+            if (variables.TryGetValue(parts[0], out var root))
+                current = root;
+            else
+                return null;
+
+            for (int i = 1; i < parts.Length; i++)
+            {
+                if (current == null) return null;
+
+                var propName = parts[i];
+
+                // Array.length
+                if (propName == "length" && current is Array arr)
+                {
+                    current = arr.Length;
+                    continue;
+                }
+
+                // Dictionary/object property access
+                if (current is Dictionary<string, object> dict && dict.TryGetValue(propName, out var val))
+                {
+                    current = val;
+                    continue;
+                }
+
+                // Reflection fallback
+                var prop = current.GetType().GetProperty(propName);
+                if (prop != null)
+                {
+                    current = prop.GetValue(current);
+                    continue;
+                }
+
+                return null;
+            }
+
+            return current;
+        }
+
+        // Simple variable lookup
+        return variables.TryGetValue(expr, out var value) ? value : null;
     }
 }

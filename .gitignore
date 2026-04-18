@@ -370,3 +370,4 @@ installer/
 .bbbamazonq/
 /*.zip
 /*.txt
+*.ps1

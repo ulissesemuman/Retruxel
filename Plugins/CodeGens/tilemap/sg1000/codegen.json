@@ -1,0 +1,32 @@
+﻿{
+  "moduleId": "tilemap",
+  "targetId": "sg1000",
+  "displayName": "SG-1000 Tilemap CodeGen",
+  "description": "Generates C code for SG-1000 tilemap with collision detection using bitfield lookup",
+  "version": "1.0.0",
+  "template": "tilemap.c.rtrx",
+  "variables": {
+    "tilesAssetId": { "from": "module", "path": "tilesAssetId", "default": "" },
+    "mapAssetId": { "from": "module", "path": "mapAssetId", "default": "" },
+    "startTile": { "from": "module", "path": "startTile", "default": 0 },
+    "mapX": { "from": "module", "path": "mapX", "default": 0 },
+    "mapY": { "from": "module", "path": "mapY", "default": 0 },
+    "mapWidth": { "from": "module", "path": "mapWidth", "default": 32 },
+    "mapHeight": { "from": "module", "path": "mapHeight", "default": 24 },
+    "mapData": { "from": "module", "path": "mapData", "default": [] },
+    "solidTiles": { "from": "module", "path": "solidTiles", "default": [] },
+    "maxTileSlots": { "from": "module", "path": "maxTileSlots", "default": 448 },
+    "preprocessed": {
+      "from": "tool",
+      "tool": "tilemap_preprocessor",
+      "toolInput": {
+        "solidTiles": "solidTiles",
+        "mapData": "mapData",
+        "startTile": "startTile",
+        "mapWidth": "mapWidth",
+        "mapHeight": "mapHeight",
+        "maxTileSlots": "maxTileSlots"
+      }
+    }
+  }
+}

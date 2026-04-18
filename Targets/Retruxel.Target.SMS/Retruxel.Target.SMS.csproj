@@ -10,10 +10,18 @@
     <ProjectReference Include="..\..\Retruxel.Core\Retruxel.Core.csproj" />
     <ProjectReference Include="..\..\Retruxel.Modules\Retruxel.Modules.csproj" />
     <ProjectReference Include="..\..\Retruxel.Toolchain\Retruxel.Toolchain.csproj" />
+    <ProjectReference Include="..\..\Tools\ImageProcessing\Retruxel.Lib.ImageProcessing\Retruxel.Lib.ImageProcessing.csproj" />
+    <ProjectReference Include="..\..\Tools\ImageProcessing\Retruxel.Tool.PngToTiles.Sms\Retruxel.Tool.PngToTiles.Sms.csproj" />
   </ItemGroup>
 
   <ItemGroup>
     <Folder Include="Templates\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="Assets\splash.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
 
 </Project>

@@ -89,7 +89,11 @@ public class SG1000Target : ITarget
 
     // Toolchain & modules
 
-    public IToolchain GetToolchain() => new Sg1000ToolchainAdapter();
+    public IToolchain GetToolchain()
+    {
+        var builder = Retruxel.Toolchain.ToolchainOrchestrator.GetBuilder(TargetId);
+        return new Retruxel.Toolchain.ToolchainAdapter(builder);
+    }
 
     public IEnumerable<IModule> GetBuiltinModules()
     {
@@ -156,6 +160,8 @@ public class SG1000Target : ITarget
         _codeGenCache ??= ReflectionCodeGenHelper.BuildCodeGenCache(GetType().Assembly, "SG1000");
         return ReflectionCodeGenHelper.GenerateCodeForModule(module, _codeGenCache);
     }
+
+    public IEnumerable<GeneratedFile> GenerateSystemFiles() => [];
 
     public GeneratedFile GenerateMainFile(RetruxelProject project, IEnumerable<GeneratedFile> moduleFiles)
     {

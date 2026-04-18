@@ -89,7 +89,11 @@ public class ColecoVisionTarget : ITarget
 
     // Toolchain & modules
 
-    public IToolchain GetToolchain() => new ColecoToolchainAdapter();
+    public IToolchain GetToolchain()
+    {
+        var builder = Retruxel.Toolchain.ToolchainOrchestrator.GetBuilder(TargetId);
+        return new Retruxel.Toolchain.ToolchainAdapter(builder);
+    }
 
     public IEnumerable<IModule> GetBuiltinModules()
     {
@@ -156,6 +160,8 @@ public class ColecoVisionTarget : ITarget
         _codeGenCache ??= ReflectionCodeGenHelper.BuildCodeGenCache(GetType().Assembly, "ColecoVision");
         return ReflectionCodeGenHelper.GenerateCodeForModule(module, _codeGenCache);
     }
+
+    public IEnumerable<GeneratedFile> GenerateSystemFiles() => [];
 
     public GeneratedFile GenerateMainFile(RetruxelProject project, IEnumerable<GeneratedFile> moduleFiles)
     {

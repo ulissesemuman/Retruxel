@@ -1,0 +1,16 @@
+﻿{
+  "moduleId": "animation",
+  "targetId": "sg1000",
+  "version": "1.0.0",
+  "template": "animation.c.rtrx",
+  "variables": {
+    "animations": { "from": "module", "path": "animations", "default": [] },
+    "preprocessed": {
+      "from": "tool",
+      "tool": "animation_preprocessor",
+      "toolInput": {
+        "animations": "animations"
+      }
+    }
+  }
+}

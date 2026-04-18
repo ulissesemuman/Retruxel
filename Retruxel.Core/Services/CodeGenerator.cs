@@ -12,11 +12,13 @@ namespace Retruxel.Core.Services;
 public class CodeGenerator
 {
     private readonly ModuleRegistry _moduleRegistry;
+    private readonly ModuleRenderer _moduleRenderer;
     private readonly ITarget _target;
 
-    public CodeGenerator(ModuleRegistry moduleRegistry, ITarget target)
+    public CodeGenerator(ModuleRegistry moduleRegistry, ModuleRenderer moduleRenderer, ITarget target)
     {
         _moduleRegistry = moduleRegistry;
+        _moduleRenderer = moduleRenderer;
         _target = target;
     }
 
@@ -36,6 +38,7 @@ public class CodeGenerator
 
         // Reset codegen state before generation
         _moduleRegistry.ResetCodeGenState();
+        _moduleRenderer.ResetState();
 
         // Collect all module instances from scenes
         var instancesByModule = new Dictionary<string, List<IModule>>();
@@ -87,38 +90,45 @@ public class CodeGenerator
                 var contextualModule = InjectContextFlags(module, presentModuleIds);
                 var moduleJson = contextualModule.Serialize();
 
-                // Try to get CodeGen from registry
-                var codegen = _moduleRegistry.GetCodeGen(module.ModuleId, project.TargetId);
-                
                 List<GeneratedFile> generatedFiles;
-                
-                if (codegen != null)
+
+                // Priority 1: Try ModuleRenderer (declarative CodeGens)
+                if (_moduleRenderer.CanRender(module.ModuleId, project.TargetId))
                 {
-                    // Use discovered CodeGen
+                    generatedFiles = _moduleRenderer.Render(
+                        module.ModuleId,
+                        project.TargetId,
+                        moduleJson,
+                        module.IsSingleton).ToList();
+                    progress?.Report($"INFO: {module.ModuleId} generated via ModuleRenderer.");
+                }
+                // Priority 2: Try CodeGen from registry (legacy DLL-based)
+                else if (_moduleRegistry.GetCodeGen(module.ModuleId, project.TargetId) is var codegen && codegen != null)
+                {
                     generatedFiles = codegen.Generate(moduleJson).ToList();
                     progress?.Report($"INFO: {module.ModuleId} generated via CodeGen plugin.");
                 }
+                // Priority 3: Ask target to translate (legacy)
+                else if (_target.GenerateCodeForModule(contextualModule).ToList() is var targetFiles && targetFiles.Count > 0)
+                {
+                    generatedFiles = targetFiles;
+                    progress?.Report($"INFO: {module.ModuleId} generated via target.");
+                }
+                // Priority 4: Module's own GenerateCode() (external plugins)
                 else
                 {
-                    // Fallback 1: Ask target to translate (legacy)
-                    generatedFiles = _target.GenerateCodeForModule(contextualModule).ToList();
+                    generatedFiles = module switch
+                    {
+                        ILogicModule lm => lm.GenerateCode().ToList(),
+                        IGraphicModule gm => gm.GenerateCode().ToList(),
+                        IAudioModule am => am.GenerateCode().ToList(),
+                        _ => []
+                    };
 
                     if (generatedFiles.Count == 0)
-                    {
-                        // Fallback 2: Module's own GenerateCode() (external plugins)
-                        generatedFiles = module switch
-                        {
-                            ILogicModule lm => lm.GenerateCode().ToList(),
-                            IGraphicModule gm => gm.GenerateCode().ToList(),
-                            IAudioModule am => am.GenerateCode().ToList(),
-                            _ => []
-                        };
-
-                        if (generatedFiles.Count == 0)
-                            progress?.Report($"WARN: No code generated for {moduleId} — skipping.");
-                        else
-                            progress?.Report($"INFO: {moduleId} generated via plugin fallback.");
-                    }
+                        progress?.Report($"WARN: No code generated for {moduleId} — skipping.");
+                    else
+                        progress?.Report($"INFO: {moduleId} generated via plugin fallback.");
                 }
 
                 // Deduplicate by filename — singleton modules (entity, enemy, scroll, etc.)
@@ -144,6 +154,12 @@ public class CodeGenerator
         }
 
         // Generate target-specific main entry point
+        // First, check if target wants to inject additional files (like splash screens)
+        var systemFiles = _target.GenerateSystemFiles();
+        sourceFiles.AddRange(systemFiles);
+        if (systemFiles.Any())
+            progress?.Report($"INFO: {systemFiles.Count()} system files generated.");
+
         var mainFile = _target.GenerateMainFile(project, sourceFiles);
         sourceFiles.Insert(0, mainFile);
 

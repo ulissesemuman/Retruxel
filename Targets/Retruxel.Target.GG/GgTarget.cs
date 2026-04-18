@@ -89,7 +89,7 @@ public class GgTarget : ITarget
     public IToolchain GetToolchain()
     {
         var builder = Retruxel.Toolchain.ToolchainOrchestrator.GetBuilder(TargetId);
-        return new GgToolchainAdapter(builder);
+        return new Retruxel.Toolchain.ToolchainAdapter(builder);
     }
 
     public IEnumerable<IModule> GetBuiltinModules()
@@ -157,6 +157,8 @@ public class GgTarget : ITarget
         _codeGenCache ??= ReflectionCodeGenHelper.BuildCodeGenCache(GetType().Assembly, "GG");
         return ReflectionCodeGenHelper.GenerateCodeForModule(module, _codeGenCache);
     }
+
+    public IEnumerable<GeneratedFile> GenerateSystemFiles() => [];
 
     public GeneratedFile GenerateMainFile(RetruxelProject project, IEnumerable<GeneratedFile> moduleFiles)
     {

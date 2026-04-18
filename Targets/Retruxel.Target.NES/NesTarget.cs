@@ -105,7 +105,7 @@ public class NesTarget : ITarget
     public IToolchain GetToolchain()
     {
         var builder = Retruxel.Toolchain.ToolchainOrchestrator.GetBuilder(TargetId);
-        return new NesToolchainAdapter(builder);
+        return new Retruxel.Toolchain.ToolchainAdapter(builder);
     }
 
     public IEnumerable<IModule> GetBuiltinModules()
@@ -192,6 +192,8 @@ public class NesTarget : ITarget
     /// Includes neslib.h, all module headers, calls init functions
     /// and runs update loop via ppu_wait_nmi().
     /// </summary>
+    public IEnumerable<GeneratedFile> GenerateSystemFiles() => [];
+
     public GeneratedFile GenerateMainFile(
         RetruxelProject project,
         IEnumerable<GeneratedFile> moduleFiles)

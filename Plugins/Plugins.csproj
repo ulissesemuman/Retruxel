@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <IsPackable>false</IsPackable>
+    <EnableDefaultItems>false</EnableDefaultItems>
+  </PropertyGroup>
+
+  <!-- Include all CodeGens and Tools as Content -->
+  <ItemGroup>
+    <Content Include="CodeGens\**\*.*" />
+    <Content Include="Tools\**\*.*" />
+  </ItemGroup>
+
+  <!-- Prevent build -->
+  <Target Name="Build" />
+  <Target Name="Rebuild" />
+  <Target Name="Clean" />
+</Project>

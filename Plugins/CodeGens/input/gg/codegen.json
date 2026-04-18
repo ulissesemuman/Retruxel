@@ -1,0 +1,6 @@
+﻿{
+  "moduleId": "input",
+  "targetId": "gg",
+  "version": "1.0.0",
+  "template": "input.c.rtrx"
+}

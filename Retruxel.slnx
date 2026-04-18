@@ -7,6 +7,7 @@
     <Project Path="Targets/Retruxel.Target.SMS/Retruxel.Target.SMS.csproj" Id="d5b51d71-c123-45c1-a7ec-2fb4fa048e08" />
   </Folder>
   <Folder Name="/Tools/">
+    <Project Path="Tools/Retruxel.Tool.AnimationPreprocessor/Retruxel.Tool.AnimationPreprocessor.csproj" />
     <Project Path="Tools/Retruxel.Tool.AssetImporter/Retruxel.Tool.AssetImporter.csproj" />
     <Project Path="Tools/Retruxel.Tool.AudioEditor/Retruxel.Tool.AudioEditor.csproj" />
     <Project Path="Tools/Retruxel.Tool.AutoPorting/Retruxel.Tool.AutoPorting.csproj" />
@@ -24,15 +25,20 @@
     <Project Path="Tools/Retruxel.Tool.MarketingKit/Retruxel.Tool.MarketingKit.csproj" />
     <Project Path="Tools/Retruxel.Tool.PixelArtEditor/Retruxel.Tool.PixelArtEditor.csproj" />
     <Project Path="Tools/Retruxel.Tool.PlaytestBot/Retruxel.Tool.PlaytestBot.csproj" />
+    <Project Path="Tools/Retruxel.Tool.TilemapPreprocessor/Retruxel.Tool.TilemapPreprocessor.csproj" />
     <Project Path="Tools/Retruxel.Tool.TilemapReducer/Retruxel.Tool.TilemapReducer.csproj" />
     <Project Path="Tools/Retruxel.Tool.VisualScripting/Retruxel.Tool.VisualScripting.csproj" />
   </Folder>
   <Folder Name="/CodeGens/">
-    <Project Path="CodeGens/Retruxel.CodeGen.TextDisplay.SMS/Retruxel.CodeGen.TextDisplay.SMS.csproj" />
-    <Project Path="CodeGens/Retruxel.CodeGen.TextDisplay.NES/Retruxel.CodeGen.TextDisplay.NES.csproj" />
-    <Project Path="CodeGens/Retruxel.CodeGen.TextDisplay.GG/Retruxel.CodeGen.TextDisplay.GG.csproj" />
-    <Project Path="CodeGens/Retruxel.CodeGen.TextDisplay.SG1000/Retruxel.CodeGen.TextDisplay.SG1000.csproj" />
     <Project Path="CodeGens/Retruxel.CodeGen.TextDisplay.ColecoVision/Retruxel.CodeGen.TextDisplay.ColecoVision.csproj" />
+    <Project Path="CodeGens/Retruxel.CodeGen.TextDisplay.GG/Retruxel.CodeGen.TextDisplay.GG.csproj" />
+    <Project Path="CodeGens/Retruxel.CodeGen.TextDisplay.NES/Retruxel.CodeGen.TextDisplay.NES.csproj" />
+    <Project Path="CodeGens/Retruxel.CodeGen.TextDisplay.SG1000/Retruxel.CodeGen.TextDisplay.SG1000.csproj" />
+    <Project Path="CodeGens/Retruxel.CodeGen.TextDisplay.SMS/Retruxel.CodeGen.TextDisplay.SMS.csproj" />
+  </Folder>
+  <Folder Name="/Tools/ImageProcessing/">
+    <Project Path="Tools/ImageProcessing/Retruxel.Lib.ImageProcessing/Retruxel.Lib.ImageProcessing.csproj" />
+    <Project Path="Tools/ImageProcessing/Retruxel.Tool.PngToTiles.Sms/Retruxel.Tool.PngToTiles.Sms.csproj" />
   </Folder>
   <Project Path="Retruxel.Core/Retruxel.Core.csproj" Id="57a90c60-69b1-4159-98bb-db3d8b36ed42" />
   <Project Path="Retruxel.Modules/Retruxel.Modules.csproj" />

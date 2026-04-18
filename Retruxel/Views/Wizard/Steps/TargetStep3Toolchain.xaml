@@ -1,0 +1,57 @@
+<UserControl x:Class="Retruxel.Views.Wizard.Steps.TargetStep3Toolchain"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <StackPanel>
+        <TextBlock Text="Toolchain Configuration" FontSize="16" FontWeight="Bold" Foreground="#FFFFFF" Margin="0,0,0,16"/>
+        <TextBlock Text="Configure the compiler and build tools for your target." TextWrapping="Wrap" Margin="0,0,0,24"/>
+
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="16"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+
+            <!-- Compiler -->
+            <Label Grid.Row="0" Grid.Column="0" Content="Compiler *"/>
+            <ComboBox Grid.Row="1" Grid.Column="0" x:Name="CompilerComboBox" Margin="0,0,0,16">
+                <ComboBoxItem Content="SDCC" IsSelected="True"/>
+                <ComboBoxItem Content="cc65"/>
+                <ComboBoxItem Content="Custom"/>
+            </ComboBox>
+
+            <!-- ROM Extension -->
+            <Label Grid.Row="0" Grid.Column="2" Content="ROM Extension *"/>
+            <TextBox Grid.Row="1" Grid.Column="2" x:Name="RomExtensionTextBox" Text=".rom" Margin="0,0,0,16"/>
+        </Grid>
+
+        <!-- Info box -->
+        <Border Background="#2D2D30" BorderBrush="#3F3F46" BorderThickness="1" Padding="16" Margin="0,16,0,0">
+            <StackPanel>
+                <TextBlock Text="ℹ️ Toolchain Implementation" FontWeight="Bold" Foreground="#FFFFFF" Margin="0,0,0,8"/>
+                <TextBlock TextWrapping="Wrap" Foreground="#CCCCCC">
+                    The wizard will generate a ToolchainAdapter class with empty implementations.
+                    You'll need to implement the build pipeline manually by:
+                </TextBlock>
+                <TextBlock TextWrapping="Wrap" Foreground="#CCCCCC" Margin="0,8,0,0">
+                    1. Creating a ToolchainBuilder in Retruxel.Toolchain project
+                </TextBlock>
+                <TextBlock TextWrapping="Wrap" Foreground="#CCCCCC">
+                    2. Implementing the IToolchainBuilder interface
+                </TextBlock>
+                <TextBlock TextWrapping="Wrap" Foreground="#CCCCCC">
+                    3. Registering it in ToolchainOrchestrator
+                </TextBlock>
+                <TextBlock TextWrapping="Wrap" Foreground="#CCCCCC">
+                    4. Implementing the adapter methods to call your builder
+                </TextBlock>
+            </StackPanel>
+        </Border>
+    </StackPanel>
+</UserControl>

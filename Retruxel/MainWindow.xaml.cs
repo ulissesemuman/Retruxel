@@ -275,6 +275,12 @@ public partial class MainWindow : Window
         settingsWindow.ShowDialog();
     }
 
+    private void TestWizard_Click(object sender, RoutedEventArgs e)
+    {
+        var wizardWindow = new Views.Wizard.WizardMainWindow { Owner = this };
+        wizardWindow.ShowDialog();
+    }
+
     private void TitleBar_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
     {
         if (e.ChangedButton == MouseButton.Left && e.ButtonState == MouseButtonState.Pressed)

@@ -71,4 +71,10 @@ public interface ITarget
     /// Each target knows its own required headers, init calls and ROM metadata.
     /// </summary>
     GeneratedFile GenerateMainFile(RetruxelProject project, IEnumerable<GeneratedFile> moduleFiles);
+
+    /// <summary>
+    /// Generates system files (splash screens, boot code, etc.) for this target.
+    /// Called before GenerateMainFile to inject additional files into the build.
+    /// </summary>
+    IEnumerable<GeneratedFile> GenerateSystemFiles();
 }

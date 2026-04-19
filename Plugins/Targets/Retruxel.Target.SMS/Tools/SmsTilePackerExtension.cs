@@ -1,28 +1,14 @@
-
-
-
-
 using Retruxel.Core.Interfaces;
 
-namespace Retruxel.Tool.TilePacker;
+namespace Retruxel.Target.SMS.Tools;
 
 /// <summary>
-/// SMS/Game Gear/SG-1000 wrapper for TilePacker.
-/// Enables horizontal and vertical flip detection (VDP supports both).
+/// SMS-specific extension for tile_packer tool.
+/// Enables H/V flip detection and formats tilemap for SMS VDP.
 /// </summary>
-public class TilePackerSMSTool : ITool
+public class SmsTilePackerExtension : IToolExtension
 {
-    public string ToolId => "retruxel.tool.tilepacker.sms";
-    public string DisplayName => "Tile Packer (SMS/GG/SG-1000)";
-    public string Description => "Tilemap optimizer for SMS/Game Gear/SG-1000 with H/V flip support";
-    public object? Icon => null;
-    public string Category => "Optimization";
-    public string? Shortcut => null;
-    public bool IsStandalone => false;
-    public string? TargetId => "sms";
-    public bool RequiresProject => false;
-
-    private readonly TilePackerTool _baseTool = new();
+    public string ToolId => "tile_packer";
 
     public Dictionary<string, object> Execute(Dictionary<string, object> input)
     {
@@ -31,15 +17,14 @@ public class TilePackerSMSTool : ITool
         input["enableFlipV"] = true;
         input["enableRotation"] = false;
 
-        var result = _baseTool.Execute(input);
-
-        // Format tilemap for SMS VDP
-        var tilemap = (List<object>)result["tilemap"];
+        // Generic tool already executed, we receive its output
+        var tilemap = input["tilemap"] as List<object> ?? new List<object>();
         var formattedTilemap = new List<Dictionary<string, object>>();
 
         foreach (var entry in tilemap)
         {
-            var dict = (Dictionary<string, object>)entry;
+            if (entry is not Dictionary<string, object> dict) continue;
+
             var tileIndex = Convert.ToInt32(dict["TileIndex"]);
             var flipH = Convert.ToBoolean(dict["FlipH"]);
             var flipV = Convert.ToBoolean(dict["FlipV"]);
@@ -58,7 +43,9 @@ public class TilePackerSMSTool : ITool
             });
         }
 
-        result["tilemap"] = formattedTilemap;
-        return result;
+        return new Dictionary<string, object>
+        {
+            ["tilemap"] = formattedTilemap
+        };
     }
 }

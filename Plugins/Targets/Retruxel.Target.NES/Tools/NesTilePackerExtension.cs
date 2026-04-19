@@ -1,28 +1,14 @@
-
-
-
-
 using Retruxel.Core.Interfaces;
 
-namespace Retruxel.Tool.TilePacker;
+namespace Retruxel.Target.NES.Tools;
 
 /// <summary>
-/// NES wrapper for TilePacker.
-/// Enables horizontal and vertical flip detection (PPU supports both).
+/// NES-specific extension for tile_packer tool.
+/// Enables H/V flip detection and formats tilemap for NES PPU.
 /// </summary>
-public class TilePackerNESTool : ITool
+public class NesTilePackerExtension : IToolExtension
 {
-    public string ToolId => "retruxel.tool.tilepacker.nes";
-    public string DisplayName => "Tile Packer (NES)";
-    public string Description => "Tilemap optimizer for NES with H/V flip support";
-    public object? Icon => null;
-    public string Category => "Optimization";
-    public string? Shortcut => null;
-    public bool IsStandalone => false;
-    public string? TargetId => "nes";
-    public bool RequiresProject => false;
-
-    private readonly TilePackerTool _baseTool = new();
+    public string ToolId => "tile_packer";
 
     public Dictionary<string, object> Execute(Dictionary<string, object> input)
     {
@@ -31,15 +17,14 @@ public class TilePackerNESTool : ITool
         input["enableFlipV"] = true;
         input["enableRotation"] = false;
 
-        var result = _baseTool.Execute(input);
-
-        // Format tilemap for NES PPU
-        var tilemap = (List<object>)result["tilemap"];
+        // Generic tool already executed, we receive its output
+        var tilemap = input["tilemap"] as List<object> ?? new List<object>();
         var formattedTilemap = new List<Dictionary<string, object>>();
 
         foreach (var entry in tilemap)
         {
-            var dict = (Dictionary<string, object>)entry;
+            if (entry is not Dictionary<string, object> dict) continue;
+
             var tileIndex = Convert.ToInt32(dict["TileIndex"]);
             var flipH = Convert.ToBoolean(dict["FlipH"]);
             var flipV = Convert.ToBoolean(dict["FlipV"]);
@@ -58,7 +43,9 @@ public class TilePackerNESTool : ITool
             });
         }
 
-        result["tilemap"] = formattedTilemap;
-        return result;
+        return new Dictionary<string, object>
+        {
+            ["tilemap"] = formattedTilemap
+        };
     }
 }

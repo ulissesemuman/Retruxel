@@ -36,8 +36,7 @@ public class CodeGenerator
 
         progress?.Report("INIT: Starting code generation...");
 
-        // Reset codegen state before generation
-        _moduleRegistry.ResetCodeGenState();
+        // Reset renderer state before generation
         _moduleRenderer.ResetState();
 
         // Collect all module instances from scenes
@@ -102,19 +101,13 @@ public class CodeGenerator
                         module.IsSingleton).ToList();
                     progress?.Report($"INFO: {module.ModuleId} generated via ModuleRenderer.");
                 }
-                // Priority 2: Try CodeGen from registry (legacy DLL-based)
-                else if (_moduleRegistry.GetCodeGen(module.ModuleId, project.TargetId) is var codegen && codegen != null)
-                {
-                    generatedFiles = codegen.Generate(moduleJson).ToList();
-                    progress?.Report($"INFO: {module.ModuleId} generated via CodeGen plugin.");
-                }
-                // Priority 3: Ask target to translate (legacy)
+                // Priority 2: Ask target to translate (legacy fallback)
                 else if (_target.GenerateCodeForModule(contextualModule).ToList() is var targetFiles && targetFiles.Count > 0)
                 {
                     generatedFiles = targetFiles;
                     progress?.Report($"INFO: {module.ModuleId} generated via target.");
                 }
-                // Priority 4: Module's own GenerateCode() (external plugins)
+                // Priority 3: Module's own GenerateCode() (external plugins)
                 else
                 {
                     generatedFiles = module switch

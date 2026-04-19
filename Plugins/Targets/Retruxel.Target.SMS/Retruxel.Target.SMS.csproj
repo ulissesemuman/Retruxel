@@ -7,6 +7,12 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="Modules\CodeGens\**" />
+    <EmbeddedResource Remove="Modules\CodeGens\**" />
+    <None Remove="Modules\CodeGens\**" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\..\..\Retruxel.SDK\Retruxel.SDK.csproj" />
     <ProjectReference Include="..\..\..\Retruxel.Modules\Retruxel.Modules.csproj" />
     <ProjectReference Include="..\..\..\Retruxel.Toolchain\Retruxel.Toolchain.csproj" />

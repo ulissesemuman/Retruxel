@@ -8,7 +8,6 @@ namespace Retruxel.Core.Services;
 /// <summary>
 /// Discovers and loads module DLLs from the internal modules folder
 /// and the user plugins folder.
-/// Reads modules.json to compute Compatibility[] dynamically based on available CodeGens.
 /// Internal modules take precedence over user plugins with the same ModuleId.
 /// </summary>
 public class ModuleLoader

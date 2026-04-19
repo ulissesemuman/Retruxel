@@ -1,4 +1,4 @@
-using Retruxel.Core.Models;
+
 using System.Text.Json;
 
 namespace Retruxel.Target.SMS.Modules.Scroll;

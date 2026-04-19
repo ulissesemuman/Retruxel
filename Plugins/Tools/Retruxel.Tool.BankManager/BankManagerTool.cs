@@ -1,3 +1,5 @@
+
+
 namespace Retruxel.Tool.BankManager;
 
 /// <summary>

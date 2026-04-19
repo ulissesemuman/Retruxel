@@ -1,5 +1,7 @@
 
 
+
+
 namespace Retruxel.Tool.AudioEditor;
 
 /// <summary>

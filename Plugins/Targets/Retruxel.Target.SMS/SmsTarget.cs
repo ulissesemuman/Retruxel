@@ -10,6 +10,9 @@ using Retruxel.Target.SMS.Modules.Splash;
 
 
 
+using Retruxel.Core.Models;
+using Retruxel.Core.Services;
+
 namespace Retruxel.Target.SMS;
 
 /// <summary>

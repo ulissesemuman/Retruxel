@@ -1,0 +1,10 @@
+﻿{
+  "moduleId": "input",
+  "targetId": "sms",
+  "version": "1.0.0",
+  "template": "input.c.rtrx",
+  "variables": {
+    "holdThreshold": { "from": "module", "path": "holdThreshold", "default": 60 },
+    "port": { "from": "module", "path": "port", "default": 1 }
+  }
+}

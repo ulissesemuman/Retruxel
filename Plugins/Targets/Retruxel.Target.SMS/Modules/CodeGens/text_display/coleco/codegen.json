@@ -1,0 +1,24 @@
+{
+  "moduleId": "text.display",
+  "targetId": "coleco",
+  "version":  "1.0.0",
+  "template": "text_display.c.rtrx",
+
+  "variables": {
+    "x": {
+      "from":    "module",
+      "path":    "x",
+      "default": 0
+    },
+    "y": {
+      "from":    "module",
+      "path":    "y",
+      "default": 0
+    },
+    "text": {
+      "from":    "module",
+      "path":    "text",
+      "default": ""
+    }
+  }
+}

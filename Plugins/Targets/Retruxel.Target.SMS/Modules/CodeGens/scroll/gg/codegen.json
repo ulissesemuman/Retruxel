@@ -1,0 +1,6 @@
+﻿{
+  "moduleId": "scroll",
+  "targetId": "gg",
+  "version": "1.0.0",
+  "template": "scroll.c.rtrx"
+}

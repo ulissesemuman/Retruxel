@@ -31,13 +31,15 @@ public class ModuleRenderer
     private readonly string _pluginsPath;
     private readonly Dictionary<string, ITool> _tools;        // keyed by ToolId
     private readonly Dictionary<string, CodeGenManifest> _codeGens; // keyed by "targetId::moduleId"
+    private Assembly? _targetAssembly;
 
     // Per-render instance counters for non-singleton modules
     private readonly Dictionary<string, int> _instanceCounters = new();
 
-    public ModuleRenderer(string pluginsPath)
+    public ModuleRenderer(string pluginsPath, Assembly? targetAssembly = null)
     {
         _pluginsPath = pluginsPath;
+        _targetAssembly = targetAssembly;
         _tools = DiscoverTools();
         _codeGens = DiscoverCodeGens();
         
@@ -54,6 +56,12 @@ public class ModuleRenderer
     /// Resets instance counters. Call before each full build.
     /// </summary>
     public void ResetState() => _instanceCounters.Clear();
+
+    /// <summary>
+    /// Sets the target assembly for discovering IToolExtension implementations.
+    /// </summary>
+    public void SetTargetAssembly(Assembly? targetAssembly)
+        => _targetAssembly = targetAssembly;
 
     /// <summary>
     /// Returns true if a declarative CodeGen exists for this moduleId + targetId.
@@ -209,10 +217,49 @@ public class ModuleRenderer
             }
         }
 
-        return tool.Execute(input);
+        var toolResult = tool.Execute(input);
+
+        // If the tool declares TargetExtensionId, look for extension in target assembly
+        if (tool.TargetExtensionId is not null && _targetAssembly is not null)
+        {
+            var extension = FindToolExtension(_targetAssembly, tool.TargetExtensionId);
+            if (extension is not null)
+            {
+                var extensionResult = extension.Execute(input);
+                // Merge: extension overwrites generic keys on conflict
+                foreach (var (k, v) in extensionResult)
+                    toolResult[k] = v;
+            }
+            else
+            {
+                // Log warning — expected extension but not found
+                Console.WriteLine($"[ModuleRenderer] WARN: Expected IToolExtension for '{tool.TargetExtensionId}' in target assembly but none found.");
+            }
+        }
+
+        return toolResult;
     }
 
     // ── Discovery ─────────────────────────────────────────────────────────────
+
+    private static IToolExtension? FindToolExtension(Assembly targetAssembly, string toolId)
+    {
+        var extensionTypes = targetAssembly.GetTypes()
+            .Where(t => typeof(IToolExtension).IsAssignableFrom(t) && !t.IsAbstract && !t.IsInterface);
+
+        foreach (var type in extensionTypes)
+        {
+            try
+            {
+                var instance = (IToolExtension)Activator.CreateInstance(type)!;
+                if (instance.ToolId == toolId)
+                    return instance;
+            }
+            catch { /* skip */ }
+        }
+
+        return null;
+    }
 
     private Dictionary<string, ITool> DiscoverTools()
     {

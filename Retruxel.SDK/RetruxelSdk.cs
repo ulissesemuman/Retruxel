@@ -16,6 +16,7 @@ using System.Runtime.CompilerServices;
 [assembly: TypeForwardedTo(typeof(Retruxel.Core.Interfaces.IAudioModule))]
 [assembly: TypeForwardedTo(typeof(Retruxel.Core.Interfaces.ITarget))]
 [assembly: TypeForwardedTo(typeof(Retruxel.Core.Interfaces.ITool))]
+[assembly: TypeForwardedTo(typeof(Retruxel.Core.Interfaces.IToolExtension))]
 [assembly: TypeForwardedTo(typeof(Retruxel.Core.Interfaces.ICodeGenPlugin))]
 [assembly: TypeForwardedTo(typeof(Retruxel.Core.Interfaces.IToolchain))]
 [assembly: TypeForwardedTo(typeof(Retruxel.Core.Interfaces.IUndoableCommand))]

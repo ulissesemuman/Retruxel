@@ -21,6 +21,7 @@ public class TilemapPreprocessorTool : ITool
     public bool IsStandalone => false;
     public bool IsSingleton => true;
     public bool RequiresProject => false;
+    public string? TargetExtensionId => "tilemap_preprocessor";
 
     public IEnumerable<string> Validate(Dictionary<string, object> input)
     {

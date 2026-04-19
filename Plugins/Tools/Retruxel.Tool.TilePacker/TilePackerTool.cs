@@ -68,7 +68,7 @@ public class TilePackerTool : ITool
                     TileIndex = tileIndex,
                     FlipH = flipH,
                     FlipV = flipV,
-                    Rotate = rotate,
+                    Rotation = rotate,
                     X = tx,
                     Y = ty
                 });

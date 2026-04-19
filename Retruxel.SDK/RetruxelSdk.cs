@@ -2,3 +2,9 @@
 // Reference this project in your plugin DLL instead of Retruxel.Core directly.
 // This ensures a stable public contract independent of internal Core changes.
 
+// Re-export public interfaces from Retruxel.Core
+// This allows plugins to reference SDK without knowing about Core internals
+
+global using Retruxel.Core.Interfaces;
+global using Retruxel.Core.Models;
+

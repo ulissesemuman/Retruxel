@@ -86,9 +86,22 @@ public class SmsSplashCodeGen
         });
 
         var tilesArray = (byte[])result["tilesArray"];
-        var palette = result.ContainsKey("paletteHardware") 
-            ? (byte[])result["paletteHardware"] 
-            : Array.Empty<byte>();
+        
+        // Try to get SMS-converted palette first, fallback to generic RGB palette
+        byte[] palette;
+        if (result.ContainsKey("paletteHardware") && result["paletteHardware"] is byte[] smsPalette)
+        {
+            palette = smsPalette;
+        }
+        else if (result.ContainsKey("palette") && result["palette"] is uint[] rgbPalette)
+        {
+            // Convert RGB888 to SMS RGB222 manually
+            palette = ConvertToSmsRgb222(rgbPalette);
+        }
+        else
+        {
+            palette = Array.Empty<byte>();
+        }
 
         var sb = new StringBuilder();
 
@@ -265,5 +278,32 @@ public class SmsSplashCodeGen
             SourceModuleId = "retruxel.splash",
             Content        = sb.ToString()
         };
+    }
+
+    /// <summary>
+    /// Converts RGB888 palette to SMS RGB222 format.
+    /// SMS palette format: 0bBBGGRR (2 bits per channel, 6 bits total)
+    /// </summary>
+    private byte[] ConvertToSmsRgb222(uint[] rgbPalette)
+    {
+        var result = new byte[rgbPalette.Length];
+
+        for (int i = 0; i < rgbPalette.Length; i++)
+        {
+            uint rgb = rgbPalette[i];
+            byte r = (byte)((rgb >> 16) & 0xFF);
+            byte g = (byte)((rgb >> 8) & 0xFF);
+            byte b = (byte)(rgb & 0xFF);
+
+            // Convert 8-bit to 2-bit per channel
+            byte r2 = (byte)((r >> 6) & 0x03);
+            byte g2 = (byte)((g >> 6) & 0x03);
+            byte b2 = (byte)((b >> 6) & 0x03);
+
+            // SMS format: 0bBBGGRR
+            result[i] = (byte)(r2 | (g2 << 2) | (b2 << 4));
+        }
+
+        return result;
     }
 }

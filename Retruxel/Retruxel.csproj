@@ -30,11 +30,6 @@
   <ItemGroup>
     <ProjectReference Include="..\Retruxel.Core\Retruxel.Core.csproj" />
     <ProjectReference Include="..\Retruxel.Modules\Retruxel.Modules.csproj" />
-    <ProjectReference Include="..\Plugins\Targets\Retruxel.Target.SMS\Retruxel.Target.SMS.csproj" />
-    <ProjectReference Include="..\Plugins\Targets\Retruxel.Target.NES\Retruxel.Target.NES.csproj" />
-    <ProjectReference Include="..\Plugins\Targets\Retruxel.Target.GG\Retruxel.Target.GG.csproj" />
-    <ProjectReference Include="..\Plugins\Targets\Retruxel.Target.SG1000\Retruxel.Target.SG1000.csproj" />
-    <ProjectReference Include="..\Plugins\Targets\Retruxel.Target.ColecoVision\Retruxel.Target.ColecoVision.csproj" />
     <ProjectReference Include="..\Plugins\Tools\Retruxel.Tool.AssetImporter\Retruxel.Tool.AssetImporter.csproj" />
     <ProjectReference Include="..\Plugins\Tools\Retruxel.Tool.TilemapPreprocessor\Retruxel.Tool.TilemapPreprocessor.csproj" />
     <ProjectReference Include="..\Plugins\Tools\Retruxel.Tool.TilePacker\Retruxel.Tool.TilePacker.csproj" />
@@ -88,6 +83,16 @@
       <CodeGenFiles Include="..\Plugins\CodeGens\**\*.*" />
     </ItemGroup>
     <Copy SourceFiles="@(CodeGenFiles)" DestinationFolder="$(OutputPath)Plugins\CodeGens\%(RecursiveDir)" />
+  </Target>
+
+  <!-- Copy Target DLLs to Plugins/Targets folder after build -->
+  <Target Name="CopyTargetsToPluginsFolder" AfterTargets="Build">
+    <MakeDir Directories="$(OutputPath)Plugins\Targets" />
+    <Copy SourceFiles="$(OutputPath)Retruxel.Target.SMS.dll" DestinationFolder="$(OutputPath)Plugins\Targets" />
+    <Copy SourceFiles="$(OutputPath)Retruxel.Target.NES.dll" DestinationFolder="$(OutputPath)Plugins\Targets" />
+    <Copy SourceFiles="$(OutputPath)Retruxel.Target.GG.dll" DestinationFolder="$(OutputPath)Plugins\Targets" />
+    <Copy SourceFiles="$(OutputPath)Retruxel.Target.SG1000.dll" DestinationFolder="$(OutputPath)Plugins\Targets" />
+    <Copy SourceFiles="$(OutputPath)Retruxel.Target.ColecoVision.dll" DestinationFolder="$(OutputPath)Plugins\Targets" />
   </Target>
 
 </Project>

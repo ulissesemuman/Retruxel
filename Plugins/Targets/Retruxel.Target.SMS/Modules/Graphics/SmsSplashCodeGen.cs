@@ -1,9 +1,9 @@
 
 using Retruxel.Core.Models;
 using Retruxel.Tool.PngToTiles;
-using System.Text;
 using System.IO;
 using System.Linq;
+using System.Text;
 
 namespace Retruxel.Target.SMS.Modules.Splash;
 
@@ -86,7 +86,9 @@ public class SmsSplashCodeGen
         });
 
         var tilesArray = (byte[])result["tilesArray"];
-        var palette = (int[])result["palette"];
+        var palette = result.ContainsKey("paletteHardware") 
+            ? (byte[])result["paletteHardware"] 
+            : Array.Empty<byte>();
 
         var sb = new StringBuilder();
 

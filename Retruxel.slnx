@@ -35,7 +35,6 @@
   </Folder>
   <Folder Name="/Plugins/Tools/ImageProcessing/">
     <Project Path="Plugins/Tools/ImageProcessing/Retruxel.Lib.ImageProcessing/Retruxel.Lib.ImageProcessing.csproj" />
-    <Project Path="Plugins/Tools/ImageProcessing/Retruxel.Tool.PngToTiles.Sms/Retruxel.Tool.PngToTiles.Sms.csproj" />
   </Folder>
   <Project Path="Retruxel.Core/Retruxel.Core.csproj" Id="57a90c60-69b1-4159-98bb-db3d8b36ed42" />
   <Project Path="Retruxel.Modules/Retruxel.Modules.csproj" />

@@ -1,6 +1,6 @@
 
 using Retruxel.Core.Models;
-using Retruxel.Tool.PngToTiles.Sms;
+using Retruxel.Tool.PngToTiles;
 using System.Text;
 using System.IO;
 using System.Linq;
@@ -71,15 +71,18 @@ public class SmsSplashCodeGen
 
     public GeneratedFile GenerateCode()
     {
-        // Convert splash image using PngToTilesSmsTool
+        // Convert splash image using generic PngToTiles tool
+        // (automatically delegates to SmsPngToTilesExtension via IToolExtension)
         var splashPath = Path.Combine(
             Path.GetDirectoryName(typeof(SmsSplashCodeGen).Assembly.Location)!,
             "Assets", "splash.png");
 
-        var tool = new PngToTilesSmsTool();
+        var tool = new PngToTilesTool();
         var result = tool.Execute(new Dictionary<string, object>
         {
-            ["assetPath"] = splashPath
+            ["imagePath"] = splashPath,
+            ["tileWidth"] = 8,
+            ["tileHeight"] = 8
         });
 
         var tilesArray = (byte[])result["tilesArray"];

@@ -229,13 +229,22 @@ public class ModuleRenderer
             try
             {
                 var asm = Assembly.LoadFrom(dllPath);
+                var dllName = Path.GetFileNameWithoutExtension(dllPath);
+                
                 foreach (var type in asm.GetTypes())
                 {
                     if (!type.IsClass || type.IsAbstract || !typeof(ITool).IsAssignableFrom(type))
                         continue;
 
                     if (Activator.CreateInstance(type) is ITool tool)
+                    {
+                        // Index by ToolId (for backward compatibility)
                         result[tool.ToolId] = tool;
+                        
+                        // Also index by DLL name (without extension) for simplified codegen.json references
+                        // Example: "Retruxel.Tool.TilemapPreprocessor" instead of "tilemap_preprocessor"
+                        result[dllName] = tool;
+                    }
                 }
             }
             catch

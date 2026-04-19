@@ -1,6 +1,0 @@
-{
-  "moduleId": "input",
-  "targetId": "coleco",
-  "version": "1.0.0",
-  "template": "input.c.rtrx"
-}

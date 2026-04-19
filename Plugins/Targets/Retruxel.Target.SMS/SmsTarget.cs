@@ -1,15 +1,7 @@
 
 
-using Retruxel.Target.SMS.Modules.Enemy;
-using Retruxel.Target.SMS.Modules.Entity;
-using Retruxel.Target.SMS.Modules.Scroll;
-using Retruxel.Target.SMS.Modules.Graphics;
-using Retruxel.Target.SMS.Modules.Logic;
 using Retruxel.Target.SMS.Modules.Splash;
-
-
-
-
+using Retruxel.Core.Interfaces;
 using Retruxel.Core.Models;
 using Retruxel.Core.Services;
 

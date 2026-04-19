@@ -1,5 +1,7 @@
 
 
+using Retruxel.Core.Interfaces;
+
 namespace Retruxel.Tool.PixelArtEditor;
 
 /// <summary>
@@ -10,14 +12,14 @@ public class PixelArtEditorTool : ITool
     public string ToolId => "retruxel.tool.pixelarteditor";
     public string DisplayName => "Pixel Art Editor";
     public string Description => "Create and edit sprites and tiles with an integrated pixel art editor";
-    public string IconPath => "pack://application:,,,/Retruxel.Tool.PixelArtEditor;component/icon.png";
+    public object? Icon => null;
     public string Category => "Graphics";
-    public string MenuPath => "Tools/Graphics/Pixel Art Editor";
     public string? Shortcut => "Ctrl+Shift+P";
-    public bool RequiresProject => true;
+    public bool IsStandalone => false;
     public string? TargetId => null;
+    public bool RequiresProject => true;
 
-    public bool Execute(IToolContext context)
+    public Dictionary<string, object> Execute(Dictionary<string, object> input)
     {
         // TODO: Implement pixel art editor
         throw new NotImplementedException("Pixel Art Editor is not yet implemented.");

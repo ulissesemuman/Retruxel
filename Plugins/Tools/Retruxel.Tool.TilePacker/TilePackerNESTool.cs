@@ -2,6 +2,8 @@
 
 
 
+using Retruxel.Core.Interfaces;
+
 namespace Retruxel.Tool.TilePacker;
 
 /// <summary>

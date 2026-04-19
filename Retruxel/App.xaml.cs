@@ -1,3 +1,4 @@
+using Retruxel.Core.Interfaces;
 using Retruxel.Core.Services;
 using Retruxel.Services;
 using System.IO;
@@ -25,6 +26,9 @@ public partial class App : Application
         }
 
         LocalizationService.Instance.Load(language, locPath);
+
+        // 2.1. Register localization service in SDK for plugin access
+        RetruxelServices.Localization = LocalizationService.Instance;
 
         // 3. Target Registry — shell owns this, Core never references it directly
         TargetRegistry.Initialize();

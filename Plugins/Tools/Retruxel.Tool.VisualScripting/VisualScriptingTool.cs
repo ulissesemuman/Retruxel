@@ -1,5 +1,7 @@
 
 
+using Retruxel.Core.Interfaces;
+
 namespace Retruxel.Tool.VisualScripting;
 
 /// <summary>
@@ -10,14 +12,14 @@ public class VisualScriptingTool : ITool
     public string ToolId => "retruxel.tool.visualscripting";
     public string DisplayName => "Visual Scripting";
     public string Description => "Graph-based visual scripting for complex game logic";
-    public string IconPath => "pack://application:,,,/Retruxel.Tool.VisualScripting;component/icon.png";
+    public object? Icon => null;
     public string Category => "Logic";
-    public string MenuPath => "Tools/Logic/Visual Scripting";
     public string? Shortcut => "Ctrl+Shift+V";
-    public bool RequiresProject => true;
+    public bool IsStandalone => false;
     public string? TargetId => null;
+    public bool RequiresProject => true;
 
-    public bool Execute(IToolContext context)
+    public Dictionary<string, object> Execute(Dictionary<string, object> input)
     {
         // TODO: Implement visual scripting
         throw new NotImplementedException("Visual Scripting is not yet implemented.");

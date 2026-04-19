@@ -7,6 +7,8 @@ using System.Linq;
 
 
 
+using Retruxel.Core.Interfaces;
+
 namespace Retruxel.Tool.PngToTiles.Sms;
 
 public class PngToTilesSmsTool : ITool

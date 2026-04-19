@@ -29,7 +29,7 @@
     <Project Path="Plugins/Tools/Retruxel.Tool.PixelArtEditor/Retruxel.Tool.PixelArtEditor.csproj" />
     <Project Path="Plugins/Tools/Retruxel.Tool.PlaytestBot/Retruxel.Tool.PlaytestBot.csproj" />
     <Project Path="Plugins/Tools/Retruxel.Tool.TilemapPreprocessor/Retruxel.Tool.TilemapPreprocessor.csproj" />
-    <Project Path="Plugins/Tools/Retruxel.Tool.TilemapReducer/Retruxel.Tool.TilemapReducer.csproj" />
+    <Project Path="Plugins/Tools/Retruxel.Tool.TilePacker/Retruxel.Tool.TilePacker.csproj" />
     <Project Path="Plugins/Tools/Retruxel.Tool.VisualScripting/Retruxel.Tool.VisualScripting.csproj" />
   </Folder>
   <Folder Name="/Plugins/Tools/ImageProcessing/">

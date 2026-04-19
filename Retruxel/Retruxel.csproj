@@ -36,6 +36,8 @@
     <ProjectReference Include="..\Plugins\Targets\Retruxel.Target.SG1000\Retruxel.Target.SG1000.csproj" />
     <ProjectReference Include="..\Plugins\Targets\Retruxel.Target.ColecoVision\Retruxel.Target.ColecoVision.csproj" />
     <ProjectReference Include="..\Plugins\Tools\Retruxel.Tool.AssetImporter\Retruxel.Tool.AssetImporter.csproj" />
+    <ProjectReference Include="..\Plugins\Tools\Retruxel.Tool.TilemapPreprocessor\Retruxel.Tool.TilemapPreprocessor.csproj" />
+    <ProjectReference Include="..\Plugins\Tools\Retruxel.Tool.TilePacker\Retruxel.Tool.TilePacker.csproj" />
   </ItemGroup>
 
   <ItemGroup>
@@ -53,12 +55,14 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Content Include="Assets\Data\*.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
     <Content Include="Assets\Localization\*.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="Assets\modules.json">
+    <Content Include="Assets\WizardTemplates\*.rtrxtemplate">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      <Link>modules.json</Link>
     </Content>
     <Content Include="Assets\Icons\icon.ico">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
@@ -69,6 +73,21 @@
   <Target Name="CopyModulesToFolder" AfterTargets="Build">
     <MakeDir Directories="$(OutputPath)modules" />
     <Copy SourceFiles="$(OutputPath)Retruxel.Modules.dll" DestinationFolder="$(OutputPath)modules" />
+  </Target>
+
+  <!-- Copy tool DLLs to Plugins/Tools folder after build -->
+  <Target Name="CopyToolsToPluginsFolder" AfterTargets="Build">
+    <MakeDir Directories="$(OutputPath)Plugins\Tools" />
+    <Copy SourceFiles="$(OutputPath)Retruxel.Tool.TilemapPreprocessor.dll" DestinationFolder="$(OutputPath)Plugins\Tools" />
+    <Copy SourceFiles="$(OutputPath)Retruxel.Tool.TilePacker.dll" DestinationFolder="$(OutputPath)Plugins\Tools" />
+  </Target>
+
+  <!-- Copy CodeGens folder to Plugins/CodeGens after build -->
+  <Target Name="CopyCodeGensToPluginsFolder" AfterTargets="Build">
+    <ItemGroup>
+      <CodeGenFiles Include="..\Plugins\CodeGens\**\*.*" />
+    </ItemGroup>
+    <Copy SourceFiles="@(CodeGenFiles)" DestinationFolder="$(OutputPath)Plugins\CodeGens\%(RecursiveDir)" />
   </Target>
 
 </Project>

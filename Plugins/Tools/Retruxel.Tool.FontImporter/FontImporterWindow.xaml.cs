@@ -1,5 +1,5 @@
 using Microsoft.Win32;
-using Retruxel.Core.Services;
+using Retruxel.Core.Interfaces;
 using Retruxel.Tool.FontImporter.Services;
 using System.Windows;
 using System.Windows.Controls;
@@ -28,8 +28,8 @@ public partial class FontImporterWindow : Window
     {
         InitializeComponent();
 
-        var loc = LocalizationService.Instance;
-        StatusLabel.Text = loc.Get("fontimporter.status.no_file");
+        var loc = RetruxelServices.Localization;
+        StatusLabel.Text = loc.Translate("fontimporter.status.no_file");
 
         BuildCharGrid();
         SelectAsciiBasicRange();   // pre-select ASCII basic on open
@@ -52,18 +52,18 @@ public partial class FontImporterWindow : Window
 
     private void BrowseButton_Click(object sender, RoutedEventArgs e)
     {
-        var loc = LocalizationService.Instance;
+        var loc = RetruxelServices.Localization;
         var dlg = new OpenFileDialog
         {
-            Title = loc.Get("fontimporter.dialog.select_font"),
-            Filter = loc.Get("fontimporter.dialog.font_filter")
+            Title = loc.Translate("fontimporter.dialog.select_font"),
+            Filter = loc.Translate("fontimporter.dialog.font_filter")
         };
 
         if (dlg.ShowDialog() != true) return;
 
         _ttfPath = dlg.FileName;
         TxtFileName.Text = System.IO.Path.GetFileName(_ttfPath);
-        StatusLabel.Text = loc.Get("fontimporter.status.loaded");
+        StatusLabel.Text = loc.Translate("fontimporter.status.loaded");
         StatusLabel.Foreground = (Brush)FindResource("BrushPrimary");
 
         RegenerateAllGlyphs();
@@ -271,9 +271,9 @@ public partial class FontImporterWindow : Window
 
     private void UpdateImportButton()
     {
-        var loc = LocalizationService.Instance;
+        var loc = RetruxelServices.Localization;
         BtnImport.IsEnabled = _ttfPath is not null && _selectedCodepoints.Count > 0;
-        LblFooterMessage.Text = _ttfPath is null ? loc.Get("fontimporter.error.select_file") : "";
+        LblFooterMessage.Text = _ttfPath is null ? loc.Translate("fontimporter.error.select_file") : "";
     }
 
     private void UpdateGlyphPreview(int codepoint)
@@ -327,8 +327,8 @@ public partial class FontImporterWindow : Window
 
         try
         {
-            var loc = LocalizationService.Instance;
-            LblFooterMessage.Text = loc.Get("fontimporter.status.generating");
+            var loc = RetruxelServices.Localization;
+            LblFooterMessage.Text = loc.Translate("fontimporter.status.generating");
             LblFooterMessage.Foreground = (Brush)FindResource("BrushTertiary");
 
             var ordered = _selectedCodepoints.OrderBy(cp => cp).ToList();
@@ -350,8 +350,8 @@ public partial class FontImporterWindow : Window
         }
         catch (Exception ex)
         {
-            var loc = LocalizationService.Instance;
-            LblFooterMessage.Text = string.Format(loc.Get("fontimporter.error.generation"), ex.Message);
+            var loc = RetruxelServices.Localization;
+            LblFooterMessage.Text = string.Format(loc.Translate("fontimporter.error.generation"), ex.Message);
             LblFooterMessage.Foreground = (Brush)FindResource("BrushError");
         }
     }

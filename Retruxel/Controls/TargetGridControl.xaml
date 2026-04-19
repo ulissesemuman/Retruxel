@@ -25,6 +25,7 @@
             <!-- Sort -->
             <TextBlock x:Name="TxtSortLabel"
                        Grid.Column="0"
+                       Text="{loc:Tr Key='welcome.sort'}"
                        Style="{StaticResource TextLabelCaps}"
                        VerticalAlignment="Center"
                        Margin="0,0,8,0"/>
@@ -36,6 +37,7 @@
             <!-- Filter -->
             <TextBlock x:Name="TxtFilterLabel"
                        Grid.Column="3"
+                       Text="{loc:Tr Key='welcome.filter'}"
                        Style="{StaticResource TextLabelCaps}"
                        VerticalAlignment="Center"
                        Margin="0,0,8,0"/>
@@ -50,7 +52,7 @@
                         Content="⊞"
                         Style="{StaticResource ButtonTitleBarActive}"
                         FontSize="16"
-                        Margin="0,0,4,0"
+                        Margin="0,0,8,0"
                         Click="BtnGrid_Click"
                         ToolTip="Grid view"/>
                 <Button x:Name="BtnList"

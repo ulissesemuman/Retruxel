@@ -1,7 +1,6 @@
 using Microsoft.Win32;
 using Retruxel.Core.Interfaces;
 using Retruxel.Core.Models;
-using Retruxel.Core.Services;
 using Retruxel.Tool.AssetImporter.Services;
 using SkiaSharp;
 using System.IO;
@@ -42,6 +41,14 @@ public partial class AssetImporterWindow : Window
         _projectPath = projectPath;
 
         TxtTargetLabel.Text = target.DisplayName.ToUpper();
+        ApplyLocalization();
+    }
+
+    private void ApplyLocalization()
+    {
+        var loc = RetruxelServices.Localization;
+        TxtTitle.Text = loc.Translate("assetimporter.title");
+        // Labels already set in XAML
     }
 
     /// <summary>Pre-selects the Sprites radio button before the window is shown.</summary>
@@ -66,11 +73,11 @@ public partial class AssetImporterWindow : Window
 
     private void BtnBrowse_Click(object sender, RoutedEventArgs e)
     {
-        var loc = LocalizationService.Instance;
+        var loc = RetruxelServices.Localization;
         var dialog = new OpenFileDialog
         {
-            Title = loc.Get("assetimporter.dialog.select_png"),
-            Filter = loc.Get("assetimporter.dialog.png_filter")
+            Title = loc.Translate("assetimporter.dialog.select_png"),
+            Filter = loc.Translate("assetimporter.dialog.png_filter")
         };
 
         if (dialog.ShowDialog() != true) return;
@@ -95,8 +102,8 @@ public partial class AssetImporterWindow : Window
 
         if (png is null)
         {
-            var loc = LocalizationService.Instance;
-            ShowValidation(loc.Get("assetimporter.error.only_png"));
+            var loc = RetruxelServices.Localization;
+            ShowValidation(loc.Translate("assetimporter.error.only_png"));
             return;
         }
 
@@ -116,17 +123,17 @@ public partial class AssetImporterWindow : Window
             using var stream = File.OpenRead(pngPath);
             using var bitmap = SKBitmap.Decode(stream);
 
-            var loc = LocalizationService.Instance;
+            var loc = RetruxelServices.Localization;
 
             if (bitmap is null)
             {
-                ShowValidation(loc.Get("assetimporter.error.decode_failed"));
+                ShowValidation(loc.Translate("assetimporter.error.decode_failed"));
                 return;
             }
 
             if (bitmap.Width % 8 != 0 || bitmap.Height % 8 != 0)
             {
-                ShowValidation(string.Format(loc.Get("assetimporter.error.dimensions"), bitmap.Width, bitmap.Height));
+                ShowValidation(string.Format(loc.Translate("assetimporter.error.dimensions"), bitmap.Width, bitmap.Height));
                 return;
             }
 
@@ -137,8 +144,8 @@ public partial class AssetImporterWindow : Window
             DropHint.Visibility = Visibility.Collapsed;
 
             var tileCount = (bitmap.Width / 8) * (bitmap.Height / 8);
-            TxtSourceInfo.Text = string.Format(loc.Get("assetimporter.info.source"), bitmap.Width, bitmap.Height, tileCount);
-            TxtTileCount.Text = string.Format(loc.Get("assetimporter.info.tiles"), tileCount);
+            TxtSourceInfo.Text = string.Format(loc.Translate("assetimporter.info.source"), bitmap.Width, bitmap.Height, tileCount);
+            TxtTileCount.Text = string.Format(loc.Translate("assetimporter.info.tiles"), tileCount);
 
             // Auto-fill asset name from filename
             if (string.IsNullOrEmpty(TxtAssetName.Text))
@@ -152,8 +159,8 @@ public partial class AssetImporterWindow : Window
         }
         catch (Exception ex)
         {
-            var loc = LocalizationService.Instance;
-            ShowValidation(string.Format(loc.Get("assetimporter.error.loading"), ex.Message));
+            var loc = RetruxelServices.Localization;
+            ShowValidation(string.Format(loc.Translate("assetimporter.error.loading"), ex.Message));
         }
     }
 
@@ -169,14 +176,14 @@ public partial class AssetImporterWindow : Window
             ReducedHint.Visibility = Visibility.Collapsed;
 
             // Count unique colors in reduced image
-            var loc = LocalizationService.Instance;
+            var loc = RetruxelServices.Localization;
             var uniqueColors = CountUniqueColors(_reducedPreview);
-            TxtReducedInfo.Text = string.Format(loc.Get("assetimporter.info.colors"), uniqueColors, _target.DisplayName);
+            TxtReducedInfo.Text = string.Format(loc.Translate("assetimporter.info.colors"), uniqueColors, _target.DisplayName);
         }
         catch (Exception ex)
         {
-            var loc = LocalizationService.Instance;
-            TxtReducedInfo.Text = string.Format(loc.Get("assetimporter.error.preview"), ex.Message);
+            var loc = RetruxelServices.Localization;
+            TxtReducedInfo.Text = string.Format(loc.Translate("assetimporter.error.preview"), ex.Message);
         }
     }
 
@@ -190,24 +197,24 @@ public partial class AssetImporterWindow : Window
 
     private bool ValidateAssetName()
     {
-        var loc = LocalizationService.Instance;
+        var loc = RetruxelServices.Localization;
         var name = TxtAssetName.Text.Trim();
 
         if (string.IsNullOrEmpty(name))
         {
-            ShowValidation(loc.Get("assetimporter.error.name_empty"));
+            ShowValidation(loc.Translate("assetimporter.error.name_empty"));
             return false;
         }
 
         if (name.IndexOfAny(Path.GetInvalidFileNameChars()) >= 0)
         {
-            ShowValidation(loc.Get("assetimporter.error.name_invalid"));
+            ShowValidation(loc.Translate("assetimporter.error.name_invalid"));
             return false;
         }
 
         if (name.Contains(' '))
         {
-            ShowValidation(loc.Get("assetimporter.error.name_spaces"));
+            ShowValidation(loc.Translate("assetimporter.error.name_spaces"));
             return false;
         }
 
@@ -252,8 +259,8 @@ public partial class AssetImporterWindow : Window
         }
         catch (Exception ex)
         {
-            var loc = LocalizationService.Instance;
-            ShowValidation(string.Format(loc.Get("assetimporter.error.unexpected"), ex.Message));
+            var loc = RetruxelServices.Localization;
+            ShowValidation(string.Format(loc.Translate("assetimporter.error.unexpected"), ex.Message));
         }
         finally
         {

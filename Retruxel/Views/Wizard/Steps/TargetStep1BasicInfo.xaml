@@ -4,31 +4,30 @@
     <StackPanel>
         <TextBlock Text="BASIC INFORMATION" 
                    Style="{StaticResource TextTitle}"
-                   Margin="0,0,0,16"/>
+                   Margin="0,0,0,4"/>
         <TextBlock Text="Provide the basic information about your target console." 
                    Style="{StaticResource TextBody}"
+                   Foreground="{StaticResource BrushOnSurfaceVariant}"
                    TextWrapping="Wrap" 
-                   Margin="0,0,0,8"/>
+                   Margin="0,0,0,24"/>
 
-        <!-- Console Database Auto-Complete -->
+        <!-- Console Database Quick Fill — tonal shift, sem borda -->
         <Border Background="{StaticResource BrushSurfaceContainerLow}" 
                 Padding="16" 
                 Margin="0,0,0,24">
             <StackPanel>
-                <TextBlock Text="💡 Quick Fill"
-                           Style="{StaticResource TextBody}"
-                           FontWeight="SemiBold" 
+                <TextBlock Text="QUICK FILL"
+                           Style="{StaticResource TextLabelCaps}"
                            Foreground="{StaticResource BrushPrimary}" 
-                           Margin="0,0,0,8"/>
+                           Margin="0,0,0,4"/>
                 <TextBlock Text="Select a console from the database to auto-fill specs" 
-                           Style="{StaticResource TextBody}"
-                           FontSize="10" 
+                           Style="{StaticResource TextLabel}"
                            Foreground="{StaticResource BrushOnSurfaceVariant}" 
                            Margin="0,0,0,8"/>
                 <ComboBox x:Name="ConsoleComboBox" 
                           IsEditable="True"
                           IsTextSearchEnabled="True"
-                          Height="40"/>
+                          Height="36"/>
             </StackPanel>
         </Border>
 
@@ -48,45 +47,47 @@
             </Grid.RowDefinitions>
 
             <!-- Target ID -->
-            <TextBlock Style="{StaticResource TextLabel}"
+            <TextBlock Style="{StaticResource TextLabelCaps}"
                    Grid.Row="0" 
                    Grid.Column="0" 
-                   Text="Target ID *" 
+                   Text="TARGET ID *"
+                   Foreground="{StaticResource BrushOnSurfaceVariant}" 
                    Margin="0,0,0,4"/>
-            <TextBox Grid.Row="1" Grid.Column="0" x:Name="TargetIdTextBox" Margin="0,0,0,8"/>
+            <TextBox Grid.Row="1" Grid.Column="0" x:Name="TargetIdTextBox" Margin="0,0,0,12"/>
 
             <!-- Display Name -->
-            <TextBlock Style="{StaticResource TextLabel}" Grid.Row="0" Grid.Column="2" Text="Display Name *" Margin="0,0,0,4"/>
-            <TextBox Grid.Row="1" Grid.Column="2" x:Name="DisplayNameTextBox" Margin="0,0,0,8"/>
+            <TextBlock Style="{StaticResource TextLabelCaps}" Grid.Row="0" Grid.Column="2" Text="DISPLAY NAME *" Foreground="{StaticResource BrushOnSurfaceVariant}" Margin="0,0,0,4"/>
+            <TextBox Grid.Row="1" Grid.Column="2" x:Name="DisplayNameTextBox" Margin="0,0,0,12"/>
 
             <!-- Manufacturer -->
-            <TextBlock Style="{StaticResource TextLabel}" Grid.Row="2" Grid.Column="0" Text="Manufacturer *" Margin="0,0,0,4"/>
-            <TextBox Grid.Row="3" Grid.Column="0" x:Name="ManufacturerTextBox" Margin="0,0,0,8"/>
+            <TextBlock Style="{StaticResource TextLabelCaps}" Grid.Row="2" Grid.Column="0" Text="MANUFACTURER *" Foreground="{StaticResource BrushOnSurfaceVariant}" Margin="0,0,0,4"/>
+            <TextBox Grid.Row="3" Grid.Column="0" x:Name="ManufacturerTextBox" Margin="0,0,0,12"/>
 
             <!-- Release Year -->
-            <TextBlock Style="{StaticResource TextLabel}" Grid.Row="2" Grid.Column="2" Text="Release Year" Margin="0,0,0,4"/>
-            <TextBox Grid.Row="3" Grid.Column="2" x:Name="ReleaseYearTextBox" Text="1980" Margin="0,0,0,8"/>
+            <TextBlock Style="{StaticResource TextLabelCaps}" Grid.Row="2" Grid.Column="2" Text="RELEASE YEAR" Foreground="{StaticResource BrushOnSurfaceVariant}" Margin="0,0,0,4"/>
+            <TextBox Grid.Row="3" Grid.Column="2" x:Name="ReleaseYearTextBox" Text="1980" Margin="0,0,0,12"/>
 
             <!-- Status -->
-            <TextBlock Style="{StaticResource TextLabel}" Grid.Row="4" Grid.Column="0" Text="Status" Margin="0,0,0,4"/>
-            <ComboBox Grid.Row="5" Grid.Column="0" x:Name="StatusComboBox" Margin="0,0,0,8">
-                <ComboBoxItem Content="Active" IsSelected="False"/>
+            <TextBlock Style="{StaticResource TextLabelCaps}" Grid.Row="4" Grid.Column="0" Text="STATUS" Foreground="{StaticResource BrushOnSurfaceVariant}" Margin="0,0,0,4"/>
+            <ComboBox Grid.Row="5" Grid.Column="0" x:Name="StatusComboBox" Margin="0,0,0,12">
+                <ComboBoxItem Content="Active"/>
                 <ComboBoxItem Content="Scaffolding" IsSelected="True"/>
-                <ComboBoxItem Content="Planned" IsSelected="False"/>
+                <ComboBoxItem Content="Planned"/>
             </ComboBox>
         </Grid>
 
         <!-- Description -->
-        <TextBlock Style="{StaticResource TextLabel}" Text="Description"/>
+        <TextBlock Style="{StaticResource TextLabelCaps}" Text="DESCRIPTION" Foreground="{StaticResource BrushOnSurfaceVariant}" Margin="0,0,0,4"/>
         <TextBox x:Name="DescriptionTextBox" 
                  TextWrapping="Wrap" 
                  AcceptsReturn="True" 
                  Height="80" 
-                 VerticalScrollBarVisibility="Auto"/>
+                 VerticalScrollBarVisibility="Auto"
+                 Margin="0,0,0,12"/>
 
         <TextBlock Text="* Required fields" 
-                   FontSize="10" 
-                   Foreground="#888888" 
-                   Margin="0,16,0,0"/>
+                   Style="{StaticResource TextLabel}"
+                   Foreground="{StaticResource BrushOnSurfaceVariant}" 
+                   Margin="0,4,0,0"/>
     </StackPanel>
 </UserControl>

@@ -1,3 +1,7 @@
+
+
+using Retruxel.Core.Interfaces;
+
 namespace Retruxel.Tool.IntelligenceEngine;
 
 /// <summary>
@@ -8,14 +12,14 @@ public class IntelligenceEngineTool : ITool
     public string ToolId => "retruxel.tool.intelligenceengine";
     public string DisplayName => "Intelligence Engine";
     public string Description => "AI-powered analyzer for code suggestions and optimization recommendations";
-    public string IconPath => "pack://application:,,,/Retruxel.Tool.IntelligenceEngine;component/icon.png";
+    public object? Icon => null;
     public string Category => "AI";
-    public string MenuPath => "Tools/AI/Intelligence Engine";
     public string? Shortcut => null;
-    public bool RequiresProject => true;
+    public bool IsStandalone => false;
     public string? TargetId => null;
+    public bool RequiresProject => true;
 
-    public bool Execute(IToolContext context)
+    public Dictionary<string, object> Execute(Dictionary<string, object> input)
     {
         // TODO: Implement intelligence engine
         throw new NotImplementedException("Intelligence Engine is not yet implemented.");

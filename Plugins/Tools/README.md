@@ -17,7 +17,7 @@ Retruxel/
     ├── Retruxel.Tool.PixelArtEditor/       🔲 Stub
     ├── Retruxel.Tool.AudioEditor/          🔲 Stub
     ├── Retruxel.Tool.ConstraintAnalyzer/   🔲 Stub
-    ├── Retruxel.Tool.TilemapReducer/       🔲 Stub
+    ├── Retruxel.Tool.TilePacker/       🔲 Stub
     ├── Retruxel.Tool.CompressionEngine/    🔲 Stub
     ├── Retruxel.Tool.BankManager/          🔲 Stub
     ├── Retruxel.Tool.HardwareSimulator/    🔲 Stub

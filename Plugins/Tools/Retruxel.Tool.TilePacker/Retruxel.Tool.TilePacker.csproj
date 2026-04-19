@@ -5,6 +5,9 @@
     <ImplicitUsings>enable</ImplicitUsings>
   </PropertyGroup>
   <ItemGroup>
+    <PackageReference Include="SkiaSharp" Version="3.116.1" />
+  </ItemGroup>
+  <ItemGroup>
     <ProjectReference Include="..\..\..\Retruxel.SDK\Retruxel.SDK.csproj" />
   </ItemGroup>
 </Project>

@@ -7,7 +7,9 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Retruxel.Core\Retruxel.Core.csproj" />
+    <ProjectReference Include="..\Retruxel.Core\Retruxel.Core.csproj">
+      <PrivateAssets>none</PrivateAssets>
+    </ProjectReference>
   </ItemGroup>
 
 </Project>

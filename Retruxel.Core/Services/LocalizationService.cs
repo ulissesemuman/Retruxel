@@ -1,3 +1,4 @@
+using Retruxel.Core.Interfaces;
 using System.ComponentModel;
 using System.Globalization;
 using System.Text.Json;
@@ -8,7 +9,7 @@ namespace Retruxel.Core.Services;
 /// Singleton service for managing UI localization.
 /// Loads translation files and provides string lookup with automatic UI refresh on language change.
 /// </summary>
-public class LocalizationService : INotifyPropertyChanged
+public class LocalizationService : INotifyPropertyChanged, ILocalizationService
 {
     private static LocalizationService? _instance;
     private Dictionary<string, string> _strings = new();
@@ -22,6 +23,13 @@ public class LocalizationService : INotifyPropertyChanged
 
     public event PropertyChangedEventHandler? PropertyChanged;
     public static event Action? LanguageChanged;
+
+    // ILocalizationService implementation
+    event Action? ILocalizationService.LanguageChanged
+    {
+        add => LanguageChanged += value;
+        remove => LanguageChanged -= value;
+    }
 
     private LocalizationService() { }
 
@@ -171,6 +179,11 @@ public class LocalizationService : INotifyPropertyChanged
     {
         return _strings.TryGetValue(key, out var value) ? value : $"[{key}]";
     }
+
+    /// <summary>
+    /// ILocalizationService.Translate implementation (alias for Get)
+    /// </summary>
+    public string Translate(string key) => Get(key);
 
     /// <summary>
     /// Indexer for XAML binding support.

@@ -1,0 +1,60 @@
+{
+  "moduleId": "main",
+  "targetId": "sms",
+  "displayName": "SMS Main File Generator",
+  "description": "Generates main.c entry point for Sega Master System",
+  "version": "1.0.0",
+  "template": "main.c.rtrx",
+  "isSystemModule": true,
+  "variables": {
+    "projectName": {
+      "from": "project",
+      "path": "name",
+      "default": "Untitled"
+    },
+    "targetId": {
+      "from": "project",
+      "path": "targetId",
+      "default": "sms"
+    },
+    "timestamp": {
+      "from": "system",
+      "value": "{{DateTime.Now:yyyy-MM-dd HH:mm:ss}}"
+    },
+    "headers": {
+      "from": "moduleFiles",
+      "filter": "fileType == 'Header'",
+      "transform": "#include \"{{fileName}}\""
+    },
+    "modulesWithInit": {
+      "from": "constant",
+      "value": ["entity", "enemy", "scroll", "palette", "tilemap", "sprite", "input", "physics", "animation"]
+    },
+    "modulesWithUpdate": {
+      "from": "constant",
+      "value": ["entity", "enemy", "scroll", "input", "physics", "animation"]
+    },
+    "initCalls": {
+      "from": "moduleFiles",
+      "filter": "fileType == 'Source' && modulesWithInit.Contains(sourceModuleId)",
+      "groupBy": "sourceModuleId",
+      "transform": "    {{sourceModuleId.Replace('.', '_')}}_init();"
+    },
+    "updateCalls": {
+      "from": "moduleFiles",
+      "filter": "fileType == 'Source' && modulesWithUpdate.Contains(sourceModuleId)",
+      "groupBy": "sourceModuleId",
+      "transform": "        {{sourceModuleId.Replace('.', '_')}}_update();"
+    },
+    "textDisplayCalls": {
+      "from": "moduleFiles",
+      "filter": "sourceModuleId == 'text.display' && fileType == 'Source'",
+      "transform": "    {{Path.GetFileNameWithoutExtension(fileName)}}_init();"
+    },
+    "splashEnabled": {
+      "from": "settings",
+      "path": "General.ShowMadeWithSplash",
+      "default": true
+    }
+  }
+}

@@ -74,7 +74,12 @@ public class TargetPackageManager
     /// </summary>
     public async Task<bool> IsInstalledAsync(string targetId)
     {
-        var dllPath = Path.Combine(_targetsPath, $"Retruxel.Target.{CapitalizeTargetId(targetId)}.dll");
+        // Use convention: Retruxel.Target.{PascalCase}.dll
+        // Convert targetId to PascalCase (e.g., "sms" -> "Sms", "sg1000" -> "Sg1000")
+        var pascalCase = string.Concat(targetId.Split('-', '_').Select(s => 
+            char.ToUpper(s[0]) + s.Substring(1).ToLower()));
+        
+        var dllPath = Path.Combine(_targetsPath, $"Retruxel.Target.{pascalCase}.dll");
         return await Task.FromResult(File.Exists(dllPath));
     }
 
@@ -129,15 +134,19 @@ public class TargetPackageManager
     {
         await Task.Run(() =>
         {
-            // Remove DLL
-            var dllPath = Path.Combine(_targetsPath, $"Retruxel.Target.{CapitalizeTargetId(targetId)}.dll");
+            // Remove DLL using PascalCase convention
+            var pascalCase = string.Concat(targetId.Split('-', '_').Select(s => 
+                char.ToUpper(s[0]) + s.Substring(1).ToLower()));
+            
+            var dllPath = Path.Combine(_targetsPath, $"Retruxel.Target.{pascalCase}.dll");
             if (File.Exists(dllPath))
                 File.Delete(dllPath);
 
-            // Remove toolchain
-            var toolchainDir = Path.Combine(_toolchainPath, "compilers", GetToolchainName(targetId));
-            if (Directory.Exists(toolchainDir))
-                Directory.Delete(toolchainDir, recursive: true);
+            // Remove toolchain - scan for any toolchain directories that might be used by this target
+            // This is safe because toolchains are shared (e.g., SDCC used by SMS, GG, SG1000, Coleco)
+            // We only remove if no other targets are using it
+            // For now, we skip toolchain removal to avoid breaking other targets
+            // TODO: Implement reference counting for shared toolchains
 
             // Remove CodeGens
             var codegensDir = Path.Combine(_codegensPath, targetId);
@@ -240,29 +249,6 @@ public class TargetPackageManager
         using var stream = File.OpenRead(filePath);
         var hash = await Task.Run(() => sha256.ComputeHash(stream));
         return BitConverter.ToString(hash).Replace("-", "").ToLowerInvariant();
-    }
-
-    private static string CapitalizeTargetId(string targetId)
-    {
-        return targetId switch
-        {
-            "sms" => "SMS",
-            "nes" => "NES",
-            "gg" => "GG",
-            "sg1000" => "SG1000",
-            "coleco" => "ColecoVision",
-            _ => targetId.ToUpper()
-        };
-    }
-
-    private static string GetToolchainName(string targetId)
-    {
-        return targetId switch
-        {
-            "sms" or "gg" or "sg1000" or "coleco" => "sdcc",
-            "nes" => "cc65",
-            _ => targetId
-        };
     }
 
     // ── Internal models ───────────────────────────────────────────────────────

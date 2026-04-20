@@ -70,6 +70,77 @@ public class ModuleRenderer
         => _codeGens.ContainsKey(Key(targetId, moduleId));
 
     /// <summary>
+    /// Renders the main.c file using the declarative CodeGen for the target.
+    /// Returns a single GeneratedFile (main.c).
+    /// </summary>
+    public GeneratedFile? RenderMainFile(
+        string targetId,
+        RetruxelProject project,
+        IEnumerable<GeneratedFile> moduleFiles)
+    {
+        var key = Key(targetId, "main");
+        if (!_codeGens.TryGetValue(key, out var manifest))
+            return null;
+
+        if (!manifest.IsSystemModule)
+            return null;
+
+        // Build variable dictionary from project and moduleFiles
+        var variables = new Dictionary<string, object>
+        {
+            ["projectName"] = project.Name,
+            ["targetId"] = project.TargetId,
+            ["timestamp"] = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"),
+            ["moduleFiles"] = moduleFiles.ToList()
+        };
+
+        // Resolve variables from manifest
+        foreach (var (varName, varDef) in manifest.Variables)
+        {
+            switch (varDef.From)
+            {
+                case "project":
+                    if (varDef.Path == "name")
+                        variables[varName] = project.Name;
+                    else if (varDef.Path == "targetId")
+                        variables[varName] = project.TargetId;
+                    break;
+
+                case "system":
+                    if (varName == "timestamp")
+                        variables[varName] = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
+                    break;
+
+                case "settings":
+                    // TODO: Load from SettingsService if needed
+                    variables[varName] = varDef.Default ?? false;
+                    break;
+
+                case "constant":
+                    variables[varName] = varDef.Default ?? new string[0];
+                    break;
+
+                case "moduleFiles":
+                    // These are processed by the template engine
+                    // Just pass the moduleFiles list
+                    break;
+            }
+        }
+
+        // Load and render template
+        var template = File.ReadAllText(manifest.TemplatePath);
+        var content = TemplateEngine.Render(template, variables);
+
+        return new GeneratedFile
+        {
+            FileName = "main.c",
+            Content = content,
+            FileType = GeneratedFileType.Source,
+            SourceModuleId = "retruxel.core"
+        };
+    }
+
+    /// <summary>
     /// Renders the CodeGen for the given module instance.
     /// Returns header + source GeneratedFiles, same as ICodeGenPlugin.Generate().
     /// </summary>
@@ -351,6 +422,7 @@ public class ModuleRenderer
             TargetId = raw.TargetId,
             Version = raw.Version ?? "1.0.0",
             TemplatePath = templatePath,
+            IsSystemModule = raw.IsSystemModule,
             Variables = ParseVariables(raw.Variables)
         };
     }
@@ -413,6 +485,7 @@ public class ModuleRenderer
         public string TargetId { get; init; } = "";
         public string Version { get; init; } = "1.0.0";
         public string TemplatePath { get; init; } = "";
+        public bool IsSystemModule { get; init; } = false;
         public Dictionary<string, VariableDefinition> Variables { get; init; } = new();
     }
 
@@ -434,6 +507,7 @@ public class ModuleRenderer
         public string? TargetId { get; set; }
         public string? Version { get; set; }
         public string? Template { get; set; }
+        public bool IsSystemModule { get; set; } = false;
         public Dictionary<string, JsonElement>? Variables { get; set; }
     }
 }

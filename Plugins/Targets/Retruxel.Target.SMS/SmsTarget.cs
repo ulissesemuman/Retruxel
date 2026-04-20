@@ -94,6 +94,12 @@ public class SmsTarget : ITarget
         return new Retruxel.Toolchain.ToolchainAdapter(builder);
     }
 
+    public IEnumerable<string> GetRequiredToolchainBinaries() =>
+    [
+        Path.Combine("compilers", "sdcc", "bin", "sdcc.exe"),
+        Path.Combine("utils", "sega", "bin", "ihx2sms.exe")
+    ];
+
     public IEnumerable<IModule> GetBuiltinModules()
     {
         return

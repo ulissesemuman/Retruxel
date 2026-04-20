@@ -41,6 +41,14 @@ public interface ITarget
     IToolchain GetToolchain();
 
     /// <summary>
+    /// Returns the list of required toolchain binary paths for verification.
+    /// Used by StartupService to check if toolchain is extracted.
+    /// Paths are relative to %AppData%/Retruxel/toolchain/
+    /// Example: ["compilers/sdcc/bin/sdcc.exe", "utils/sega/bin/ihx2sms.exe"]
+    /// </summary>
+    IEnumerable<string> GetRequiredToolchainBinaries();
+
+    /// <summary>
     /// Returns all built-in modules bundled with this target.
     /// These are loaded automatically when a project is created for this target.
     /// </summary>

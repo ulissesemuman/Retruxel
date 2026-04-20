@@ -32,7 +32,7 @@ public partial class App : Application
 
         // 3. Target Registry — shell owns this, Core never references it directly
         TargetRegistry.Initialize();
-        var targetIds = TargetRegistry.GetAllTargets().Select(t => t.TargetId);
+        var targets = TargetRegistry.GetAllTargets();
 
         // 4. Splash + real startup tasks
         var splash = new SplashScreen();
@@ -41,7 +41,7 @@ public partial class App : Application
         splash.Show();
 
         await splash.RunAsync(
-            progress => StartupService.InitializeAsync(progress, targetIds),
+            progress => StartupService.InitializeAsync(progress, targets),
             () =>
             {
                 mainWindow.Show();

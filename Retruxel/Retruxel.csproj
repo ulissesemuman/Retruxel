@@ -30,9 +30,34 @@
   <ItemGroup>
     <ProjectReference Include="..\Retruxel.Core\Retruxel.Core.csproj" />
     <ProjectReference Include="..\Retruxel.Modules\Retruxel.Modules.csproj" />
-    <ProjectReference Include="..\Plugins\Tools\Retruxel.Tool.AssetImporter\Retruxel.Tool.AssetImporter.csproj" />
-    <ProjectReference Include="..\Plugins\Tools\Retruxel.Tool.TilemapPreprocessor\Retruxel.Tool.TilemapPreprocessor.csproj" />
-    <ProjectReference Include="..\Plugins\Tools\Retruxel.Tool.TilePacker\Retruxel.Tool.TilePacker.csproj" />
+    
+    <!-- Tool references - only for build order, not copied to output -->
+    <ProjectReference Include="..\Plugins\Tools\Retruxel.Tool.AssetImporter\Retruxel.Tool.AssetImporter.csproj">
+      <Private>false</Private>
+    </ProjectReference>
+    <ProjectReference Include="..\Plugins\Tools\Retruxel.Tool.TilemapPreprocessor\Retruxel.Tool.TilemapPreprocessor.csproj">
+      <Private>false</Private>
+    </ProjectReference>
+    <ProjectReference Include="..\Plugins\Tools\Retruxel.Tool.TilePacker\Retruxel.Tool.TilePacker.csproj">
+      <Private>false</Private>
+    </ProjectReference>
+    
+    <!-- Target references - only for build order, not copied to output -->
+    <ProjectReference Include="..\Plugins\Targets\Retruxel.Target.SMS\Retruxel.Target.SMS.csproj">
+      <Private>false</Private>
+    </ProjectReference>
+    <ProjectReference Include="..\Plugins\Targets\Retruxel.Target.NES\Retruxel.Target.NES.csproj">
+      <Private>false</Private>
+    </ProjectReference>
+    <ProjectReference Include="..\Plugins\Targets\Retruxel.Target.GG\Retruxel.Target.GG.csproj">
+      <Private>false</Private>
+    </ProjectReference>
+    <ProjectReference Include="..\Plugins\Targets\Retruxel.Target.SG1000\Retruxel.Target.SG1000.csproj">
+      <Private>false</Private>
+    </ProjectReference>
+    <ProjectReference Include="..\Plugins\Targets\Retruxel.Target.ColecoVision\Retruxel.Target.ColecoVision.csproj">
+      <Private>false</Private>
+    </ProjectReference>
   </ItemGroup>
 
   <ItemGroup>
@@ -73,8 +98,10 @@
   <!-- Copy tool DLLs to Plugins/Tools folder after build -->
   <Target Name="CopyToolsToPluginsFolder" AfterTargets="Build">
     <MakeDir Directories="$(OutputPath)Plugins\Tools" />
-    <Copy SourceFiles="$(OutputPath)Retruxel.Tool.TilemapPreprocessor.dll" DestinationFolder="$(OutputPath)Plugins\Tools" />
-    <Copy SourceFiles="$(OutputPath)Retruxel.Tool.TilePacker.dll" DestinationFolder="$(OutputPath)Plugins\Tools" />
+    <ItemGroup>
+      <ToolDlls Include="..\Plugins\Tools\**\bin\$(Configuration)\net10.0\Retruxel.Tool.*.dll" />
+    </ItemGroup>
+    <Copy SourceFiles="@(ToolDlls)" DestinationFolder="$(OutputPath)Plugins\Tools" SkipUnchangedFiles="true" Condition="Exists('%(ToolDlls.FullPath)')" />
   </Target>
 
   <!-- Copy CodeGens folder to Plugins/CodeGens after build -->
@@ -88,11 +115,10 @@
   <!-- Copy Target DLLs to Plugins/Targets folder after build -->
   <Target Name="CopyTargetsToPluginsFolder" AfterTargets="Build">
     <MakeDir Directories="$(OutputPath)Plugins\Targets" />
-    <Copy SourceFiles="$(OutputPath)Retruxel.Target.SMS.dll" DestinationFolder="$(OutputPath)Plugins\Targets" />
-    <Copy SourceFiles="$(OutputPath)Retruxel.Target.NES.dll" DestinationFolder="$(OutputPath)Plugins\Targets" />
-    <Copy SourceFiles="$(OutputPath)Retruxel.Target.GG.dll" DestinationFolder="$(OutputPath)Plugins\Targets" />
-    <Copy SourceFiles="$(OutputPath)Retruxel.Target.SG1000.dll" DestinationFolder="$(OutputPath)Plugins\Targets" />
-    <Copy SourceFiles="$(OutputPath)Retruxel.Target.ColecoVision.dll" DestinationFolder="$(OutputPath)Plugins\Targets" />
+    <ItemGroup>
+      <TargetDlls Include="..\Plugins\Targets\**\bin\$(Configuration)\net10.0\Retruxel.Target.*.dll" />
+    </ItemGroup>
+    <Copy SourceFiles="@(TargetDlls)" DestinationFolder="$(OutputPath)Plugins\Targets" SkipUnchangedFiles="true" Condition="Exists('%(TargetDlls.FullPath)')" />
   </Target>
 
 </Project>

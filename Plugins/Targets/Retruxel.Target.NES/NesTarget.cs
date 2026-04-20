@@ -114,6 +114,13 @@ public class NesTarget : ITarget
         return new Retruxel.Toolchain.ToolchainAdapter(builder);
     }
 
+    public IEnumerable<string> GetRequiredToolchainBinaries() =>
+    [
+        Path.Combine("compilers", "cc65", "bin", "cc65.exe"),
+        Path.Combine("compilers", "cc65", "bin", "ca65.exe"),
+        Path.Combine("compilers", "cc65", "bin", "ld65.exe")
+    ];
+
     public IEnumerable<IModule> GetBuiltinModules()
     {
         return

@@ -24,9 +24,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <None Include="Assets\splash.png">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
+    <EmbeddedResource Include="Assets\splash.png" />
   </ItemGroup>
 
 </Project>

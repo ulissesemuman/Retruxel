@@ -71,21 +71,37 @@ public class SmsSplashCodeGen
 
     public GeneratedFile GenerateCode()
     {
-        // Convert splash image using generic PngToTiles tool
-        // (automatically delegates to SmsPngToTilesExtension via IToolExtension)
-        var splashPath = Path.Combine(
-            Path.GetDirectoryName(typeof(SmsSplashCodeGen).Assembly.Location)!,
-            "Assets", "splash.png");
-
-        var tool = new PngToTilesTool();
-        var result = tool.Execute(new Dictionary<string, object>
+        // Extract embedded splash.png from assembly resources
+        var assembly = typeof(SmsSplashCodeGen).Assembly;
+        var resourceName = "Retruxel.Target.SMS.Assets.splash.png";
+        
+        string splashPath;
+        using (var stream = assembly.GetManifestResourceStream(resourceName))
         {
-            ["imagePath"] = splashPath,
-            ["tileWidth"] = 8,
-            ["tileHeight"] = 8
-        });
+            if (stream == null)
+                throw new InvalidOperationException($"Embedded resource '{resourceName}' not found in assembly.");
+            
+            // Extract to temp file for PngToTiles tool
+            splashPath = Path.Combine(Path.GetTempPath(), "retruxel_splash.png");
+            using (var fileStream = File.Create(splashPath))
+            {
+                stream.CopyTo(fileStream);
+            }
+        }
 
-        var tilesArray = (byte[])result["tilesArray"];
+        try
+        {
+            // Convert splash image using generic PngToTiles tool
+            // (automatically delegates to SmsPngToTilesExtension via IToolExtension)
+            var tool = new PngToTilesTool();
+            var result = tool.Execute(new Dictionary<string, object>
+            {
+                ["imagePath"] = splashPath,
+                ["tileWidth"] = 8,
+                ["tileHeight"] = 8
+            });
+
+            var tilesArray = (byte[])result["tilesArray"];
         
         // Try to get SMS-converted palette first, fallback to generic RGB palette
         byte[] palette;
@@ -278,6 +294,13 @@ public class SmsSplashCodeGen
             SourceModuleId = "retruxel.splash",
             Content        = sb.ToString()
         };
+        }
+        finally
+        {
+            // Clean up temp file
+            if (File.Exists(splashPath))
+                File.Delete(splashPath);
+        }
     }
 
     /// <summary>

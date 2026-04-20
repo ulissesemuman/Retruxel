@@ -1,0 +1,44 @@
+{
+  "moduleId": "main",
+  "targetId": "nes",
+  "displayName": "NES Main File Generator",
+  "description": "Generates main.c entry point for Nintendo Entertainment System",
+  "version": "1.0.0",
+  "template": "main.c.rtrx",
+  "isSystemModule": true,
+  "variables": {
+    "projectName": {
+      "from": "project",
+      "path": "name",
+      "default": "Untitled"
+    },
+    "targetId": {
+      "from": "project",
+      "path": "targetId",
+      "default": "nes"
+    },
+    "timestamp": {
+      "from": "system",
+      "value": "{{DateTime.Now:yyyy-MM-dd HH:mm:ss}}"
+    },
+    "headers": {
+      "from": "moduleFiles",
+      "filter": "fileType == 'Header'",
+      "transform": "#include \"{{fileName}}\""
+    },
+    "textDisplayCalls": {
+      "from": "moduleFiles",
+      "filter": "sourceModuleId == 'text.display' && fileType == 'Source'",
+      "transform": "    {{Path.GetFileNameWithoutExtension(fileName)}}_init();"
+    },
+    "updateModules": {
+      "from": "constant",
+      "value": ["entity", "enemy", "scroll"]
+    },
+    "updateCalls": {
+      "from": "moduleFiles",
+      "filter": "fileType == 'Source' && updateModules.Contains(sourceModuleId)",
+      "transform": "        {{Path.GetFileNameWithoutExtension(fileName)}}_update();"
+    }
+  }
+}

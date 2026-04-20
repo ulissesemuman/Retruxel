@@ -1,0 +1,35 @@
+{
+  "moduleId": "main",
+  "targetId": "sg1000",
+  "displayName": "SG-1000 Main File Generator",
+  "description": "Generates main.c entry point for Sega SG-1000",
+  "version": "1.0.0",
+  "template": "main.c.rtrx",
+  "isSystemModule": true,
+  "variables": {
+    "projectName": {
+      "from": "project",
+      "path": "name",
+      "default": "Untitled"
+    },
+    "targetId": {
+      "from": "project",
+      "path": "targetId",
+      "default": "sg1000"
+    },
+    "timestamp": {
+      "from": "system",
+      "value": "{{DateTime.Now:yyyy-MM-dd HH:mm:ss}}"
+    },
+    "headers": {
+      "from": "moduleFiles",
+      "filter": "fileType == 'Header'",
+      "transform": "#include \"{{fileName}}\""
+    },
+    "initCalls": {
+      "from": "moduleFiles",
+      "filter": "fileType == 'Source'",
+      "transform": "    {{Path.GetFileNameWithoutExtension(fileName)}}_init();"
+    }
+  }
+}

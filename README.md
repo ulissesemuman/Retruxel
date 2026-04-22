@@ -137,7 +137,7 @@ Retruxel uses a custom design system called **Neo-Technical Archive** — a mode
 
 ## 🚀 Getting Started
 
-> ⚠️ Retruxel is currently in alpha development (v0.7.2-alpha).
+> ⚠️ Retruxel is currently in alpha development (v0.8.0-alpha).
 
 ### Option 1: Download Installer (Recommended)
 

@@ -139,50 +139,32 @@ public partial class BuildConsoleView : UserControl
         var settings = await SettingsService.LoadAsync();
 
         // Get settings for the current target
-        var (launchEnabled, emulatorPath, emulatorArgs) = _project.TargetId.ToLower() switch
-        {
-            "sms" => (settings.Targets.Sms.LaunchEmulatorAfterBuild,
-                      settings.Targets.Sms.EmulatorPath,
-                      settings.Targets.Sms.EmulatorArguments),
-            "nes" => (settings.Targets.Nes.LaunchEmulatorAfterBuild,
-                      settings.Targets.Nes.EmulatorPath,
-                      settings.Targets.Nes.EmulatorArguments),
-            "gg" => (settings.Targets.Gg.LaunchEmulatorAfterBuild,
-                     settings.Targets.Gg.EmulatorPath,
-                     settings.Targets.Gg.EmulatorArguments),
-            "sg1000" => (settings.Targets.Sg1000.LaunchEmulatorAfterBuild,
-                         settings.Targets.Sg1000.EmulatorPath,
-                         settings.Targets.Sg1000.EmulatorArguments),
-            "coleco" => (settings.Targets.Coleco.LaunchEmulatorAfterBuild,
-                         settings.Targets.Coleco.EmulatorPath,
-                         settings.Targets.Coleco.EmulatorArguments),
-            _ => (false, string.Empty, string.Empty)
-        };
+        var targetSettings = SettingsService.GetTargetSettings(settings, _project.TargetId);
 
-        if (!launchEnabled)
+        if (!targetSettings.LaunchEmulatorAfterBuild)
             return;
 
-        if (string.IsNullOrEmpty(emulatorPath))
+        if (string.IsNullOrEmpty(targetSettings.EmulatorPath))
         {
             AppendLog($"WARN: Emulator path not configured for {_project.TargetId.ToUpper()}. Set it in Settings.");
             return;
         }
 
-        if (!File.Exists(emulatorPath))
+        if (!File.Exists(targetSettings.EmulatorPath))
         {
-            AppendLog($"ERROR: Emulator not found at {emulatorPath}", isError: true);
+            AppendLog($"ERROR: Emulator not found at {targetSettings.EmulatorPath}", isError: true);
             return;
         }
 
         try
         {
-            var args = string.IsNullOrEmpty(emulatorArgs)
+            var args = string.IsNullOrEmpty(targetSettings.EmulatorArguments)
                 ? $"\"{romPath}\""
-                : $"{emulatorArgs} \"{romPath}\"";
+                : $"{targetSettings.EmulatorArguments} \"{romPath}\"";
 
             Process.Start(new ProcessStartInfo
             {
-                FileName = emulatorPath,
+                FileName = targetSettings.EmulatorPath,
                 Arguments = args,
                 UseShellExecute = true
             });

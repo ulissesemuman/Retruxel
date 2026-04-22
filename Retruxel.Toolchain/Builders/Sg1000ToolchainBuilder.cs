@@ -26,7 +26,8 @@ public class Sg1000ToolchainBuilder : IToolchainBuilder
         var log = new List<BuildLogEntry>();
 
         var settings = await SettingsService.LoadAsync();
-        var suppressWarnings = !settings.Targets.Sg1000.ShowToolchainWarnings;
+        var targetSettings = SettingsService.GetTargetSettings(settings, TargetId);
+        var suppressWarnings = !targetSettings.ShowToolchainWarnings;
 
         try
         {

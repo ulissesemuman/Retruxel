@@ -51,7 +51,8 @@ public class SmsToolchainBuilder : IToolchainBuilder
         var log = new List<BuildLogEntry>();
 
         var settings = await SettingsService.LoadAsync();
-        var suppressWarnings = !settings.Targets.Sms.ShowToolchainWarnings;
+        var targetSettings = SettingsService.GetTargetSettings(settings, TargetId);
+        var suppressWarnings = !targetSettings.ShowToolchainWarnings;
 
         try
         {

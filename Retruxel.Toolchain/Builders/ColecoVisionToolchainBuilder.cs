@@ -10,7 +10,7 @@ public class ColecoVisionToolchainBuilder : IToolchainBuilder
         Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
         "Retruxel", "toolchain");
 
-    public string TargetId => "colecovision";
+    public string TargetId => "coleco";
     public string DisplayName => "SDCC + devkitSMS + SMSlib (ColecoVision)";
     public string Version => "4.5.24";
 
@@ -26,7 +26,8 @@ public class ColecoVisionToolchainBuilder : IToolchainBuilder
         var log = new List<BuildLogEntry>();
 
         var settings = await SettingsService.LoadAsync();
-        var suppressWarnings = !settings.Targets.Coleco.ShowToolchainWarnings;
+        var targetSettings = SettingsService.GetTargetSettings(settings, TargetId);
+        var suppressWarnings = !targetSettings.ShowToolchainWarnings;
 
         try
         {

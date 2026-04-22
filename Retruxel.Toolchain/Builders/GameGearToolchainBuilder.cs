@@ -13,7 +13,7 @@ public class GameGearToolchainBuilder : IToolchainBuilder
         Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
         "Retruxel", "toolchain");
 
-    public string TargetId => "gamegear";
+    public string TargetId => "gg";
     public string DisplayName => "SDCC + devkitSMS + SMSlib (Game Gear)";
     public string Version => "4.5.24";
 
@@ -30,7 +30,8 @@ public class GameGearToolchainBuilder : IToolchainBuilder
         var log = new List<BuildLogEntry>();
 
         var settings = await SettingsService.LoadAsync();
-        var suppressWarnings = !settings.Targets.Gg.ShowToolchainWarnings;
+        var targetSettings = SettingsService.GetTargetSettings(settings, TargetId);
+        var suppressWarnings = !targetSettings.ShowToolchainWarnings;
 
         try
         {

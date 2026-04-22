@@ -1,5 +1,6 @@
 using System.Windows;
 using System.Windows.Controls;
+using Retruxel.Core.Services;
 using Retruxel.Tool.Wizard.Models;
 
 namespace Retruxel.Tool.Wizard.Views.Steps;
@@ -7,12 +8,13 @@ namespace Retruxel.Tool.Wizard.Views.Steps;
 public partial class CodeGenStep1BasicInfo : UserControl
 {
     private readonly CodeGenWizardData _data;
-    private readonly List<string> _availableTargets = new() { "sms", "nes", "gg", "sg1000", "coleco" };
+    private readonly List<string> _availableTargets;
 
     public CodeGenStep1BasicInfo(CodeGenWizardData data)
     {
         InitializeComponent();
         _data = data;
+        _availableTargets = TargetRegistry.GetAllTargets().Select(t => t.TargetId).OrderBy(id => id).ToList();
         LoadTargets();
         LoadData();
         AttachHandlers();
@@ -20,7 +22,6 @@ public partial class CodeGenStep1BasicInfo : UserControl
 
     private void LoadTargets()
     {
-        // TODO: Load from TargetRegistry when available
         foreach (var target in _availableTargets)
         {
             TargetIdComboBox.Items.Add(target);

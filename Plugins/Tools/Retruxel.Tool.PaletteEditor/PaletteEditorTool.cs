@@ -1,5 +1,6 @@
 using Retruxel.Core.Interfaces;
 using Retruxel.Core.Models;
+using Retruxel.SDK.PaletteEditor;
 
 namespace Retruxel.Tool.PaletteEditor;
 
@@ -32,20 +33,15 @@ public class PaletteEditorTool : IVisualTool
         var project = (RetruxelProject)input["project"];
         var projectPath = (string)input["projectPath"];
 
-        // Optional: source asset for extracting colors
-        AssetEntry? sourceAsset = input.ContainsKey("sourceAsset")
-            ? (AssetEntry)input["sourceAsset"]
-            : null;
+        if (!input.ContainsKey("paletteProvider"))
+        {
+            throw new InvalidOperationException(
+                $"Target '{target.TargetId}' must provide an IToolExtension that returns 'paletteProvider' key. " +
+                "See IPaletteProvider interface in Retruxel.Tool.PaletteEditor.");
+        }
 
-        // Optional: existing palette data
-        var paletteData = input.ContainsKey("paletteData")
-            ? (Dictionary<string, object>)input["paletteData"]
-            : null;
-
-        var window = new PaletteEditorWindow();
-
-        // TODO: Load palette data or extract from asset
-        // For now, window uses default palette
+        var paletteProvider = (IPaletteProvider)input["paletteProvider"];
+        var window = new PaletteEditorWindow(paletteProvider);
 
         return window;
     }

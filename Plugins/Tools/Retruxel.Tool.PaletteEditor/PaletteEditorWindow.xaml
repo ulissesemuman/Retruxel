@@ -67,7 +67,7 @@
             </Grid>
         </Border>
         
-        <!-- CENTER PANEL: SMS Hardware Color Picker -->
+        <!-- CENTER PANEL: Hardware Color Picker -->
         <Border Grid.Column="1" Background="{StaticResource BrushSurface}" Padding="24">
             <Grid>
                 <Grid.RowDefinitions>

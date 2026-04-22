@@ -4,28 +4,43 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
 using Retruxel.Core.Services;
+using Retruxel.SDK.PaletteEditor;
 
 namespace Retruxel.Tool.PaletteEditor;
 
 public partial class PaletteEditorWindow : Window
 {
     private int _selectedSlotIndex = -1;
-    private readonly byte[] _currentPalette = new byte[16];
+    private byte[] _currentPalette;
     private readonly LocalizationService _loc = LocalizationService.Instance;
-    
-    private static readonly byte[] SmsColorLevels = { 0, 85, 170, 255 };
-    private static readonly Color[] SmsHardwareColors = GenerateSmsColors();
+    private readonly IPaletteProvider _paletteProvider;
+    private readonly Color[] _hardwareColors;
 
     public Dictionary<string, object>? ModuleData { get; private set; }
 
-    public PaletteEditorWindow()
+    public PaletteEditorWindow(IPaletteProvider paletteProvider)
     {
+        _paletteProvider = paletteProvider;
+        _currentPalette = new byte[paletteProvider.SlotCount];
+        _hardwareColors = ConvertToWpfColors(paletteProvider.HardwareColors);
+        
         InitializeComponent();
         ApplyLocalization();
         InitializeUI();
         LoadDefaultPalette();
         
         LocalizationService.LanguageChanged += ApplyLocalization;
+    }
+
+    private static Color[] ConvertToWpfColors(object[] colors)
+    {
+        var wpfColors = new Color[colors.Length];
+        for (int i = 0; i < colors.Length; i++)
+        {
+            dynamic color = colors[i];
+            wpfColors[i] = Color.FromRgb((byte)color.R, (byte)color.G, (byte)color.B);
+        }
+        return wpfColors;
     }
 
     private void ApplyLocalization()
@@ -50,7 +65,7 @@ public partial class PaletteEditorWindow : Window
 
     private void InitializeUI()
     {
-        for (int i = 0; i < 16; i++)
+        for (int i = 0; i < _paletteProvider.SlotCount; i++)
         {
             var slotIndex = i;
             var btn = new Button
@@ -65,7 +80,7 @@ public partial class PaletteEditorWindow : Window
             SlotsGrid.Children.Add(btn);
         }
 
-        for (int i = 0; i < 64; i++)
+        for (int i = 0; i < _hardwareColors.Length; i++)
         {
             var colorIndex = i;
             var btn = new Button
@@ -73,7 +88,7 @@ public partial class PaletteEditorWindow : Window
                 Width = 48,
                 Height = 48,
                 Margin = new Thickness(1),
-                Background = new SolidColorBrush(SmsHardwareColors[i]),
+                Background = new SolidColorBrush(_hardwareColors[i]),
                 BorderThickness = new Thickness(0),
                 Tag = colorIndex
             };
@@ -86,15 +101,15 @@ public partial class PaletteEditorWindow : Window
         BtnDelete.Click += (s, e) => DeletePalette();
         
         BtnSetBlack.Click += (s, e) => SetSlotColor(0);
-        BtnSetWhite.Click += (s, e) => SetSlotColor(63);
+        BtnSetWhite.Click += (s, e) => SetSlotColor(_hardwareColors.Length - 1);
         BtnSetTransparent.Click += (s, e) => SetSlotColor(0);
     }
 
     private void LoadDefaultPalette()
     {
-        for (int i = 0; i < 16; i++)
+        for (int i = 0; i < _paletteProvider.SlotCount; i++)
         {
-            _currentPalette[i] = (byte)(i * 4);
+            _currentPalette[i] = (byte)(i * (_hardwareColors.Length / _paletteProvider.SlotCount));
         }
         
         RefreshSlots();
@@ -103,12 +118,12 @@ public partial class PaletteEditorWindow : Window
 
     private void RefreshSlots()
     {
-        for (int i = 0; i < 16; i++)
+        for (int i = 0; i < _paletteProvider.SlotCount; i++)
         {
             if (SlotsGrid.Children[i] is Button btn)
             {
-                var smsColor = SmsHardwareColors[_currentPalette[i]];
-                btn.Background = new SolidColorBrush(smsColor);
+                var color = _hardwareColors[_currentPalette[i]];
+                btn.Background = new SolidColorBrush(color);
             }
         }
     }
@@ -117,7 +132,7 @@ public partial class PaletteEditorWindow : Window
     {
         _selectedSlotIndex = index;
         
-        for (int i = 0; i < 16; i++)
+        for (int i = 0; i < _paletteProvider.SlotCount; i++)
         {
             if (SlotsGrid.Children[i] is Button btn)
             {
@@ -133,22 +148,22 @@ public partial class PaletteEditorWindow : Window
             }
         }
         
-        var smsColorIndex = _currentPalette[index];
-        var color = SmsHardwareColors[smsColorIndex];
+        var colorIndex = _currentPalette[index];
+        var color = _hardwareColors[colorIndex];
         
         TxtSlotIndex.Text = string.Format(_loc.Get("paletteeditor.slot_format"), index.ToString("D2"));
-        TxtSlotHex.Text = string.Format(_loc.Get("paletteeditor.sms_format"), smsColorIndex.ToString("X2"));
+        TxtSlotHex.Text = _paletteProvider.GetColorFormat(colorIndex);
         TxtSlotRgb.Text = string.Format(_loc.Get("paletteeditor.rgb_format"), color.R, color.G, color.B);
         ColorPreview.Background = new SolidColorBrush(color);
         
         UpdateUsageReport(index);
     }
 
-    private void SetSlotColor(int smsColorIndex)
+    private void SetSlotColor(int colorIndex)
     {
         if (_selectedSlotIndex < 0) return;
         
-        _currentPalette[_selectedSlotIndex] = (byte)smsColorIndex;
+        _currentPalette[_selectedSlotIndex] = (byte)colorIndex;
         RefreshSlots();
         SelectSlot(_selectedSlotIndex);
     }
@@ -179,29 +194,6 @@ public partial class PaletteEditorWindow : Window
     private void DeletePalette()
     {
         MessageBox.Show("Delete palette", "Not Implemented", MessageBoxButton.OK, MessageBoxImage.Information);
-    }
-
-    private static Color[] GenerateSmsColors()
-    {
-        var colors = new Color[64];
-        int index = 0;
-        
-        for (int b = 0; b < 4; b++)
-        {
-            for (int g = 0; g < 4; g++)
-            {
-                for (int r = 0; r < 4; r++)
-                {
-                    colors[index++] = Color.FromRgb(
-                        SmsColorLevels[r],
-                        SmsColorLevels[g],
-                        SmsColorLevels[b]
-                    );
-                }
-            }
-        }
-        
-        return colors;
     }
 
     protected override void OnClosed(EventArgs e)

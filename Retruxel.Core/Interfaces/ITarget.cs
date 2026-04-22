@@ -67,6 +67,13 @@ public interface ITarget
     IEnumerable<ParameterDefinition> GetSettingsDefinitions();
 
     /// <summary>
+    /// Returns target-specific overrides for universal modules.
+    /// Allows targets to modify module behavior (singleton, max instances, etc.)
+    /// without hardcoding target knowledge in the core.
+    /// </summary>
+    IEnumerable<ModuleOverride> GetModuleOverrides();
+
+    /// <summary>
     /// Returns generated files for a given module.
     /// Each target translates universal module data into target-specific C code.
     /// Returns empty if the target has no translator for that module.
@@ -85,4 +92,12 @@ public interface ITarget
     /// Called before GenerateMainFile to inject additional files into the build.
     /// </summary>
     IEnumerable<GeneratedFile> GenerateSystemFiles();
+
+    /// <summary>
+    /// Analyzes the build output and returns hardware usage diagnostics.
+    /// Called by the Core after code generation, before compilation.
+    /// The target inspects SourceFiles to count tiles, sprites, map entries, etc.
+    /// Returns null if this target does not support diagnostics.
+    /// </summary>
+    BuildDiagnosticsReport? GetBuildDiagnostics(BuildDiagnosticInput input) => null;
 }

@@ -20,6 +20,12 @@ public class CodeGenerator
         _moduleRegistry = moduleRegistry;
         _moduleRenderer = moduleRenderer;
         _target = target;
+        
+        // Set target assembly for ModuleRenderer to discover IToolExtension implementations
+        _moduleRenderer.SetTargetAssembly(target.GetType().Assembly);
+        
+        // Set module registry for dynamic singleton checking
+        _moduleRenderer.SetModuleRegistry(moduleRegistry);
     }
 
     /// <summary>
@@ -153,13 +159,25 @@ public class CodeGenerator
         if (systemFiles.Any())
             progress?.Report($"INFO: {systemFiles.Count()} system files generated.");
 
-        var mainFile = _target.GenerateMainFile(project, sourceFiles);
+        // Priority 1: Try declarative main.c generation via ModuleRenderer
+        var mainFile = _moduleRenderer.RenderMainFile(project.TargetId, project, sourceFiles, progress);
+        if (mainFile is not null)
+        {
+            progress?.Report("INFO: main.c generated via ModuleRenderer.");
+        }
+        else
+        {
+            // Priority 2: Fallback to target's hardcoded GenerateMainFile()
+            mainFile = _target.GenerateMainFile(project, sourceFiles);
+            progress?.Report("INFO: main.c generated via target fallback.");
+        }
+        
         sourceFiles.Insert(0, mainFile);
 
         progress?.Report($"INFO: {sourceFiles.Count} source files generated.");
         progress?.Report($"INFO: {assets.Count} assets generated.");
 
-        return new BuildContext
+        var buildContext = new BuildContext
         {
             TargetId = project.TargetId,
             SourceFiles = sourceFiles,
@@ -169,6 +187,22 @@ public class CodeGenerator
                 .Where(p => p.Key.StartsWith("target."))
                 .ToDictionary(p => p.Key.Replace("target.", ""), p => p.Value)
         };
+
+        // Generate build diagnostics if target supports it
+        var diagnosticInput = new BuildDiagnosticInput(
+            sourceFiles,
+            assets,
+            buildContext.BuildParameters,
+            _target.Specs);
+
+        var diagnostics = _target.GetBuildDiagnostics(diagnosticInput);
+        if (diagnostics is not null)
+        {
+            buildContext.Diagnostics = diagnostics;
+            progress?.Report($"INFO: Build diagnostics generated — {diagnostics.Metrics.Count} metrics.");
+        }
+
+        return buildContext;
     }
 
     /// <summary>

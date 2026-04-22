@@ -31,7 +31,10 @@ public class ColecoVisionTarget : ITarget
         // Tiles
         TileWidth = 8,
         TileHeight = 8,
-        MaxTilesInVram = 256,
+        VramRegions =
+        [
+            new VramRegion("background", "Background", 0, 255)
+        ],
 
         // Colors & Palettes
         // TMS9918A: fixed 15-color palette (+ transparent)
@@ -157,6 +160,15 @@ public class ColecoVisionTarget : ITarget
             DefaultValue = "NTSC",
             EnumOptions  = new() { { "NTSC", "NTSC" }, { "PAL", "PAL" } }
         }
+    ];
+
+    public IEnumerable<ModuleOverride> GetModuleOverrides() =>
+    [
+        new ModuleOverride { ModuleId = "palette", IsSingleton = true, MaxInstances = 1 },
+        new ModuleOverride { ModuleId = "entity", IsSingleton = true },
+        new ModuleOverride { ModuleId = "input", IsSingleton = true },
+        new ModuleOverride { ModuleId = "physics", IsSingleton = true },
+        new ModuleOverride { ModuleId = "scroll", IsSingleton = true }
     ];
 
     // Code generation

@@ -25,9 +25,10 @@ public class AssetEntry
     public string RelativePath { get; set; } = string.Empty;
 
     /// <summary>
-    /// Asset type — determines which subfolder and which modules can use it.
+    /// VRAM region ID from target.Specs.VramRegions.
+    /// Ex: "background", "sprites", "plane_a", "plane_b"
     /// </summary>
-    public AssetType Type { get; set; }
+    public string VramRegionId { get; set; } = string.Empty;
 
     /// <summary>
     /// Number of 8×8 tiles in this asset.
@@ -52,21 +53,4 @@ public class AssetEntry
     public DateTime ImportedAt { get; set; }
 }
 
-/// <summary>
-/// Type of a project asset.
-/// Determines the target subfolder and which modules can reference it.
-/// </summary>
-public enum AssetType
-{
-    /// <summary>
-    /// Background tile graphics. Stored in assets/tiles/.
-    /// Referenced by TilemapModule via tilesAssetId.
-    /// </summary>
-    Tiles,
 
-    /// <summary>
-    /// Sprite graphics. Stored in assets/sprites/.
-    /// Referenced by SpriteModule via tilesAssetId.
-    /// </summary>
-    Sprites
-}

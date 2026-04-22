@@ -17,26 +17,27 @@ public class SmsPngToTilesExtension : IToolExtension
 {
     public string ToolId => "png_to_tiles";
 
+    public Dictionary<string, object> GetDefaultParameters() => new()
+    {
+        ["bpp"] = 4,
+        ["maxColors"] = 16,
+        ["tileFormat"] = "Planar",
+        ["interleaveMode"] = "Line"
+    };
+
     public Dictionary<string, object> Execute(Dictionary<string, object> input)
     {
-        // SMS-specific parameters (will be merged before generic tool executes)
-        var result = new Dictionary<string, object>
+        // input already contains the output from PngToTilesTool with generic palette
+        if (!input.TryGetValue("palette", out var paletteObj) || paletteObj is not uint[] palette)
+            return new();
+
+        var smsPalette = ConvertToSmsRgb222(palette);
+
+        return new Dictionary<string, object>
         {
-            ["bpp"] = 4,
-            ["maxColors"] = 16,
-            ["tileFormat"] = "Planar",
-            ["interleaveMode"] = "Line"
+            ["paletteHardware"] = smsPalette,
+            ["paletteHex"] = string.Join(", ", smsPalette.Select(b => $"0x{b:X2}"))
         };
-
-        // If generic tool already executed, convert palette to SMS format
-        if (input.TryGetValue("palette", out var paletteObj) && paletteObj is uint[] palette)
-        {
-            var smsPalette = ConvertToSmsRgb222(palette);
-            result["paletteHardware"] = smsPalette;
-            result["paletteHex"] = FormatPaletteAsHex(smsPalette);
-        }
-
-        return result;
     }
 
     /// <summary>
@@ -64,13 +65,5 @@ public class SmsPngToTilesExtension : IToolExtension
         }
 
         return result;
-    }
-
-    /// <summary>
-    /// Formats SMS palette as hex string for C code generation.
-    /// </summary>
-    private string FormatPaletteAsHex(byte[] palette)
-    {
-        return string.Join(", ", palette.Select(b => $"0x{b:X2}"));
     }
 }

@@ -28,7 +28,9 @@
     <Project Path="Plugins/Tools/Retruxel.Tool.MarketingKit/Retruxel.Tool.MarketingKit.csproj" />
     <Project Path="Plugins/Tools/Retruxel.Tool.PixelArtEditor/Retruxel.Tool.PixelArtEditor.csproj" />
     <Project Path="Plugins/Tools/Retruxel.Tool.PlaytestBot/Retruxel.Tool.PlaytestBot.csproj" />
+    <Project Path="Plugins/Tools/Retruxel.Tool.PaletteEditor/Retruxel.Tool.PaletteEditor.csproj" />
     <Project Path="Plugins/Tools/Retruxel.Tool.PngToTiles/Retruxel.Tool.PngToTiles.csproj" />
+    <Project Path="Plugins/Tools/Retruxel.Tool.TilemapEditor/Retruxel.Tool.TilemapEditor.csproj" />
     <Project Path="Plugins/Tools/Retruxel.Tool.TilemapPreprocessor/Retruxel.Tool.TilemapPreprocessor.csproj" />
     <Project Path="Plugins/Tools/Retruxel.Tool.TilePacker/Retruxel.Tool.TilePacker.csproj" />
     <Project Path="Plugins/Tools/Retruxel.Tool.VisualScripting/Retruxel.Tool.VisualScripting.csproj" />

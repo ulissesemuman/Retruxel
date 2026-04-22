@@ -32,23 +32,23 @@ public class ModuleRenderer
     private readonly Dictionary<string, ITool> _tools;        // keyed by ToolId
     private readonly Dictionary<string, CodeGenManifest> _codeGens; // keyed by "targetId::moduleId"
     private Assembly? _targetAssembly;
+    private ModuleRegistry? _moduleRegistry;
 
     // Per-render instance counters for non-singleton modules
     private readonly Dictionary<string, int> _instanceCounters = new();
 
-    public ModuleRenderer(string pluginsPath, Assembly? targetAssembly = null)
+    public ModuleRenderer(string pluginsPath, Assembly? targetAssembly = null, IProgress<string>? progress = null)
     {
         _pluginsPath = pluginsPath;
         _targetAssembly = targetAssembly;
         _tools = DiscoverTools();
-        _codeGens = DiscoverCodeGens();
+        _codeGens = DiscoverCodeGens(progress);
         
         // Debug: log discovered CodeGens
-        Console.WriteLine($"[ModuleRenderer] Plugins path: {pluginsPath}");
-        Console.WriteLine($"[ModuleRenderer] Discovered {_codeGens.Count} CodeGens:");
+        progress?.Report($"DEBUG: ModuleRenderer initialized with {_codeGens.Count} CodeGens");
         foreach (var (key, manifest) in _codeGens)
         {
-            Console.WriteLine($"  - {key} → {manifest.TemplatePath}");
+            progress?.Report($"DEBUG: CodeGen registered: {key} (IsSystemModule={manifest.IsSystemModule})");
         }
     }
 
@@ -64,6 +64,12 @@ public class ModuleRenderer
         => _targetAssembly = targetAssembly;
 
     /// <summary>
+    /// Sets the module registry for querying singleton status.
+    /// </summary>
+    public void SetModuleRegistry(ModuleRegistry? registry)
+        => _moduleRegistry = registry;
+
+    /// <summary>
     /// Returns true if a declarative CodeGen exists for this moduleId + targetId.
     /// </summary>
     public bool CanRender(string moduleId, string targetId)
@@ -76,22 +82,39 @@ public class ModuleRenderer
     public GeneratedFile? RenderMainFile(
         string targetId,
         RetruxelProject project,
-        IEnumerable<GeneratedFile> moduleFiles)
+        IEnumerable<GeneratedFile> moduleFiles,
+        IProgress<string>? progress = null)
     {
         var key = Key(targetId, "main");
+        progress?.Report($"DEBUG: Looking for CodeGen key: {key}");
+        
         if (!_codeGens.TryGetValue(key, out var manifest))
+        {
+            progress?.Report($"DEBUG: CodeGen not found for key: {key}");
             return null;
+        }
 
         if (!manifest.IsSystemModule)
+        {
+            progress?.Report($"DEBUG: CodeGen found but IsSystemModule=false");
             return null;
+        }
+
+        progress?.Report($"DEBUG: Found system module CodeGen, rendering...");
+        
+        var filesList = moduleFiles.ToList();
+        progress?.Report($"DEBUG: Total module files: {filesList.Count}");
+        foreach (var f in filesList)
+        {
+            progress?.Report($"DEBUG: File: {f.FileName}, Type: {f.FileType}, Module: {f.SourceModuleId}");
+        }
 
         // Build variable dictionary from project and moduleFiles
         var variables = new Dictionary<string, object>
         {
             ["projectName"] = project.Name,
             ["targetId"] = project.TargetId,
-            ["timestamp"] = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"),
-            ["moduleFiles"] = moduleFiles.ToList()
+            ["timestamp"] = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss")
         };
 
         // Resolve variables from manifest
@@ -112,8 +135,7 @@ public class ModuleRenderer
                     break;
 
                 case "settings":
-                    // TODO: Load from SettingsService if needed
-                    variables[varName] = varDef.Default ?? false;
+                    variables[varName] = ResolveSettingsValue(varDef);
                     break;
 
                 case "constant":
@@ -121,8 +143,10 @@ public class ModuleRenderer
                     break;
 
                 case "moduleFiles":
-                    // These are processed by the template engine
-                    // Just pass the moduleFiles list
+                    var result = ProcessModuleFiles(filesList, varDef, variables);
+                    variables[varName] = result;
+                    if (result is List<string> list)
+                        progress?.Report($"DEBUG: Variable '{varName}' has {list.Count} items");
                     break;
             }
         }
@@ -158,7 +182,10 @@ public class ModuleRenderer
         var variables = ResolveVariables(manifest, moduleJson);
 
         // Inject instanceId for non-singleton modules
-        if (!isSingleton)
+        // Query ModuleRegistry if available, otherwise use module's IsSingleton
+        var effectiveSingleton = _moduleRegistry?.IsModuleSingleton(moduleId) ?? isSingleton;
+        
+        if (!effectiveSingleton)
         {
             if (!_instanceCounters.ContainsKey(key))
                 _instanceCounters[key] = 0;
@@ -173,7 +200,7 @@ public class ModuleRenderer
 
         yield return new GeneratedFile
         {
-            FileName = isSingleton
+            FileName = effectiveSingleton
                 ? $"{manifest.ModuleId.Replace('.', '_')}.h"
                 : $"{manifest.ModuleId.Replace('.', '_')}_{variables["instanceId"]}.h",
             FileType = GeneratedFileType.Header,
@@ -183,7 +210,7 @@ public class ModuleRenderer
 
         yield return new GeneratedFile
         {
-            FileName = isSingleton
+            FileName = effectiveSingleton
                 ? $"{manifest.ModuleId.Replace('.', '_')}.c"
                 : $"{manifest.ModuleId.Replace('.', '_')}_{variables["instanceId"]}.c",
             FileType = GeneratedFileType.Source,
@@ -197,6 +224,167 @@ public class ModuleRenderer
     /// </summary>
     public IEnumerable<ITool> GetStandaloneTools()
         => _tools.Values;
+
+    // ── Variable resolution ───────────────────────────────────────────────────
+
+    private object ResolveSettingsValue(VariableDefinition varDef)
+    {
+        try
+        {
+            var settings = SettingsService.Load();
+            if (varDef.Path is null)
+                return varDef.Default ?? false;
+
+            // Navigate nested properties: "General.ShowMadeWithSplash"
+            var parts = varDef.Path.Split('.');
+            object? current = settings;
+
+            foreach (var part in parts)
+            {
+                if (current is null) break;
+                var prop = current.GetType().GetProperty(part);
+                if (prop is null) break;
+                current = prop.GetValue(current);
+            }
+
+            return current ?? varDef.Default ?? false;
+        }
+        catch
+        {
+            return varDef.Default ?? false;
+        }
+    }
+
+    private object ProcessModuleFiles(
+        List<GeneratedFile> files,
+        VariableDefinition varDef,
+        Dictionary<string, object> existingVariables)
+    {
+        // Filter files based on varDef.Path (simple expression evaluation)
+        var filtered = files.AsEnumerable();
+
+        if (!string.IsNullOrEmpty(varDef.Path))
+        {
+            Console.WriteLine($"[ProcessModuleFiles] Filter: {varDef.Path}");
+            Console.WriteLine($"[ProcessModuleFiles] Files before filter: {files.Count}");
+            filtered = filtered.Where(f => EvaluateFileFilter(f, varDef.Path, existingVariables));
+            var filteredList = filtered.ToList();
+            Console.WriteLine($"[ProcessModuleFiles] Files after filter: {filteredList.Count}");
+            filtered = filteredList;
+        }
+
+        // Group by sourceModuleId if varDef has groupBy
+        if (varDef.GroupBy is not null)
+        {
+            var grouped = filtered.GroupBy(f => GetFileProperty(f, varDef.GroupBy));
+            filtered = grouped.Select(g => g.First());
+        }
+
+        // Transform each file into a string using varDef.Transform
+        if (!string.IsNullOrEmpty(varDef.Transform))
+        {
+            return filtered.Select(f => TransformFile(f, varDef.Transform, existingVariables)).ToList();
+        }
+
+        // No transform - return file names
+        return filtered.Select(f => f.FileName).ToList();
+    }
+
+    private bool EvaluateFileFilter(GeneratedFile file, string filter, Dictionary<string, object> variables)
+    {
+        try
+        {
+            // Replace file properties with actual values
+            var expr = filter
+                .Replace("fileType", $"'{file.FileType}'")
+                .Replace("fileName", $"'{file.FileName}'")
+                .Replace("sourceModuleId", $"'{file.SourceModuleId}'");
+
+            Console.WriteLine($"[EvaluateFileFilter] File: {file.FileName}, Type: {file.FileType}, Module: {file.SourceModuleId}");
+            Console.WriteLine($"[EvaluateFileFilter] Filter: {filter}");
+            Console.WriteLine($"[EvaluateFileFilter] After replace: {expr}");
+
+            // Split by && and evaluate each condition
+            var parts = expr.Split(new[] { "&&" }, StringSplitOptions.TrimEntries);
+            var result = parts.All(part =>
+            {
+                // Handle == comparison
+                if (part.Contains("=="))
+                {
+                    var tokens = part.Split(new[] { "==" }, StringSplitOptions.TrimEntries);
+                    if (tokens.Length == 2)
+                    {
+                        var left = tokens[0].Trim('\'');
+                        var right = tokens[1].Trim('\'');
+                        var match = left == right;
+                        Console.WriteLine($"[EvaluateFileFilter] Compare: '{left}' == '{right}' = {match}");
+                        return match;
+                    }
+                }
+                
+                // Handle != comparison
+                if (part.Contains("!="))
+                {
+                    var tokens = part.Split(new[] { "!=" }, StringSplitOptions.TrimEntries);
+                    if (tokens.Length == 2)
+                    {
+                        var left = tokens[0].Trim('\'');
+                        var right = tokens[1].Trim('\'');
+                        var match = left != right;
+                        Console.WriteLine($"[EvaluateFileFilter] Compare: '{left}' != '{right}' = {match}");
+                        return match;
+                    }
+                }
+                
+                return true;
+            });
+            
+            Console.WriteLine($"[EvaluateFileFilter] Final result: {result}");
+            return result;
+        }
+        catch
+        {
+            return true; // On error, include the file
+        }
+    }
+
+    private string TransformFile(GeneratedFile file, string transform, Dictionary<string, object> variables)
+    {
+        // Replace placeholders in transform string:
+        // "#include \"{{fileName}}\""
+        // "    {{sourceModuleId.Replace('.', '_')}}_init();"
+        // "    {{Path.GetFileNameWithoutExtension(fileName)}}_init();"
+
+        var result = transform
+            .Replace("{{fileName}}", file.FileName)
+            .Replace("{{sourceModuleId}}", file.SourceModuleId);
+
+        // Handle sourceModuleId.Replace('.', '_')
+        if (result.Contains("sourceModuleId.Replace"))
+        {
+            result = result.Replace("{{sourceModuleId.Replace('.', '_')}}", file.SourceModuleId.Replace(".", "_"));
+        }
+
+        // Handle Path.GetFileNameWithoutExtension(fileName)
+        if (result.Contains("Path.GetFileNameWithoutExtension"))
+        {
+            var baseName = Path.GetFileNameWithoutExtension(file.FileName);
+            result = result.Replace("{{Path.GetFileNameWithoutExtension(fileName)}}", baseName);
+        }
+
+        return result;
+    }
+
+    private static string GetFileProperty(GeneratedFile file, string propertyName)
+    {
+        return propertyName.ToLower() switch
+        {
+            "sourcemoduleid" => file.SourceModuleId,
+            "filename" => file.FileName,
+            "filetype" => file.FileType.ToString(),
+            _ => file.SourceModuleId
+        };
+    }
 
     // ── Variable resolution ───────────────────────────────────────────────────
 
@@ -245,12 +433,32 @@ public class ModuleRenderer
             JsonValueKind.Number => prop.TryGetInt32(out var i) ? (object)i : prop.GetDouble(),
             JsonValueKind.True => true,
             JsonValueKind.False => false,
+            JsonValueKind.Array => prop.EnumerateArray().Select(e => e.ToString()).ToList(),
+            JsonValueKind.Object => prop,
             _ => prop.GetString() ?? varDef.Default ?? ""
         };
 
         // If variable name ends with "Length" and value is string, return its length
         if (varDef.Name.EndsWith("Length", StringComparison.OrdinalIgnoreCase) && value is string str)
             return str.Length;
+
+        // If value is a Base64 string (palette colors), convert to hex array format
+        if (value is string base64Str && !string.IsNullOrEmpty(base64Str) && 
+            (varDef.Name.Contains("Color", StringComparison.OrdinalIgnoreCase) || 
+             varDef.Name.Contains("Palette", StringComparison.OrdinalIgnoreCase)))
+        {
+            try
+            {
+                var bytes = Convert.FromBase64String(base64Str);
+                var hexValues = bytes.Select((b, i) => 
+                    i == bytes.Length - 1 ? $"0x{b:X2}" : $"0x{b:X2},");
+                return string.Join(" ", hexValues);
+            }
+            catch
+            {
+                // Not Base64, return as-is
+            }
+        }
 
         return value;
     }
@@ -265,7 +473,26 @@ public class ModuleRenderer
         if (!_tools.TryGetValue(varDef.ToolId, out var tool))
             return new() { [varDef.Name] = $"/* tool '{varDef.ToolId}' not found */" };
 
-        var input = new Dictionary<string, object>();
+        // 1. Collect defaults from tool
+        var input = tool.GetDefaultParameters();
+
+        // 2. If extension exists, let it override defaults before tool executes
+        IToolExtension? extension = null;
+        if (tool.TargetExtensionId is not null && _targetAssembly is not null)
+        {
+            extension = FindToolExtension(_targetAssembly, tool.TargetExtensionId);
+            if (extension is not null)
+            {
+                foreach (var (k, v) in extension.GetDefaultParameters())
+                    input[k] = v;
+            }
+            else
+            {
+                Console.WriteLine($"[ModuleRenderer] WARN: Expected IToolExtension for '{tool.TargetExtensionId}' in target assembly but none found.");
+            }
+        }
+
+        // 3. Merge module JSON values (highest priority — explicit project values override defaults)
         if (varDef.ToolInput is not null)
         {
             foreach (var (inputKey, moduleJsonPath) in varDef.ToolInput)
@@ -288,24 +515,22 @@ public class ModuleRenderer
             }
         }
 
+        // 4. Execute generic tool with fully resolved input
         var toolResult = tool.Execute(input);
 
-        // If the tool declares TargetExtensionId, look for extension in target assembly
-        if (tool.TargetExtensionId is not null && _targetAssembly is not null)
+        // 5. Execute extension post-processing (receives tool output merged into input)
+        if (extension is not null)
         {
-            var extension = FindToolExtension(_targetAssembly, tool.TargetExtensionId);
-            if (extension is not null)
-            {
-                var extensionResult = extension.Execute(input);
-                // Merge: extension overwrites generic keys on conflict
-                foreach (var (k, v) in extensionResult)
-                    toolResult[k] = v;
-            }
-            else
-            {
-                // Log warning — expected extension but not found
-                Console.WriteLine($"[ModuleRenderer] WARN: Expected IToolExtension for '{tool.TargetExtensionId}' in target assembly but none found.");
-            }
+            // Pass tool output as additional context for the extension
+            var extensionInput = new Dictionary<string, object>(input);
+            foreach (var (k, v) in toolResult)
+                extensionInput[k] = v;
+
+            var extensionResult = extension.Execute(extensionInput);
+
+            // 6. Merge: extension overwrites generic keys on conflict
+            foreach (var (k, v) in extensionResult)
+                toolResult[k] = v;
         }
 
         return toolResult;
@@ -374,57 +599,82 @@ public class ModuleRenderer
         return result;
     }
 
-    private Dictionary<string, CodeGenManifest> DiscoverCodeGens()
+    private Dictionary<string, CodeGenManifest> DiscoverCodeGens(IProgress<string>? progress = null)
     {
         var result = new Dictionary<string, CodeGenManifest>(StringComparer.OrdinalIgnoreCase);
         var codeGensDir = Path.Combine(_pluginsPath, "CodeGens");
+
+        progress?.Report($"DEBUG: Scanning CodeGens directory: {codeGensDir}");
+        progress?.Report($"DEBUG: Directory exists: {Directory.Exists(codeGensDir)}");
 
         if (!Directory.Exists(codeGensDir))
             return result;
 
         // Scan all subdirectories recursively — no naming convention enforced
-        foreach (var dir in Directory.GetDirectories(codeGensDir, "*", SearchOption.AllDirectories))
+        var dirs = Directory.GetDirectories(codeGensDir, "*", SearchOption.AllDirectories);
+        progress?.Report($"DEBUG: Found {dirs.Length} subdirectories in CodeGens");
+
+        foreach (var dir in dirs)
         {
             var manifestPath = Path.Combine(dir, "codegen.json");
             if (!File.Exists(manifestPath)) continue;
 
+            progress?.Report($"DEBUG: Found manifest: {manifestPath}");
+
             try
             {
-                var manifest = LoadManifest(manifestPath, dir);
+                var manifest = LoadManifest(manifestPath, dir, progress);
                 if (manifest is null) continue;
 
                 result[Key(manifest.TargetId, manifest.ModuleId)] = manifest;
             }
-            catch
+            catch (Exception ex)
             {
-                // Malformed codegen.json — skip silently
+                progress?.Report($"ERROR: Failed to load manifest {manifestPath}: {ex.Message}");
             }
         }
 
         return result;
     }
 
-    private static CodeGenManifest? LoadManifest(string manifestPath, string dir)
+    private static CodeGenManifest? LoadManifest(string manifestPath, string dir, IProgress<string>? progress = null)
     {
-        var opts = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
-        var raw = JsonSerializer.Deserialize<CodeGenManifestRaw>(
-                       File.ReadAllText(manifestPath), opts);
-
-        if (raw is null || raw.ModuleId is null || raw.TargetId is null || raw.Template is null)
-            return null;
-
-        var templatePath = Path.Combine(dir, raw.Template);
-        if (!File.Exists(templatePath)) return null;
-
-        return new CodeGenManifest
+        try
         {
-            ModuleId = raw.ModuleId,
-            TargetId = raw.TargetId,
-            Version = raw.Version ?? "1.0.0",
-            TemplatePath = templatePath,
-            IsSystemModule = raw.IsSystemModule,
-            Variables = ParseVariables(raw.Variables)
-        };
+            var opts = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+            var raw = JsonSerializer.Deserialize<CodeGenManifestRaw>(
+                           File.ReadAllText(manifestPath), opts);
+
+            if (raw is null || raw.ModuleId is null || raw.TargetId is null || raw.Template is null)
+            {
+                progress?.Report($"WARN: Invalid manifest at {manifestPath} (moduleId={raw?.ModuleId}, targetId={raw?.TargetId}, template={raw?.Template})");
+                return null;
+            }
+
+            var templatePath = Path.Combine(dir, raw.Template);
+            if (!File.Exists(templatePath))
+            {
+                progress?.Report($"WARN: Template not found: {templatePath}");
+                return null;
+            }
+
+            progress?.Report($"DEBUG: Loaded CodeGen: {raw.TargetId}::{raw.ModuleId} (IsSystemModule={raw.IsSystemModule})");
+
+            return new CodeGenManifest
+            {
+                ModuleId = raw.ModuleId,
+                TargetId = raw.TargetId,
+                Version = raw.Version ?? "1.0.0",
+                TemplatePath = templatePath,
+                IsSystemModule = raw.IsSystemModule,
+                Variables = ParseVariables(raw.Variables)
+            };
+        }
+        catch (Exception ex)
+        {
+            progress?.Report($"ERROR: Failed to load manifest {manifestPath}: {ex.Message}");
+            return null;
+        }
     }
 
     private static Dictionary<string, VariableDefinition> ParseVariables(
@@ -449,14 +699,23 @@ public class ModuleRenderer
             if (element.TryGetProperty("parseBool", out var pb))
                 def.ParseBool = pb.GetBoolean();
 
-            // Default: literal or array
+            if (element.TryGetProperty("groupBy", out var groupBy))
+                def.GroupBy = groupBy.GetString();
+
+            if (element.TryGetProperty("transform", out var transform))
+                def.Transform = transform.GetString();
+
+            // Default: literal, boolean, number, or array
             if (element.TryGetProperty("default", out var defVal))
             {
-                def.Default = defVal.ValueKind == JsonValueKind.Array
-                    ? defVal.EnumerateArray().Select(e => e.GetString() ?? "").ToArray()
-                    : defVal.ValueKind == JsonValueKind.Number
-                        ? (object)(defVal.TryGetInt32(out var i) ? i : defVal.GetDouble())
-                        : defVal.GetString() ?? "";
+                def.Default = defVal.ValueKind switch
+                {
+                    JsonValueKind.Array => defVal.EnumerateArray().Select(e => e.GetString() ?? "").ToArray(),
+                    JsonValueKind.Number => defVal.TryGetInt32(out var i) ? (object)i : defVal.GetDouble(),
+                    JsonValueKind.True => true,
+                    JsonValueKind.False => false,
+                    _ => defVal.GetString() ?? ""
+                };
             }
 
             // Tool input mapping: { "inputKey": "moduleJsonPath" }
@@ -498,6 +757,8 @@ public class ModuleRenderer
         public bool ParseBool { get; set; }
         public object? Default { get; set; }
         public Dictionary<string, string>? ToolInput { get; set; }
+        public string? GroupBy { get; set; }
+        public string? Transform { get; set; }
     }
 
     // Raw deserialization shape — variables are left as JsonElement for flexible parsing

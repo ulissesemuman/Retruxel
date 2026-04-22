@@ -20,6 +20,14 @@ public interface IToolExtension
     string ToolId { get; }
 
     /// <summary>
+    /// Returns target-specific default parameters.
+    /// Called before the generic tool's Execute() — overrides tool's own defaults.
+    /// Use this to inject target-specific values (format, bpp, interleave, etc.)
+    /// without needing to know what the tool does internally.
+    /// </summary>
+    Dictionary<string, object> GetDefaultParameters() => new();
+
+    /// <summary>
     /// Executes the target-specific logic.
     /// Receives the same input as the generic tool.
     /// Returns additional or overriding keys to merge into the variable dict.

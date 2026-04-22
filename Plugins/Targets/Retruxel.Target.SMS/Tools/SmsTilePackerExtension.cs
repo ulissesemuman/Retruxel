@@ -10,14 +10,16 @@ public class SmsTilePackerExtension : IToolExtension
 {
     public string ToolId => "tile_packer";
 
+    public Dictionary<string, object> GetDefaultParameters() => new()
+    {
+        ["enableFlipH"] = true,
+        ["enableFlipV"] = true,
+        ["enableRotation"] = false
+    };
+
     public Dictionary<string, object> Execute(Dictionary<string, object> input)
     {
-        // SMS VDP supports horizontal and vertical flip
-        input["enableFlipH"] = true;
-        input["enableFlipV"] = true;
-        input["enableRotation"] = false;
-
-        // Generic tool already executed, we receive its output
+        // input already contains the output from TilePackerTool with flipH/flipV correctly applied
         var tilemap = input["tilemap"] as List<object> ?? new List<object>();
         var formattedTilemap = new List<Dictionary<string, object>>();
 
@@ -29,7 +31,10 @@ public class SmsTilePackerExtension : IToolExtension
             var flipH = Convert.ToBoolean(dict["FlipH"]);
             var flipV = Convert.ToBoolean(dict["FlipV"]);
 
-            // SMS VDP format: bits 9-10 for flip flags
+            // SMS VDP nametable entry format:
+            // bits 0-8:  tile index
+            // bit 9:     flip H
+            // bit 10:    flip V
             var vdpValue = tileIndex | (flipH ? 0x200 : 0) | (flipV ? 0x400 : 0);
 
             formattedTilemap.Add(new Dictionary<string, object>

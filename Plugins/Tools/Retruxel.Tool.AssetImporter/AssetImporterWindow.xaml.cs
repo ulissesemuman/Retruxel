@@ -5,6 +5,7 @@ using Retruxel.Tool.AssetImporter.Services;
 using SkiaSharp;
 using System.IO;
 using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media.Imaging;
 
@@ -24,6 +25,7 @@ public partial class AssetImporterWindow : Window
 {
     private readonly ITarget _target;
     private readonly string _projectPath;
+    private readonly List<RadioButton> _regionRadioButtons = new();
 
     private string? _sourcePngPath;
     private SKBitmap? _reducedPreview;
@@ -41,6 +43,7 @@ public partial class AssetImporterWindow : Window
         _projectPath = projectPath;
 
         TxtTargetLabel.Text = target.DisplayName.ToUpper();
+        GenerateRegionControls();
         ApplyLocalization();
     }
 
@@ -51,11 +54,44 @@ public partial class AssetImporterWindow : Window
         // Labels already set in XAML
     }
 
-    /// <summary>Pre-selects the Sprites radio button before the window is shown.</summary>
-    public void PreSelectSprites()
+    private void GenerateRegionControls()
     {
-        RbSprites.IsChecked = true;
-        RbTiles.IsChecked = false;
+        var regions = _target.Specs.VramRegions;
+        if (regions == null || regions.Length == 0) return;
+
+        for (int i = 0; i < regions.Length; i++)
+        {
+            var region = regions[i];
+            var rb = new RadioButton
+            {
+                Content = region.Label.ToUpper(),
+                GroupName = "VramRegion",
+                IsChecked = i == 0,
+                Style = (Style)FindResource("SegmentedRadio"),
+                Margin = new Thickness(0, 0, 8, 0),
+                Tag = region.Id
+            };
+            _regionRadioButtons.Add(rb);
+            RegionSelector.Children.Add(rb);
+        }
+    }
+
+    private string GetSelectedRegionId()
+    {
+        var selected = _regionRadioButtons.FirstOrDefault(rb => rb.IsChecked == true);
+        return selected?.Tag as string ?? _target.Specs.VramRegions[0].Id;
+    }
+
+    /// <summary>Pre-selects a specific VRAM region by ID before the window is shown.</summary>
+    public void PreSelectRegion(string regionId)
+    {
+        var rb = _regionRadioButtons.FirstOrDefault(r => r.Tag as string == regionId);
+        if (rb != null)
+        {
+            rb.IsChecked = true;
+            foreach (var other in _regionRadioButtons.Where(r => r != rb))
+                other.IsChecked = false;
+        }
     }
 
     // ── Title bar ─────────────────────────────────────────────────────────────
@@ -234,22 +270,20 @@ public partial class AssetImporterWindow : Window
         if (_sourcePngPath is null) return;
 
         var assetName = TxtAssetName.Text.Trim();
-        var assetType = RbTiles.IsChecked == true ? AssetType.Tiles : AssetType.Sprites;
+        var regionId = GetSelectedRegionId();
 
-        // Rename source to match the asset name before import
         var tempPath = _sourcePngPath;
         var nameFromFile = Path.GetFileNameWithoutExtension(_sourcePngPath);
 
         if (!string.Equals(nameFromFile, assetName, StringComparison.OrdinalIgnoreCase))
         {
-            // Copy to a temp file with the correct name so AssetImporter picks up the right Id
             tempPath = Path.Combine(Path.GetTempPath(), assetName + ".png");
             File.Copy(_sourcePngPath, tempPath, overwrite: true);
         }
 
         try
         {
-            ImportedAsset = Services.AssetImporter.Import(tempPath, _projectPath, assetType, _target);
+            ImportedAsset = Services.AssetImporter.Import(tempPath, _projectPath, regionId, _target);
             DialogResult = true;
             Close();
         }
@@ -264,7 +298,6 @@ public partial class AssetImporterWindow : Window
         }
         finally
         {
-            // Clean up temp file if created
             if (tempPath != _sourcePngPath && File.Exists(tempPath))
                 File.Delete(tempPath);
         }

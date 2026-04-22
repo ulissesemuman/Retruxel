@@ -28,7 +28,11 @@ public class NesTarget : ITarget
         // ── Tiles ────────────────────────────────────────────────────────────
         TileWidth = 8,
         TileHeight = 8,
-        MaxTilesInVram = 256,
+        VramRegions =
+        [
+            new VramRegion("pattern0", "Pattern Table 0", 0, 255),
+            new VramRegion("pattern1", "Pattern Table 1", 256, 511)
+        ],
 
         // ── Colors & Palettes ─────────────────────────────────────────────────
         // NES PPU: fixed 54-color palette, not mathematically calculable
@@ -184,6 +188,14 @@ public class NesTarget : ITarget
                 { "UNROM", "UNROM" }
             }
         }
+    ];
+
+    public IEnumerable<ModuleOverride> GetModuleOverrides() =>
+    [
+        new ModuleOverride { ModuleId = "entity", IsSingleton = true },
+        new ModuleOverride { ModuleId = "input", IsSingleton = true },
+        new ModuleOverride { ModuleId = "physics", IsSingleton = true },
+        new ModuleOverride { ModuleId = "scroll", IsSingleton = true }
     ];
 
     // ── Code generation ───────────────────────────────────────────────────────

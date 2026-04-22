@@ -1,0 +1,51 @@
+using Retruxel.Core.Interfaces;
+using Retruxel.Core.Models;
+
+namespace Retruxel.Tool.TilemapEditor;
+
+/// <summary>
+/// Tilemap Editor Tool - Visual editor for tilemap modules.
+/// Implements IVisualTool to integrate with the module system.
+/// </summary>
+public class TilemapEditorTool : IVisualTool
+{
+    public string ToolId => "tilemap_editor";
+    public string DisplayName => "Tilemap Editor";
+    public string Description => "Visual editor for creating and editing tilemaps";
+    public object? Icon => null;
+    public string Category => "Visual Editors";
+    public string? Shortcut => null;
+    public bool IsStandalone => false;
+    public string? TargetId => null;
+    public bool RequiresProject => true;
+    public bool HasUI => true;
+
+    public Dictionary<string, object> Execute(Dictionary<string, object> input)
+    {
+        // Visual tools don't use Execute() - they use CreateWindow()
+        // This is here for IToolExtension compatibility
+        return new Dictionary<string, object>();
+    }
+
+    public object CreateWindow(Dictionary<string, object> input)
+    {
+        var target = (ITarget)input["target"];
+        var project = (RetruxelProject)input["project"];
+        var projectPath = (string)input["projectPath"];
+
+        // Optional: module instance data (when editing existing module)
+        var moduleData = input.ContainsKey("moduleData")
+            ? (Dictionary<string, object>)input["moduleData"]
+            : null;
+
+        var window = new TilemapEditorWindow(target, project, projectPath);
+
+        // If editing existing module, load its data
+        if (moduleData != null)
+        {
+            window.LoadModuleData(moduleData);
+        }
+
+        return window;
+    }
+}

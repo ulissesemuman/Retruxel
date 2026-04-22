@@ -18,38 +18,25 @@
       "default": "sms"
     },
     "timestamp": {
-      "from": "system",
-      "value": "{{DateTime.Now:yyyy-MM-dd HH:mm:ss}}"
+      "from": "system"
     },
     "headers": {
       "from": "moduleFiles",
-      "filter": "fileType == 'Header'",
+      "path": "fileType == 'Header'",
       "transform": "#include \"{{fileName}}\""
-    },
-    "modulesWithInit": {
-      "from": "constant",
-      "value": ["entity", "enemy", "scroll", "palette", "tilemap", "sprite", "input", "physics", "animation"]
-    },
-    "modulesWithUpdate": {
-      "from": "constant",
-      "value": ["entity", "enemy", "scroll", "input", "physics", "animation"]
     },
     "initCalls": {
       "from": "moduleFiles",
-      "filter": "fileType == 'Source' && modulesWithInit.Contains(sourceModuleId)",
-      "groupBy": "sourceModuleId",
-      "transform": "    {{sourceModuleId.Replace('.', '_')}}_init();"
+      "path": "fileType == 'Header' && sourceModuleId != 'retruxel.core' && sourceModuleId != 'retruxel.splash'",
+      "transform": "    {{Path.GetFileNameWithoutExtension(fileName)}}_init();"
     },
     "updateCalls": {
-      "from": "moduleFiles",
-      "filter": "fileType == 'Source' && modulesWithUpdate.Contains(sourceModuleId)",
-      "groupBy": "sourceModuleId",
-      "transform": "        {{sourceModuleId.Replace('.', '_')}}_update();"
+      "from": "constant",
+      "default": []
     },
     "textDisplayCalls": {
-      "from": "moduleFiles",
-      "filter": "sourceModuleId == 'text.display' && fileType == 'Source'",
-      "transform": "    {{Path.GetFileNameWithoutExtension(fileName)}}_init();"
+      "from": "constant",
+      "default": []
     },
     "splashEnabled": {
       "from": "settings",

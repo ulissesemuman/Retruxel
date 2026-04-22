@@ -76,21 +76,14 @@
                 </Grid.RowDefinitions>
 
                 <!-- Asset type selector -->
-                <StackPanel Grid.Row="0" Grid.ColumnSpan="3" Orientation="Horizontal">
+                <StackPanel x:Name="RegionSelector" Grid.Row="0" Grid.ColumnSpan="3" Orientation="Horizontal">
                     <TextBlock x:Name="LblType"
-                               Text="TYPE"
+                               Text="REGION"
                                Style="{StaticResource TextLabelCaps}"
                                Foreground="{StaticResource BrushOnSurfaceVariant}"
                                VerticalAlignment="Center"
                                Margin="0,0,8,0"/>
-                    <RadioButton x:Name="RbTiles" Content="TILES"
-                                 IsChecked="True"
-                                 GroupName="AssetType"
-                                 Style="{StaticResource SegmentedRadio}"
-                                 Margin="0,0,8,0"/>
-                    <RadioButton x:Name="RbSprites" Content="SPRITES"
-                                 GroupName="AssetType"
-                                 Style="{StaticResource SegmentedRadio}"/>
+                    <!-- RadioButtons generated dynamically in code-behind -->
                 </StackPanel>
 
                 <!-- BEFORE preview -->

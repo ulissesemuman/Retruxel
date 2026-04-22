@@ -2,6 +2,7 @@ using Retruxel.Core.Commands;
 using Retruxel.Core.Interfaces;
 using Retruxel.Core.Models;
 using Retruxel.Core.Services;
+using Retruxel.Services;
 using Retruxel.Tool.AssetImporter;
 using System.IO;
 using System.Windows;
@@ -82,7 +83,10 @@ public partial class SceneEditorView : UserControl
 
         foreach (var asset in _project.Assets)
         {
-            var panel = asset.Type == AssetType.Tiles
+            // Determine panel based on VramRegionId
+            var panel = asset.VramRegionId.Contains("background", StringComparison.OrdinalIgnoreCase) ||
+                        asset.VramRegionId.Contains("bg", StringComparison.OrdinalIgnoreCase) ||
+                        asset.VramRegionId.Contains("tiles", StringComparison.OrdinalIgnoreCase)
                 ? AssetTilesPanel
                 : AssetSpritesPanel;
 
@@ -118,7 +122,10 @@ public partial class SceneEditorView : UserControl
             VerticalAlignment = VerticalAlignment.Center
         };
         indicator.SetResourceReference(Border.BackgroundProperty,
-            asset.Type == AssetType.Tiles ? "BrushSecondary" : "BrushTertiary");
+            asset.VramRegionId.Contains("background", StringComparison.OrdinalIgnoreCase) ||
+            asset.VramRegionId.Contains("bg", StringComparison.OrdinalIgnoreCase) ||
+            asset.VramRegionId.Contains("tiles", StringComparison.OrdinalIgnoreCase)
+                ? "BrushSecondary" : "BrushTertiary");
         Grid.SetColumn(indicator, 0);
 
         // Asset name
@@ -159,12 +166,12 @@ public partial class SceneEditorView : UserControl
     }
 
     private void BtnImportTiles_Click(object sender, RoutedEventArgs e)
-        => OpenAssetImporter(AssetType.Tiles);
+        => OpenAssetImporter("background");
 
     private void BtnImportSprites_Click(object sender, RoutedEventArgs e)
-        => OpenAssetImporter(AssetType.Sprites);
+        => OpenAssetImporter("sprites");
 
-    private void OpenAssetImporter(AssetType assetType)
+    private void OpenAssetImporter(string vramRegionId)
     {
         if (_project is null || _target is null) return;
 
@@ -173,9 +180,8 @@ public partial class SceneEditorView : UserControl
             Owner = Window.GetWindow(this)
         };
 
-        // Pre-select asset type
-        if (assetType == AssetType.Sprites)
-            window.PreSelectSprites();
+        // Pre-select VRAM region
+        window.PreSelectRegion(vramRegionId);
 
         if (window.ShowDialog() == true && window.ImportedAsset is not null)
         {
@@ -506,7 +512,7 @@ public partial class SceneEditorView : UserControl
 
         // Collect IDs of singleton modules already on the canvas
         var usedSingletons = _elements
-            .Where(e => e.Module is IModule m && m.IsSingleton)
+            .Where(e => _moduleRegistry.IsModuleSingleton(e.ModuleId))
             .Select(e => e.ModuleId)
             .ToHashSet();
 
@@ -515,21 +521,21 @@ public partial class SceneEditorView : UserControl
         foreach (var (moduleId, module) in _moduleRegistry.LogicModules)
         {
             var m = (IModule)module;
-            if (m.IsSingleton && usedSingletons.Contains(moduleId)) continue;
+            if (_moduleRegistry.IsModuleSingleton(moduleId) && usedSingletons.Contains(moduleId)) continue;
             modules.Add((m.Category, moduleId, m.DisplayName));
         }
 
         foreach (var (moduleId, module) in _moduleRegistry.GraphicModules)
         {
             var m = (IModule)module;
-            if (m.IsSingleton && usedSingletons.Contains(moduleId)) continue;
+            if (_moduleRegistry.IsModuleSingleton(moduleId) && usedSingletons.Contains(moduleId)) continue;
             modules.Add((m.Category, moduleId, m.DisplayName));
         }
 
         foreach (var (moduleId, module) in _moduleRegistry.AudioModules)
         {
             var m = (IModule)module;
-            if (m.IsSingleton && usedSingletons.Contains(moduleId)) continue;
+            if (_moduleRegistry.IsModuleSingleton(moduleId) && usedSingletons.Contains(moduleId)) continue;
             modules.Add((m.Category, moduleId, m.DisplayName));
         }
 
@@ -638,11 +644,11 @@ public partial class SceneEditorView : UserControl
 
     /// <summary>
     /// Handles an asset dropped from the asset panel onto the canvas.
-    /// Resolves the correct module for the asset type, creates it, and
+    /// Resolves the correct module for the asset's VRAM region, creates it, and
     /// sets tilesAssetId automatically — no manual typing required.
     ///
-    /// Tilemap  ← AssetType.Tiles   (module with "tilemap" in ID + tilesAssetId param)
-    /// Sprite   ← AssetType.Sprites (module with "sprite"  in ID + tilesAssetId param)
+    /// Tilemap  ← background/bg/tiles region (module with "tilemap" in ID + tilesAssetId param)
+    /// Sprite   ← sprites region (module with "sprite" in ID + tilesAssetId param)
     ///
     /// Singleton check: singletons already on canvas are hidden from the module palette
     /// (handled by RefreshModulePalette). Since TilemapModule and SpriteModule are not
@@ -650,12 +656,12 @@ public partial class SceneEditorView : UserControl
     /// </summary>
     private void DropAssetOnCanvas(AssetEntry asset, int tileX, int tileY)
     {
-        var moduleId = ResolveModuleForAsset(asset.Type);
+        var moduleId = ResolveModuleForAsset(asset.VramRegionId);
 
         if (moduleId is null)
         {
             MessageBox.Show(
-                $"No module available for asset type '{asset.Type}'. " +
+                $"No module available for VRAM region '{asset.VramRegionId}'. " +
                 $"Make sure the active target supports this asset type.",
                 "Retruxel", MessageBoxButton.OK, MessageBoxImage.Warning);
             return;
@@ -680,19 +686,25 @@ public partial class SceneEditorView : UserControl
 
         SyncProjectModules();
         _ = _projectManager?.SaveAsync();
+
+        // Open visual tool if available (e.g., tilemap editor)
+        OpenVisualToolForElement(element);
     }
 
     /// <summary>
-    /// Finds the appropriate module ID for the given asset type by searching
+    /// Finds the appropriate module ID for the given VRAM region by searching
     /// all loaded modules for one whose ID contains the expected keyword
     /// and whose manifest declares a tilesAssetId parameter.
     /// This approach is target-agnostic — works for SMS, GG, NES, etc.
     /// </summary>
-    private string? ResolveModuleForAsset(AssetType assetType)
+    private string? ResolveModuleForAsset(string vramRegionId)
     {
         if (_moduleRegistry is null) return null;
 
-        var keyword = assetType == AssetType.Tiles ? "tilemap" : "sprite";
+        // Determine keyword based on VRAM region
+        var keyword = vramRegionId.Contains("sprite", StringComparison.OrdinalIgnoreCase)
+            ? "sprite"
+            : "tilemap";
 
         foreach (var (id, m) in _moduleRegistry.LogicModules)
         {
@@ -781,6 +793,14 @@ public partial class SceneEditorView : UserControl
         }
         border.MouseLeftButtonDown += (s, e) =>
         {
+            if (e.ClickCount == 2)
+            {
+                // Double click → open visual tool if available
+                OpenVisualToolForElement(element);
+                e.Handled = true;
+                return;
+            }
+
             SelectElement(element);
             _isDragging = true;
             _dragStartTileX = element.TileX;
@@ -861,6 +881,21 @@ public partial class SceneEditorView : UserControl
                 e.Handled = true;
             }
         };
+
+        // Right-click context menu
+        var contextMenu = new ContextMenu();
+        var menuEdit = new MenuItem { Header = "Edit" };
+        var menuDelete = new MenuItem { Header = "Delete" };
+
+        menuEdit.Click += (_, _) => OpenVisualToolForElement(element);
+        menuDelete.Click += (_, _) => RemoveElement(element);
+
+        // Only show Edit if module has a visual tool
+        if (element.Module is IModule mod && !string.IsNullOrEmpty(mod.VisualToolId))
+            contextMenu.Items.Add(menuEdit);
+
+        contextMenu.Items.Add(menuDelete);
+        border.ContextMenu = contextMenu;
 
         element.CanvasVisual = border;
         return border;
@@ -1633,6 +1668,33 @@ public partial class SceneEditorView : UserControl
         {
             // Ignore conversion errors
         }
+    }
+
+    /// <summary>
+    /// Opens the visual tool for an element if the module has one.
+    /// </summary>
+    private void OpenVisualToolForElement(SceneElement element)
+    {
+        if (_project is null || _target is null || _currentScene is null) return;
+        if (element.Module is not IModule module) return;
+        if (string.IsNullOrEmpty(module.VisualToolId)) return;
+
+        // Find corresponding SceneElementData
+        var elementData = _currentScene.Elements.FirstOrDefault(e => e.ElementId == element.ElementId);
+
+        VisualToolInvoker.OpenVisualTool(
+            module,
+            _target,
+            _project,
+            _project.ProjectPath,
+            _currentScene,
+            elementData);
+
+        // Refresh UI after tool closes
+        RefreshElementVisual(element);
+        if (_selectedElement == element)
+            BuildPropertiesPanel(element);
+        SyncProjectModules();
     }
 }
 

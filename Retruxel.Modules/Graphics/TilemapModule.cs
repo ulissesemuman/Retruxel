@@ -30,6 +30,7 @@ public class TilemapModule : IGraphicModule
     public ModuleType Type => ModuleType.Logic;
     public bool IsSingleton => false;
     public string[] Compatibility { get; set; } = [];
+    public string? VisualToolId => "tilemap_editor";
 
     private static readonly JsonSerializerOptions _jsonOptions = new()
     {

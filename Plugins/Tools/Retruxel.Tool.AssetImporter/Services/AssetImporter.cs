@@ -29,14 +29,14 @@ public static class AssetImporter
     /// </summary>
     /// <param name="sourcePngPath">Absolute path to the source PNG file.</param>
     /// <param name="projectPath">Absolute path to the project root folder.</param>
-    /// <param name="assetType">Tiles or Sprites — determines target subfolder.</param>
+    /// <param name="vramRegionId">VRAM region ID from target.Specs.VramRegions.</param>
     /// <param name="target">Active target — provides the hardware palette for color reduction.</param>
     /// <returns>AssetEntry ready to add to RetruxelProject.Assets.</returns>
     /// <exception cref="AssetImportException">Thrown when the import fails for a known reason.</exception>
     public static AssetEntry Import(
         string sourcePngPath,
         string projectPath,
-        AssetType assetType,
+        string vramRegionId,
         ITarget target)
     {
         // 1. Validate source file
@@ -59,7 +59,10 @@ public static class AssetImporter
         using var reducedBitmap = ReduceColors(sourceBitmap, hardwarePalette);
 
         // 5. Determine output path
-        var subfolder = assetType == AssetType.Tiles ? "tiles" : "sprites";
+        var region = target.Specs.VramRegions.FirstOrDefault(r => r.Id == vramRegionId)
+            ?? throw new AssetImportException($"VRAM region '{vramRegionId}' not found in target specs.");
+        
+        var subfolder = region.Id;
         var assetId = Path.GetFileNameWithoutExtension(sourcePngPath);
         var assetFileName = assetId + ".png";
         var assetFolder = Path.Combine(projectPath, "assets", subfolder);
@@ -81,7 +84,7 @@ public static class AssetImporter
             Id = assetId,
             FileName = assetFileName,
             RelativePath = relativePath,
-            Type = assetType,
+            VramRegionId = vramRegionId,
             TileCount = tileCount,
             SourceWidth = reducedBitmap.Width,
             SourceHeight = reducedBitmap.Height,

@@ -36,6 +36,11 @@ public class TemplateEngine
         RegexOptions.Singleline | RegexOptions.Compiled
     );
 
+    private static readonly Regex EachRegex = new(
+        @"\{\{#each\s+(?<variable>\w+)\}\}(?<content>.*?)\{\{/each\}\}",
+        RegexOptions.Singleline | RegexOptions.Compiled
+    );
+
     /// <summary>
     /// Loads a template from embedded resource or file path.
     /// </summary>
@@ -96,7 +101,15 @@ public class TemplateEngine
     {
         var result = template;
 
-        // 1. Process negated conditionals first
+        // 1. Process each loops
+        result = EachRegex.Replace(result, match =>
+        {
+            var varName = match.Groups["variable"].Value.Trim();
+            var content = match.Groups["content"].Value;
+            return ProcessEachLoop(varName, content, variables);
+        });
+
+        // 2. Process negated conditionals
         result = NegatedConditionalRegex.Replace(result, match =>
         {
             var condition = match.Groups["condition"].Value.Trim();
@@ -104,7 +117,7 @@ public class TemplateEngine
             return EvaluateCondition(condition, variables) ? string.Empty : content;
         });
 
-        // 2. Process conditionals
+        // 3. Process conditionals
         result = ConditionalRegex.Replace(result, match =>
         {
             var condition = match.Groups["condition"].Value.Trim();
@@ -112,7 +125,7 @@ public class TemplateEngine
             return EvaluateCondition(condition, variables) ? content : string.Empty;
         });
 
-        // 3. Substitute variables and expressions
+        // 4. Substitute variables and expressions
         result = VariableRegex.Replace(result, match =>
         {
             var expr = match.Groups["expr"].Value.Trim();
@@ -130,6 +143,44 @@ public class TemplateEngine
     {
         var block = ExtractBlock(template, blockName, mode);
         return Render(block, variables);
+    }
+
+    private static string ProcessEachLoop(string varName, string content, Dictionary<string, object> variables)
+    {
+        if (!variables.TryGetValue(varName, out var value))
+            return string.Empty;
+
+        var sb = new StringBuilder();
+
+        // Handle List<string>
+        if (value is List<string> list)
+        {
+            foreach (var item in list)
+            {
+                var itemVars = new Dictionary<string, object>(variables) { ["this"] = item };
+                sb.AppendLine(Render(content, itemVars));
+            }
+        }
+        // Handle string[]
+        else if (value is string[] array)
+        {
+            foreach (var item in array)
+            {
+                var itemVars = new Dictionary<string, object>(variables) { ["this"] = item };
+                sb.AppendLine(Render(content, itemVars));
+            }
+        }
+        // Handle IEnumerable<object>
+        else if (value is System.Collections.IEnumerable enumerable)
+        {
+            foreach (var item in enumerable)
+            {
+                var itemVars = new Dictionary<string, object>(variables) { ["this"] = item };
+                sb.AppendLine(Render(content, itemVars));
+            }
+        }
+
+        return sb.ToString();
     }
 
     private static bool EvaluateCondition(string condition, Dictionary<string, object> variables)

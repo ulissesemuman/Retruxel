@@ -35,6 +35,9 @@
     <ProjectReference Include="..\Plugins\Tools\Retruxel.Tool.AssetImporter\Retruxel.Tool.AssetImporter.csproj">
       <Private>false</Private>
     </ProjectReference>
+    <ProjectReference Include="..\Plugins\Tools\Retruxel.Tool.TilemapEditor\Retruxel.Tool.TilemapEditor.csproj">
+      <Private>false</Private>
+    </ProjectReference>
     <ProjectReference Include="..\Plugins\Tools\Retruxel.Tool.TilemapPreprocessor\Retruxel.Tool.TilemapPreprocessor.csproj">
       <Private>false</Private>
     </ProjectReference>
@@ -99,9 +102,11 @@
   <Target Name="CopyToolsToPluginsFolder" AfterTargets="Build">
     <MakeDir Directories="$(OutputPath)Plugins\Tools" />
     <ItemGroup>
-      <ToolDlls Include="..\Plugins\Tools\**\bin\$(Configuration)\net10.0\Retruxel.Tool.*.dll" />
+      <ToolDlls Include="..\Plugins\Tools\**\bin\$(Configuration)\net10.0\*.dll" />
+      <ToolDllsWindows Include="..\Plugins\Tools\**\bin\$(Configuration)\net10.0-windows\*.dll" />
     </ItemGroup>
     <Copy SourceFiles="@(ToolDlls)" DestinationFolder="$(OutputPath)Plugins\Tools" SkipUnchangedFiles="true" Condition="Exists('%(ToolDlls.FullPath)')" />
+    <Copy SourceFiles="@(ToolDllsWindows)" DestinationFolder="$(OutputPath)Plugins\Tools" SkipUnchangedFiles="true" Condition="Exists('%(ToolDllsWindows.FullPath)')" />
   </Target>
 
   <!-- Copy CodeGens folder to Plugins/CodeGens after build -->

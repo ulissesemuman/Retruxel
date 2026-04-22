@@ -1,6 +1,7 @@
 using Retruxel.Core.Models;
 using Retruxel.Core.Services;
 using Retruxel.Views;
+using Retruxel.Services;
 using System.IO;
 using System.Reflection;
 using System.Windows;
@@ -13,6 +14,7 @@ public partial class MainWindow : Window
     private readonly BuildConsoleView _buildConsoleView = new();
     private readonly ProjectManager _projectManager = new();
     private readonly ToolLoader _toolLoader;
+    private readonly ToolRegistry _toolRegistry = new();
     private bool _isDraggingOverlay = false;
     private Point _overlayDragStart;
 
@@ -29,6 +31,14 @@ public partial class MainWindow : Window
 
         // Discover tools on startup
         _toolLoader.DiscoverTools();
+
+        // Discover and register visual tools
+        var pluginsPath = Path.Combine(basePath, "Plugins");
+        var progress = new Progress<string>(msg => System.Diagnostics.Debug.WriteLine(msg));
+        _toolRegistry.DiscoverTools(pluginsPath, progress);
+
+        // Initialize VisualToolInvoker with registry
+        VisualToolInvoker.Initialize(_toolRegistry);
 
         // Ctrl+S to save
         KeyDown += MainWindow_KeyDown;
@@ -190,7 +200,7 @@ public partial class MainWindow : Window
         var basePath = AppDomain.CurrentDomain.BaseDirectory;
         var moduleRegistry = new ModuleRegistry(basePath);
         moduleRegistry.RegisterBuiltinModules(target);
-        moduleRegistry.LoadForTarget(target.TargetId);
+        moduleRegistry.LoadForTarget(target);
 
         _projectManager.CurrentProject = project;
 
@@ -211,6 +221,10 @@ public partial class MainWindow : Window
         // Connect Generate ROM button
         SceneEditorView.OnGenerateRomRequested -= OnGenerateRomRequested;
         SceneEditorView.OnGenerateRomRequested += OnGenerateRomRequested;
+
+        // Connect About button
+        SceneEditorView.OnAboutRequested -= () => ShowOverlay("ABOUT", new AboutView());
+        SceneEditorView.OnAboutRequested += () => ShowOverlay("ABOUT", new AboutView());
     }
 
     private void AddToRecentProjects(RetruxelProject project)

@@ -87,37 +87,42 @@ public partial class SettingsWindow : Window
         TxtUndoHistoryValue.Text = _settings.General.UndoHistoryLimit.ToString();
 
         // Toolchain
-        ChkShowWarnings.IsChecked = _settings.Targets.Sms.ShowToolchainWarnings;
+        var smsSettings = SettingsService.GetTargetSettings(_settings, "sms");
+        ChkShowWarnings.IsChecked = smsSettings.ShowToolchainWarnings;
 
         // SMS
-        TxtSmsEmulatorArguments.Text = _settings.Targets.Sms.EmulatorArguments;
-        ChkSmsLaunchEmulator.IsChecked = _settings.Targets.Sms.LaunchEmulatorAfterBuild;
-        TxtSmsEmulatorPath.Text = string.IsNullOrEmpty(_settings.Targets.Sms.EmulatorPath)
-            ? loc.Get("settings.emulator.path.not_configured") : _settings.Targets.Sms.EmulatorPath;
+        TxtSmsEmulatorArguments.Text = smsSettings.EmulatorArguments;
+        ChkSmsLaunchEmulator.IsChecked = smsSettings.LaunchEmulatorAfterBuild;
+        TxtSmsEmulatorPath.Text = string.IsNullOrEmpty(smsSettings.EmulatorPath)
+            ? loc.Get("settings.emulator.path.not_configured") : smsSettings.EmulatorPath;
 
         // Game Gear
-        TxtGgEmulatorArguments.Text = _settings.Targets.Gg.EmulatorArguments;
-        ChkGgLaunchEmulator.IsChecked = _settings.Targets.Gg.LaunchEmulatorAfterBuild;
-        TxtGgEmulatorPath.Text = string.IsNullOrEmpty(_settings.Targets.Gg.EmulatorPath)
-            ? loc.Get("settings.emulator.path.not_configured") : _settings.Targets.Gg.EmulatorPath;
+        var ggSettings = SettingsService.GetTargetSettings(_settings, "gg");
+        TxtGgEmulatorArguments.Text = ggSettings.EmulatorArguments;
+        ChkGgLaunchEmulator.IsChecked = ggSettings.LaunchEmulatorAfterBuild;
+        TxtGgEmulatorPath.Text = string.IsNullOrEmpty(ggSettings.EmulatorPath)
+            ? loc.Get("settings.emulator.path.not_configured") : ggSettings.EmulatorPath;
 
         // SG-1000
-        TxtSg1000EmulatorArguments.Text = _settings.Targets.Sg1000.EmulatorArguments;
-        ChkSg1000LaunchEmulator.IsChecked = _settings.Targets.Sg1000.LaunchEmulatorAfterBuild;
-        TxtSg1000EmulatorPath.Text = string.IsNullOrEmpty(_settings.Targets.Sg1000.EmulatorPath)
-            ? loc.Get("settings.emulator.path.not_configured") : _settings.Targets.Sg1000.EmulatorPath;
+        var sg1000Settings = SettingsService.GetTargetSettings(_settings, "sg1000");
+        TxtSg1000EmulatorArguments.Text = sg1000Settings.EmulatorArguments;
+        ChkSg1000LaunchEmulator.IsChecked = sg1000Settings.LaunchEmulatorAfterBuild;
+        TxtSg1000EmulatorPath.Text = string.IsNullOrEmpty(sg1000Settings.EmulatorPath)
+            ? loc.Get("settings.emulator.path.not_configured") : sg1000Settings.EmulatorPath;
 
         // ColecoVision
-        TxtColecoEmulatorArguments.Text = _settings.Targets.Coleco.EmulatorArguments;
-        ChkColecoLaunchEmulator.IsChecked = _settings.Targets.Coleco.LaunchEmulatorAfterBuild;
-        TxtColecoEmulatorPath.Text = string.IsNullOrEmpty(_settings.Targets.Coleco.EmulatorPath)
-            ? loc.Get("settings.emulator.path.not_configured") : _settings.Targets.Coleco.EmulatorPath;
+        var colecoSettings = SettingsService.GetTargetSettings(_settings, "coleco");
+        TxtColecoEmulatorArguments.Text = colecoSettings.EmulatorArguments;
+        ChkColecoLaunchEmulator.IsChecked = colecoSettings.LaunchEmulatorAfterBuild;
+        TxtColecoEmulatorPath.Text = string.IsNullOrEmpty(colecoSettings.EmulatorPath)
+            ? loc.Get("settings.emulator.path.not_configured") : colecoSettings.EmulatorPath;
 
         // NES
-        TxtNesEmulatorArguments.Text = _settings.Targets.Nes.EmulatorArguments;
-        ChkNesLaunchEmulator.IsChecked = _settings.Targets.Nes.LaunchEmulatorAfterBuild;
-        TxtNesEmulatorPath.Text = string.IsNullOrEmpty(_settings.Targets.Nes.EmulatorPath)
-            ? loc.Get("settings.emulator.path.not_configured") : _settings.Targets.Nes.EmulatorPath;
+        var nesSettings = SettingsService.GetTargetSettings(_settings, "nes");
+        TxtNesEmulatorArguments.Text = nesSettings.EmulatorArguments;
+        ChkNesLaunchEmulator.IsChecked = nesSettings.LaunchEmulatorAfterBuild;
+        TxtNesEmulatorPath.Text = string.IsNullOrEmpty(nesSettings.EmulatorPath)
+            ? loc.Get("settings.emulator.path.not_configured") : nesSettings.EmulatorPath;
     }
 
     // ── Navigation ────────────────────────────────────────────────────────────
@@ -250,31 +255,32 @@ public partial class SettingsWindow : Window
     private void ChkShowWarnings_Changed(object sender, RoutedEventArgs e)
     {
         if (_loading) return;
-        _settings.Targets.Sms.ShowToolchainWarnings = ChkShowWarnings.IsChecked == true;
+        SettingsService.GetTargetSettings(_settings, "sms").ShowToolchainWarnings = ChkShowWarnings.IsChecked == true;
         AutoSave();
     }
 
     private void TxtSmsEmulatorArguments_Changed(object sender, TextChangedEventArgs e)
     {
         if (_loading) return;
-        _settings.Targets.Sms.EmulatorArguments = TxtSmsEmulatorArguments.Text;
+        SettingsService.GetTargetSettings(_settings, "sms").EmulatorArguments = TxtSmsEmulatorArguments.Text;
         AutoSave();
     }
 
     private void BtnBrowseSmsEmulator_Click(object sender, RoutedEventArgs e)
     {
+        var smsSettings = SettingsService.GetTargetSettings(_settings, "sms");
         var dialog = new OpenFileDialog
         {
             Title = "Select SMS Emulator Executable",
             Filter = "Executable Files (*.exe)|*.exe|All Files (*.*)|*.*",
-            InitialDirectory = string.IsNullOrEmpty(_settings.Targets.Sms.EmulatorPath)
+            InitialDirectory = string.IsNullOrEmpty(smsSettings.EmulatorPath)
                 ? Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles)
-                : Path.GetDirectoryName(_settings.Targets.Sms.EmulatorPath)
+                : Path.GetDirectoryName(smsSettings.EmulatorPath)
         };
 
         if (dialog.ShowDialog() == true)
         {
-            _settings.Targets.Sms.EmulatorPath = dialog.FileName;
+            smsSettings.EmulatorPath = dialog.FileName;
             TxtSmsEmulatorPath.Text = dialog.FileName;
             AutoSave();
         }
@@ -283,7 +289,7 @@ public partial class SettingsWindow : Window
     private void ChkSmsLaunchEmulator_Changed(object sender, RoutedEventArgs e)
     {
         if (_loading) return;
-        _settings.Targets.Sms.LaunchEmulatorAfterBuild = ChkSmsLaunchEmulator.IsChecked == true;
+        SettingsService.GetTargetSettings(_settings, "sms").LaunchEmulatorAfterBuild = ChkSmsLaunchEmulator.IsChecked == true;
         AutoSave();
     }
 
@@ -298,7 +304,7 @@ public partial class SettingsWindow : Window
         };
         if (dialog.ShowDialog() == true)
         {
-            _settings.Targets.Gg.EmulatorPath = dialog.FileName;
+            SettingsService.GetTargetSettings(_settings, "gg").EmulatorPath = dialog.FileName;
             TxtGgEmulatorPath.Text = dialog.FileName;
             AutoSave();
         }
@@ -307,14 +313,14 @@ public partial class SettingsWindow : Window
     private void TxtGgEmulatorArguments_Changed(object sender, TextChangedEventArgs e)
     {
         if (_loading) return;
-        _settings.Targets.Gg.EmulatorArguments = TxtGgEmulatorArguments.Text;
+        SettingsService.GetTargetSettings(_settings, "gg").EmulatorArguments = TxtGgEmulatorArguments.Text;
         AutoSave();
     }
 
     private void ChkGgLaunchEmulator_Changed(object sender, RoutedEventArgs e)
     {
         if (_loading) return;
-        _settings.Targets.Gg.LaunchEmulatorAfterBuild = ChkGgLaunchEmulator.IsChecked == true;
+        SettingsService.GetTargetSettings(_settings, "gg").LaunchEmulatorAfterBuild = ChkGgLaunchEmulator.IsChecked == true;
         AutoSave();
     }
 
@@ -329,7 +335,7 @@ public partial class SettingsWindow : Window
         };
         if (dialog.ShowDialog() == true)
         {
-            _settings.Targets.Sg1000.EmulatorPath = dialog.FileName;
+            SettingsService.GetTargetSettings(_settings, "sg1000").EmulatorPath = dialog.FileName;
             TxtSg1000EmulatorPath.Text = dialog.FileName;
             AutoSave();
         }
@@ -338,14 +344,14 @@ public partial class SettingsWindow : Window
     private void TxtSg1000EmulatorArguments_Changed(object sender, TextChangedEventArgs e)
     {
         if (_loading) return;
-        _settings.Targets.Sg1000.EmulatorArguments = TxtSg1000EmulatorArguments.Text;
+        SettingsService.GetTargetSettings(_settings, "sg1000").EmulatorArguments = TxtSg1000EmulatorArguments.Text;
         AutoSave();
     }
 
     private void ChkSg1000LaunchEmulator_Changed(object sender, RoutedEventArgs e)
     {
         if (_loading) return;
-        _settings.Targets.Sg1000.LaunchEmulatorAfterBuild = ChkSg1000LaunchEmulator.IsChecked == true;
+        SettingsService.GetTargetSettings(_settings, "sg1000").LaunchEmulatorAfterBuild = ChkSg1000LaunchEmulator.IsChecked == true;
         AutoSave();
     }
 
@@ -360,7 +366,7 @@ public partial class SettingsWindow : Window
         };
         if (dialog.ShowDialog() == true)
         {
-            _settings.Targets.Coleco.EmulatorPath = dialog.FileName;
+            SettingsService.GetTargetSettings(_settings, "coleco").EmulatorPath = dialog.FileName;
             TxtColecoEmulatorPath.Text = dialog.FileName;
             AutoSave();
         }
@@ -369,14 +375,14 @@ public partial class SettingsWindow : Window
     private void TxtColecoEmulatorArguments_Changed(object sender, TextChangedEventArgs e)
     {
         if (_loading) return;
-        _settings.Targets.Coleco.EmulatorArguments = TxtColecoEmulatorArguments.Text;
+        SettingsService.GetTargetSettings(_settings, "coleco").EmulatorArguments = TxtColecoEmulatorArguments.Text;
         AutoSave();
     }
 
     private void ChkColecoLaunchEmulator_Changed(object sender, RoutedEventArgs e)
     {
         if (_loading) return;
-        _settings.Targets.Coleco.LaunchEmulatorAfterBuild = ChkColecoLaunchEmulator.IsChecked == true;
+        SettingsService.GetTargetSettings(_settings, "coleco").LaunchEmulatorAfterBuild = ChkColecoLaunchEmulator.IsChecked == true;
         AutoSave();
     }
 
@@ -391,7 +397,7 @@ public partial class SettingsWindow : Window
         };
         if (dialog.ShowDialog() == true)
         {
-            _settings.Targets.Nes.EmulatorPath = dialog.FileName;
+            SettingsService.GetTargetSettings(_settings, "nes").EmulatorPath = dialog.FileName;
             TxtNesEmulatorPath.Text = dialog.FileName;
             AutoSave();
         }
@@ -400,14 +406,14 @@ public partial class SettingsWindow : Window
     private void TxtNesEmulatorArguments_Changed(object sender, TextChangedEventArgs e)
     {
         if (_loading) return;
-        _settings.Targets.Nes.EmulatorArguments = TxtNesEmulatorArguments.Text;
+        SettingsService.GetTargetSettings(_settings, "nes").EmulatorArguments = TxtNesEmulatorArguments.Text;
         AutoSave();
     }
 
     private void ChkNesLaunchEmulator_Changed(object sender, RoutedEventArgs e)
     {
         if (_loading) return;
-        _settings.Targets.Nes.LaunchEmulatorAfterBuild = ChkNesLaunchEmulator.IsChecked == true;
+        SettingsService.GetTargetSettings(_settings, "nes").LaunchEmulatorAfterBuild = ChkNesLaunchEmulator.IsChecked == true;
         AutoSave();
     }
 

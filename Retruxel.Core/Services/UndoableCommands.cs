@@ -1,6 +1,6 @@
 using Retruxel.Core.Interfaces;
 
-namespace Retruxel.Core.Commands;
+namespace Retruxel.Core.Services;
 
 // ── AddElementCommand ─────────────────────────────────────────────────────────
 

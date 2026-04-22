@@ -10,7 +10,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\..\Retruxel.Core\Retruxel.Core.csproj" />
-    <ProjectReference Include="..\..\..\Retruxel\Retruxel.csproj" />
   </ItemGroup>
 
   <ItemGroup>

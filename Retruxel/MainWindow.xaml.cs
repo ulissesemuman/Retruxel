@@ -1,7 +1,7 @@
 using Retruxel.Core.Models;
 using Retruxel.Core.Services;
-using Retruxel.Views;
 using Retruxel.Services;
+using Retruxel.Views;
 using System.IO;
 using System.Reflection;
 using System.Windows;
@@ -178,7 +178,7 @@ public partial class MainWindow : Window
     /// </summary>
     private async void OnProjectCreated(RetruxelProject project)
     {
-        var target = Services.TargetRegistry.GetTargetById(project.TargetId);
+        var target = TargetRegistry.GetTargetById(project.TargetId);
         if (target is null)
         {
             MessageBox.Show($"Target '{project.TargetId}' not found.", "Retruxel", MessageBoxButton.OK, MessageBoxImage.Error);

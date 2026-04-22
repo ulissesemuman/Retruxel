@@ -1,6 +1,5 @@
 using Retruxel.Core.Interfaces;
 using Retruxel.Core.Services;
-using Retruxel.Services;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;

@@ -1,7 +1,7 @@
 using Microsoft.Win32;
 using Retruxel.Core.Models;
 using Retruxel.Core.Services;
-using Retruxel.Services;
+using Retruxel.Core.Services;
 using Retruxel.Controls;
 using System.IO;
 using System.Windows;

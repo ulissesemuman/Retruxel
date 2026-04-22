@@ -2,7 +2,7 @@ using Retruxel.Core.Interfaces;
 using System.IO;
 using System.Reflection;
 
-namespace Retruxel.Services;
+namespace Retruxel.Core.Services;
 
 /// <summary>
 /// Centralized registry of all available target platforms.

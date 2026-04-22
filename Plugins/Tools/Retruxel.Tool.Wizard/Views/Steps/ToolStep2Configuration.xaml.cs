@@ -1,6 +1,5 @@
 using System.Windows.Controls;
 using Retruxel.Core.Services;
-using Retruxel.Services;
 using Retruxel.Tool.Wizard.Models;
 
 namespace Retruxel.Tool.Wizard.Views.Steps;

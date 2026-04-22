@@ -100,7 +100,7 @@ public class ColecoVisionTarget : ITarget
 
     public IToolchain GetToolchain()
     {
-        var builder = Retruxel.Toolchain.ToolchainOrchestrator.GetBuilder(TargetId);
+        var builder = Retruxel.Toolchain.ToolchainOrchestrator.GetBuilder(TargetId, ((ITarget)this).GetCustomToolchainBuilder());
         return new Retruxel.Toolchain.ToolchainAdapter(builder);
     }
 

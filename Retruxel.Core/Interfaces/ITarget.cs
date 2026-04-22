@@ -41,6 +41,13 @@ public interface ITarget
     IToolchain GetToolchain();
 
     /// <summary>
+    /// Returns a custom toolchain builder for this target, or null to use auto-discovered builder.
+    /// Override this when the target needs specialized build logic that differs from standard builders.
+    /// If null, ToolchainOrchestrator will search for a builder with matching TargetId in Plugins/Toolchains/.
+    /// </summary>
+    object? GetCustomToolchainBuilder() => null;
+
+    /// <summary>
     /// Returns the list of required toolchain binary paths for verification.
     /// Used by StartupService to check if toolchain is extracted.
     /// Paths are relative to %AppData%/Retruxel/toolchain/

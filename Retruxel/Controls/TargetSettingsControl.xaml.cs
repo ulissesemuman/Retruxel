@@ -5,7 +5,7 @@ using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 
-namespace Retruxel.Views.Controls;
+namespace Retruxel.Controls;
 
 public partial class TargetSettingsControl : UserControl
 {

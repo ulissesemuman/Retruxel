@@ -1,6 +1,7 @@
 using Microsoft.Win32;
 using Retruxel.Core.Interfaces;
 using Retruxel.Core.Models;
+using Retruxel.Core.Services;
 using Retruxel.Tool.AssetImporter.Services;
 using SkiaSharp;
 using System.IO;
@@ -8,6 +9,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media.Imaging;
+using ToolRegistry = Retruxel.Core.Services.ToolRegistry;
 
 namespace Retruxel.Tool.AssetImporter;
 
@@ -104,6 +106,62 @@ public partial class AssetImporterWindow : Window
 
     private void BtnCancel_Click(object sender, RoutedEventArgs e)
         => Close();
+
+    // ── Source selection ──────────────────────────────────────────────────────
+
+    private void RbSource_Changed(object sender, RoutedEventArgs e)
+    {
+        if (RbSourceFile?.IsChecked == true)
+        {
+            DropHint.Visibility = _sourcePngPath == null ? Visibility.Visible : Visibility.Collapsed;
+            EmulatorHint.Visibility = Visibility.Collapsed;
+            DropZone.AllowDrop = true;
+        }
+        else if (RbSourceEmulator?.IsChecked == true)
+        {
+            DropHint.Visibility = Visibility.Collapsed;
+            EmulatorHint.Visibility = _sourcePngPath == null ? Visibility.Visible : Visibility.Collapsed;
+            DropZone.AllowDrop = false;
+        }
+    }
+
+    private void BtnCaptureEmulator_Click(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            var toolRegistry = (ToolRegistry)RetruxelServices.ToolRegistry;
+            var liveLinkTool = toolRegistry.GetTool("retruxel.tool.livelink");
+            
+            if (liveLinkTool == null)
+            {
+                ShowValidation("LiveLink tool not found. Make sure it's installed.");
+                return;
+            }
+
+            var result = liveLinkTool.Execute(new Dictionary<string, object>
+            {
+                ["mode"] = "capture",
+                ["targetId"] = _target.TargetId
+            });
+
+            if (result != null && result.ContainsKey("captureResult"))
+            {
+                ProcessEmulatorCapture(result["captureResult"]);
+            }
+        }
+        catch (Exception ex)
+        {
+            ShowValidation($"Emulator capture failed: {ex.Message}");
+        }
+    }
+
+    private void ProcessEmulatorCapture(object captureData)
+    {
+        // TODO: Convert CaptureResult to PNG and process
+        // For now, show placeholder
+        var loc = RetruxelServices.Localization;
+        ShowValidation("Emulator capture processing not yet implemented.");
+    }
 
     // ── File selection ────────────────────────────────────────────────────────
 

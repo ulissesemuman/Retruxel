@@ -11,11 +11,24 @@ public partial class LiveLinkWindow : Window
     private IEmulatorConnection? _connection;
     private CaptureResult? _lastCapture;
     private readonly List<IEmulatorConnection> _availableEmulators = new();
+    private readonly Dictionary<string, object>? _input;
+    private readonly bool _captureMode;
 
-    public LiveLinkWindow()
+    public Dictionary<string, object>? ModuleData { get; private set; }
+
+    public LiveLinkWindow(Dictionary<string, object>? input = null)
     {
         InitializeComponent();
+        _input = input;
+        _captureMode = input?.ContainsKey("mode") == true && input["mode"].ToString() == "capture";
+        
         DiscoverEmulators();
+        
+        if (_captureMode)
+        {
+            Title = "LIVE LINK — CAPTURE MODE";
+            BtnExport.Content = "RETURN CAPTURE";
+        }
     }
 
     private void DiscoverEmulators()
@@ -148,6 +161,19 @@ public partial class LiveLinkWindow : Window
             return;
         }
 
+        if (_captureMode)
+        {
+            // Return capture to caller
+            DialogResult = true;
+            ModuleData = new Dictionary<string, object>
+            {
+                ["captureResult"] = _lastCapture
+            };
+            Close();
+            return;
+        }
+
+        // Standalone mode: save to file
         var dialog = new Microsoft.Win32.SaveFileDialog
         {
             Filter = "PNG Image|*.png|JSON Data|*.json",

@@ -13,6 +13,12 @@ public static class RetruxelServices
     /// </summary>
     public static ILocalizationService Localization { get; set; } = null!;
 
+    /// <summary>
+    /// Tool registry for discovering and invoking tools.
+    /// Must be set by the main application before any plugin uses it.
+    /// </summary>
+    public static object ToolRegistry { get; set; } = null!;
+
     // Future services can be added here:
     // public static IProjectManager ProjectManager { get; set; } = null!;
     // public static IAssetManager AssetManager { get; set; } = null!;

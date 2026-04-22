@@ -19,8 +19,13 @@ public class LiveLinkTool : ITool
 
     public Dictionary<string, object> Execute(Dictionary<string, object> input)
     {
-        var window = new LiveLinkWindow();
-        window.ShowDialog();
+        var window = new LiveLinkWindow(input);
+        var result = window.ShowDialog();
+        
+        if (result == true && window.ModuleData != null)
+        {
+            return window.ModuleData;
+        }
         
         return new Dictionary<string, object>();
     }

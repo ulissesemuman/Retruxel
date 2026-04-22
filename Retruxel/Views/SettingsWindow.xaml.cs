@@ -1,6 +1,8 @@
 using Microsoft.Win32;
 using Retruxel.Core.Models;
 using Retruxel.Core.Services;
+using Retruxel.Services;
+using Retruxel.Views.Controls;
 using System.IO;
 using System.Windows;
 using System.Windows.Controls;
@@ -12,27 +14,17 @@ namespace Retruxel.Views;
 public partial class SettingsWindow : Window
 {
     private AppSettings _settings = new();
-    private bool _loading = true;   // suppresses change handlers during initial load
-
-    // ── Nav panels & accents ──────────────────────────────────────────────────
-
-    private readonly Dictionary<string, (Grid Panel, Border Accent, Border Nav)> _sections;
+    private bool _loading = true;
+    private readonly Dictionary<string, (Grid Panel, Border Accent, Border Nav)> _sections = new();
+    private readonly Dictionary<string, TargetSettingsControl> _targetControls = new();
 
     public SettingsWindow()
     {
         InitializeComponent();
 
-        _sections = new()
-        {
-            ["general"]    = (PanelGeneral,    AccentGeneral,    NavGeneral),
-            ["appearance"] = (PanelAppearance, AccentAppearance, NavAppearance),
-            ["toolchain"]  = (PanelToolchain,  AccentToolchain,  NavToolchain),
-            ["sms"]        = (PanelSms,        AccentSms,        NavSms),
-            ["gg"]         = (PanelGg,         AccentGg,         NavGg),
-            ["sg1000"]     = (PanelSg1000,     AccentSg1000,     NavSg1000),
-            ["coleco"]     = (PanelColeco,     AccentColeco,     NavColeco),
-            ["nes"]        = (PanelNes,        AccentNes,        NavNes),
-        };
+        _sections["general"] = (PanelGeneral, AccentGeneral, NavGeneral);
+        _sections["appearance"] = (PanelAppearance, AccentAppearance, NavAppearance);
+        _sections["toolchain"] = (PanelToolchain, AccentToolchain, NavToolchain);
 
         Loaded += OnLoaded;
     }
@@ -41,11 +33,64 @@ public partial class SettingsWindow : Window
     {
         _settings = await SettingsService.LoadAsync();
         PopulateLanguageCombo();
+        GenerateTargetSections();
         ApplySettingsToUi();
         _loading = false;
     }
 
     // ── Populate language combo dynamically ──────────────────────────────────
+
+    private void GenerateTargetSections()
+    {
+        var targets = TargetRegistry.GetAllTargets().OrderBy(t => t.DisplayName);
+        var navStack = NavTargetsStack;
+        var contentGrid = ContentGrid;
+
+        foreach (var target in targets)
+        {
+            var targetId = target.TargetId;
+
+            // Create nav item
+            var navBorder = new Border
+            {
+                Style = (Style)FindResource("NavItem")
+            };
+
+            var navGrid = new Grid();
+            var accent = new Border
+            {
+                Width = 3,
+                HorizontalAlignment = HorizontalAlignment.Left,
+                Background = (Brush)FindResource("BrushPrimary"),
+                Visibility = Visibility.Collapsed
+            };
+            var navLabel = new TextBlock
+            {
+                Text = target.DisplayName.ToUpper(),
+                Style = (Style)FindResource("TextLabelCaps"),
+                Margin = new Thickness(12, 0, 0, 0),
+                VerticalAlignment = VerticalAlignment.Center
+            };
+
+            navGrid.Children.Add(accent);
+            navGrid.Children.Add(navLabel);
+            navBorder.Child = navGrid;
+            navBorder.MouseLeftButtonDown += (s, e) => ShowSection(targetId);
+
+            navStack.Children.Add(navBorder);
+
+            // Create content panel
+            var panel = new Grid { Visibility = Visibility.Collapsed };
+            var control = new TargetSettingsControl();
+            control.Initialize(_settings, targetId);
+            panel.Children.Add(control);
+
+            contentGrid.Children.Add(panel);
+
+            _sections[targetId] = (panel, accent, navBorder);
+            _targetControls[targetId] = control;
+        }
+    }
 
     private void PopulateLanguageCombo()
     {
@@ -79,62 +124,21 @@ public partial class SettingsWindow : Window
     {
         var loc = LocalizationService.Instance;
         
-        // General - language already selected in PopulateLanguageCombo
         ChkShowWelcome.IsChecked = _settings.General.ShowWelcomeOnStartup;
         ChkCheckUpdates.IsChecked = _settings.General.CheckUpdatesOnStartup;
         ChkShowMadeWithSplash.IsChecked = _settings.General.ShowMadeWithSplash;
         SliderUndoHistory.Value = _settings.General.UndoHistoryLimit;
         TxtUndoHistoryValue.Text = _settings.General.UndoHistoryLimit.ToString();
 
-        // Toolchain
         var smsSettings = SettingsService.GetTargetSettings(_settings, "sms");
         ChkShowWarnings.IsChecked = smsSettings.ShowToolchainWarnings;
-
-        // SMS
-        TxtSmsEmulatorArguments.Text = smsSettings.EmulatorArguments;
-        ChkSmsLaunchEmulator.IsChecked = smsSettings.LaunchEmulatorAfterBuild;
-        TxtSmsEmulatorPath.Text = string.IsNullOrEmpty(smsSettings.EmulatorPath)
-            ? loc.Get("settings.emulator.path.not_configured") : smsSettings.EmulatorPath;
-
-        // Game Gear
-        var ggSettings = SettingsService.GetTargetSettings(_settings, "gg");
-        TxtGgEmulatorArguments.Text = ggSettings.EmulatorArguments;
-        ChkGgLaunchEmulator.IsChecked = ggSettings.LaunchEmulatorAfterBuild;
-        TxtGgEmulatorPath.Text = string.IsNullOrEmpty(ggSettings.EmulatorPath)
-            ? loc.Get("settings.emulator.path.not_configured") : ggSettings.EmulatorPath;
-
-        // SG-1000
-        var sg1000Settings = SettingsService.GetTargetSettings(_settings, "sg1000");
-        TxtSg1000EmulatorArguments.Text = sg1000Settings.EmulatorArguments;
-        ChkSg1000LaunchEmulator.IsChecked = sg1000Settings.LaunchEmulatorAfterBuild;
-        TxtSg1000EmulatorPath.Text = string.IsNullOrEmpty(sg1000Settings.EmulatorPath)
-            ? loc.Get("settings.emulator.path.not_configured") : sg1000Settings.EmulatorPath;
-
-        // ColecoVision
-        var colecoSettings = SettingsService.GetTargetSettings(_settings, "coleco");
-        TxtColecoEmulatorArguments.Text = colecoSettings.EmulatorArguments;
-        ChkColecoLaunchEmulator.IsChecked = colecoSettings.LaunchEmulatorAfterBuild;
-        TxtColecoEmulatorPath.Text = string.IsNullOrEmpty(colecoSettings.EmulatorPath)
-            ? loc.Get("settings.emulator.path.not_configured") : colecoSettings.EmulatorPath;
-
-        // NES
-        var nesSettings = SettingsService.GetTargetSettings(_settings, "nes");
-        TxtNesEmulatorArguments.Text = nesSettings.EmulatorArguments;
-        ChkNesLaunchEmulator.IsChecked = nesSettings.LaunchEmulatorAfterBuild;
-        TxtNesEmulatorPath.Text = string.IsNullOrEmpty(nesSettings.EmulatorPath)
-            ? loc.Get("settings.emulator.path.not_configured") : nesSettings.EmulatorPath;
     }
 
     // ── Navigation ────────────────────────────────────────────────────────────
 
-    private void NavGeneral_Click(object sender, MouseButtonEventArgs e)    => ShowSection("general");
+    private void NavGeneral_Click(object sender, MouseButtonEventArgs e) => ShowSection("general");
     private void NavAppearance_Click(object sender, MouseButtonEventArgs e) => ShowSection("appearance");
-    private void NavToolchain_Click(object sender, MouseButtonEventArgs e)  => ShowSection("toolchain");
-    private void NavSms_Click(object sender, MouseButtonEventArgs e)        => ShowSection("sms");
-    private void NavGg_Click(object sender, MouseButtonEventArgs e)         => ShowSection("gg");
-    private void NavSg1000_Click(object sender, MouseButtonEventArgs e)     => ShowSection("sg1000");
-    private void NavColeco_Click(object sender, MouseButtonEventArgs e)     => ShowSection("coleco");
-    private void NavNes_Click(object sender, MouseButtonEventArgs e)        => ShowSection("nes");
+    private void NavToolchain_Click(object sender, MouseButtonEventArgs e) => ShowSection("toolchain");
 
     private void ShowSection(string key)
     {
@@ -258,166 +262,6 @@ public partial class SettingsWindow : Window
         SettingsService.GetTargetSettings(_settings, "sms").ShowToolchainWarnings = ChkShowWarnings.IsChecked == true;
         AutoSave();
     }
-
-    private void TxtSmsEmulatorArguments_Changed(object sender, TextChangedEventArgs e)
-    {
-        if (_loading) return;
-        SettingsService.GetTargetSettings(_settings, "sms").EmulatorArguments = TxtSmsEmulatorArguments.Text;
-        AutoSave();
-    }
-
-    private void BtnBrowseSmsEmulator_Click(object sender, RoutedEventArgs e)
-    {
-        var smsSettings = SettingsService.GetTargetSettings(_settings, "sms");
-        var dialog = new OpenFileDialog
-        {
-            Title = "Select SMS Emulator Executable",
-            Filter = "Executable Files (*.exe)|*.exe|All Files (*.*)|*.*",
-            InitialDirectory = string.IsNullOrEmpty(smsSettings.EmulatorPath)
-                ? Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles)
-                : Path.GetDirectoryName(smsSettings.EmulatorPath)
-        };
-
-        if (dialog.ShowDialog() == true)
-        {
-            smsSettings.EmulatorPath = dialog.FileName;
-            TxtSmsEmulatorPath.Text = dialog.FileName;
-            AutoSave();
-        }
-    }
-
-    private void ChkSmsLaunchEmulator_Changed(object sender, RoutedEventArgs e)
-    {
-        if (_loading) return;
-        SettingsService.GetTargetSettings(_settings, "sms").LaunchEmulatorAfterBuild = ChkSmsLaunchEmulator.IsChecked == true;
-        AutoSave();
-    }
-
-    // ── Game Gear handlers ────────────────────────────────────────────────────
-
-    private void BtnBrowseGgEmulator_Click(object sender, RoutedEventArgs e)
-    {
-        var dialog = new OpenFileDialog
-        {
-            Title = "Select Game Gear Emulator Executable",
-            Filter = "Executable Files (*.exe)|*.exe|All Files (*.*)|*.*"
-        };
-        if (dialog.ShowDialog() == true)
-        {
-            SettingsService.GetTargetSettings(_settings, "gg").EmulatorPath = dialog.FileName;
-            TxtGgEmulatorPath.Text = dialog.FileName;
-            AutoSave();
-        }
-    }
-
-    private void TxtGgEmulatorArguments_Changed(object sender, TextChangedEventArgs e)
-    {
-        if (_loading) return;
-        SettingsService.GetTargetSettings(_settings, "gg").EmulatorArguments = TxtGgEmulatorArguments.Text;
-        AutoSave();
-    }
-
-    private void ChkGgLaunchEmulator_Changed(object sender, RoutedEventArgs e)
-    {
-        if (_loading) return;
-        SettingsService.GetTargetSettings(_settings, "gg").LaunchEmulatorAfterBuild = ChkGgLaunchEmulator.IsChecked == true;
-        AutoSave();
-    }
-
-    // ── SG-1000 handlers ──────────────────────────────────────────────────────
-
-    private void BtnBrowseSg1000Emulator_Click(object sender, RoutedEventArgs e)
-    {
-        var dialog = new OpenFileDialog
-        {
-            Title = "Select SG-1000 Emulator Executable",
-            Filter = "Executable Files (*.exe)|*.exe|All Files (*.*)|*.*"
-        };
-        if (dialog.ShowDialog() == true)
-        {
-            SettingsService.GetTargetSettings(_settings, "sg1000").EmulatorPath = dialog.FileName;
-            TxtSg1000EmulatorPath.Text = dialog.FileName;
-            AutoSave();
-        }
-    }
-
-    private void TxtSg1000EmulatorArguments_Changed(object sender, TextChangedEventArgs e)
-    {
-        if (_loading) return;
-        SettingsService.GetTargetSettings(_settings, "sg1000").EmulatorArguments = TxtSg1000EmulatorArguments.Text;
-        AutoSave();
-    }
-
-    private void ChkSg1000LaunchEmulator_Changed(object sender, RoutedEventArgs e)
-    {
-        if (_loading) return;
-        SettingsService.GetTargetSettings(_settings, "sg1000").LaunchEmulatorAfterBuild = ChkSg1000LaunchEmulator.IsChecked == true;
-        AutoSave();
-    }
-
-    // ── ColecoVision handlers ─────────────────────────────────────────────────
-
-    private void BtnBrowseColecoEmulator_Click(object sender, RoutedEventArgs e)
-    {
-        var dialog = new OpenFileDialog
-        {
-            Title = "Select ColecoVision Emulator Executable",
-            Filter = "Executable Files (*.exe)|*.exe|All Files (*.*)|*.*"
-        };
-        if (dialog.ShowDialog() == true)
-        {
-            SettingsService.GetTargetSettings(_settings, "coleco").EmulatorPath = dialog.FileName;
-            TxtColecoEmulatorPath.Text = dialog.FileName;
-            AutoSave();
-        }
-    }
-
-    private void TxtColecoEmulatorArguments_Changed(object sender, TextChangedEventArgs e)
-    {
-        if (_loading) return;
-        SettingsService.GetTargetSettings(_settings, "coleco").EmulatorArguments = TxtColecoEmulatorArguments.Text;
-        AutoSave();
-    }
-
-    private void ChkColecoLaunchEmulator_Changed(object sender, RoutedEventArgs e)
-    {
-        if (_loading) return;
-        SettingsService.GetTargetSettings(_settings, "coleco").LaunchEmulatorAfterBuild = ChkColecoLaunchEmulator.IsChecked == true;
-        AutoSave();
-    }
-
-    // ── NES handlers ──────────────────────────────────────────────────────────
-
-    private void BtnBrowseNesEmulator_Click(object sender, RoutedEventArgs e)
-    {
-        var dialog = new OpenFileDialog
-        {
-            Title = "Select NES Emulator Executable",
-            Filter = "Executable Files (*.exe)|*.exe|All Files (*.*)|*.*"
-        };
-        if (dialog.ShowDialog() == true)
-        {
-            SettingsService.GetTargetSettings(_settings, "nes").EmulatorPath = dialog.FileName;
-            TxtNesEmulatorPath.Text = dialog.FileName;
-            AutoSave();
-        }
-    }
-
-    private void TxtNesEmulatorArguments_Changed(object sender, TextChangedEventArgs e)
-    {
-        if (_loading) return;
-        SettingsService.GetTargetSettings(_settings, "nes").EmulatorArguments = TxtNesEmulatorArguments.Text;
-        AutoSave();
-    }
-
-    private void ChkNesLaunchEmulator_Changed(object sender, RoutedEventArgs e)
-    {
-        if (_loading) return;
-        SettingsService.GetTargetSettings(_settings, "nes").LaunchEmulatorAfterBuild = ChkNesLaunchEmulator.IsChecked == true;
-        AutoSave();
-    }
-
-    // ── Auto-save ─────────────────────────────────────────────────────────────
 
     private void AutoSave()
     {

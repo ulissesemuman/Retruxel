@@ -5,8 +5,6 @@ namespace Retruxel.Target.SMS.Tools;
 
 public class SmsPaletteEditorExtension : IToolExtension, IPaletteProvider
 {
-    private static readonly byte[] ColorLevels = { 0, 85, 170, 255 };
-    
     public string ToolId => "palette_editor";
     
     public string TargetId => "sms";
@@ -19,7 +17,7 @@ public class SmsPaletteEditorExtension : IToolExtension, IPaletteProvider
 
     public SmsPaletteEditorExtension()
     {
-        HardwareColors = GenerateColors();
+        HardwareColors = SmsColorUtils.GenerateAllColors();
     }
 
     public string GetColorFormat(int colorIndex)
@@ -33,24 +31,5 @@ public class SmsPaletteEditorExtension : IToolExtension, IPaletteProvider
         {
             ["paletteProvider"] = this
         };
-    }
-
-    private static object[] GenerateColors()
-    {
-        var colors = new object[64];
-        int index = 0;
-        
-        for (int b = 0; b < 4; b++)
-        {
-            for (int g = 0; g < 4; g++)
-            {
-                for (int r = 0; r < 4; r++)
-                {
-                    colors[index++] = new { R = ColorLevels[r], G = ColorLevels[g], B = ColorLevels[b] };
-                }
-            }
-        }
-        
-        return colors;
     }
 }

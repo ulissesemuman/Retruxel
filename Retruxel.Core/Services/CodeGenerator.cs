@@ -210,7 +210,9 @@ public class CodeGenerator
     /// about which other modules are present in the project.
     ///
     /// Current flags injected:
-    ///   entity → "usePhysics": true/false, "useInput": true/false
+    ///   entity → "usePhysics", "useInput", "useAnimation"
+    ///   enemy  → "useAnimation"
+    ///   physics → "useTilemap"
     ///
     /// The wrapper only modifies Serialize() — all other IModule members
     /// delegate to the original module unchanged.
@@ -221,12 +223,36 @@ public class CodeGenerator
         {
             var usePhysics = presentModuleIds.Contains("physics");
             var useInput = presentModuleIds.Contains("input");
+            var useAnimation = presentModuleIds.Contains("animation");
 
-            if (usePhysics || useInput)
+            if (usePhysics || useInput || useAnimation)
                 return new ContextualModule(module, json => InjectFlags(json, new()
                 {
                     ["usePhysics"] = usePhysics,
-                    ["useInput"] = useInput
+                    ["useInput"] = useInput,
+                    ["useAnimation"] = useAnimation
+                }));
+        }
+
+        if (module.ModuleId == "enemy")
+        {
+            var useAnimation = presentModuleIds.Contains("animation");
+
+            if (useAnimation)
+                return new ContextualModule(module, json => InjectFlags(json, new()
+                {
+                    ["useAnimation"] = useAnimation
+                }));
+        }
+
+        if (module.ModuleId == "physics")
+        {
+            var useTilemap = presentModuleIds.Contains("tilemap");
+
+            if (useTilemap)
+                return new ContextualModule(module, json => InjectFlags(json, new()
+                {
+                    ["useTilemap"] = useTilemap
                 }));
         }
 

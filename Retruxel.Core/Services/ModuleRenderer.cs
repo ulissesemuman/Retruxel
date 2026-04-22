@@ -148,6 +148,13 @@ public class ModuleRenderer
                     if (result is List<string> list)
                         progress?.Report($"DEBUG: Variable '{varName}' has {list.Count} items");
                     break;
+
+                case "updateCalls":
+                    // Generate update calls for modules that have _update() functions
+                    var updateCalls = GenerateUpdateCalls(filesList, progress);
+                    variables[varName] = updateCalls;
+                    progress?.Report($"DEBUG: Generated {updateCalls.Count} update calls");
+                    break;
             }
         }
 
@@ -735,6 +742,42 @@ public class ModuleRenderer
 
     private static string Key(string targetId, string moduleId)
         => $"{targetId}::{moduleId}".ToLowerInvariant();
+
+    /// <summary>
+    /// Generates update calls for modules that have _update() functions.
+    /// Modules with update: input, animation, entity, enemy, scroll.
+    /// Modules without update: palette, tilemap, sprite, physics (only init).
+    /// </summary>
+    private static List<string> GenerateUpdateCalls(List<GeneratedFile> files, IProgress<string>? progress = null)
+    {
+        var modulesWithUpdate = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+        {
+            "input", "animation", "entity", "enemy", "scroll"
+        };
+
+        var updateCalls = new List<string>();
+        var processedModules = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        foreach (var file in files)
+        {
+            if (file.FileType != GeneratedFileType.Header)
+                continue;
+
+            var moduleId = file.SourceModuleId;
+            if (string.IsNullOrEmpty(moduleId) || processedModules.Contains(moduleId))
+                continue;
+
+            if (modulesWithUpdate.Contains(moduleId))
+            {
+                var baseName = Path.GetFileNameWithoutExtension(file.FileName);
+                updateCalls.Add($"        {baseName}_update();");
+                processedModules.Add(moduleId);
+                progress?.Report($"DEBUG: Added update call for {moduleId} ({baseName})");
+            }
+        }
+
+        return updateCalls;
+    }
 
     // ── Internal models ───────────────────────────────────────────────────────
 

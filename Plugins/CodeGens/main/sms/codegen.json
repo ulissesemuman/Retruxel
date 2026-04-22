@@ -3,7 +3,7 @@
   "targetId": "sms",
   "displayName": "SMS Main File Generator",
   "description": "Generates main.c entry point for Sega Master System",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "template": "main.c.rtrx",
   "isSystemModule": true,
   "variables": {
@@ -31,8 +31,7 @@
       "transform": "    {{Path.GetFileNameWithoutExtension(fileName)}}_init();"
     },
     "updateCalls": {
-      "from": "constant",
-      "default": []
+      "from": "updateCalls"
     },
     "textDisplayCalls": {
       "from": "constant",

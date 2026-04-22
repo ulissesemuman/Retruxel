@@ -5,10 +5,9 @@
     <EnableDefaultItems>false</EnableDefaultItems>
   </PropertyGroup>
 
-  <!-- Include all CodeGens and Tools as Content -->
+  <!-- Include all CodeGens as Content -->
   <ItemGroup>
     <Content Include="CodeGens\**\*.*" />
-    <Content Include="Tools\**\*.*" />
   </ItemGroup>
 
   <!-- Prevent build -->

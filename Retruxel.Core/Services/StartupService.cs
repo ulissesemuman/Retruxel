@@ -100,10 +100,11 @@ public static class StartupService
         await Task.Run(() =>
         {
             // Discover standard tools (ITool) via ToolLoader
-            var discoverMethod = toolLoader.GetType().GetMethod("DiscoverTools");
-            if (discoverMethod != null)
+            try
             {
-                discoverMethod.Invoke(toolLoader, null);
+                var discoverMethod = toolLoader.GetType().GetMethod("DiscoverTools");
+                discoverMethod?.Invoke(toolLoader, null);
+                
                 var getToolsMethod = toolLoader.GetType().GetMethod("GetAllTools");
                 if (getToolsMethod != null)
                 {
@@ -122,14 +123,25 @@ public static class StartupService
                     }
                 }
             }
+            catch (Exception ex)
+            {
+                progress.Report($"  WARN: Tool discovery failed - {ex.Message}");
+            }
 
             // Discover visual tools (IVisualTool) via ToolRegistry
-            var pluginsPath = Path.Combine(basePath, "Plugins");
-            var discoverToolsMethod = toolRegistry.GetType().GetMethod("DiscoverTools");
-            if (discoverToolsMethod != null)
+            try
             {
-                var progressWrapper = new Progress<string>(msg => progress.Report(msg));
-                discoverToolsMethod.Invoke(toolRegistry, new object[] { pluginsPath, progressWrapper });
+                var pluginsPath = Path.Combine(basePath, "Plugins");
+                var discoverToolsMethod = toolRegistry.GetType().GetMethod("DiscoverTools");
+                if (discoverToolsMethod != null)
+                {
+                    var progressWrapper = new Progress<string>(msg => progress.Report(msg));
+                    discoverToolsMethod.Invoke(toolRegistry, new object[] { pluginsPath, progressWrapper });
+                }
+            }
+            catch (Exception ex)
+            {
+                progress.Report($"  WARN: Visual tool discovery failed - {ex.Message}");
             }
         });
     }

@@ -7,6 +7,9 @@ namespace Retruxel.Modules.Graphics;
 /// <summary>
 /// Metasprite module — defines a logical sprite built from multiple 8×8 hardware tiles.
 ///
+/// ⚠️ OBSOLETE: Use SpriteModule v2.0.0 with Frames property instead.
+/// This module is kept for backward compatibility only.
+///
 /// Required for characters larger than 8×8 pixels, like Kung Fu Master's player (16×24)
 /// and enemies. Each animation frame lists the hardware tiles and their X/Y offsets
 /// relative to the character's origin point.
@@ -29,6 +32,7 @@ namespace Retruxel.Modules.Graphics;
 ///   ]
 /// }
 /// </summary>
+[Obsolete("Use SpriteModule v2.0.0 with Frames property instead. This module will be removed in v0.8.0.")]
 public class MetaspriteModule : IGraphicModule
 {
     public string ModuleId    => "metasprite";

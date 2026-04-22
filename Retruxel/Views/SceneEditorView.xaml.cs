@@ -1180,9 +1180,8 @@ public partial class SceneEditorView : UserControl
     {
         PropertiesPanel.Children.Add(new TextBlock
         {
-            Text = "USER ID *",
+            Text = "USER ID",
             Style = (Style)FindResource("TextLabel"),
-            Foreground = new SolidColorBrush(Color.FromRgb(0xFF, 0xD7, 0x00)),
             Margin = new Thickness(0, 0, 0, 4)
         });
 
@@ -1200,8 +1199,16 @@ public partial class SceneEditorView : UserControl
             Foreground = Brushes.White,
             FontFamily = new FontFamily("Consolas"),
             FontSize = 12,
-            VerticalAlignment = VerticalAlignment.Center
+            VerticalAlignment = VerticalAlignment.Center,
+            Tag = "placeholder"
         };
+
+        // Show placeholder when empty
+        if (string.IsNullOrEmpty(element.UserId))
+        {
+            textBox.Text = $"(auto: {element.ElementId[..8]}...)";
+            textBox.Foreground = new SolidColorBrush(Color.FromRgb(0x76, 0x75, 0x75));
+        }
 
         var validationText = new TextBlock
         {
@@ -1211,8 +1218,17 @@ public partial class SceneEditorView : UserControl
             TextWrapping = TextWrapping.Wrap
         };
 
-        string valueOnFocus = textBox.Text;
-        textBox.GotFocus += (s, e) => valueOnFocus = textBox.Text;
+        string valueOnFocus = element.UserId;
+
+        textBox.GotFocus += (s, e) =>
+        {
+            valueOnFocus = element.UserId;
+            if (string.IsNullOrEmpty(element.UserId))
+            {
+                textBox.Text = string.Empty;
+                textBox.Foreground = Brushes.White;
+            }
+        };
 
         textBox.LostFocus += (s, e) =>
         {
@@ -1221,6 +1237,18 @@ public partial class SceneEditorView : UserControl
             var newValue = textBox.Text.Trim();
             var previousValue = valueOnFocus;
 
+            // Restore placeholder if empty
+            if (string.IsNullOrEmpty(newValue))
+            {
+                textBox.Text = $"(auto: {element.ElementId[..8]}...)";
+                textBox.Foreground = new SolidColorBrush(Color.FromRgb(0x76, 0x75, 0x75));
+                element.UserId = string.Empty;
+                validationText.Text = string.Empty;
+                UpdateElementLabel(element);
+                SyncProjectModules();
+                return;
+            }
+
             if (previousValue == newValue) return;
 
             // Validate
@@ -1228,7 +1256,12 @@ public partial class SceneEditorView : UserControl
             if (!validation.IsValid)
             {
                 validationText.Text = validation.Error;
-                textBox.Text = previousValue;
+                textBox.Text = string.IsNullOrEmpty(previousValue) ? string.Empty : previousValue;
+                if (string.IsNullOrEmpty(previousValue))
+                {
+                    textBox.Text = $"(auto: {element.ElementId[..8]}...)";
+                    textBox.Foreground = new SolidColorBrush(Color.FromRgb(0x76, 0x75, 0x75));
+                }
                 element.UserId = previousValue;
                 return;
             }
@@ -1240,9 +1273,18 @@ public partial class SceneEditorView : UserControl
                 apply: val =>
                 {
                     _isUpdatingUI = true;
-                    textBox.Text = val;
-                    _isUpdatingUI = false;
                     element.UserId = val;
+                    if (string.IsNullOrEmpty(val))
+                    {
+                        textBox.Text = $"(auto: {element.ElementId[..8]}...)";
+                        textBox.Foreground = new SolidColorBrush(Color.FromRgb(0x76, 0x75, 0x75));
+                    }
+                    else
+                    {
+                        textBox.Text = val;
+                        textBox.Foreground = Brushes.White;
+                    }
+                    _isUpdatingUI = false;
                     UpdateElementLabel(element);
                     SyncProjectModules();
                 },
@@ -1258,7 +1300,7 @@ public partial class SceneEditorView : UserControl
     private (bool IsValid, string Error) ValidateUserId(string userId, string currentElementId)
     {
         if (string.IsNullOrWhiteSpace(userId))
-            return (false, "User ID is required");
+            return (true, string.Empty); // Optional field
 
         if (userId.Length < 2)
             return (false, "User ID must be at least 2 characters");
@@ -1277,6 +1319,7 @@ public partial class SceneEditorView : UserControl
                 foreach (var elem in scene.Elements)
                 {
                     if (elem.ElementId != currentElementId &&
+                        !string.IsNullOrEmpty(elem.UserId) &&
                         elem.UserId.Equals(userId, StringComparison.OrdinalIgnoreCase))
                     {
                         return (false, $"User ID '{userId}' already exists in scene '{scene.SceneName}'");
@@ -1526,14 +1569,12 @@ public partial class SceneEditorView : UserControl
 
     private string GetElementDisplayLabel(SceneElement element)
     {
-        if (element.Module is not IModule module)
-            return element.ModuleId;
+        if (!string.IsNullOrEmpty(element.UserId))
+            return $"[{element.UserId}]";
 
-        var textValue = GetModuleParameterValue(module, "text");
-        if (textValue is not null)
-            return $"[{element.ModuleId.ToUpper()}] {textValue}";
-
-        return element.ModuleId.ToUpper();
+        // Fallback to ElementId (first 8 chars)
+        var shortId = element.ElementId.Length > 8 ? element.ElementId[..8] : element.ElementId;
+        return $"[{shortId}...]";
     }
 
     private void UpdateElementPosition(SceneElement element)
@@ -1835,18 +1876,11 @@ public class SceneElement
         get
         {
             if (!string.IsNullOrEmpty(UserId))
-                return $"[{UserId}] {ModuleId.ToUpper()}";
+                return $"[{UserId}]";
 
-            if (Module is IModule module)
-            {
-                var textValue = module.GetType().GetProperty("Text",
-                    System.Reflection.BindingFlags.Public |
-                    System.Reflection.BindingFlags.Instance |
-                    System.Reflection.BindingFlags.IgnoreCase)?.GetValue(module);
-                if (textValue is not null)
-                    return $"[{ModuleId.ToUpper()}] {textValue}";
-            }
-            return ModuleId.ToUpper();
+            // Fallback to ElementId (first 8 chars)
+            var shortId = ElementId.Length > 8 ? ElementId[..8] : ElementId;
+            return $"[{shortId}...]";
         }
     }
 }

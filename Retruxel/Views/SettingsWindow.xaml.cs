@@ -122,16 +122,18 @@ public partial class SettingsWindow : Window
 
     private void ApplySettingsToUi()
     {
-        var loc = LocalizationService.Instance;
-        
         ChkShowWelcome.IsChecked = _settings.General.ShowWelcomeOnStartup;
         ChkCheckUpdates.IsChecked = _settings.General.CheckUpdatesOnStartup;
         ChkShowMadeWithSplash.IsChecked = _settings.General.ShowMadeWithSplash;
         SliderUndoHistory.Value = _settings.General.UndoHistoryLimit;
         TxtUndoHistoryValue.Text = _settings.General.UndoHistoryLimit.ToString();
 
-        var smsSettings = SettingsService.GetTargetSettings(_settings, "sms");
-        ChkShowWarnings.IsChecked = smsSettings.ShowToolchainWarnings;
+        var firstTarget = TargetRegistry.GetAllTargets().FirstOrDefault();
+        if (firstTarget != null)
+        {
+            var firstSettings = SettingsService.GetTargetSettings(_settings, firstTarget.TargetId);
+            ChkShowWarnings.IsChecked = firstSettings.ShowToolchainWarnings;
+        }
     }
 
     // ── Navigation ────────────────────────────────────────────────────────────
@@ -259,7 +261,11 @@ public partial class SettingsWindow : Window
     private void ChkShowWarnings_Changed(object sender, RoutedEventArgs e)
     {
         if (_loading) return;
-        SettingsService.GetTargetSettings(_settings, "sms").ShowToolchainWarnings = ChkShowWarnings.IsChecked == true;
+        var isChecked = ChkShowWarnings.IsChecked == true;
+        foreach (var target in TargetRegistry.GetAllTargets())
+        {
+            SettingsService.GetTargetSettings(_settings, target.TargetId).ShowToolchainWarnings = isChecked;
+        }
         AutoSave();
     }
 

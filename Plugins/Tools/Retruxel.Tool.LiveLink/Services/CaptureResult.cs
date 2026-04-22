@@ -1,4 +1,4 @@
-namespace Retruxel.SDK.LiveLink;
+namespace Retruxel.Tool.LiveLink.Services;
 
 public class CaptureResult
 {

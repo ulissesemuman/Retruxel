@@ -12,12 +12,18 @@ LiveLink allows you to extract graphics from existing ROMs by connecting to emul
 |---|---|---|---|
 | **Mesen** | SMS, GG, SG-1000, NES | TCP/JSON | 8888 |
 | **Emulicious** | SMS, GG, SG-1000, ColecoVision | TCP/Text | 58870 |
+| **BGB** | Game Boy, Game Boy Color | TCP/Text | 8765 |
+| **Mesen-S** | Super Nintendo | TCP/JSON | 8888 |
+| **mGBA** | GBA, GB, GBC | GDB Remote | 2345 |
 
 ## How to Use
 
 1. **Enable Debug API in Emulator**
    - **Mesen**: Tools → Preferences → Advanced → Enable Debug API
    - **Emulicious**: Tools → Remote Debugging → Enable
+   - **BGB**: Options → Link → Enable Link (port 8765)
+   - **Mesen-S**: Tools → Preferences → Advanced → Enable Debug API
+   - **mGBA**: Tools → Settings → Emulation → Enable GDB stub (port 2345)
 
 2. **Load ROM in Emulator**
    - Open the game you want to capture from
@@ -78,6 +84,31 @@ LiveLink allows you to extract graphics from existing ROMs by connecting to emul
 | CHR ROM | 0x0000 | 8KB | Tile pattern data (2bpp planar) |
 | Nametable | 0x2000 | 1KB | 32×30 tilemap |
 | Palette | 0x3F00 | 32 bytes | Background + sprite palettes |
+
+### SNES
+
+| Region | Address | Size | Description |
+|---|---|---|---|
+| VRAM | 0x0000 | 64KB | Tile pattern data (2/4/8bpp) |
+| Tilemap | Variable | Variable | Mode-dependent tilemap |
+| CGRAM | 0x0000 | 512 bytes | 256 colors (RGB555) |
+
+### Game Boy / Game Boy Color
+
+| Region | Address | Size | Description |
+|---|---|---|---|
+| VRAM Tiles | 0x8000 | 6KB | Tile pattern data (2bpp planar, interleaved) |
+| Tilemap | 0x9800 | 1KB | 32×32 tilemap |
+| Palette (GB) | Hardware | 4 shades | Grayscale only |
+| Palette (GBC) | 0xFF68 | 64 bytes | 8 palettes × 4 colors (RGB555) |
+
+### Game Boy Advance
+
+| Region | Address | Size | Description |
+|---|---|---|---|
+| VRAM | 0x06000000 | 96KB | Tile + bitmap data |
+| Tilemap | Variable | Variable | Mode-dependent |
+| Palette | 0x05000000 | 1KB | 512 colors (RGB555) |
 
 ## Workflow Example: Kung Fu Master Port
 

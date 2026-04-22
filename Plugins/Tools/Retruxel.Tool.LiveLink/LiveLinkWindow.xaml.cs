@@ -1,7 +1,8 @@
 using System.Windows;
 using System.Windows.Controls;
-using Retruxel.SDK.LiveLink;
+using Retruxel.Core.Interfaces;
 using Retruxel.Tool.LiveLink.Emulators;
+using Retruxel.Tool.LiveLink.Services;
 
 namespace Retruxel.Tool.LiveLink;
 
@@ -21,6 +22,9 @@ public partial class LiveLinkWindow : Window
     {
         _availableEmulators.Add(new MesenConnection());
         _availableEmulators.Add(new EmuliciousConnection());
+        _availableEmulators.Add(new BgbConnection());
+        _availableEmulators.Add(new MesenSConnection());
+        _availableEmulators.Add(new MgbaConnection());
         
         foreach (var emu in _availableEmulators)
         {

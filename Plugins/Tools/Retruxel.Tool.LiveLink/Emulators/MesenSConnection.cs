@@ -6,17 +6,18 @@ using Retruxel.Core.Interfaces;
 namespace Retruxel.Tool.LiveLink.Emulators;
 
 /// <summary>
-/// Mesen emulator connection via debug API.
-/// Supports SMS, Game Gear, SG-1000, and NES.
+/// Mesen-S emulator connection via debug API.
+/// Supports Super Nintendo Entertainment System.
+/// Uses same TCP/JSON protocol as Mesen.
 /// </summary>
-public class MesenConnection : IEmulatorConnection
+public class MesenSConnection : IEmulatorConnection
 {
     private TcpClient? _client;
     private NetworkStream? _stream;
 
-    public string EmulatorId => "mesen";
-    public string DisplayName => "Mesen";
-    public string[] SupportedTargets => new[] { "sms", "gg", "sg1000", "nes" };
+    public string EmulatorId => "mesen-s";
+    public string DisplayName => "Mesen-S";
+    public string[] SupportedTargets => new[] { "snes" };
     public bool IsConnected => _client?.Connected == true;
 
     public async Task<bool> ConnectAsync(string host = "localhost", int port = 8888)

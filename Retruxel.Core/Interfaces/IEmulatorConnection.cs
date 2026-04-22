@@ -1,4 +1,4 @@
-namespace Retruxel.SDK.LiveLink;
+namespace Retruxel.Core.Interfaces;
 
 /// <summary>
 /// Interface for emulator debug connections.

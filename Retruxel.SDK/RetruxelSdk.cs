@@ -21,6 +21,7 @@ using System.Runtime.CompilerServices;
 [assembly: TypeForwardedTo(typeof(Retruxel.Core.Interfaces.IToolchain))]
 [assembly: TypeForwardedTo(typeof(Retruxel.Core.Interfaces.IUndoableCommand))]
 [assembly: TypeForwardedTo(typeof(Retruxel.Core.Interfaces.ILocalizationService))]
+[assembly: TypeForwardedTo(typeof(Retruxel.Core.Interfaces.IEmulatorConnection))]
 [assembly: TypeForwardedTo(typeof(Retruxel.Core.Interfaces.RetruxelServices))]
 
 // ── Enums ─────────────────────────────────────────────────────────────────────
@@ -47,3 +48,4 @@ using System.Runtime.CompilerServices;
 [assembly: TypeForwardedTo(typeof(Retruxel.Core.Models.RetruxelProject))]
 [assembly: TypeForwardedTo(typeof(Retruxel.Core.Models.AssetEntry))]
 [assembly: TypeForwardedTo(typeof(Retruxel.Core.Models.SceneData))]
+[assembly: TypeForwardedTo(typeof(Retruxel.Core.Interfaces.EmulatorState))]

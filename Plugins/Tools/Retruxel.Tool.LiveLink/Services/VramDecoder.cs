@@ -1,4 +1,4 @@
-namespace Retruxel.SDK.LiveLink;
+namespace Retruxel.Tool.LiveLink.Services;
 
 /// <summary>
 /// Decodes VRAM data back to tiles and images (inverse of TileConverter).

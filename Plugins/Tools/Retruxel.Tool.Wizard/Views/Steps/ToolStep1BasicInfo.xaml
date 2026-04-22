@@ -1,0 +1,65 @@
+<UserControl x:Class="Retruxel.Tool.Wizard.Views.Steps.ToolStep1BasicInfo"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <StackPanel>
+        <TextBlock Text="Basic Information" FontSize="16" FontWeight="Bold" Foreground="#FFFFFF" Margin="0,0,0,16"/>
+        <TextBlock Text="Provide basic information about your tool." TextWrapping="Wrap" Margin="0,0,0,24"/>
+
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="16"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+
+            <!-- Tool ID -->
+            <Label Grid.Row="0" Grid.Column="0" Content="Tool ID *" Margin="0,0,0,4"/>
+            <TextBox Grid.Row="1" Grid.Column="0" x:Name="ToolIdTextBox" Margin="0,0,0,16"/>
+
+            <!-- Display Name -->
+            <Label Grid.Row="0" Grid.Column="2" Content="Display Name *" Margin="0,0,0,4"/>
+            <TextBox Grid.Row="1" Grid.Column="2" x:Name="DisplayNameTextBox" Margin="0,0,0,16"/>
+
+            <!-- Category -->
+            <Label Grid.Row="2" Grid.Column="0" Content="Category" Margin="0,0,0,4"/>
+            <ComboBox Grid.Row="3" Grid.Column="0" x:Name="CategoryComboBox" Margin="0,0,0,16">
+                <ComboBoxItem Content="Graphic" IsSelected="False"/>
+                <ComboBoxItem Content="Logic" IsSelected="False"/>
+                <ComboBoxItem Content="Audio" IsSelected="False"/>
+                <ComboBoxItem Content="Utility" IsSelected="True"/>
+            </ComboBox>
+        </Grid>
+
+        <!-- Description -->
+        <Label Content="Description" Margin="0,8,0,4"/>
+        <TextBox x:Name="DescriptionTextBox" 
+                 TextWrapping="Wrap" 
+                 AcceptsReturn="True" 
+                 Height="120" 
+                 VerticalScrollBarVisibility="Auto"/>
+
+        <!-- Info box -->
+        <Border Background="#2D2D30" BorderBrush="#3F3F46" BorderThickness="1" Padding="16" Margin="0,24,0,0">
+            <StackPanel>
+                <TextBlock Text="ℹ️ Tool ID Format" FontWeight="Bold" Foreground="#FFFFFF" Margin="0,0,0,8"/>
+                <TextBlock TextWrapping="Wrap" Foreground="#CCCCCC">
+                    Tool ID should follow the format: namespace.toolname
+                </TextBlock>
+                <TextBlock TextWrapping="Wrap" Foreground="#CCCCCC" Margin="0,8,0,0">
+                    Example: retruxel.tool.myconverter, myplugin.tool.helper
+                </TextBlock>
+            </StackPanel>
+        </Border>
+
+        <TextBlock Text="* Required fields" 
+                   FontSize="10" 
+                   Foreground="#888888" 
+                   Margin="0,16,0,0"/>
+    </StackPanel>
+</UserControl>

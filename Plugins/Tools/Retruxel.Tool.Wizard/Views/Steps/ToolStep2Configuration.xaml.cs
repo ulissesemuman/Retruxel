@@ -1,4 +1,5 @@
 using System.Windows.Controls;
+using Retruxel.Core.Services;
 using Retruxel.Tool.Wizard.Models;
 
 namespace Retruxel.Tool.Wizard.Views.Steps;
@@ -6,13 +7,30 @@ namespace Retruxel.Tool.Wizard.Views.Steps;
 public partial class ToolStep2Configuration : UserControl
 {
     private readonly ToolWizardData _data;
+    private readonly List<string> _availableTargets;
 
     public ToolStep2Configuration(ToolWizardData data)
     {
         InitializeComponent();
         _data = data;
+        _availableTargets = TargetRegistry.GetAllTargets().Select(t => t.TargetId).OrderBy(id => id).ToList();
+        LoadTargets();
         LoadData();
         AttachHandlers();
+    }
+
+    private void LoadTargets()
+    {
+        // Add "Universal" option first
+        TargetIdComboBox.Items.Add(new ComboBoxItem { Content = "Universal (all targets)" });
+        
+        // Add discovered targets
+        foreach (var target in _availableTargets)
+        {
+            TargetIdComboBox.Items.Add(new ComboBoxItem { Content = target });
+        }
+        
+        TargetIdComboBox.SelectedIndex = 0;
     }
 
     private void LoadData()
@@ -24,16 +42,11 @@ public partial class ToolStep2Configuration : UserControl
         }
         else
         {
-            var targetIndex = _data.TargetId switch
+            var targetIndex = _availableTargets.IndexOf(_data.TargetId);
+            if (targetIndex >= 0)
             {
-                "sms" => 1,
-                "nes" => 2,
-                "gg" => 3,
-                "sg1000" => 4,
-                "coleco" => 5,
-                _ => 0
-            };
-            TargetIdComboBox.SelectedIndex = targetIndex;
+                TargetIdComboBox.SelectedIndex = targetIndex + 1; // +1 because "Universal" is at index 0
+            }
         }
 
         ModuleIdTextBox.Text = _data.ModuleId ?? string.Empty;

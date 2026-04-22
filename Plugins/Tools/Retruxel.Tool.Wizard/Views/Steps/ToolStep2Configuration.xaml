@@ -20,14 +20,7 @@
 
             <!-- Target ID -->
             <Label Grid.Row="0" Grid.Column="0" Content="Target ID (optional)"/>
-            <ComboBox Grid.Row="1" Grid.Column="0" x:Name="TargetIdComboBox" Margin="0,0,0,0">
-                <ComboBoxItem Content="Universal (all targets)" IsSelected="True"/>
-                <ComboBoxItem Content="sms"/>
-                <ComboBoxItem Content="nes"/>
-                <ComboBoxItem Content="gg"/>
-                <ComboBoxItem Content="sg1000"/>
-                <ComboBoxItem Content="coleco"/>
-            </ComboBox>
+            <ComboBox Grid.Row="1" Grid.Column="0" x:Name="TargetIdComboBox" Margin="0,0,0,0"/>
 
             <!-- Module ID -->
             <Label Grid.Row="0" Grid.Column="2" Content="Module ID (optional)"/>

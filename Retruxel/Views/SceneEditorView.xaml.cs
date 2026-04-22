@@ -1165,12 +1165,127 @@ public partial class SceneEditorView : UserControl
             Margin = new Thickness(0, 0, 0, 16)
         });
 
+        // User ID field (required)
+        AddUserIdField(element);
+
         foreach (var param in manifest.Parameters)
         {
             AddParameterField(element, module, param);
         }
 
         _isUpdatingUI = false;
+    }
+
+    private void AddUserIdField(SceneElement element)
+    {
+        PropertiesPanel.Children.Add(new TextBlock
+        {
+            Text = "USER ID *",
+            Style = (Style)FindResource("TextLabel"),
+            Foreground = new SolidColorBrush(Color.FromRgb(0xFF, 0xD7, 0x00)),
+            Margin = new Thickness(0, 0, 0, 4)
+        });
+
+        var input = new Border
+        {
+            Background = new SolidColorBrush(Color.FromRgb(0x26, 0x26, 0x26)),
+            Padding = new Thickness(0),
+            Height = 32,
+            Margin = new Thickness(0, 0, 0, 4)
+        };
+
+        var textBox = new TextBox
+        {
+            Text = element.UserId,
+            Foreground = Brushes.White,
+            FontFamily = new FontFamily("Consolas"),
+            FontSize = 12,
+            VerticalAlignment = VerticalAlignment.Center
+        };
+
+        var validationText = new TextBlock
+        {
+            FontSize = 9,
+            Foreground = new SolidColorBrush(Color.FromRgb(0xFF, 0x52, 0x52)),
+            Margin = new Thickness(0, 0, 0, 12),
+            TextWrapping = TextWrapping.Wrap
+        };
+
+        string valueOnFocus = textBox.Text;
+        textBox.GotFocus += (s, e) => valueOnFocus = textBox.Text;
+
+        textBox.LostFocus += (s, e) =>
+        {
+            if (_isUpdatingUI) return;
+
+            var newValue = textBox.Text.Trim();
+            var previousValue = valueOnFocus;
+
+            if (previousValue == newValue) return;
+
+            // Validate
+            var validation = ValidateUserId(newValue, element.ElementId);
+            if (!validation.IsValid)
+            {
+                validationText.Text = validation.Error;
+                textBox.Text = previousValue;
+                element.UserId = previousValue;
+                return;
+            }
+
+            validationText.Text = string.Empty;
+
+            _undoRedo.Push(new ChangePropertyCommand(
+                description: $"Change User ID",
+                apply: val =>
+                {
+                    _isUpdatingUI = true;
+                    textBox.Text = val;
+                    _isUpdatingUI = false;
+                    element.UserId = val;
+                    UpdateElementLabel(element);
+                    SyncProjectModules();
+                },
+                previousValue: previousValue,
+                newValue: newValue));
+        };
+
+        input.Child = textBox;
+        PropertiesPanel.Children.Add(input);
+        PropertiesPanel.Children.Add(validationText);
+    }
+
+    private (bool IsValid, string Error) ValidateUserId(string userId, string currentElementId)
+    {
+        if (string.IsNullOrWhiteSpace(userId))
+            return (false, "User ID is required");
+
+        if (userId.Length < 2)
+            return (false, "User ID must be at least 2 characters");
+
+        if (!char.IsLetter(userId[0]))
+            return (false, "User ID must start with a letter");
+
+        if (!userId.All(c => char.IsLetterOrDigit(c) || c == '_'))
+            return (false, "User ID can only contain letters, numbers, and underscores");
+
+        // Check uniqueness across ALL scenes in project
+        if (_project is not null)
+        {
+            foreach (var scene in _project.Scenes)
+            {
+                foreach (var elem in scene.Elements)
+                {
+                    if (elem.ElementId != currentElementId &&
+                        elem.UserId.Equals(userId, StringComparison.OrdinalIgnoreCase))
+                    {
+                        return (false, $"User ID '{userId}' already exists in scene '{scene.SceneName}'");
+                    }
+                }
+            }
+        }
+
+        return (true, string.Empty);
     }
 
     private void AddParameterField(SceneElement element, IModule module, ParameterDefinition param)
@@ -1511,6 +1626,7 @@ public partial class SceneEditorView : UserControl
         _currentScene.Elements = _elements.Select(e => new SceneElementData
         {
             ElementId = e.ElementId,
+            UserId = e.UserId,
             ModuleId = e.ModuleId,
             TileX = e.TileX,
             TileY = e.TileY,
@@ -1555,6 +1671,7 @@ public partial class SceneEditorView : UserControl
                 var element = new SceneElement
                 {
                     ElementId = elementData.ElementId,
+                    UserId = elementData.UserId,
                     ModuleId = elementData.ModuleId,
                     Module = module,
                     TileX = elementData.TileX,
@@ -1704,6 +1821,7 @@ public partial class SceneEditorView : UserControl
 public class SceneElement
 {
     public string ElementId { get; set; } = string.Empty;
+    public string UserId { get; set; } = string.Empty;
     public string ModuleId { get; set; } = string.Empty;
     public object? Module { get; set; }
     public int TileX { get; set; }
@@ -1716,6 +1834,9 @@ public class SceneElement
     {
         get
         {
+            if (!string.IsNullOrEmpty(UserId))
+                return $"[{UserId}] {ModuleId.ToUpper()}";
+
             if (Module is IModule module)
             {
                 var textValue = module.GetType().GetProperty("Text",

@@ -25,6 +25,9 @@ public class SceneElementData
     [JsonPropertyName("elementId")]
     public string ElementId { get; set; } = string.Empty;
 
+    [JsonPropertyName("userId")]
+    public string UserId { get; set; } = string.Empty;
+
     [JsonPropertyName("moduleId")]
     public string ModuleId { get; set; } = string.Empty;
 

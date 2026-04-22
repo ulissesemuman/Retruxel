@@ -37,10 +37,28 @@ public class EnemyModule : ILogicModule
             new ParameterDefinition
             {
                 Name         = "spriteId",
-                DisplayName  = "Sprite",
-                Description  = "Tile index of the enemy sprite in VRAM.",
+                DisplayName  = "Sprite (Legacy)",
+                Description  = "[Obsolete] Tile index of the enemy sprite in VRAM. Use spriteRef instead.",
                 Type         = ParameterType.TileRef,
                 DefaultValue = 1
+            },
+            new ParameterDefinition
+            {
+                Name         = "spriteRef",
+                DisplayName  = "Sprite",
+                Description  = "Sprite module to render for this enemy.",
+                Type         = ParameterType.ModuleReference,
+                ModuleFilter = "sprite",
+                Required     = true
+            },
+            new ParameterDefinition
+            {
+                Name         = "animationRef",
+                DisplayName  = "Animation",
+                Description  = "Animation module to drive this enemy's frames (optional).",
+                Type         = ParameterType.ModuleReference,
+                ModuleFilter = "animation",
+                Required     = false
             },
             new ParameterDefinition
             {
@@ -124,7 +142,15 @@ public class EnemyModule : ILogicModule
 
     private class EnemyState
     {
+        [Obsolete("Use SpriteRef instead. Kept for backward compatibility.")]
         public int SpriteId { get; set; } = 1;
+        
+        /// <summary>Reference to a SpriteModule instance — replaces the raw SpriteId int.</summary>
+        public string SpriteRef { get; set; } = string.Empty;
+        
+        /// <summary>Reference to an AnimationModule instance (optional).</summary>
+        public string AnimationRef { get; set; } = string.Empty;
+        
         public int X { get; set; } = 120;
         public int Y { get; set; } = 144;
         public int Speed { get; set; } = 1;

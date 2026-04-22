@@ -36,10 +36,28 @@ public class EntityModule : ILogicModule
             new ParameterDefinition
             {
                 Name         = "spriteId",
-                DisplayName  = "Sprite",
-                Description  = "Tile index of the player sprite in VRAM.",
+                DisplayName  = "Sprite (Legacy)",
+                Description  = "[Obsolete] Tile index of the player sprite in VRAM. Use spriteRef instead.",
                 Type         = ParameterType.TileRef,
                 DefaultValue = 0
+            },
+            new ParameterDefinition
+            {
+                Name         = "spriteRef",
+                DisplayName  = "Sprite",
+                Description  = "Sprite module to render for this entity.",
+                Type         = ParameterType.ModuleReference,
+                ModuleFilter = "sprite",
+                Required     = true
+            },
+            new ParameterDefinition
+            {
+                Name         = "animationRef",
+                DisplayName  = "Animation",
+                Description  = "Animation module to drive this entity's frames (optional).",
+                Type         = ParameterType.ModuleReference,
+                ModuleFilter = "animation",
+                Required     = false
             },
             new ParameterDefinition
             {
@@ -104,7 +122,15 @@ public class EntityModule : ILogicModule
 
     private class EntityState
     {
+        [Obsolete("Use SpriteRef instead. Kept for backward compatibility.")]
         public int SpriteId { get; set; } = 0;
+        
+        /// <summary>Reference to a SpriteModule instance — replaces the raw SpriteId int.</summary>
+        public string SpriteRef { get; set; } = string.Empty;
+        
+        /// <summary>Reference to an AnimationModule instance (optional).</summary>
+        public string AnimationRef { get; set; } = string.Empty;
+        
         public int X { get; set; } = 32;
         public int Y { get; set; } = 144;
         public int Speed { get; set; } = 2;

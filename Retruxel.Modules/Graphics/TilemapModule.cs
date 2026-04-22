@@ -128,6 +128,15 @@ public class TilemapModule : IGraphicModule
                 Description  = "List of tile indices that are solid for collision.",
                 Type         = ParameterType.IntArray,
                 DefaultValue = Array.Empty<int>()
+            },
+            new ParameterDefinition
+            {
+                Name         = "paletteRef",
+                DisplayName  = "Palette",
+                Description  = "Palette module to use for this tilemap.",
+                Type         = ParameterType.ModuleReference,
+                ModuleFilter = "palette",
+                Required     = true
             }
         ]
     };
@@ -161,5 +170,8 @@ public class TilemapModule : IGraphicModule
         public int MapHeight { get; set; } = 24;
         public int[] MapData { get; set; } = [];
         public int[] SolidTiles { get; set; } = [];
+        
+        /// <summary>Palette reference — elementId of a PaletteModule in the same scene.</summary>
+        public string PaletteRef { get; set; } = string.Empty;
     }
 }

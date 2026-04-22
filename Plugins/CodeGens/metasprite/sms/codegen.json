@@ -1,13 +1,14 @@
 {
-  "moduleId": "metasprite",
+  "moduleId": "sprite",
   "targetId": "sms",
-  "displayName": "SMS Metasprite CodeGen",
-  "description": "Generates C arrays for multi-tile metasprites using flat offset tables",
-  "version": "1.0.0",
+  "displayName": "SMS Sprite CodeGen",
+  "description": "Generates C arrays for sprites (simple and metasprites) using flat offset tables",
+  "version": "2.0.0",
   "template": "metasprite.c.rtrx",
   "variables": {
     "startTile":    { "from": "module", "path": "startTile",    "default": 256 },
     "tilesAssetId": { "from": "module", "path": "tilesAssetId", "default": "" },
+    "paletteRef":   { "from": "module", "path": "paletteRef",   "default": "" },
     "preprocessed": {
       "from": "tool",
       "tool": "metasprite_preprocessor",

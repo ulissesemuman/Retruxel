@@ -109,102 +109,20 @@ public class AppearanceSettings
 /// <summary>
 /// Map of target-specific settings, keyed by TargetId.
 /// Ex: settings.Targets["sms"].ShowToolchainWarnings
-/// New targets are added here as they are implemented.
+/// Targets are discovered dynamically via TargetRegistry.
 /// </summary>
-public class TargetSettingsMap
+public class TargetSettingsMap : Dictionary<string, TargetSettings>
 {
-    [JsonPropertyName("sms")]
-    public SmsSettings Sms { get; set; } = new();
-    
-    [JsonPropertyName("gg")]
-    public GgSettings Gg { get; set; } = new();
-    
-    [JsonPropertyName("sg1000")]
-    public Sg1000Settings Sg1000 { get; set; } = new();
-    
-    [JsonPropertyName("coleco")]
-    public ColecoSettings Coleco { get; set; } = new();
-    
-    [JsonPropertyName("nes")]
-    public NesSettings Nes { get; set; } = new();
+    public TargetSettingsMap() : base(StringComparer.OrdinalIgnoreCase)
+    {
+    }
 }
 
 /// <summary>
-/// Settings specific to the Sega Master System target.
+/// Settings common to all targets.
+/// Each target gets its own instance with independent values.
 /// </summary>
-public class SmsSettings
-{
-    [JsonPropertyName("showToolchainWarnings")]
-    public bool ShowToolchainWarnings { get; set; } = true;
-
-    [JsonPropertyName("emulatorPath")]
-    public string EmulatorPath { get; set; } = string.Empty;
-
-    [JsonPropertyName("emulatorArguments")]
-    public string EmulatorArguments { get; set; } = string.Empty;
-
-    [JsonPropertyName("launchEmulatorAfterBuild")]
-    public bool LaunchEmulatorAfterBuild { get; set; } = false;
-}
-
-/// <summary>
-/// Settings specific to the Sega Game Gear target.
-/// </summary>
-public class GgSettings
-{
-    [JsonPropertyName("showToolchainWarnings")]
-    public bool ShowToolchainWarnings { get; set; } = true;
-
-    [JsonPropertyName("emulatorPath")]
-    public string EmulatorPath { get; set; } = string.Empty;
-
-    [JsonPropertyName("emulatorArguments")]
-    public string EmulatorArguments { get; set; } = string.Empty;
-
-    [JsonPropertyName("launchEmulatorAfterBuild")]
-    public bool LaunchEmulatorAfterBuild { get; set; } = false;
-}
-
-/// <summary>
-/// Settings specific to the Sega SG-1000 target.
-/// </summary>
-public class Sg1000Settings
-{
-    [JsonPropertyName("showToolchainWarnings")]
-    public bool ShowToolchainWarnings { get; set; } = true;
-
-    [JsonPropertyName("emulatorPath")]
-    public string EmulatorPath { get; set; } = string.Empty;
-
-    [JsonPropertyName("emulatorArguments")]
-    public string EmulatorArguments { get; set; } = string.Empty;
-
-    [JsonPropertyName("launchEmulatorAfterBuild")]
-    public bool LaunchEmulatorAfterBuild { get; set; } = false;
-}
-
-/// <summary>
-/// Settings specific to the ColecoVision target.
-/// </summary>
-public class ColecoSettings
-{
-    [JsonPropertyName("showToolchainWarnings")]
-    public bool ShowToolchainWarnings { get; set; } = true;
-
-    [JsonPropertyName("emulatorPath")]
-    public string EmulatorPath { get; set; } = string.Empty;
-
-    [JsonPropertyName("emulatorArguments")]
-    public string EmulatorArguments { get; set; } = string.Empty;
-
-    [JsonPropertyName("launchEmulatorAfterBuild")]
-    public bool LaunchEmulatorAfterBuild { get; set; } = false;
-}
-
-/// <summary>
-/// Settings specific to the Nintendo Entertainment System target.
-/// </summary>
-public class NesSettings
+public class TargetSettings
 {
     [JsonPropertyName("showToolchainWarnings")]
     public bool ShowToolchainWarnings { get; set; } = true;

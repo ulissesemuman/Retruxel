@@ -1,7 +1,7 @@
 {
   "moduleId": "physics",
   "targetId": "sms",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "template": "physics.c.rtrx",
   "variables": {
     "gravity": { "from": "module", "path": "gravity", "default": 1 },
@@ -10,6 +10,7 @@
     "walkSpeed": { "from": "module", "path": "walkSpeed", "default": 2 },
     "groundY": { "from": "module", "path": "groundY", "default": 160 },
     "screenLeft": { "from": "module", "path": "screenLeft", "default": 0 },
-    "screenRight": { "from": "module", "path": "screenRight", "default": 240 }
+    "screenRight": { "from": "module", "path": "screenRight", "default": 240 },
+    "useTilemap": { "from": "module", "path": "useTilemap", "default": false }
   }
 }

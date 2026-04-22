@@ -9,7 +9,8 @@ namespace Retruxel.Core.Services;
 ///
 /// Usage:
 ///   var settings = await SettingsService.LoadAsync();
-///   settings.Targets.Sms.ShowToolchainWarnings = false;
+///   var smsSettings = SettingsService.GetTargetSettings(settings, "sms");
+///   smsSettings.ShowToolchainWarnings = false;
 ///   await SettingsService.SaveAsync(settings);
 /// </summary>
 public static class SettingsService
@@ -37,8 +38,8 @@ public static class SettingsService
                 return new AppSettings();
 
             var json = await File.ReadAllTextAsync(SettingsPath);
-            var settings = JsonSerializer.Deserialize<AppSettings>(json, JsonOptions);
-            return settings ?? new AppSettings();
+            var settings = JsonSerializer.Deserialize<AppSettings>(json, JsonOptions) ?? new AppSettings();
+            return settings;
         }
         catch
         {
@@ -59,14 +60,28 @@ public static class SettingsService
                 return new AppSettings();
 
             var json = File.ReadAllText(SettingsPath);
-            var settings = JsonSerializer.Deserialize<AppSettings>(json, JsonOptions);
-            return settings ?? new AppSettings();
+            var settings = JsonSerializer.Deserialize<AppSettings>(json, JsonOptions) ?? new AppSettings();
+            return settings;
         }
         catch
         {
             // Corrupted or unreadable settings — return defaults silently
             return new AppSettings();
         }
+    }
+
+    /// <summary>
+    /// Gets settings for a specific target by ID.
+    /// Creates default settings if the target doesn't have an entry yet.
+    /// </summary>
+    public static TargetSettings GetTargetSettings(AppSettings settings, string targetId)
+    {
+        if (!settings.Targets.TryGetValue(targetId, out var targetSettings))
+        {
+            targetSettings = new TargetSettings();
+            settings.Targets[targetId] = targetSettings;
+        }
+        return targetSettings;
     }
 
     /// <summary>

@@ -1,0 +1,183 @@
+<Window x:Class="Retruxel.Tool.Wizard.Views.WizardMainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Retruxel Creation Wizard"
+        Width="560" Height="480"
+        WindowStartupLocation="CenterScreen"
+        Background="Transparent"
+        AllowsTransparency="True"
+        WindowStyle="None"
+        ResizeMode="NoResize">
+
+    <Window.Resources>
+        <DropShadowEffect x:Key="WindowShadow"
+                          Color="Black" Direction="270"
+                          ShadowDepth="8" BlurRadius="32" Opacity="0.6"/>
+    </Window.Resources>
+
+    <!-- Outer border — CornerRadius 6 permitido: moldura física da janela -->
+    <Border CornerRadius="6"
+            Background="{StaticResource BrushSurface}"
+            BorderBrush="#3a3a3a"
+            BorderThickness="1"
+            Effect="{StaticResource WindowShadow}">
+
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="48"/>
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
+
+            <!-- ===== TITLE BAR ===== -->
+            <Border Grid.Row="0"
+                    Background="{StaticResource BrushSurfaceContainerLow}"
+                    CornerRadius="6,6,0,0"
+                    MouseLeftButtonDown="TitleBar_MouseLeftButtonDown">
+                <Grid Margin="24,0,8,0">
+                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                        <TextBlock Text="RETRUXEL"
+                                   Style="{StaticResource TextHeadline}"
+                                   Foreground="{StaticResource BrushPrimary}"
+                                   VerticalAlignment="Center"
+                                   Margin="0,0,12,0"/>
+                        <TextBlock Text="·"
+                                   Style="{StaticResource TextLabel}"
+                                   Foreground="{StaticResource BrushOnSurfaceVariant}"
+                                   VerticalAlignment="Center"
+                                   Margin="0,0,12,0"/>
+                        <TextBlock Text="CREATION WIZARD"
+                                   Style="{StaticResource TextHeadline}"
+                                   VerticalAlignment="Center"/>
+                    </StackPanel>
+                    <Button Content="✕"
+                            Style="{StaticResource ButtonTitleBarClose}"
+                            HorizontalAlignment="Right"
+                            Click="Close_Click"/>
+                </Grid>
+            </Border>
+
+            <!-- ===== CONTENT ===== -->
+            <Grid Grid.Row="1" Background="{StaticResource BrushSurface}">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="64"/>
+                </Grid.RowDefinitions>
+
+                <!-- Section label -->
+                <Border Grid.Row="0" Padding="24,20,24,0">
+                    <TextBlock Text="CHOOSE WHAT YOU WANT TO CREATE"
+                               Style="{StaticResource TextLabelCaps}"
+                               Foreground="{StaticResource BrushOnSurfaceVariant}"/>
+                </Border>
+
+                <!-- Option cards -->
+                <ScrollViewer Grid.Row="1"
+                              Margin="24,12,24,0"
+                              VerticalScrollBarVisibility="Auto">
+                    <StackPanel>
+
+                        <!-- TARGET -->
+                        <Border Background="{StaticResource BrushSurfaceContainerLow}"
+                                Padding="20"
+                                Margin="0,0,0,4"
+                                Cursor="Hand"
+                                MouseLeftButtonDown="CreateTarget_Click">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                                    <TextBlock Text="TARGET"
+                                               Style="{StaticResource TextLabelCaps}"
+                                               Foreground="{StaticResource BrushOnSurface}"
+                                               Margin="0,0,0,4"/>
+                                    <TextBlock Text="New retro console target — specs, toolchain and main.c template"
+                                               Style="{StaticResource TextLabel}"
+                                               TextWrapping="Wrap"/>
+                                </StackPanel>
+                                <TextBlock Grid.Column="1"
+                                           Text="→"
+                                           Style="{StaticResource TextBody}"
+                                           Foreground="{StaticResource BrushOnSurfaceVariant}"
+                                           VerticalAlignment="Center"
+                                           Margin="16,0,0,0"/>
+                            </Grid>
+                        </Border>
+
+                        <!-- CODEGEN -->
+                        <Border Background="{StaticResource BrushSurfaceContainerLow}"
+                                Padding="20"
+                                Margin="0,0,0,4"
+                                Cursor="Hand"
+                                MouseLeftButtonDown="CreateCodeGen_Click">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                                    <TextBlock Text="CODEGEN"
+                                               Style="{StaticResource TextLabelCaps}"
+                                               Foreground="{StaticResource BrushOnSurface}"
+                                               Margin="0,0,0,4"/>
+                                    <TextBlock Text="Declarative code generator — JSON manifest and .rtrx template"
+                                               Style="{StaticResource TextLabel}"
+                                               TextWrapping="Wrap"/>
+                                </StackPanel>
+                                <TextBlock Grid.Column="1"
+                                           Text="→"
+                                           Style="{StaticResource TextBody}"
+                                           Foreground="{StaticResource BrushOnSurfaceVariant}"
+                                           VerticalAlignment="Center"
+                                           Margin="16,0,0,0"/>
+                            </Grid>
+                        </Border>
+
+                        <!-- TOOL -->
+                        <Border Background="{StaticResource BrushSurfaceContainerLow}"
+                                Padding="20"
+                                Cursor="Hand"
+                                MouseLeftButtonDown="CreateTool_Click">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                                    <TextBlock Text="TOOL"
+                                               Style="{StaticResource TextLabelCaps}"
+                                               Foreground="{StaticResource BrushOnSurface}"
+                                               Margin="0,0,0,4"/>
+                                    <TextBlock Text="New tool — ITool implementation and boilerplate code"
+                                               Style="{StaticResource TextLabel}"
+                                               TextWrapping="Wrap"/>
+                                </StackPanel>
+                                <TextBlock Grid.Column="1"
+                                           Text="→"
+                                           Style="{StaticResource TextBody}"
+                                           Foreground="{StaticResource BrushOnSurfaceVariant}"
+                                           VerticalAlignment="Center"
+                                           Margin="16,0,0,0"/>
+                            </Grid>
+                        </Border>
+
+                    </StackPanel>
+                </ScrollViewer>
+
+                <!-- Footer -->
+                <Border Grid.Row="2"
+                        Background="{StaticResource BrushSurfaceContainerLow}"
+                        Padding="24,0">
+                    <Button Content="CLOSE"
+                            Style="{StaticResource ButtonGhost}"
+                            HorizontalAlignment="Right"
+                            Padding="32,0" Height="40"
+                            Click="Close_Click"/>
+                </Border>
+
+            </Grid>
+        </Grid>
+    </Border>
+</Window>

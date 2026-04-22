@@ -1,21 +1,45 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace Retruxel.Lib.ImageProcessing;
 
-public class TileConverter
+public static class TileConverter
 {
-    public byte[] Convert(byte[] pixels, int bpp, int tileWidth, int tileHeight, TileFormat format, InterleaveMode interleave)
+    /// <summary>
+    /// Converts tiles to target format.
+    /// </summary>
+    /// <param name="tiles">Array of tiles (each tile is palette indices)</param>
+    /// <param name="palette">Color palette</param>
+    /// <param name="format">Target tile format</param>
+    /// <param name="interleave">Interleave mode</param>
+    /// <param name="bpp">Bits per pixel</param>
+    /// <returns>Converted tile data as byte array</returns>
+    public static byte[] Convert(byte[][] tiles, uint[] palette, TileFormat format, InterleaveMode interleave, int bpp)
+    {
+        var result = new List<byte>();
+
+        foreach (var tile in tiles)
+        {
+            var converted = ConvertSingleTile(tile, palette, format, interleave, bpp);
+            result.AddRange(converted);
+        }
+
+        return result.ToArray();
+    }
+
+    private static byte[] ConvertSingleTile(byte[] pixels, uint[] palette, TileFormat format, InterleaveMode interleave, int bpp)
     {
         return format switch
         {
-            TileFormat.Planar => ConvertToPlanar(pixels, bpp, tileWidth, tileHeight, interleave),
+            TileFormat.Planar => ConvertToPlanar(pixels, bpp, 8, 8, interleave),
             TileFormat.Linear => ConvertToLinear(pixels, bpp),
             TileFormat.Chunky => ConvertToChunky(pixels, bpp),
             _ => throw new NotSupportedException($"Format {format} not supported")
         };
     }
 
-    private byte[] ConvertToPlanar(byte[] pixels, int bpp, int tileWidth, int tileHeight, InterleaveMode interleave)
+    private static byte[] ConvertToPlanar(byte[] pixels, int bpp, int tileWidth, int tileHeight, InterleaveMode interleave)
     {
         int pixelsPerTile = tileWidth * tileHeight;
         int bytesPerPlane = pixelsPerTile / 8;
@@ -62,7 +86,7 @@ public class TileConverter
         return output;
     }
 
-    private byte[] ConvertToLinear(byte[] pixels, int bpp)
+    private static byte[] ConvertToLinear(byte[] pixels, int bpp)
     {
         // CGA style: pixels packed sequentially
         int pixelsPerByte = 8 / bpp;
@@ -79,7 +103,7 @@ public class TileConverter
         return output;
     }
 
-    private byte[] ConvertToChunky(byte[] pixels, int bpp)
+    private static byte[] ConvertToChunky(byte[] pixels, int bpp)
     {
         // TODO: Implement chunky format if needed
         throw new NotImplementedException("Chunky format not yet implemented");

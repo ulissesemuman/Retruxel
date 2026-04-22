@@ -1,0 +1,46 @@
+{
+  "moduleId": "main",
+  "targetId": "sms",
+  "displayName": "SMS Main File Generator",
+  "description": "Generates main.c entry point for Sega Master System",
+  "version": "2.0.0",
+  "template": "main.c.rtrx",
+  "isSystemModule": true,
+  "variables": {
+    "projectName": {
+      "from": "project",
+      "path": "name",
+      "default": "Untitled"
+    },
+    "targetId": {
+      "from": "project",
+      "path": "targetId",
+      "default": "sms"
+    },
+    "timestamp": {
+      "from": "system"
+    },
+    "headers": {
+      "from": "moduleFiles",
+      "path": "fileType == 'Header'",
+      "transform": "#include \"{{fileName}}\""
+    },
+    "initCalls": {
+      "from": "moduleFiles",
+      "path": "fileType == 'Header' && sourceModuleId != 'retruxel.core' && sourceModuleId != 'retruxel.splash'",
+      "transform": "    {{Path.GetFileNameWithoutExtension(fileName)}}_init();"
+    },
+    "updateCalls": {
+      "from": "updateCalls"
+    },
+    "textDisplayCalls": {
+      "from": "constant",
+      "default": []
+    },
+    "splashEnabled": {
+      "from": "settings",
+      "path": "General.ShowMadeWithSplash",
+      "default": true
+    }
+  }
+}

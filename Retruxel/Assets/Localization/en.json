@@ -264,6 +264,23 @@
     "assetimporter.error.name_empty": "Asset name cannot be empty.",
     "assetimporter.error.name_invalid": "Asset name contains invalid characters.",
     "assetimporter.error.name_spaces": "Asset name cannot contain spaces. Use underscores: bg_tiles",
-    "assetimporter.error.unexpected": "Unexpected error: {0}"
+    "assetimporter.error.unexpected": "Unexpected error: {0}",
+    "paletteeditor.title": "PALETTE EDITOR",
+    "paletteeditor.palettes": "PALETTES",
+    "paletteeditor.new_palette": "NEW PALETTE",
+    "paletteeditor.duplicate": "DUPLICATE",
+    "paletteeditor.delete": "DELETE",
+    "paletteeditor.slots": "SLOTS",
+    "paletteeditor.hardware_colors": "SMS HARDWARE COLORS",
+    "paletteeditor.slot_detail": "SLOT DETAIL",
+    "paletteeditor.quick_set": "QUICK SET",
+    "paletteeditor.black": "BLACK",
+    "paletteeditor.white": "WHITE",
+    "paletteeditor.transparent": "TRANSPARENT",
+    "paletteeditor.usage": "USAGE",
+    "paletteeditor.slot_format": "Slot {0}",
+    "paletteeditor.sms_format": "SMS: 0x{0}",
+    "paletteeditor.rgb_format": "RGB: ({0}, {1}, {2})",
+    "paletteeditor.no_usage": "No modules using this slot"
   }
 }

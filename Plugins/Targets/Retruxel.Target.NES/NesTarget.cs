@@ -28,7 +28,11 @@ public class NesTarget : ITarget
         // ── Tiles ────────────────────────────────────────────────────────────
         TileWidth = 8,
         TileHeight = 8,
-        MaxTilesInVram = 256,
+        VramRegions =
+        [
+            new VramRegion("pattern0", "Pattern Table 0", 0, 255),
+            new VramRegion("pattern1", "Pattern Table 1", 256, 511)
+        ],
 
         // ── Colors & Palettes ─────────────────────────────────────────────────
         // NES PPU: fixed 54-color palette, not mathematically calculable
@@ -110,9 +114,16 @@ public class NesTarget : ITarget
 
     public IToolchain GetToolchain()
     {
-        var builder = Retruxel.Toolchain.ToolchainOrchestrator.GetBuilder(TargetId);
+        var builder = Retruxel.Toolchain.ToolchainOrchestrator.GetBuilder(TargetId, ((ITarget)this).GetCustomToolchainBuilder());
         return new Retruxel.Toolchain.ToolchainAdapter(builder);
     }
+
+    public IEnumerable<string> GetRequiredToolchainBinaries() =>
+    [
+        Path.Combine("compilers", "cc65", "bin", "cc65.exe"),
+        Path.Combine("compilers", "cc65", "bin", "ca65.exe"),
+        Path.Combine("compilers", "cc65", "bin", "ld65.exe")
+    ];
 
     public IEnumerable<IModule> GetBuiltinModules()
     {
@@ -177,6 +188,14 @@ public class NesTarget : ITarget
                 { "UNROM", "UNROM" }
             }
         }
+    ];
+
+    public IEnumerable<ModuleOverride> GetModuleOverrides() =>
+    [
+        new ModuleOverride { ModuleId = "entity", IsSingleton = true },
+        new ModuleOverride { ModuleId = "input", IsSingleton = true },
+        new ModuleOverride { ModuleId = "physics", IsSingleton = true },
+        new ModuleOverride { ModuleId = "scroll", IsSingleton = true }
     ];
 
     // ── Code generation ───────────────────────────────────────────────────────

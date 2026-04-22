@@ -28,13 +28,15 @@
     <Project Path="Plugins/Tools/Retruxel.Tool.MarketingKit/Retruxel.Tool.MarketingKit.csproj" />
     <Project Path="Plugins/Tools/Retruxel.Tool.PixelArtEditor/Retruxel.Tool.PixelArtEditor.csproj" />
     <Project Path="Plugins/Tools/Retruxel.Tool.PlaytestBot/Retruxel.Tool.PlaytestBot.csproj" />
+    <Project Path="Plugins/Tools/Retruxel.Tool.PaletteEditor/Retruxel.Tool.PaletteEditor.csproj" />
+    <Project Path="Plugins/Tools/Retruxel.Tool.PngToTiles/Retruxel.Tool.PngToTiles.csproj" />
+    <Project Path="Plugins/Tools/Retruxel.Tool.TilemapEditor/Retruxel.Tool.TilemapEditor.csproj" />
     <Project Path="Plugins/Tools/Retruxel.Tool.TilemapPreprocessor/Retruxel.Tool.TilemapPreprocessor.csproj" />
     <Project Path="Plugins/Tools/Retruxel.Tool.TilePacker/Retruxel.Tool.TilePacker.csproj" />
     <Project Path="Plugins/Tools/Retruxel.Tool.VisualScripting/Retruxel.Tool.VisualScripting.csproj" />
   </Folder>
   <Folder Name="/Plugins/Tools/ImageProcessing/">
     <Project Path="Plugins/Tools/ImageProcessing/Retruxel.Lib.ImageProcessing/Retruxel.Lib.ImageProcessing.csproj" />
-    <Project Path="Plugins/Tools/ImageProcessing/Retruxel.Tool.PngToTiles.Sms/Retruxel.Tool.PngToTiles.Sms.csproj" />
   </Folder>
   <Project Path="Retruxel.Core/Retruxel.Core.csproj" Id="57a90c60-69b1-4159-98bb-db3d8b36ed42" />
   <Project Path="Retruxel.Modules/Retruxel.Modules.csproj" />

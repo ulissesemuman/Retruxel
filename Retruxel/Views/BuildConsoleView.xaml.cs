@@ -18,6 +18,7 @@ public partial class BuildConsoleView : UserControl
     private BuildResult? _lastResult;
     private RetruxelProject? _project;
     private DateTime _buildStartTime;
+    private BuildDiagnosticsPanel? _diagnosticsPanel;
 
     public BuildConsoleView()
     {
@@ -71,11 +72,13 @@ public partial class BuildConsoleView : UserControl
         moduleRegistry.RegisterBuiltinModules(target);
         
         var progress = new Progress<string>(msg => Dispatcher.Invoke(() => AppendLog(msg)));
-        moduleRegistry.LoadForTarget(project.TargetId, progress);
+        moduleRegistry.LoadForTarget(target, progress);
 
         // Create ModuleRenderer for declarative CodeGens
-        var pluginsPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Plugins");
-        var moduleRenderer = new ModuleRenderer(pluginsPath);
+        var pluginsPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "plugins");
+        ((IProgress<string>)progress).Report($"DEBUG: Plugins path = {pluginsPath}");
+        ((IProgress<string>)progress).Report($"DEBUG: Directory exists = {Directory.Exists(pluginsPath)}");
+        var moduleRenderer = new ModuleRenderer(pluginsPath, null, progress);
 
         // Register universal modules present in the project that weren't
         // covered by built-ins or plugins (e.g. text.display from Retruxel.Modules)
@@ -91,6 +94,12 @@ public partial class BuildConsoleView : UserControl
         Directory.CreateDirectory(outputDir);
 
         var context = await codeGen.GenerateAsync(project, outputDir, progress);
+
+        // Show diagnostics if available
+        if (context.Diagnostics is not null)
+        {
+            ShowDiagnostics(context.Diagnostics);
+        }
 
         var toolchain = target.GetToolchain();
 
@@ -130,50 +139,32 @@ public partial class BuildConsoleView : UserControl
         var settings = await SettingsService.LoadAsync();
 
         // Get settings for the current target
-        var (launchEnabled, emulatorPath, emulatorArgs) = _project.TargetId.ToLower() switch
-        {
-            "sms" => (settings.Targets.Sms.LaunchEmulatorAfterBuild,
-                      settings.Targets.Sms.EmulatorPath,
-                      settings.Targets.Sms.EmulatorArguments),
-            "nes" => (settings.Targets.Nes.LaunchEmulatorAfterBuild,
-                      settings.Targets.Nes.EmulatorPath,
-                      settings.Targets.Nes.EmulatorArguments),
-            "gg" => (settings.Targets.Gg.LaunchEmulatorAfterBuild,
-                     settings.Targets.Gg.EmulatorPath,
-                     settings.Targets.Gg.EmulatorArguments),
-            "sg1000" => (settings.Targets.Sg1000.LaunchEmulatorAfterBuild,
-                         settings.Targets.Sg1000.EmulatorPath,
-                         settings.Targets.Sg1000.EmulatorArguments),
-            "coleco" => (settings.Targets.Coleco.LaunchEmulatorAfterBuild,
-                         settings.Targets.Coleco.EmulatorPath,
-                         settings.Targets.Coleco.EmulatorArguments),
-            _ => (false, string.Empty, string.Empty)
-        };
+        var targetSettings = SettingsService.GetTargetSettings(settings, _project.TargetId);
 
-        if (!launchEnabled)
+        if (!targetSettings.LaunchEmulatorAfterBuild)
             return;
 
-        if (string.IsNullOrEmpty(emulatorPath))
+        if (string.IsNullOrEmpty(targetSettings.EmulatorPath))
         {
             AppendLog($"WARN: Emulator path not configured for {_project.TargetId.ToUpper()}. Set it in Settings.");
             return;
         }
 
-        if (!File.Exists(emulatorPath))
+        if (!File.Exists(targetSettings.EmulatorPath))
         {
-            AppendLog($"ERROR: Emulator not found at {emulatorPath}", isError: true);
+            AppendLog($"ERROR: Emulator not found at {targetSettings.EmulatorPath}", isError: true);
             return;
         }
 
         try
         {
-            var args = string.IsNullOrEmpty(emulatorArgs)
+            var args = string.IsNullOrEmpty(targetSettings.EmulatorArguments)
                 ? $"\"{romPath}\""
-                : $"{emulatorArgs} \"{romPath}\"";
+                : $"{targetSettings.EmulatorArguments} \"{romPath}\"";
 
             Process.Start(new ProcessStartInfo
             {
-                FileName = emulatorPath,
+                FileName = targetSettings.EmulatorPath,
                 Arguments = args,
                 UseShellExecute = true
             });
@@ -304,6 +295,33 @@ public partial class BuildConsoleView : UserControl
 
         ElapsedTimePanel.Visibility = Visibility.Visible;
         TxtElapsedTime.Text = $"{elapsedTime.TotalSeconds:F2}s";
+    }
+
+    private void ShowDiagnostics(BuildDiagnosticsReport report)
+    {
+        // Create diagnostics panel if it doesn't exist
+        if (_diagnosticsPanel is null)
+        {
+            _diagnosticsPanel = new BuildDiagnosticsPanel();
+            
+            // Find the parent container (assuming LogPanel is in a parent StackPanel)
+            var parent = LogPanel.Parent as Panel;
+            if (parent is not null)
+            {
+                // Add diagnostics panel after the log scroll viewer
+                var logScrollViewer = parent.Children.OfType<ScrollViewer>()
+                    .FirstOrDefault(sv => sv.Name == "LogScrollViewer");
+                
+                if (logScrollViewer is not null)
+                {
+                    var index = parent.Children.IndexOf(logScrollViewer);
+                    parent.Children.Insert(index + 1, _diagnosticsPanel);
+                }
+            }
+        }
+
+        // Update diagnostics panel with new report
+        _diagnosticsPanel.Report = report;
     }
 
     private void ExportRom_Click(object sender, System.Windows.Input.MouseButtonEventArgs e)

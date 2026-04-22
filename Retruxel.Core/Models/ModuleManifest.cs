@@ -75,6 +75,19 @@ public class ParameterDefinition
     public object? MaxValue { get; set; }
 
     /// <summary>
+    /// For ModuleReference type: comma-separated list of moduleIds this parameter accepts.
+    /// Ex: "palette" → only PaletteModule instances
+    ///     "sprite,metasprite" → SpriteModule or MetaspriteModule instances
+    /// </summary>
+    public string? ModuleFilter { get; set; }
+
+    /// <summary>
+    /// For ModuleReference type: if true, build validation fails when no module is selected.
+    /// The UI shows a warning and disables the Generate ROM button.
+    /// </summary>
+    public bool Required { get; set; } = false;
+
+    /// <summary>
     /// Available options for Enum type parameters.
     /// Each entry is a display name → internal value pair.
     /// </summary>
@@ -115,5 +128,13 @@ public enum ParameterType
     IntArray,
 
     /// <summary>Array of strings</summary>
-    StringArray
+    StringArray,
+
+    /// <summary>
+    /// Reference to another module instance in the same scene.
+    /// Renders as a dropdown listing matching module instances + [+ Create New...] option.
+    /// ModuleFilter defines which moduleIds are accepted.
+    /// Stored as the elementId (GUID) of the referenced SceneElement.
+    /// </summary>
+    ModuleReference
 }

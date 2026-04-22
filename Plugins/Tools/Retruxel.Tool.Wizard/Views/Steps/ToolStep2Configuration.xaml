@@ -1,0 +1,67 @@
+<UserControl x:Class="Retruxel.Tool.Wizard.Views.Steps.ToolStep2Configuration"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <StackPanel>
+        <TextBlock Text="Configuration" FontSize="16" FontWeight="Bold" Foreground="#FFFFFF" Margin="0,0,0,16"/>
+        <TextBlock Text="Configure how your tool integrates with Retruxel." TextWrapping="Wrap" Margin="0,0,0,24"/>
+
+        <!-- Target and Module -->
+        <TextBlock Text="SCOPE" FontSize="14" FontWeight="Bold" Foreground="#FFFFFF" Margin="0,0,0,12"/>
+        <Grid Margin="0,0,0,24">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="16"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+
+            <!-- Target ID -->
+            <Label Grid.Row="0" Grid.Column="0" Content="Target ID (optional)"/>
+            <ComboBox Grid.Row="1" Grid.Column="0" x:Name="TargetIdComboBox" Margin="0,0,0,0"/>
+
+            <!-- Module ID -->
+            <Label Grid.Row="0" Grid.Column="2" Content="Module ID (optional)"/>
+            <TextBox Grid.Row="1" Grid.Column="2" x:Name="ModuleIdTextBox" 
+                     ToolTip="Leave empty for standalone tools"/>
+        </Grid>
+
+        <!-- Behavior -->
+        <TextBlock Text="BEHAVIOR" FontSize="14" FontWeight="Bold" Foreground="#FFFFFF" Margin="0,0,0,12"/>
+        <StackPanel Margin="0,0,0,24">
+            <CheckBox x:Name="IsSingletonCheckBox" Content="Is Singleton" Margin="0,0,0,8"
+                      ToolTip="Only one instance of this tool can run at a time"/>
+            <CheckBox x:Name="RequiresProjectCheckBox" Content="Requires Project" Margin="0,0,0,8"
+                      ToolTip="Tool requires an open project to function"/>
+        </StackPanel>
+
+        <!-- Info box -->
+        <Border Background="#2D2D30" BorderBrush="#3F3F46" BorderThickness="1" Padding="16">
+            <StackPanel>
+                <TextBlock Text="ℹ️ Configuration Options" FontWeight="Bold" Foreground="#FFFFFF" Margin="0,0,0,8"/>
+                
+                <TextBlock Text="Target ID" FontWeight="Bold" Foreground="#CCCCCC" Margin="0,8,0,4"/>
+                <TextBlock TextWrapping="Wrap" Foreground="#CCCCCC">
+                    Leave as "Universal" if your tool works with all targets. Select a specific target if it's target-specific.
+                </TextBlock>
+                
+                <TextBlock Text="Module ID" FontWeight="Bold" Foreground="#CCCCCC" Margin="0,8,0,4"/>
+                <TextBlock TextWrapping="Wrap" Foreground="#CCCCCC">
+                    Leave empty for standalone tools. Specify a module ID if your tool is designed to work with a specific module type.
+                </TextBlock>
+                
+                <TextBlock Text="Is Singleton" FontWeight="Bold" Foreground="#CCCCCC" Margin="0,8,0,4"/>
+                <TextBlock TextWrapping="Wrap" Foreground="#CCCCCC">
+                    Check this if only one instance of your tool should run at a time (e.g., settings windows, editors).
+                </TextBlock>
+                
+                <TextBlock Text="Requires Project" FontWeight="Bold" Foreground="#CCCCCC" Margin="0,8,0,4"/>
+                <TextBlock TextWrapping="Wrap" Foreground="#CCCCCC">
+                    Check this if your tool needs an open project to function (e.g., build tools, project analyzers).
+                </TextBlock>
+            </StackPanel>
+        </Border>
+    </StackPanel>
+</UserControl>

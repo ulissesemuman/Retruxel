@@ -16,11 +16,14 @@ using System.Runtime.CompilerServices;
 [assembly: TypeForwardedTo(typeof(Retruxel.Core.Interfaces.IAudioModule))]
 [assembly: TypeForwardedTo(typeof(Retruxel.Core.Interfaces.ITarget))]
 [assembly: TypeForwardedTo(typeof(Retruxel.Core.Interfaces.ITool))]
+[assembly: TypeForwardedTo(typeof(Retruxel.Core.Interfaces.IToolExtension))]
 [assembly: TypeForwardedTo(typeof(Retruxel.Core.Interfaces.ICodeGenPlugin))]
 [assembly: TypeForwardedTo(typeof(Retruxel.Core.Interfaces.IToolchain))]
 [assembly: TypeForwardedTo(typeof(Retruxel.Core.Interfaces.IUndoableCommand))]
 [assembly: TypeForwardedTo(typeof(Retruxel.Core.Interfaces.ILocalizationService))]
-[assembly: TypeForwardedTo(typeof(Retruxel.Core.Interfaces.RetruxelServices))]
+[assembly: TypeForwardedTo(typeof(Retruxel.Core.Interfaces.IEmulatorConnection))]
+[assembly: TypeForwardedTo(typeof(Retruxel.Core.Interfaces.IPaletteProvider))]
+[assembly: TypeForwardedTo(typeof(Retruxel.Core.Services.ServiceLocator))]
 
 // ── Enums ─────────────────────────────────────────────────────────────────────
 
@@ -46,3 +49,4 @@ using System.Runtime.CompilerServices;
 [assembly: TypeForwardedTo(typeof(Retruxel.Core.Models.RetruxelProject))]
 [assembly: TypeForwardedTo(typeof(Retruxel.Core.Models.AssetEntry))]
 [assembly: TypeForwardedTo(typeof(Retruxel.Core.Models.SceneData))]
+[assembly: TypeForwardedTo(typeof(Retruxel.Core.Interfaces.EmulatorState))]

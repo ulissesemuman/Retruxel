@@ -20,6 +20,12 @@ public class CodeGenerator
         _moduleRegistry = moduleRegistry;
         _moduleRenderer = moduleRenderer;
         _target = target;
+        
+        // Set target assembly for ModuleRenderer to discover IToolExtension implementations
+        _moduleRenderer.SetTargetAssembly(target.GetType().Assembly);
+        
+        // Set module registry for dynamic singleton checking
+        _moduleRenderer.SetModuleRegistry(moduleRegistry);
     }
 
     /// <summary>
@@ -36,8 +42,7 @@ public class CodeGenerator
 
         progress?.Report("INIT: Starting code generation...");
 
-        // Reset codegen state before generation
-        _moduleRegistry.ResetCodeGenState();
+        // Reset renderer state before generation
         _moduleRenderer.ResetState();
 
         // Collect all module instances from scenes
@@ -66,7 +71,13 @@ public class CodeGenerator
 
                 var moduleType = moduleTemplate.GetType();
                 var module = (IModule)Activator.CreateInstance(moduleType)!;
-                module.Deserialize(elementData.ModuleState);
+                
+                var moduleStateJson = elementData.ModuleState.ValueKind != System.Text.Json.JsonValueKind.Undefined &&
+                                      elementData.ModuleState.ValueKind != System.Text.Json.JsonValueKind.Null
+                    ? elementData.ModuleState.GetRawText()
+                    : "{}";
+                
+                module.Deserialize(moduleStateJson);
 
                 if (!instancesByModule.ContainsKey(elementData.ModuleId))
                     instancesByModule[elementData.ModuleId] = new List<IModule>();
@@ -102,19 +113,13 @@ public class CodeGenerator
                         module.IsSingleton).ToList();
                     progress?.Report($"INFO: {module.ModuleId} generated via ModuleRenderer.");
                 }
-                // Priority 2: Try CodeGen from registry (legacy DLL-based)
-                else if (_moduleRegistry.GetCodeGen(module.ModuleId, project.TargetId) is var codegen && codegen != null)
-                {
-                    generatedFiles = codegen.Generate(moduleJson).ToList();
-                    progress?.Report($"INFO: {module.ModuleId} generated via CodeGen plugin.");
-                }
-                // Priority 3: Ask target to translate (legacy)
+                // Priority 2: Ask target to translate (legacy fallback)
                 else if (_target.GenerateCodeForModule(contextualModule).ToList() is var targetFiles && targetFiles.Count > 0)
                 {
                     generatedFiles = targetFiles;
                     progress?.Report($"INFO: {module.ModuleId} generated via target.");
                 }
-                // Priority 4: Module's own GenerateCode() (external plugins)
+                // Priority 3: Module's own GenerateCode() (external plugins)
                 else
                 {
                     generatedFiles = module switch
@@ -160,13 +165,25 @@ public class CodeGenerator
         if (systemFiles.Any())
             progress?.Report($"INFO: {systemFiles.Count()} system files generated.");
 
-        var mainFile = _target.GenerateMainFile(project, sourceFiles);
+        // Priority 1: Try declarative main.c generation via ModuleRenderer
+        var mainFile = _moduleRenderer.RenderMainFile(project.TargetId, project, sourceFiles, progress);
+        if (mainFile is not null)
+        {
+            progress?.Report("INFO: main.c generated via ModuleRenderer.");
+        }
+        else
+        {
+            // Priority 2: Fallback to target's hardcoded GenerateMainFile()
+            mainFile = _target.GenerateMainFile(project, sourceFiles);
+            progress?.Report("INFO: main.c generated via target fallback.");
+        }
+        
         sourceFiles.Insert(0, mainFile);
 
         progress?.Report($"INFO: {sourceFiles.Count} source files generated.");
         progress?.Report($"INFO: {assets.Count} assets generated.");
 
-        return new BuildContext
+        var buildContext = new BuildContext
         {
             TargetId = project.TargetId,
             SourceFiles = sourceFiles,
@@ -176,6 +193,22 @@ public class CodeGenerator
                 .Where(p => p.Key.StartsWith("target."))
                 .ToDictionary(p => p.Key.Replace("target.", ""), p => p.Value)
         };
+
+        // Generate build diagnostics if target supports it
+        var diagnosticInput = new BuildDiagnosticInput(
+            sourceFiles,
+            assets,
+            buildContext.BuildParameters,
+            _target.Specs);
+
+        var diagnostics = _target.GetBuildDiagnostics(diagnosticInput);
+        if (diagnostics is not null)
+        {
+            buildContext.Diagnostics = diagnostics;
+            progress?.Report($"INFO: Build diagnostics generated — {diagnostics.Metrics.Count} metrics.");
+        }
+
+        return buildContext;
     }
 
     /// <summary>
@@ -183,7 +216,9 @@ public class CodeGenerator
     /// about which other modules are present in the project.
     ///
     /// Current flags injected:
-    ///   entity → "usePhysics": true/false, "useInput": true/false
+    ///   entity → "usePhysics", "useInput", "useAnimation"
+    ///   enemy  → "useAnimation"
+    ///   physics → "useTilemap"
     ///
     /// The wrapper only modifies Serialize() — all other IModule members
     /// delegate to the original module unchanged.
@@ -194,12 +229,36 @@ public class CodeGenerator
         {
             var usePhysics = presentModuleIds.Contains("physics");
             var useInput = presentModuleIds.Contains("input");
+            var useAnimation = presentModuleIds.Contains("animation");
 
-            if (usePhysics || useInput)
+            if (usePhysics || useInput || useAnimation)
                 return new ContextualModule(module, json => InjectFlags(json, new()
                 {
                     ["usePhysics"] = usePhysics,
-                    ["useInput"] = useInput
+                    ["useInput"] = useInput,
+                    ["useAnimation"] = useAnimation
+                }));
+        }
+
+        if (module.ModuleId == "enemy")
+        {
+            var useAnimation = presentModuleIds.Contains("animation");
+
+            if (useAnimation)
+                return new ContextualModule(module, json => InjectFlags(json, new()
+                {
+                    ["useAnimation"] = useAnimation
+                }));
+        }
+
+        if (module.ModuleId == "physics")
+        {
+            var useTilemap = presentModuleIds.Contains("tilemap");
+
+            if (useTilemap)
+                return new ContextualModule(module, json => InjectFlags(json, new()
+                {
+                    ["useTilemap"] = useTilemap
                 }));
         }
 

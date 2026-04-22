@@ -2,6 +2,7 @@ using Retruxel.Core.Commands;
 using Retruxel.Core.Interfaces;
 using Retruxel.Core.Models;
 using Retruxel.Core.Services;
+using Retruxel.Services;
 using Retruxel.Tool.AssetImporter;
 using System.IO;
 using System.Windows;
@@ -82,7 +83,10 @@ public partial class SceneEditorView : UserControl
 
         foreach (var asset in _project.Assets)
         {
-            var panel = asset.Type == AssetType.Tiles
+            // Determine panel based on VramRegionId
+            var panel = asset.VramRegionId.Contains("background", StringComparison.OrdinalIgnoreCase) ||
+                        asset.VramRegionId.Contains("bg", StringComparison.OrdinalIgnoreCase) ||
+                        asset.VramRegionId.Contains("tiles", StringComparison.OrdinalIgnoreCase)
                 ? AssetTilesPanel
                 : AssetSpritesPanel;
 
@@ -118,7 +122,10 @@ public partial class SceneEditorView : UserControl
             VerticalAlignment = VerticalAlignment.Center
         };
         indicator.SetResourceReference(Border.BackgroundProperty,
-            asset.Type == AssetType.Tiles ? "BrushSecondary" : "BrushTertiary");
+            asset.VramRegionId.Contains("background", StringComparison.OrdinalIgnoreCase) ||
+            asset.VramRegionId.Contains("bg", StringComparison.OrdinalIgnoreCase) ||
+            asset.VramRegionId.Contains("tiles", StringComparison.OrdinalIgnoreCase)
+                ? "BrushSecondary" : "BrushTertiary");
         Grid.SetColumn(indicator, 0);
 
         // Asset name
@@ -159,12 +166,12 @@ public partial class SceneEditorView : UserControl
     }
 
     private void BtnImportTiles_Click(object sender, RoutedEventArgs e)
-        => OpenAssetImporter(AssetType.Tiles);
+        => OpenAssetImporter("background");
 
     private void BtnImportSprites_Click(object sender, RoutedEventArgs e)
-        => OpenAssetImporter(AssetType.Sprites);
+        => OpenAssetImporter("sprites");
 
-    private void OpenAssetImporter(AssetType assetType)
+    private void OpenAssetImporter(string vramRegionId)
     {
         if (_project is null || _target is null) return;
 
@@ -173,9 +180,8 @@ public partial class SceneEditorView : UserControl
             Owner = Window.GetWindow(this)
         };
 
-        // Pre-select asset type
-        if (assetType == AssetType.Sprites)
-            window.PreSelectSprites();
+        // Pre-select VRAM region
+        window.PreSelectRegion(vramRegionId);
 
         if (window.ShowDialog() == true && window.ImportedAsset is not null)
         {
@@ -506,7 +512,7 @@ public partial class SceneEditorView : UserControl
 
         // Collect IDs of singleton modules already on the canvas
         var usedSingletons = _elements
-            .Where(e => e.Module is IModule m && m.IsSingleton)
+            .Where(e => _moduleRegistry.IsModuleSingleton(e.ModuleId))
             .Select(e => e.ModuleId)
             .ToHashSet();
 
@@ -515,21 +521,21 @@ public partial class SceneEditorView : UserControl
         foreach (var (moduleId, module) in _moduleRegistry.LogicModules)
         {
             var m = (IModule)module;
-            if (m.IsSingleton && usedSingletons.Contains(moduleId)) continue;
+            if (_moduleRegistry.IsModuleSingleton(moduleId) && usedSingletons.Contains(moduleId)) continue;
             modules.Add((m.Category, moduleId, m.DisplayName));
         }
 
         foreach (var (moduleId, module) in _moduleRegistry.GraphicModules)
         {
             var m = (IModule)module;
-            if (m.IsSingleton && usedSingletons.Contains(moduleId)) continue;
+            if (_moduleRegistry.IsModuleSingleton(moduleId) && usedSingletons.Contains(moduleId)) continue;
             modules.Add((m.Category, moduleId, m.DisplayName));
         }
 
         foreach (var (moduleId, module) in _moduleRegistry.AudioModules)
         {
             var m = (IModule)module;
-            if (m.IsSingleton && usedSingletons.Contains(moduleId)) continue;
+            if (_moduleRegistry.IsModuleSingleton(moduleId) && usedSingletons.Contains(moduleId)) continue;
             modules.Add((m.Category, moduleId, m.DisplayName));
         }
 
@@ -638,11 +644,11 @@ public partial class SceneEditorView : UserControl
 
     /// <summary>
     /// Handles an asset dropped from the asset panel onto the canvas.
-    /// Resolves the correct module for the asset type, creates it, and
+    /// Resolves the correct module for the asset's VRAM region, creates it, and
     /// sets tilesAssetId automatically — no manual typing required.
     ///
-    /// Tilemap  ← AssetType.Tiles   (module with "tilemap" in ID + tilesAssetId param)
-    /// Sprite   ← AssetType.Sprites (module with "sprite"  in ID + tilesAssetId param)
+    /// Tilemap  ← background/bg/tiles region (module with "tilemap" in ID + tilesAssetId param)
+    /// Sprite   ← sprites region (module with "sprite" in ID + tilesAssetId param)
     ///
     /// Singleton check: singletons already on canvas are hidden from the module palette
     /// (handled by RefreshModulePalette). Since TilemapModule and SpriteModule are not
@@ -650,12 +656,12 @@ public partial class SceneEditorView : UserControl
     /// </summary>
     private void DropAssetOnCanvas(AssetEntry asset, int tileX, int tileY)
     {
-        var moduleId = ResolveModuleForAsset(asset.Type);
+        var moduleId = ResolveModuleForAsset(asset.VramRegionId);
 
         if (moduleId is null)
         {
             MessageBox.Show(
-                $"No module available for asset type '{asset.Type}'. " +
+                $"No module available for VRAM region '{asset.VramRegionId}'. " +
                 $"Make sure the active target supports this asset type.",
                 "Retruxel", MessageBoxButton.OK, MessageBoxImage.Warning);
             return;
@@ -680,19 +686,25 @@ public partial class SceneEditorView : UserControl
 
         SyncProjectModules();
         _ = _projectManager?.SaveAsync();
+
+        // Open visual tool if available (e.g., tilemap editor)
+        OpenVisualToolForElement(element);
     }
 
     /// <summary>
-    /// Finds the appropriate module ID for the given asset type by searching
+    /// Finds the appropriate module ID for the given VRAM region by searching
     /// all loaded modules for one whose ID contains the expected keyword
     /// and whose manifest declares a tilesAssetId parameter.
     /// This approach is target-agnostic — works for SMS, GG, NES, etc.
     /// </summary>
-    private string? ResolveModuleForAsset(AssetType assetType)
+    private string? ResolveModuleForAsset(string vramRegionId)
     {
         if (_moduleRegistry is null) return null;
 
-        var keyword = assetType == AssetType.Tiles ? "tilemap" : "sprite";
+        // Determine keyword based on VRAM region
+        var keyword = vramRegionId.Contains("sprite", StringComparison.OrdinalIgnoreCase)
+            ? "sprite"
+            : "tilemap";
 
         foreach (var (id, m) in _moduleRegistry.LogicModules)
         {
@@ -781,6 +793,14 @@ public partial class SceneEditorView : UserControl
         }
         border.MouseLeftButtonDown += (s, e) =>
         {
+            if (e.ClickCount == 2)
+            {
+                // Double click → open visual tool if available
+                OpenVisualToolForElement(element);
+                e.Handled = true;
+                return;
+            }
+
             SelectElement(element);
             _isDragging = true;
             _dragStartTileX = element.TileX;
@@ -861,6 +881,21 @@ public partial class SceneEditorView : UserControl
                 e.Handled = true;
             }
         };
+
+        // Right-click context menu
+        var contextMenu = new ContextMenu();
+        var menuEdit = new MenuItem { Header = "Edit" };
+        var menuDelete = new MenuItem { Header = "Delete" };
+
+        menuEdit.Click += (_, _) => OpenVisualToolForElement(element);
+        menuDelete.Click += (_, _) => RemoveElement(element);
+
+        // Only show Edit if module has a visual tool
+        if (element.Module is IModule mod && !string.IsNullOrEmpty(mod.VisualToolId))
+            contextMenu.Items.Add(menuEdit);
+
+        contextMenu.Items.Add(menuDelete);
+        border.ContextMenu = contextMenu;
 
         element.CanvasVisual = border;
         return border;
@@ -1130,12 +1165,170 @@ public partial class SceneEditorView : UserControl
             Margin = new Thickness(0, 0, 0, 16)
         });
 
+        // User ID field (required)
+        AddUserIdField(element);
+
         foreach (var param in manifest.Parameters)
         {
             AddParameterField(element, module, param);
         }
 
         _isUpdatingUI = false;
+    }
+
+    private void AddUserIdField(SceneElement element)
+    {
+        PropertiesPanel.Children.Add(new TextBlock
+        {
+            Text = "USER ID",
+            Style = (Style)FindResource("TextLabel"),
+            Margin = new Thickness(0, 0, 0, 4)
+        });
+
+        var input = new Border
+        {
+            Background = new SolidColorBrush(Color.FromRgb(0x26, 0x26, 0x26)),
+            Padding = new Thickness(0),
+            Height = 32,
+            Margin = new Thickness(0, 0, 0, 4)
+        };
+
+        var textBox = new TextBox
+        {
+            Text = element.UserId,
+            Foreground = Brushes.White,
+            FontFamily = new FontFamily("Consolas"),
+            FontSize = 12,
+            VerticalAlignment = VerticalAlignment.Center,
+            Tag = "placeholder"
+        };
+
+        // Show placeholder when empty
+        if (string.IsNullOrEmpty(element.UserId))
+        {
+            textBox.Text = $"(auto: {element.ElementId[..8]}...)";
+            textBox.Foreground = new SolidColorBrush(Color.FromRgb(0x76, 0x75, 0x75));
+        }
+
+        var validationText = new TextBlock
+        {
+            FontSize = 9,
+            Foreground = new SolidColorBrush(Color.FromRgb(0xFF, 0x52, 0x52)),
+            Margin = new Thickness(0, 0, 0, 12),
+            TextWrapping = TextWrapping.Wrap
+        };
+
+        string valueOnFocus = element.UserId;
+
+        textBox.GotFocus += (s, e) =>
+        {
+            valueOnFocus = element.UserId;
+            if (string.IsNullOrEmpty(element.UserId))
+            {
+                textBox.Text = string.Empty;
+                textBox.Foreground = Brushes.White;
+            }
+        };
+
+        textBox.LostFocus += (s, e) =>
+        {
+            if (_isUpdatingUI) return;
+
+            var newValue = textBox.Text.Trim();
+            var previousValue = valueOnFocus;
+
+            // Restore placeholder if empty
+            if (string.IsNullOrEmpty(newValue))
+            {
+                textBox.Text = $"(auto: {element.ElementId[..8]}...)";
+                textBox.Foreground = new SolidColorBrush(Color.FromRgb(0x76, 0x75, 0x75));
+                element.UserId = string.Empty;
+                validationText.Text = string.Empty;
+                UpdateElementLabel(element);
+                SyncProjectModules();
+                return;
+            }
+
+            if (previousValue == newValue) return;
+
+            // Validate
+            var validation = ValidateUserId(newValue, element.ElementId);
+            if (!validation.IsValid)
+            {
+                validationText.Text = validation.Error;
+                textBox.Text = string.IsNullOrEmpty(previousValue) ? string.Empty : previousValue;
+                if (string.IsNullOrEmpty(previousValue))
+                {
+                    textBox.Text = $"(auto: {element.ElementId[..8]}...)";
+                    textBox.Foreground = new SolidColorBrush(Color.FromRgb(0x76, 0x75, 0x75));
+                }
+                element.UserId = previousValue;
+                return;
+            }
+
+            validationText.Text = string.Empty;
+
+            _undoRedo.Push(new ChangePropertyCommand(
+                description: $"Change User ID",
+                apply: val =>
+                {
+                    _isUpdatingUI = true;
+                    element.UserId = val;
+                    if (string.IsNullOrEmpty(val))
+                    {
+                        textBox.Text = $"(auto: {element.ElementId[..8]}...)";
+                        textBox.Foreground = new SolidColorBrush(Color.FromRgb(0x76, 0x75, 0x75));
+                    }
+                    else
+                    {
+                        textBox.Text = val;
+                        textBox.Foreground = Brushes.White;
+                    }
+                    _isUpdatingUI = false;
+                    UpdateElementLabel(element);
+                    SyncProjectModules();
+                },
+                previousValue: previousValue,
+                newValue: newValue));
+        };
+
+        input.Child = textBox;
+        PropertiesPanel.Children.Add(input);
+        PropertiesPanel.Children.Add(validationText);
+    }
+
+    private (bool IsValid, string Error) ValidateUserId(string userId, string currentElementId)
+    {
+        if (string.IsNullOrWhiteSpace(userId))
+            return (true, string.Empty); // Optional field
+
+        if (userId.Length < 2)
+            return (false, "User ID must be at least 2 characters");
+
+        if (!char.IsLetter(userId[0]))
+            return (false, "User ID must start with a letter");
+
+        if (!userId.All(c => char.IsLetterOrDigit(c) || c == '_'))
+            return (false, "User ID can only contain letters, numbers, and underscores");
+
+        // Check uniqueness across ALL scenes in project
+        if (_project is not null)
+        {
+            foreach (var scene in _project.Scenes)
+            {
+                foreach (var elem in scene.Elements)
+                {
+                    if (elem.ElementId != currentElementId &&
+                        !string.IsNullOrEmpty(elem.UserId) &&
+                        elem.UserId.Equals(userId, StringComparison.OrdinalIgnoreCase))
+                    {
+                        return (false, $"User ID '{userId}' already exists in scene '{scene.SceneName}'");
+                    }
+                }
+            }
+        }
+
+        return (true, string.Empty);
     }
 
     private void AddParameterField(SceneElement element, IModule module, ParameterDefinition param)
@@ -1376,14 +1569,12 @@ public partial class SceneEditorView : UserControl
 
     private string GetElementDisplayLabel(SceneElement element)
     {
-        if (element.Module is not IModule module)
-            return element.ModuleId;
+        if (!string.IsNullOrEmpty(element.UserId))
+            return $"[{element.UserId}]";
 
-        var textValue = GetModuleParameterValue(module, "text");
-        if (textValue is not null)
-            return $"[{element.ModuleId.ToUpper()}] {textValue}";
-
-        return element.ModuleId.ToUpper();
+        // Fallback to ElementId (first 8 chars)
+        var shortId = element.ElementId.Length > 8 ? element.ElementId[..8] : element.ElementId;
+        return $"[{shortId}...]";
     }
 
     private void UpdateElementPosition(SceneElement element)
@@ -1473,16 +1664,22 @@ public partial class SceneEditorView : UserControl
     {
         if (_project is null || _currentScene is null) return;
 
-        _currentScene.Elements = _elements.Select(e => new SceneElementData
+        _currentScene.Elements = _elements.Select(e =>
         {
-            ElementId = e.ElementId,
-            ModuleId = e.ModuleId,
-            TileX = e.TileX,
-            TileY = e.TileY,
-            Trigger = e.Trigger,
-            ModuleState = e.Module is Retruxel.Core.Interfaces.IModule module
+            var moduleJson = e.Module is Retruxel.Core.Interfaces.IModule module
                 ? module.Serialize()
-                : string.Empty
+                : "{}";
+
+            return new SceneElementData
+            {
+                ElementId = e.ElementId,
+                UserId = e.UserId,
+                ModuleId = e.ModuleId,
+                TileX = e.TileX,
+                TileY = e.TileY,
+                Trigger = e.Trigger,
+                ModuleState = System.Text.Json.JsonDocument.Parse(moduleJson).RootElement.Clone()
+            };
         }).ToList();
 
         _project.DefaultModules = _elements
@@ -1520,6 +1717,7 @@ public partial class SceneEditorView : UserControl
                 var element = new SceneElement
                 {
                     ElementId = elementData.ElementId,
+                    UserId = elementData.UserId,
                     ModuleId = elementData.ModuleId,
                     Module = module,
                     TileX = elementData.TileX,
@@ -1565,7 +1763,7 @@ public partial class SceneEditorView : UserControl
     /// <summary>
     /// Deserializes a module from its JSON state.
     /// </summary>
-    private IModule? DeserializeModule(string moduleId, string moduleState)
+    private IModule? DeserializeModule(string moduleId, System.Text.Json.JsonElement moduleState)
     {
         if (_moduleRegistry is null) return null;
 
@@ -1583,8 +1781,12 @@ public partial class SceneEditorView : UserControl
         var moduleType = moduleTemplate.GetType();
         var module = (IModule)Activator.CreateInstance(moduleType)!;
 
-        if (!string.IsNullOrEmpty(moduleState))
-            module.Deserialize(moduleState);
+        if (moduleState.ValueKind != System.Text.Json.JsonValueKind.Undefined &&
+            moduleState.ValueKind != System.Text.Json.JsonValueKind.Null)
+        {
+            var jsonString = moduleState.GetRawText();
+            module.Deserialize(jsonString);
+        }
 
         return module;
     }
@@ -1634,6 +1836,33 @@ public partial class SceneEditorView : UserControl
             // Ignore conversion errors
         }
     }
+
+    /// <summary>
+    /// Opens the visual tool for an element if the module has one.
+    /// </summary>
+    private void OpenVisualToolForElement(SceneElement element)
+    {
+        if (_project is null || _target is null || _currentScene is null) return;
+        if (element.Module is not IModule module) return;
+        if (string.IsNullOrEmpty(module.VisualToolId)) return;
+
+        // Find corresponding SceneElementData
+        var elementData = _currentScene.Elements.FirstOrDefault(e => e.ElementId == element.ElementId);
+
+        VisualToolInvoker.OpenVisualTool(
+            module,
+            _target,
+            _project,
+            _project.ProjectPath,
+            _currentScene,
+            elementData);
+
+        // Refresh UI after tool closes
+        RefreshElementVisual(element);
+        if (_selectedElement == element)
+            BuildPropertiesPanel(element);
+        SyncProjectModules();
+    }
 }
 
 /// <summary>
@@ -1642,6 +1871,7 @@ public partial class SceneEditorView : UserControl
 public class SceneElement
 {
     public string ElementId { get; set; } = string.Empty;
+    public string UserId { get; set; } = string.Empty;
     public string ModuleId { get; set; } = string.Empty;
     public object? Module { get; set; }
     public int TileX { get; set; }
@@ -1654,16 +1884,12 @@ public class SceneElement
     {
         get
         {
-            if (Module is IModule module)
-            {
-                var textValue = module.GetType().GetProperty("Text",
-                    System.Reflection.BindingFlags.Public |
-                    System.Reflection.BindingFlags.Instance |
-                    System.Reflection.BindingFlags.IgnoreCase)?.GetValue(module);
-                if (textValue is not null)
-                    return $"[{ModuleId.ToUpper()}] {textValue}";
-            }
-            return ModuleId.ToUpper();
+            if (!string.IsNullOrEmpty(UserId))
+                return $"[{UserId}]";
+
+            // Fallback to ElementId (first 8 chars)
+            var shortId = ElementId.Length > 8 ? ElementId[..8] : ElementId;
+            return $"[{shortId}...]";
         }
     }
 }

@@ -41,6 +41,21 @@ public interface ITarget
     IToolchain GetToolchain();
 
     /// <summary>
+    /// Returns a custom toolchain builder for this target, or null to use auto-discovered builder.
+    /// Override this when the target needs specialized build logic that differs from standard builders.
+    /// If null, ToolchainOrchestrator will search for a builder with matching TargetId in Plugins/Toolchains/.
+    /// </summary>
+    object? GetCustomToolchainBuilder() => null;
+
+    /// <summary>
+    /// Returns the list of required toolchain binary paths for verification.
+    /// Used by StartupService to check if toolchain is extracted.
+    /// Paths are relative to %AppData%/Retruxel/toolchain/
+    /// Example: ["compilers/sdcc/bin/sdcc.exe", "utils/sega/bin/ihx2sms.exe"]
+    /// </summary>
+    IEnumerable<string> GetRequiredToolchainBinaries();
+
+    /// <summary>
     /// Returns all built-in modules bundled with this target.
     /// These are loaded automatically when a project is created for this target.
     /// </summary>
@@ -57,6 +72,13 @@ public interface ITarget
     /// The shell auto-generates the Target Settings UI from these.
     /// </summary>
     IEnumerable<ParameterDefinition> GetSettingsDefinitions();
+
+    /// <summary>
+    /// Returns target-specific overrides for universal modules.
+    /// Allows targets to modify module behavior (singleton, max instances, etc.)
+    /// without hardcoding target knowledge in the core.
+    /// </summary>
+    IEnumerable<ModuleOverride> GetModuleOverrides();
 
     /// <summary>
     /// Returns generated files for a given module.
@@ -77,4 +99,12 @@ public interface ITarget
     /// Called before GenerateMainFile to inject additional files into the build.
     /// </summary>
     IEnumerable<GeneratedFile> GenerateSystemFiles();
+
+    /// <summary>
+    /// Analyzes the build output and returns hardware usage diagnostics.
+    /// Called by the Core after code generation, before compilation.
+    /// The target inspects SourceFiles to count tiles, sprites, map entries, etc.
+    /// Returns null if this target does not support diagnostics.
+    /// </summary>
+    BuildDiagnosticsReport? GetBuildDiagnostics(BuildDiagnosticInput input) => null;
 }

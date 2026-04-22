@@ -1,0 +1,160 @@
+<Window x:Class="Retruxel.Tool.PaletteEditor.PaletteEditorWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Width="1000" Height="600"
+        MinWidth="900" MinHeight="500"
+        Background="{StaticResource BrushVoid}"
+        WindowStartupLocation="CenterOwner"
+        ResizeMode="CanResize">
+
+    <Window.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="pack://application:,,,/Retruxel;component/Themes/RetruxelTheme.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </Window.Resources>
+
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="280"/>
+            <ColumnDefinition Width="*"/>
+            <ColumnDefinition Width="280"/>
+        </Grid.ColumnDefinitions>
+        
+        <!-- LEFT PANEL: Palette List + Management -->
+        <Border Grid.Column="0" Background="{StaticResource BrushSurface}" Padding="16">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+                
+                <!-- Header -->
+                <TextBlock x:Name="TxtPalettes" Grid.Row="0" Style="{StaticResource TextLabelCaps}" 
+                           Foreground="{StaticResource BrushTextSecondary}" Margin="0,0,0,8"/>
+                
+                <!-- Palette List -->
+                <ListBox x:Name="PaletteListBox" Grid.Row="2" 
+                         Background="{StaticResource BrushVoid}"
+                         BorderThickness="0"
+                         Margin="0,0,0,16"/>
+                
+                <!-- Management Buttons -->
+                <StackPanel Grid.Row="3" Margin="0,0,0,16">
+                    <Button x:Name="BtnNewPalette" Style="{StaticResource ButtonPrimary}" Margin="0,0,0,8"/>
+                    <Button x:Name="BtnDuplicate" Style="{StaticResource ButtonSecondary}" Margin="0,0,0,8"/>
+                    <Button x:Name="BtnDelete" Style="{StaticResource ButtonDanger}"/>
+                </StackPanel>
+                
+                <!-- 16 Slots Grid (8×2) -->
+                <Border Grid.Row="4" Background="{StaticResource BrushVoid}" Padding="8">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+                        
+                        <TextBlock x:Name="TxtSlots" Grid.Row="0" Style="{StaticResource TextLabelCaps}" 
+                                   Foreground="{StaticResource BrushTextSecondary}" Margin="0,0,0,8"/>
+                        
+                        <UniformGrid x:Name="SlotsGrid" Grid.Row="1" Rows="2" Columns="8"/>
+                    </Grid>
+                </Border>
+            </Grid>
+        </Border>
+        
+        <!-- CENTER PANEL: Hardware Color Picker -->
+        <Border Grid.Column="1" Background="{StaticResource BrushSurface}" Padding="24">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+                
+                <!-- Header -->
+                <TextBlock x:Name="TxtHardwareColors" Grid.Row="0" Style="{StaticResource TextLabelCaps}" 
+                           Foreground="{StaticResource BrushTextSecondary}" Margin="0,0,0,16"/>
+                
+                <!-- 64 Color Grid (8×8) -->
+                <Viewbox Grid.Row="1" Stretch="Uniform">
+                    <UniformGrid x:Name="HardwareColorGrid" Rows="8" Columns="8" Width="400" Height="400"/>
+                </Viewbox>
+            </Grid>
+        </Border>
+        
+        <!-- RIGHT PANEL: Slot Detail + Preview + Usage -->
+        <Border Grid.Column="2" Background="{StaticResource BrushSurface}" Padding="16">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+                
+                <!-- Slot Detail -->
+                <Border Grid.Row="0" Background="{StaticResource BrushVoid}" Padding="12" Margin="0,0,0,16">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+                        
+                        <TextBlock x:Name="TxtSlotDetail" Grid.Row="0" Style="{StaticResource TextLabelCaps}" 
+                                   Foreground="{StaticResource BrushTextSecondary}" Margin="0,0,0,8"/>
+                        
+                        <StackPanel Grid.Row="1">
+                            <TextBlock x:Name="TxtSlotIndex" Style="{StaticResource TextBody}" Margin="0,0,0,4"/>
+                            <TextBlock x:Name="TxtSlotHex" Style="{StaticResource TextCode}" Margin="0,0,0,4"/>
+                            <TextBlock x:Name="TxtSlotRgb" Style="{StaticResource TextCode}"/>
+                        </StackPanel>
+                        
+                        <!-- Color Preview -->
+                        <Border x:Name="ColorPreview" Grid.Row="2" Height="48" Margin="0,12,0,0"
+                                Background="{StaticResource BrushVoid}"/>
+                    </Grid>
+                </Border>
+                
+                <!-- Quick Set Buttons -->
+                <Border Grid.Row="1" Background="{StaticResource BrushVoid}" Padding="12" Margin="0,0,0,16">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+                        
+                        <TextBlock x:Name="TxtQuickSet" Grid.Row="0" Style="{StaticResource TextLabelCaps}" 
+                                   Foreground="{StaticResource BrushTextSecondary}" Margin="0,0,0,8"/>
+                        
+                        <StackPanel Grid.Row="1">
+                            <Button x:Name="BtnSetBlack" Style="{StaticResource ButtonSecondary}" Margin="0,0,0,4"/>
+                            <Button x:Name="BtnSetWhite" Style="{StaticResource ButtonSecondary}" Margin="0,0,0,4"/>
+                            <Button x:Name="BtnSetTransparent" Style="{StaticResource ButtonSecondary}"/>
+                        </StackPanel>
+                    </Grid>
+                </Border>
+                
+                 <!-- Usage Report -->
+                 <Border Grid.Row="2" Background="{StaticResource BrushVoid}" Padding="12">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+                        
+                        <TextBlock x:Name="TxtUsage" Grid.Row="0" Style="{StaticResource TextLabelCaps}" 
+                                   Foreground="{StaticResource BrushTextSecondary}" Margin="0,0,0,8"/>
+                        
+                        <StackPanel x:Name="UsagePanel" Grid.Row="1"/>
+                    </Grid>
+                </Border>
+            </Grid>
+        </Border>
+    </Grid>
+</Window>

@@ -1,12 +1,15 @@
 using Microsoft.Win32;
 using Retruxel.Core.Interfaces;
 using Retruxel.Core.Models;
+using Retruxel.Core.Services;
 using Retruxel.Tool.AssetImporter.Services;
 using SkiaSharp;
 using System.IO;
 using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media.Imaging;
+using ToolRegistry = Retruxel.Core.Services.ToolRegistry;
 
 namespace Retruxel.Tool.AssetImporter;
 
@@ -24,6 +27,7 @@ public partial class AssetImporterWindow : Window
 {
     private readonly ITarget _target;
     private readonly string _projectPath;
+    private readonly List<RadioButton> _regionRadioButtons = new();
 
     private string? _sourcePngPath;
     private SKBitmap? _reducedPreview;
@@ -41,21 +45,55 @@ public partial class AssetImporterWindow : Window
         _projectPath = projectPath;
 
         TxtTargetLabel.Text = target.DisplayName.ToUpper();
+        GenerateRegionControls();
         ApplyLocalization();
     }
 
     private void ApplyLocalization()
     {
-        var loc = RetruxelServices.Localization;
+        var loc = ServiceLocator.Localization;
         TxtTitle.Text = loc.Translate("assetimporter.title");
         // Labels already set in XAML
     }
 
-    /// <summary>Pre-selects the Sprites radio button before the window is shown.</summary>
-    public void PreSelectSprites()
+    private void GenerateRegionControls()
     {
-        RbSprites.IsChecked = true;
-        RbTiles.IsChecked = false;
+        var regions = _target.Specs.VramRegions;
+        if (regions == null || regions.Length == 0) return;
+
+        for (int i = 0; i < regions.Length; i++)
+        {
+            var region = regions[i];
+            var rb = new RadioButton
+            {
+                Content = region.Label.ToUpper(),
+                GroupName = "VramRegion",
+                IsChecked = i == 0,
+                Style = (Style)FindResource("SegmentedRadio"),
+                Margin = new Thickness(0, 0, 8, 0),
+                Tag = region.Id
+            };
+            _regionRadioButtons.Add(rb);
+            RegionSelector.Children.Add(rb);
+        }
+    }
+
+    private string GetSelectedRegionId()
+    {
+        var selected = _regionRadioButtons.FirstOrDefault(rb => rb.IsChecked == true);
+        return selected?.Tag as string ?? _target.Specs.VramRegions[0].Id;
+    }
+
+    /// <summary>Pre-selects a specific VRAM region by ID before the window is shown.</summary>
+    public void PreSelectRegion(string regionId)
+    {
+        var rb = _regionRadioButtons.FirstOrDefault(r => r.Tag as string == regionId);
+        if (rb != null)
+        {
+            rb.IsChecked = true;
+            foreach (var other in _regionRadioButtons.Where(r => r != rb))
+                other.IsChecked = false;
+        }
     }
 
     // ── Title bar ─────────────────────────────────────────────────────────────
@@ -69,11 +107,67 @@ public partial class AssetImporterWindow : Window
     private void BtnCancel_Click(object sender, RoutedEventArgs e)
         => Close();
 
+    // ── Source selection ──────────────────────────────────────────────────────
+
+    private void RbSource_Changed(object sender, RoutedEventArgs e)
+    {
+        if (RbSourceFile?.IsChecked == true)
+        {
+            DropHint.Visibility = _sourcePngPath == null ? Visibility.Visible : Visibility.Collapsed;
+            EmulatorHint.Visibility = Visibility.Collapsed;
+            DropZone.AllowDrop = true;
+        }
+        else if (RbSourceEmulator?.IsChecked == true)
+        {
+            DropHint.Visibility = Visibility.Collapsed;
+            EmulatorHint.Visibility = _sourcePngPath == null ? Visibility.Visible : Visibility.Collapsed;
+            DropZone.AllowDrop = false;
+        }
+    }
+
+    private void BtnCaptureEmulator_Click(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            var toolRegistry = (ToolRegistry)ServiceLocator.ToolRegistry;
+            var liveLinkTool = toolRegistry.GetTool("retruxel.tool.livelink");
+            
+            if (liveLinkTool == null)
+            {
+                ShowValidation("LiveLink tool not found. Make sure it's installed.");
+                return;
+            }
+
+            var result = liveLinkTool.Execute(new Dictionary<string, object>
+            {
+                ["mode"] = "capture",
+                ["targetId"] = _target.TargetId
+            });
+
+            if (result != null && result.ContainsKey("captureResult"))
+            {
+                ProcessEmulatorCapture(result["captureResult"]);
+            }
+        }
+        catch (Exception ex)
+        {
+            ShowValidation($"Emulator capture failed: {ex.Message}");
+        }
+    }
+
+    private void ProcessEmulatorCapture(object captureData)
+    {
+        // TODO: Convert CaptureResult to PNG and process
+        // For now, show placeholder
+        var loc = ServiceLocator.Localization;
+        ShowValidation("Emulator capture processing not yet implemented.");
+    }
+
     // ── File selection ────────────────────────────────────────────────────────
 
     private void BtnBrowse_Click(object sender, RoutedEventArgs e)
     {
-        var loc = RetruxelServices.Localization;
+        var loc = ServiceLocator.Localization;
         var dialog = new OpenFileDialog
         {
             Title = loc.Translate("assetimporter.dialog.select_png"),
@@ -102,7 +196,7 @@ public partial class AssetImporterWindow : Window
 
         if (png is null)
         {
-            var loc = RetruxelServices.Localization;
+            var loc = ServiceLocator.Localization;
             ShowValidation(loc.Translate("assetimporter.error.only_png"));
             return;
         }
@@ -123,7 +217,7 @@ public partial class AssetImporterWindow : Window
             using var stream = File.OpenRead(pngPath);
             using var bitmap = SKBitmap.Decode(stream);
 
-            var loc = RetruxelServices.Localization;
+            var loc = ServiceLocator.Localization;
 
             if (bitmap is null)
             {
@@ -159,7 +253,7 @@ public partial class AssetImporterWindow : Window
         }
         catch (Exception ex)
         {
-            var loc = RetruxelServices.Localization;
+            var loc = ServiceLocator.Localization;
             ShowValidation(string.Format(loc.Translate("assetimporter.error.loading"), ex.Message));
         }
     }
@@ -176,13 +270,13 @@ public partial class AssetImporterWindow : Window
             ReducedHint.Visibility = Visibility.Collapsed;
 
             // Count unique colors in reduced image
-            var loc = RetruxelServices.Localization;
+            var loc = ServiceLocator.Localization;
             var uniqueColors = CountUniqueColors(_reducedPreview);
             TxtReducedInfo.Text = string.Format(loc.Translate("assetimporter.info.colors"), uniqueColors, _target.DisplayName);
         }
         catch (Exception ex)
         {
-            var loc = RetruxelServices.Localization;
+            var loc = ServiceLocator.Localization;
             TxtReducedInfo.Text = string.Format(loc.Translate("assetimporter.error.preview"), ex.Message);
         }
     }
@@ -197,7 +291,7 @@ public partial class AssetImporterWindow : Window
 
     private bool ValidateAssetName()
     {
-        var loc = RetruxelServices.Localization;
+        var loc = ServiceLocator.Localization;
         var name = TxtAssetName.Text.Trim();
 
         if (string.IsNullOrEmpty(name))
@@ -234,22 +328,20 @@ public partial class AssetImporterWindow : Window
         if (_sourcePngPath is null) return;
 
         var assetName = TxtAssetName.Text.Trim();
-        var assetType = RbTiles.IsChecked == true ? AssetType.Tiles : AssetType.Sprites;
+        var regionId = GetSelectedRegionId();
 
-        // Rename source to match the asset name before import
         var tempPath = _sourcePngPath;
         var nameFromFile = Path.GetFileNameWithoutExtension(_sourcePngPath);
 
         if (!string.Equals(nameFromFile, assetName, StringComparison.OrdinalIgnoreCase))
         {
-            // Copy to a temp file with the correct name so AssetImporter picks up the right Id
             tempPath = Path.Combine(Path.GetTempPath(), assetName + ".png");
             File.Copy(_sourcePngPath, tempPath, overwrite: true);
         }
 
         try
         {
-            ImportedAsset = Services.AssetImporter.Import(tempPath, _projectPath, assetType, _target);
+            ImportedAsset = Services.AssetImporter.Import(tempPath, _projectPath, regionId, _target);
             DialogResult = true;
             Close();
         }
@@ -259,12 +351,11 @@ public partial class AssetImporterWindow : Window
         }
         catch (Exception ex)
         {
-            var loc = RetruxelServices.Localization;
+            var loc = ServiceLocator.Localization;
             ShowValidation(string.Format(loc.Translate("assetimporter.error.unexpected"), ex.Message));
         }
         finally
         {
-            // Clean up temp file if created
             if (tempPath != _sourcePngPath && File.Exists(tempPath))
                 File.Delete(tempPath);
         }

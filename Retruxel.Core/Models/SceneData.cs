@@ -1,3 +1,4 @@
+using System.Text.Json;
 using System.Text.Json.Serialization;
 
 namespace Retruxel.Core.Models;
@@ -25,6 +26,9 @@ public class SceneElementData
     [JsonPropertyName("elementId")]
     public string ElementId { get; set; } = string.Empty;
 
+    [JsonPropertyName("userId")]
+    public string UserId { get; set; } = string.Empty;
+
     [JsonPropertyName("moduleId")]
     public string ModuleId { get; set; } = string.Empty;
 
@@ -38,5 +42,5 @@ public class SceneElementData
     public string Trigger { get; set; } = string.Empty;
 
     [JsonPropertyName("moduleState")]
-    public string ModuleState { get; set; } = string.Empty;
+    public JsonElement ModuleState { get; set; }
 }

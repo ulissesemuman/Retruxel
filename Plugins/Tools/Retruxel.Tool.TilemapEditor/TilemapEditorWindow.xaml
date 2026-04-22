@@ -1,0 +1,345 @@
+<Window x:Class="Retruxel.Tool.TilemapEditor.TilemapEditorWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="TILEMAP EDITOR"
+        Height="720" Width="1280"
+        MinHeight="600" MinWidth="1024"
+        WindowStartupLocation="CenterOwner"
+        Background="Transparent"
+        AllowsTransparency="True"
+        WindowStyle="None"
+        ResizeMode="CanResizeWithGrip">
+
+    <Window.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="pack://application:,,,/Retruxel;component/Themes/RetruxelTheme.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+
+            <DropShadowEffect x:Key="WindowShadow"
+                              Color="Black" Direction="270"
+                              ShadowDepth="8" BlurRadius="32" Opacity="0.6"/>
+        </ResourceDictionary>
+    </Window.Resources>
+
+    <Border CornerRadius="6"
+            Background="{StaticResource BrushSurface}"
+            BorderBrush="#3a3a3a"
+            BorderThickness="1"
+            Effect="{StaticResource WindowShadow}">
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="48"/>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="56"/>
+            </Grid.RowDefinitions>
+
+            <!-- TITLE BAR -->
+            <Border Grid.Row="0"
+                    Background="{StaticResource BrushSurfaceContainerLow}"
+                    CornerRadius="6,6,0,0"
+                    MouseLeftButtonDown="TitleBar_MouseLeftButtonDown">
+                <Grid Margin="24,0,8,0">
+                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                        <TextBlock x:Name="TxtTitle"
+                                   Text="TILEMAP EDITOR"
+                                   Style="{StaticResource TextHeadline}"
+                                   Foreground="{StaticResource BrushPrimary}"
+                                   VerticalAlignment="Center"
+                                   Margin="0,0,12,0"/>
+                        <TextBlock x:Name="TxtTilemapName"
+                                   Text="— bg_map"
+                                   Style="{StaticResource TextHeadline}"
+                                   Foreground="{StaticResource BrushOnSurface}"
+                                   VerticalAlignment="Center"
+                                   Margin="0,0,12,0"/>
+                        <TextBlock x:Name="TxtTargetLabel"
+                                   Style="{StaticResource TextLabel}"
+                                   Foreground="{StaticResource BrushOnSurfaceVariant}"
+                                   VerticalAlignment="Center"/>
+                    </StackPanel>
+                    <Button Content="✕"
+                            HorizontalAlignment="Right"
+                            Click="BtnClose_Click"
+                            Style="{StaticResource ButtonTitleBarClose}"/>
+                </Grid>
+            </Border>
+
+            <!-- CONTENT -->
+            <Grid Grid.Row="1">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="240"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="280"/>
+                </Grid.ColumnDefinitions>
+
+                <!-- LEFT PANEL - TILESET -->
+                <Border Grid.Column="0"
+                        Background="{StaticResource BrushSurfaceContainerLow}"
+                        Padding="16">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="8"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="8"/>
+                            <RowDefinition Height="*"/>
+                            <RowDefinition Height="8"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+
+                        <StackPanel Grid.Row="0">
+                            <TextBlock x:Name="LblTilesetAsset"
+                                       Text="TILESET ASSET"
+                                       Style="{StaticResource TextLabelCaps}"
+                                       Foreground="{StaticResource BrushOnSurfaceVariant}"
+                                       Margin="0,0,0,6"/>
+                            <ComboBox x:Name="CmbTilesetAsset"
+                                      SelectionChanged="CmbTilesetAsset_SelectionChanged"/>
+                        </StackPanel>
+
+                        <TextBlock x:Name="TxtVramRegionInfo"
+                                   Grid.Row="2"
+                                   Style="{StaticResource TextLabel}"
+                                   Foreground="{StaticResource BrushOnSurfaceVariant}"
+                                   TextWrapping="Wrap"/>
+
+                        <ScrollViewer Grid.Row="4"
+                                      VerticalScrollBarVisibility="Auto"
+                                      HorizontalScrollBarVisibility="Disabled">
+                            <ItemsControl x:Name="TilesetGrid">
+                                <ItemsControl.ItemsPanel>
+                                    <ItemsPanelTemplate>
+                                        <WrapPanel Orientation="Horizontal"/>
+                                    </ItemsPanelTemplate>
+                                </ItemsControl.ItemsPanel>
+                            </ItemsControl>
+                        </ScrollViewer>
+
+                        <StackPanel Grid.Row="6">
+                            <Button x:Name="BtnImportAsset"
+                                    Content="IMPORT ASSET"
+                                    Click="BtnImportAsset_Click"
+                                    Style="{StaticResource ButtonSecondary}"
+                                    Margin="0,0,0,8"/>
+                            <Button x:Name="BtnOptimize"
+                                    Content="OPTIMIZE"
+                                    Click="BtnOptimize_Click"
+                                    Style="{StaticResource ButtonSecondary}"/>
+                        </StackPanel>
+                    </Grid>
+                </Border>
+
+                <!-- CENTER PANEL - CANVAS -->
+                <Border Grid.Column="1"
+                        Background="{StaticResource BrushSurface}"
+                        Padding="16">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="*"/>
+                            <RowDefinition Height="8"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+
+                        <Border Grid.Row="0"
+                                Background="{StaticResource BrushSurfaceContainerHigh}">
+                            <ScrollViewer x:Name="CanvasScrollViewer"
+                                          HorizontalScrollBarVisibility="Auto"
+                                          VerticalScrollBarVisibility="Auto">
+                                <Canvas x:Name="TilemapCanvas"
+                                        Background="Transparent"
+                                        MouseLeftButtonDown="Canvas_MouseLeftButtonDown"
+                                        MouseMove="Canvas_MouseMove"
+                                        MouseRightButtonDown="Canvas_MouseRightButtonDown"/>
+                            </ScrollViewer>
+                        </Border>
+
+                        <StackPanel Grid.Row="2"
+                                    Orientation="Horizontal"
+                                    HorizontalAlignment="Center">
+                            <TextBlock Text="Zoom:"
+                                       Style="{StaticResource TextLabel}"
+                                       Foreground="{StaticResource BrushOnSurfaceVariant}"
+                                       VerticalAlignment="Center"
+                                       Margin="0,0,8,0"/>
+                            <Button x:Name="BtnZoomFit"
+                                    Content="FIT"
+                                    Click="BtnZoomFit_Click"
+                                    Style="{StaticResource ButtonGhost}"
+                                    Padding="16,0" Height="32"
+                                    Margin="0,0,4,0"/>
+                            <Button x:Name="BtnZoom100"
+                                    Content="1:1"
+                                    Click="BtnZoom100_Click"
+                                    Style="{StaticResource ButtonGhost}"
+                                    Padding="16,0" Height="32"
+                                    Margin="0,0,4,0"/>
+                            <TextBlock x:Name="TxtZoomLevel"
+                                       Text="100%"
+                                       Style="{StaticResource TextLabel}"
+                                       Foreground="{StaticResource BrushOnSurface}"
+                                       VerticalAlignment="Center"
+                                       Margin="8,0,0,0"/>
+                        </StackPanel>
+                    </Grid>
+                </Border>
+
+                <!-- RIGHT PANEL - PROPERTIES -->
+                <Border Grid.Column="2"
+                        Background="{StaticResource BrushSurfaceContainerLow}"
+                        Padding="16">
+                    <ScrollViewer VerticalScrollBarVisibility="Auto">
+                        <StackPanel x:Name="PropertiesPanel">
+                            <TextBlock x:Name="LblName"
+                                       Text="NAME"
+                                       Style="{StaticResource TextLabelCaps}"
+                                       Foreground="{StaticResource BrushOnSurfaceVariant}"
+                                       Margin="0,0,0,6"/>
+                            <TextBox x:Name="TxtName"
+                                     Margin="0,0,0,16"/>
+
+                            <TextBlock x:Name="LblDimensions"
+                                       Text="DIMENSIONS"
+                                       Style="{StaticResource TextLabelCaps}"
+                                       Foreground="{StaticResource BrushOnSurfaceVariant}"
+                                       Margin="0,0,0,6"/>
+                            <Grid Margin="0,0,0,16">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="8"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <StackPanel Grid.Column="0">
+                                    <TextBlock Text="Width"
+                                               Style="{StaticResource TextLabel}"
+                                               Foreground="{StaticResource BrushOnSurfaceVariant}"
+                                               Margin="0,0,0,4"/>
+                                    <TextBox x:Name="TxtWidth"/>
+                                </StackPanel>
+                                <StackPanel Grid.Column="2">
+                                    <TextBlock Text="Height"
+                                               Style="{StaticResource TextLabel}"
+                                               Foreground="{StaticResource BrushOnSurfaceVariant}"
+                                               Margin="0,0,0,4"/>
+                                    <TextBox x:Name="TxtHeight"/>
+                                </StackPanel>
+                            </Grid>
+
+                            <TextBlock x:Name="LblTileset"
+                                       Text="TILESET"
+                                       Style="{StaticResource TextLabelCaps}"
+                                       Foreground="{StaticResource BrushOnSurfaceVariant}"
+                                       Margin="0,0,0,6"/>
+                            <TextBlock x:Name="TxtTilesetInfo"
+                                       Style="{StaticResource TextBody}"
+                                       Foreground="{StaticResource BrushOnSurface}"
+                                       Margin="0,0,0,16"/>
+
+                            <StackPanel x:Name="PanelPalette"
+                                        Margin="0,0,0,16">
+                                <TextBlock x:Name="LblPalette"
+                                           Text="PALETTE"
+                                           Style="{StaticResource TextLabelCaps}"
+                                           Foreground="{StaticResource BrushOnSurfaceVariant}"
+                                           Margin="0,0,0,6"/>
+                                <ComboBox x:Name="CmbPalette"
+                                          SelectionChanged="CmbPalette_SelectionChanged"/>
+                                <TextBlock x:Name="TxtPaletteModeInfo"
+                                           Style="{StaticResource TextLabel}"
+                                           Foreground="{StaticResource BrushOnSurfaceVariant}"
+                                           TextWrapping="Wrap"
+                                           Margin="0,6,0,0"/>
+                            </StackPanel>
+
+                            <StackPanel x:Name="PanelLayers"
+                                        Visibility="Collapsed"
+                                        Margin="0,0,0,16">
+                                <TextBlock x:Name="LblLayers"
+                                           Text="LAYER"
+                                           Style="{StaticResource TextLabelCaps}"
+                                           Foreground="{StaticResource BrushOnSurfaceVariant}"
+                                           Margin="0,0,0,6"/>
+                                <ComboBox x:Name="CmbLayers"
+                                          SelectionChanged="CmbLayers_SelectionChanged"/>
+                            </StackPanel>
+
+                            <CheckBox x:Name="ChkShowCollision"
+                                      Content="Show Collision"
+                                      Margin="0,0,0,16"
+                                      Checked="ChkShowCollision_CheckedChanged"
+                                      Unchecked="ChkShowCollision_CheckedChanged"/>
+
+                            <TextBlock x:Name="LblSelectedTile"
+                                       Text="SELECTED TILE"
+                                       Style="{StaticResource TextLabelCaps}"
+                                       Foreground="{StaticResource BrushOnSurfaceVariant}"
+                                       Margin="0,0,0,6"/>
+                            <Border Background="{StaticResource BrushSurfaceContainerHigh}"
+                                    Width="64" Height="64"
+                                    HorizontalAlignment="Left"
+                                    Margin="0,0,0,8">
+                                <Image x:Name="ImgSelectedTile"
+                                       Stretch="None"
+                                       RenderOptions.BitmapScalingMode="NearestNeighbor"/>
+                            </Border>
+                            <TextBlock x:Name="TxtSelectedTileInfo"
+                                       Style="{StaticResource TextLabel}"
+                                       Foreground="{StaticResource BrushOnSurfaceVariant}"
+                                       Margin="0,0,0,16"/>
+
+                            <Button x:Name="BtnClear"
+                                    Content="CLEAR MAP"
+                                    Click="BtnClear_Click"
+                                    Style="{StaticResource ButtonSecondary}"
+                                    Margin="0,0,0,8"/>
+                            <Button x:Name="BtnFill"
+                                    Content="FILL WITH TILE"
+                                    Click="BtnFill_Click"
+                                    Style="{StaticResource ButtonSecondary}"
+                                    Margin="0,0,0,8"/>
+                            <Button x:Name="BtnExportPng"
+                                    Content="EXPORT PNG"
+                                    Click="BtnExportPng_Click"
+                                    Style="{StaticResource ButtonSecondary}"/>
+                        </StackPanel>
+                    </ScrollViewer>
+                </Border>
+            </Grid>
+
+            <!-- FOOTER -->
+            <Border Grid.Row="2"
+                    Background="{StaticResource BrushSurfaceContainerLow}"
+                    CornerRadius="0,0,6,6"
+                    Padding="24,0">
+                <Grid>
+                    <StackPanel Orientation="Horizontal"
+                                HorizontalAlignment="Left"
+                                VerticalAlignment="Center">
+                        <TextBlock x:Name="TxtTileUsage"
+                                   Style="{StaticResource TextLabel}"
+                                   Foreground="{StaticResource BrushOnSurfaceVariant}"/>
+                        <TextBlock x:Name="TxtLayerInfo"
+                                   Style="{StaticResource TextLabel}"
+                                   Foreground="{StaticResource BrushOnSurfaceVariant}"
+                                   Margin="16,0,0,0"/>
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal"
+                                HorizontalAlignment="Right"
+                                VerticalAlignment="Center">
+                        <Button x:Name="BtnCancel"
+                                Content="CANCEL"
+                                Click="BtnCancel_Click"
+                                Style="{StaticResource ButtonGhost}"
+                                Padding="24,0" Height="40"
+                                Margin="0,0,8,0"/>
+                        <Button x:Name="BtnSave"
+                                Content="SAVE"
+                                Click="BtnSave_Click"
+                                Style="{StaticResource ButtonPrimary}"
+                                Padding="32,0" Height="40"/>
+                    </StackPanel>
+                </Grid>
+            </Border>
+        </Grid>
+    </Border>
+</Window>

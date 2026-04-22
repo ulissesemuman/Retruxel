@@ -264,6 +264,23 @@
     "assetimporter.error.name_empty": "Nome do asset não pode estar vazio.",
     "assetimporter.error.name_invalid": "Nome do asset contém caracteres inválidos.",
     "assetimporter.error.name_spaces": "Nome do asset não pode conter espaços. Use underscores: bg_tiles",
-    "assetimporter.error.unexpected": "Erro inesperado: {0}"
+    "assetimporter.error.unexpected": "Erro inesperado: {0}",
+    "paletteeditor.title": "EDITOR DE PALETA",
+    "paletteeditor.palettes": "PALETAS",
+    "paletteeditor.new_palette": "NOVA PALETA",
+    "paletteeditor.duplicate": "DUPLICAR",
+    "paletteeditor.delete": "EXCLUIR",
+    "paletteeditor.slots": "SLOTS",
+    "paletteeditor.hardware_colors": "CORES DE HARDWARE SMS",
+    "paletteeditor.slot_detail": "DETALHE DO SLOT",
+    "paletteeditor.quick_set": "DEFINIÇÃO RÁPIDA",
+    "paletteeditor.black": "PRETO",
+    "paletteeditor.white": "BRANCO",
+    "paletteeditor.transparent": "TRANSPARENTE",
+    "paletteeditor.usage": "USO",
+    "paletteeditor.slot_format": "Slot {0}",
+    "paletteeditor.sms_format": "SMS: 0x{0}",
+    "paletteeditor.rgb_format": "RGB: ({0}, {1}, {2})",
+    "paletteeditor.no_usage": "Nenhum módulo usando este slot"
   }
 }

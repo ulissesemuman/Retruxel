@@ -7,11 +7,16 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="Modules\CodeGens\**" />
+    <EmbeddedResource Remove="Modules\CodeGens\**" />
+    <None Remove="Modules\CodeGens\**" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\..\..\Retruxel.SDK\Retruxel.SDK.csproj" />
     <ProjectReference Include="..\..\..\Retruxel.Modules\Retruxel.Modules.csproj" />
     <ProjectReference Include="..\..\..\Retruxel.Toolchain\Retruxel.Toolchain.csproj" />
-    <ProjectReference Include="..\..\..\Plugins\Tools\ImageProcessing\Retruxel.Lib.ImageProcessing\Retruxel.Lib.ImageProcessing.csproj" />
-    <ProjectReference Include="..\..\..\Plugins\Tools\ImageProcessing\Retruxel.Tool.PngToTiles.Sms\Retruxel.Tool.PngToTiles.Sms.csproj" />
+    <ProjectReference Include="..\..\Tools\Retruxel.Tool.PngToTiles\Retruxel.Tool.PngToTiles.csproj" />
   </ItemGroup>
 
   <ItemGroup>
@@ -19,9 +24,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <None Include="Assets\splash.png">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
+    <EmbeddedResource Include="Assets\splash.png" />
   </ItemGroup>
 
 </Project>

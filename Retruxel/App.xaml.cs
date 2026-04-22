@@ -8,6 +8,9 @@ namespace Retruxel;
 
 public partial class App : Application
 {
+    public static ToolRegistry ToolRegistry { get; private set; } = null!;
+    public static ToolLoader ToolLoader { get; private set; } = null!;
+
     private async void App_Startup(object sender, StartupEventArgs e)
     {
         // 1. Settings
@@ -28,20 +31,28 @@ public partial class App : Application
         LocalizationService.Instance.Load(language, locPath);
 
         // 2.1. Register localization service in SDK for plugin access
-        RetruxelServices.Localization = LocalizationService.Instance;
+        ServiceLocator.Localization = LocalizationService.Instance;
 
         // 3. Target Registry — shell owns this, Core never references it directly
         TargetRegistry.Initialize();
-        var targetIds = TargetRegistry.GetAllTargets().Select(t => t.TargetId);
+        var targets = TargetRegistry.GetAllTargets();
 
-        // 4. Splash + real startup tasks
+        // 4. Tool Discovery — initialize before splash to make available globally
+        var basePath = AppDomain.CurrentDomain.BaseDirectory;
+        ToolLoader = new ToolLoader(basePath);
+        ToolRegistry = new ToolRegistry();
+
+        // 4.1. Register tool registry in SDK for tool-to-tool invocation
+        ServiceLocator.ToolRegistry = ToolRegistry;
+
+        // 5. Splash + real startup tasks
         var splash = new SplashScreen();
         var mainWindow = new MainWindow();
 
         splash.Show();
 
         await splash.RunAsync(
-            progress => StartupService.InitializeAsync(progress, targetIds),
+            progress => StartupService.InitializeAsync(progress, targets, ToolRegistry, ToolLoader, basePath),
             () =>
             {
                 mainWindow.Show();

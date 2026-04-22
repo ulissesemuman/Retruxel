@@ -29,7 +29,11 @@ public class GgTarget : ITarget
         // Tiles
         TileWidth = 8,
         TileHeight = 8,
-        MaxTilesInVram = 448,
+        VramRegions =
+        [
+            new VramRegion("background", "Background", 0, 255),
+            new VramRegion("sprites", "Sprites", 256, 447)
+        ],
 
         // Colors & Palettes
         // GG VDP: 4 bits per channel (R, G, B) ? 16 levels per channel ? 4096 total colors
@@ -94,9 +98,15 @@ public class GgTarget : ITarget
 
     public IToolchain GetToolchain()
     {
-        var builder = Retruxel.Toolchain.ToolchainOrchestrator.GetBuilder(TargetId);
+        var builder = Retruxel.Toolchain.ToolchainOrchestrator.GetBuilder(TargetId, ((ITarget)this).GetCustomToolchainBuilder());
         return new Retruxel.Toolchain.ToolchainAdapter(builder);
     }
+
+    public IEnumerable<string> GetRequiredToolchainBinaries() =>
+    [
+        Path.Combine("compilers", "sdcc", "bin", "sdcc.exe"),
+        Path.Combine("utils", "sega", "bin", "ihx2sms.exe")
+    ];
 
     public IEnumerable<IModule> GetBuiltinModules()
     {
@@ -148,6 +158,15 @@ public class GgTarget : ITarget
             DefaultValue = "32",
             EnumOptions  = new() { { "32KB", "32" }, { "128KB", "128" }, { "256KB", "256" }, { "512KB", "512" } }
         }
+    ];
+
+    public IEnumerable<ModuleOverride> GetModuleOverrides() =>
+    [
+        new ModuleOverride { ModuleId = "palette", IsSingleton = true, MaxInstances = 1 },
+        new ModuleOverride { ModuleId = "entity", IsSingleton = true },
+        new ModuleOverride { ModuleId = "input", IsSingleton = true },
+        new ModuleOverride { ModuleId = "physics", IsSingleton = true },
+        new ModuleOverride { ModuleId = "scroll", IsSingleton = true }
     ];
 
     // Code generation

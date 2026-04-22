@@ -36,6 +36,21 @@ public interface ITool
     bool RequiresProject { get; }
 
     /// <summary>
+    /// Optional target-specific extension ID.
+    /// If set, ModuleRenderer will look for an IToolExtension in the target assembly
+    /// with matching ToolId and merge its output with this tool's output.
+    /// Null = tool is fully generic with no target-specific extension.
+    /// </summary>
+    string? TargetExtensionId => null;
+
+    /// <summary>
+    /// Returns default input parameters for this tool.
+    /// Called before Execute() — values can be overridden by IToolExtension.GetDefaultParameters().
+    /// Use this to declare which parameters the tool accepts and their fallback values.
+    /// </summary>
+    Dictionary<string, object> GetDefaultParameters() => new();
+
+    /// <summary>
     /// Execute the tool with input parameters.
     /// Returns output data as dictionary.
     /// </summary>

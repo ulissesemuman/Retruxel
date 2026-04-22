@@ -76,21 +76,35 @@
                 </Grid.RowDefinitions>
 
                 <!-- Asset type selector -->
-                <StackPanel Grid.Row="0" Grid.ColumnSpan="3" Orientation="Horizontal">
+                <StackPanel x:Name="RegionSelector" Grid.Row="0" Grid.ColumnSpan="3" Orientation="Horizontal">
                     <TextBlock x:Name="LblType"
-                               Text="TYPE"
+                               Text="REGION"
                                Style="{StaticResource TextLabelCaps}"
                                Foreground="{StaticResource BrushOnSurfaceVariant}"
                                VerticalAlignment="Center"
                                Margin="0,0,8,0"/>
-                    <RadioButton x:Name="RbTiles" Content="TILES"
+                    <!-- RadioButtons generated dynamically in code-behind -->
+                </StackPanel>
+
+                <!-- Import source selector -->
+                <StackPanel Grid.Row="0" Grid.Column="2" Orientation="Horizontal" HorizontalAlignment="Right">
+                    <TextBlock Text="SOURCE"
+                               Style="{StaticResource TextLabelCaps}"
+                               Foreground="{StaticResource BrushOnSurfaceVariant}"
+                               VerticalAlignment="Center"
+                               Margin="0,0,8,0"/>
+                    <RadioButton x:Name="RbSourceFile"
+                                 Content="FILE"
+                                 GroupName="ImportSource"
                                  IsChecked="True"
-                                 GroupName="AssetType"
                                  Style="{StaticResource SegmentedRadio}"
-                                 Margin="0,0,8,0"/>
-                    <RadioButton x:Name="RbSprites" Content="SPRITES"
-                                 GroupName="AssetType"
-                                 Style="{StaticResource SegmentedRadio}"/>
+                                 Margin="0,0,8,0"
+                                 Checked="RbSource_Changed"/>
+                    <RadioButton x:Name="RbSourceEmulator"
+                                 Content="EMULATOR"
+                                 GroupName="ImportSource"
+                                 Style="{StaticResource SegmentedRadio}"
+                                 Checked="RbSource_Changed"/>
                 </StackPanel>
 
                 <!-- BEFORE preview -->
@@ -127,6 +141,27 @@
                                         HorizontalAlignment="Center"
                                         Click="BtnBrowse_Click"
                                         Style="{StaticResource ButtonSecondary}"/>
+                            </StackPanel>
+
+                            <!-- Emulator capture hint -->
+                            <StackPanel x:Name="EmulatorHint"
+                                        Visibility="Collapsed"
+                                        VerticalAlignment="Center"
+                                        HorizontalAlignment="Center">
+                                <TextBlock Text="Capture tiles and nametables"
+                                           Style="{StaticResource TextBody}"
+                                           Foreground="{StaticResource BrushOnSurfaceVariant}"
+                                           HorizontalAlignment="Center"/>
+                                <TextBlock Text="from running emulator"
+                                           Style="{StaticResource TextLabel}"
+                                           Foreground="{StaticResource BrushOnSurfaceVariant}"
+                                           HorizontalAlignment="Center"
+                                           Margin="0,4,0,12"/>
+                                <Button x:Name="BtnCaptureEmulator"
+                                        Content="CONNECT TO EMULATOR"
+                                        HorizontalAlignment="Center"
+                                        Click="BtnCaptureEmulator_Click"
+                                        Style="{StaticResource ButtonPrimary}"/>
                             </StackPanel>
 
                             <!-- Source image preview -->

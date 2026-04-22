@@ -1,13 +1,18 @@
 {
   "moduleId": "entity",
   "targetId": "sms",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "template": "entity.c.rtrx",
   "variables": {
     "spriteId": { "from": "module", "path": "spriteId", "default": 0 },
+    "spriteRef": { "from": "module", "path": "spriteRef", "default": "" },
+    "animationRef": { "from": "module", "path": "animationRef", "default": "" },
     "x": { "from": "module", "path": "x", "default": 120 },
     "y": { "from": "module", "path": "y", "default": 144 },
     "speed": { "from": "module", "path": "speed", "default": 2 },
-    "health": { "from": "module", "path": "health", "default": 3 }
+    "health": { "from": "module", "path": "health", "default": 3 },
+    "usePhysics": { "from": "module", "path": "usePhysics", "default": false },
+    "useInput": { "from": "module", "path": "useInput", "default": false },
+    "useAnimation": { "from": "module", "path": "useAnimation", "default": false }
   }
 }

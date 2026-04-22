@@ -18,10 +18,17 @@ public static class StartupService
 
     /// <summary>
     /// Runs all startup tasks in sequence, reporting progress to the splash screen.
-    /// targetIds: list of registered target IDs passed from the shell — avoids
-    /// a circular reference between Retruxel.Core and the shell's TargetRegistry.
+    /// targets: list of registered targets passed from the shell.
+    /// toolRegistry: registry for visual tools (IVisualTool).
+    /// toolLoader: loader for standard tools (ITool).
+    /// basePath: application base directory.
     /// </summary>
-    public static async Task InitializeAsync(IProgress<string> progress, IEnumerable<string> targetIds)
+    public static async Task InitializeAsync(
+        IProgress<string> progress,
+        IEnumerable<Core.Interfaces.ITarget> targets,
+        object toolRegistry,
+        object toolLoader,
+        string basePath)
     {
         var loc = LocalizationService.Instance;
 
@@ -29,19 +36,19 @@ public static class StartupService
         progress.Report(loc.Get("startup.load_localization"));
         await Task.Delay(50);
 
-        // 2. Targets — received from shell, no registry reference needed here
+        // 2. Targets — received from shell
         progress.Report(loc.Get("startup.scan_targets"));
-        foreach (var id in targetIds)
-            progress.Report($"  TARGET: {id.ToUpper()}");
+        foreach (var target in targets)
+            progress.Report($"  TARGET: {target.TargetId.ToUpper()}");
         await Task.Delay(50);
 
         // 3. Toolchain verification — the only real work at startup
         progress.Report(loc.Get("startup.check_toolchain"));
-        await VerifyToolchainsAsync(progress);
+        await VerifyToolchainsAsync(progress, targets);
 
-        // 4. Stubs — placeholders for future systems
+        // 4. Tool discovery — discover ITool and IVisualTool plugins
         progress.Report(loc.Get("startup.scan_plugins"));
-        await Task.Delay(50);
+        await DiscoverToolsAsync(progress, toolRegistry, toolLoader, basePath);
 
         progress.Report(loc.Get("startup.ready"));
         await Task.Delay(100);
@@ -54,15 +61,19 @@ public static class StartupService
     /// Reports found/missing status per target.
     /// Binaries are extracted on first build — missing here is not a fatal error.
     /// </summary>
-    private static async Task VerifyToolchainsAsync(IProgress<string> progress)
+    private static async Task VerifyToolchainsAsync(IProgress<string> progress, IEnumerable<Core.Interfaces.ITarget> targets)
     {
         await Task.Run(() =>
         {
-            foreach (var (targetId, binaryPaths) in GetToolchainBinaries())
+            foreach (var target in targets)
             {
+                var binaryPaths = target.GetRequiredToolchainBinaries()
+                    .Select(relativePath => Path.Combine(ToolchainRoot, relativePath))
+                    .ToArray();
+
                 var allFound = binaryPaths.All(File.Exists);
                 var status = allFound ? "OK" : "NOT EXTRACTED";
-                progress.Report($"  TOOLCHAIN [{targetId.ToUpper()}]: {status}");
+                progress.Report($"  TOOLCHAIN [{target.TargetId.ToUpper()}]: {status}");
 
                 if (!allFound)
                 {
@@ -74,34 +85,64 @@ public static class StartupService
         });
     }
 
+    // ── Tool Discovery ────────────────────────────────────────────────
+
     /// <summary>
-    /// Returns the expected binary paths per target.
-    /// These will be extracted to ToolchainRoot on first build.
+    /// Discovers and registers tools from Plugins/Tools/ folder.
+    /// Reports progress for each tool discovered.
     /// </summary>
-    private static Dictionary<string, string[]> GetToolchainBinaries() => new()
+    private static async Task DiscoverToolsAsync(
+        IProgress<string> progress,
+        object toolRegistry,
+        object toolLoader,
+        string basePath)
     {
-        ["sms"] =
-        [
-            Path.Combine(ToolchainRoot, "compilers", "sdcc", "bin", "sdcc.exe"),
-            Path.Combine(ToolchainRoot, "utils",     "sega", "bin", "ihx2sms.exe")
-        ],
-        ["gg"] =
-        [
-            Path.Combine(ToolchainRoot, "compilers", "sdcc", "bin", "sdcc.exe"),
-            Path.Combine(ToolchainRoot, "utils",     "sega", "bin", "ihx2sms.exe")
-        ],
-        ["sg1000"] =
-        [
-            Path.Combine(ToolchainRoot, "compilers", "sdcc", "bin", "sdcc.exe")
-        ],
-        ["coleco"] =
-        [
-            Path.Combine(ToolchainRoot, "compilers", "sdcc", "bin", "sdcc.exe")
-        ],
-        ["nes"] =
-        [
-            Path.Combine(ToolchainRoot, "compilers", "cc65", "bin", "cc65.exe"),
-            Path.Combine(ToolchainRoot, "compilers", "cc65", "bin", "ld65.exe")
-        ]
-    };
+        await Task.Run(() =>
+        {
+            // Discover standard tools (ITool) via ToolLoader
+            try
+            {
+                var discoverMethod = toolLoader.GetType().GetMethod("DiscoverTools");
+                discoverMethod?.Invoke(toolLoader, null);
+                
+                var getToolsMethod = toolLoader.GetType().GetMethod("GetAllTools");
+                if (getToolsMethod != null)
+                {
+                    var tools = getToolsMethod.Invoke(toolLoader, null) as System.Collections.IEnumerable;
+                    if (tools != null)
+                    {
+                        foreach (var tool in tools)
+                        {
+                            var toolIdProp = tool.GetType().GetProperty("ToolId");
+                            if (toolIdProp != null)
+                            {
+                                var toolId = toolIdProp.GetValue(tool) as string;
+                                progress.Report($"  TOOL: {toolId?.ToUpper()}");
+                            }
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                progress.Report($"  WARN: Tool discovery failed - {ex.Message}");
+            }
+
+            // Discover visual tools (IVisualTool) via ToolRegistry
+            try
+            {
+                var pluginsPath = Path.Combine(basePath, "Plugins");
+                var discoverToolsMethod = toolRegistry.GetType().GetMethod("DiscoverTools");
+                if (discoverToolsMethod != null)
+                {
+                    var progressWrapper = new Progress<string>(msg => progress.Report(msg));
+                    discoverToolsMethod.Invoke(toolRegistry, new object[] { pluginsPath, progressWrapper });
+                }
+            }
+            catch (Exception ex)
+            {
+                progress.Report($"  WARN: Visual tool discovery failed - {ex.Message}");
+            }
+        });
+    }
 }

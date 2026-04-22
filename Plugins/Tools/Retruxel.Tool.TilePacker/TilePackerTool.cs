@@ -21,6 +21,7 @@ public class TilePackerTool : ITool
     public bool IsStandalone => false;
     public string? TargetId => null;
     public bool RequiresProject => false;
+    public string? TargetExtensionId => "tile_packer";
 
     public Dictionary<string, object> Execute(Dictionary<string, object> input)
     {

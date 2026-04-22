@@ -26,7 +26,11 @@ public class SmsTarget : ITarget
         // Tiles
         TileWidth      = 8,
         TileHeight     = 8,
-        MaxTilesInVram = 448,
+        VramRegions =
+        [
+            new VramRegion("bg",     "Background", 0,   255),
+            new VramRegion("sprite", "Sprites",    256, 447)
+        ],
 
         // Colors & Palettes
         // SMS VDP: 2 bits per channel (R, G, B) → 4 levels per channel → 64 total colors
@@ -37,6 +41,21 @@ public class SmsTarget : ITarget
         SimultaneousPalettes       = 2,
         BgPalettes                 = 2,   // both palettes available for BG tiles
         SpritePalettes             = 2,   // both palettes available for sprites
+
+        // Tilemap
+        Tilemap = new TilemapSpecs
+        {
+            MaxLayers = 1,
+            SupportsHorizontalFlip = true,
+            SupportsVerticalFlip = true,
+            SupportsRotation = false,
+            PaletteMode = PaletteMode.PerTile,
+            PaletteBitsPerTile = 1,  // 2 palettes (0 or 1)
+            DefaultWidth = 32,
+            DefaultHeight = 28,
+            MaxWidth = 64,
+            MaxHeight = 64
+        },
 
         // Sprites
         SpritesPerScanline          = 8,
@@ -90,9 +109,15 @@ public class SmsTarget : ITarget
 
     public IToolchain GetToolchain()
     {
-        var builder = Retruxel.Toolchain.ToolchainOrchestrator.GetBuilder(TargetId);
+        var builder = Retruxel.Toolchain.ToolchainOrchestrator.GetBuilder(TargetId, ((ITarget)this).GetCustomToolchainBuilder());
         return new Retruxel.Toolchain.ToolchainAdapter(builder);
     }
+
+    public IEnumerable<string> GetRequiredToolchainBinaries() =>
+    [
+        Path.Combine("compilers", "sdcc", "bin", "sdcc.exe"),
+        Path.Combine("utils", "sega", "bin", "ihx2sms.exe")
+    ];
 
     public IEnumerable<IModule> GetBuiltinModules()
     {
@@ -107,6 +132,7 @@ public class SmsTarget : ITarget
             new Retruxel.Modules.Graphics.PaletteModule(),
             new Retruxel.Modules.Graphics.TilemapModule(),
             new Retruxel.Modules.Graphics.SpriteModule(),
+            new Retruxel.Modules.Graphics.MetaspriteModule(),
             new Retruxel.Modules.Graphics.TextDisplayModule()
         ];
     }
@@ -170,6 +196,36 @@ public class SmsTarget : ITarget
         }
     ];
 
+    public IEnumerable<ModuleOverride> GetModuleOverrides() =>
+    [
+        new ModuleOverride
+        {
+            ModuleId = "palette",
+            IsSingleton = true,
+            MaxInstances = 1
+        },
+        new ModuleOverride
+        {
+            ModuleId = "entity",
+            IsSingleton = true
+        },
+        new ModuleOverride
+        {
+            ModuleId = "input",
+            IsSingleton = true
+        },
+        new ModuleOverride
+        {
+            ModuleId = "physics",
+            IsSingleton = true
+        },
+        new ModuleOverride
+        {
+            ModuleId = "scroll",
+            IsSingleton = true
+        }
+    ];
+
     // Code generation
 
     private static Dictionary<string, Type>? _codeGenCache;
@@ -200,6 +256,11 @@ public class SmsTarget : ITarget
             splashGen.GenerateHeader(),
             splashGen.GenerateCode()
         ];
+    }
+
+    public BuildDiagnosticsReport? GetBuildDiagnostics(BuildDiagnosticInput input)
+    {
+        return new SmsDiagnosticsProvider().Analyze(input);
     }
 
     public GeneratedFile GenerateMainFile(RetruxelProject project, IEnumerable<GeneratedFile> moduleFiles)

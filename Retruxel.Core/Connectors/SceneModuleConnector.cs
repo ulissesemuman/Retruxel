@@ -32,6 +32,8 @@ public class SceneModuleConnector : IToolConnector
             PropertyNamingPolicy = JsonNamingPolicy.CamelCase
         });
 
+        var moduleState = JsonDocument.Parse(moduleJson).RootElement.Clone();
+
         // Check if updating existing module or creating new one
         if (toolOutput.TryGetValue("instanceId", out var instanceIdObj) && instanceIdObj is string instanceId)
         {
@@ -41,7 +43,7 @@ public class SceneModuleConnector : IToolConnector
 
             if (existingElement != null)
             {
-                existingElement.ModuleState = moduleJson;
+                existingElement.ModuleState = moduleState;
             }
             else
             {
@@ -57,7 +59,7 @@ public class SceneModuleConnector : IToolConnector
             {
                 ElementId = newElementId,
                 ModuleId = moduleId,
-                ModuleState = moduleJson,
+                ModuleState = moduleState,
                 TileX = 0,
                 TileY = 0,
                 Trigger = "OnStart"

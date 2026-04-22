@@ -567,9 +567,11 @@ public partial class TilemapEditorWindow : Window
         {
             ElementId = paletteId,
             ModuleId = "palette",
-            ModuleState = sourceAsset != null
-                ? $"{{\"name\":\"{sourceAsset.Id}_palette\",\"sourceAssetId\":\"{sourceAsset.Id}\"}}"
-                : $"{{\"name\":\"palette_{paletteId}\"}}",
+            ModuleState = System.Text.Json.JsonDocument.Parse(
+                sourceAsset != null
+                    ? $"{{\"name\":\"{sourceAsset.Id}_palette\",\"sourceAssetId\":\"{sourceAsset.Id}\"}}"
+                    : $"{{\"name\":\"palette_{paletteId}\"}}"
+            ).RootElement.Clone(),
             TileX = 0,
             TileY = 0,
             Trigger = "OnStart"

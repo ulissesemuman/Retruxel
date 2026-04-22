@@ -1664,17 +1664,22 @@ public partial class SceneEditorView : UserControl
     {
         if (_project is null || _currentScene is null) return;
 
-        _currentScene.Elements = _elements.Select(e => new SceneElementData
+        _currentScene.Elements = _elements.Select(e =>
         {
-            ElementId = e.ElementId,
-            UserId = e.UserId,
-            ModuleId = e.ModuleId,
-            TileX = e.TileX,
-            TileY = e.TileY,
-            Trigger = e.Trigger,
-            ModuleState = e.Module is Retruxel.Core.Interfaces.IModule module
+            var moduleJson = e.Module is Retruxel.Core.Interfaces.IModule module
                 ? module.Serialize()
-                : string.Empty
+                : "{}";
+
+            return new SceneElementData
+            {
+                ElementId = e.ElementId,
+                UserId = e.UserId,
+                ModuleId = e.ModuleId,
+                TileX = e.TileX,
+                TileY = e.TileY,
+                Trigger = e.Trigger,
+                ModuleState = System.Text.Json.JsonDocument.Parse(moduleJson).RootElement.Clone()
+            };
         }).ToList();
 
         _project.DefaultModules = _elements
@@ -1758,7 +1763,7 @@ public partial class SceneEditorView : UserControl
     /// <summary>
     /// Deserializes a module from its JSON state.
     /// </summary>
-    private IModule? DeserializeModule(string moduleId, string moduleState)
+    private IModule? DeserializeModule(string moduleId, System.Text.Json.JsonElement moduleState)
     {
         if (_moduleRegistry is null) return null;
 
@@ -1776,8 +1781,12 @@ public partial class SceneEditorView : UserControl
         var moduleType = moduleTemplate.GetType();
         var module = (IModule)Activator.CreateInstance(moduleType)!;
 
-        if (!string.IsNullOrEmpty(moduleState))
-            module.Deserialize(moduleState);
+        if (moduleState.ValueKind != System.Text.Json.JsonValueKind.Undefined &&
+            moduleState.ValueKind != System.Text.Json.JsonValueKind.Null)
+        {
+            var jsonString = moduleState.GetRawText();
+            module.Deserialize(jsonString);
+        }
 
         return module;
     }

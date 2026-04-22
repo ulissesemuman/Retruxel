@@ -71,7 +71,13 @@ public class CodeGenerator
 
                 var moduleType = moduleTemplate.GetType();
                 var module = (IModule)Activator.CreateInstance(moduleType)!;
-                module.Deserialize(elementData.ModuleState);
+                
+                var moduleStateJson = elementData.ModuleState.ValueKind != System.Text.Json.JsonValueKind.Undefined &&
+                                      elementData.ModuleState.ValueKind != System.Text.Json.JsonValueKind.Null
+                    ? elementData.ModuleState.GetRawText()
+                    : "{}";
+                
+                module.Deserialize(moduleStateJson);
 
                 if (!instancesByModule.ContainsKey(elementData.ModuleId))
                     instancesByModule[elementData.ModuleId] = new List<IModule>();

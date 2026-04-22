@@ -1,5 +1,6 @@
 using Retruxel.Core.Interfaces;
 using Retruxel.Core.Models;
+using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -26,6 +27,11 @@ public partial class TilemapEditorWindow : Window
 
     // Tilemap data: [layer][y * width + x] = tileId
     private List<int[]> _tilemapLayers = new();
+
+    // Tileset image
+    private BitmapSource? _tilesetImage;
+    private int _tilesetColumns = 0;
+    private int _tilesetRows = 0;
 
     // Module data to return
     public Dictionary<string, object>? ModuleData { get; private set; }
@@ -238,7 +244,25 @@ public partial class TilemapEditorWindow : Window
         TilemapCanvas.Width = width * scaledTileSize;
         TilemapCanvas.Height = height * scaledTileSize;
 
-        // Draw grid lines
+        // Render tiles from current layer
+        if (_tilesetImage != null)
+        {
+            for (int y = 0; y < height; y++)
+            {
+                for (int x = 0; x < width; x++)
+                {
+                    int index = y * width + x;
+                    int tileId = _tilemapLayers[_currentLayerIndex][index];
+
+                    if (tileId > 0)
+                    {
+                        RenderTileAt(x, y, tileId, scaledTileSize);
+                    }
+                }
+            }
+        }
+
+        // Draw grid lines on top
         for (int x = 0; x <= width; x++)
         {
             var line = new Line
@@ -247,7 +271,7 @@ public partial class TilemapEditorWindow : Window
                 Y1 = 0,
                 X2 = x * scaledTileSize,
                 Y2 = height * scaledTileSize,
-                Stroke = new SolidColorBrush(Color.FromArgb(38, 255, 255, 255)), // 15% opacity
+                Stroke = new SolidColorBrush(Color.FromArgb(38, 255, 255, 255)),
                 StrokeThickness = 1
             };
             TilemapCanvas.Children.Add(line);
@@ -266,8 +290,6 @@ public partial class TilemapEditorWindow : Window
             };
             TilemapCanvas.Children.Add(line);
         }
-
-        // TODO: Render tiles from _tilemapLayers[_currentLayerIndex]
     }
 
     // ── Event Handlers ────────────────────────────────────────────────────────
@@ -343,7 +365,8 @@ public partial class TilemapEditorWindow : Window
             TxtVramRegionInfo.Text = $"{region.Label}: {region.StartTile}-{region.EndTile} ({region.TileCount} tiles)";
         }
 
-        // TODO: Load tileset image and populate TilesetGrid
+        // Load tileset image
+        LoadTilesetImage(asset);
     }
 
     private void CmbLayers_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -372,6 +395,11 @@ public partial class TilemapEditorWindow : Window
         }
     }
 
+    private void Canvas_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
+    {
+        _isPainting = false;
+    }
+
     private void Canvas_MouseRightButtonDown(object sender, MouseButtonEventArgs e)
     {
         // Erase tile (set to 0)
@@ -396,7 +424,8 @@ public partial class TilemapEditorWindow : Window
         int index = tileY * width + tileX;
         _tilemapLayers[_currentLayerIndex][index] = _selectedTileId;
 
-        // TODO: Render tile at position
+        // Render tile immediately
+        RenderCanvas();
     }
 
     private void BtnZoomFit_Click(object sender, RoutedEventArgs e)
@@ -595,5 +624,141 @@ public partial class TilemapEditorWindow : Window
                 break;
             }
         }
+    }
+
+    // ── Helper Methods ────────────────────────────────────────────────────────
+
+    private void LoadTilesetImage(AssetEntry asset)
+    {
+        try
+        {
+            var absPath = System.IO.Path.Combine(_projectPath, asset.RelativePath.Replace('/', System.IO.Path.DirectorySeparatorChar));
+            if (!File.Exists(absPath))
+            {
+                MessageBox.Show($"Tileset image not found: {absPath}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                return;
+            }
+
+            var bitmap = new BitmapImage();
+            bitmap.BeginInit();
+            bitmap.UriSource = new Uri(absPath);
+            bitmap.CacheOption = BitmapCacheOption.OnLoad;
+            bitmap.EndInit();
+            bitmap.Freeze();
+
+            _tilesetImage = bitmap;
+            _tilesetColumns = asset.SourceWidth / _target.Specs.TileWidth;
+            _tilesetRows = asset.SourceHeight / _target.Specs.TileHeight;
+
+            // Populate tileset grid
+            PopulateTilesetGrid();
+
+            // Refresh canvas
+            RenderCanvas();
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show($"Failed to load tileset: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+
+    private void PopulateTilesetGrid()
+    {
+        if (_tilesetImage == null) return;
+
+        TilesetGrid.Items.Clear();
+
+        int tileSize = _target.Specs.TileWidth;
+        int totalTiles = _tilesetColumns * _tilesetRows;
+
+        // Add tile buttons
+        for (int tileId = 0; tileId < totalTiles; tileId++)
+        {
+            var border = new Border
+            {
+                Width = tileSize + 2,
+                Height = tileSize + 2,
+                BorderBrush = new SolidColorBrush(Color.FromRgb(0x76, 0x75, 0x75)),
+                BorderThickness = new Thickness(1),
+                Margin = new Thickness(1),
+                Cursor = Cursors.Hand,
+                Tag = tileId
+            };
+
+            var image = new System.Windows.Controls.Image
+            {
+                Width = tileSize,
+                Height = tileSize,
+                Source = ExtractTile(tileId),
+                Stretch = System.Windows.Media.Stretch.None
+            };
+            RenderOptions.SetBitmapScalingMode(image, BitmapScalingMode.NearestNeighbor);
+
+            border.Child = image;
+            border.MouseLeftButtonDown += (s, e) =>
+            {
+                _selectedTileId = (int)((Border)s).Tag;
+                UpdateTileSelection();
+            };
+
+            TilesetGrid.Items.Add(border);
+        }
+
+        UpdateTileSelection();
+    }
+
+    private void UpdateTileSelection()
+    {
+        foreach (var item in TilesetGrid.Items)
+        {
+            if (item is Border border)
+            {
+                int tileId = (int)border.Tag;
+                if (tileId == _selectedTileId)
+                {
+                    border.BorderBrush = new SolidColorBrush(Color.FromRgb(0x8E, 0xFF, 0x71));
+                    border.BorderThickness = new Thickness(2);
+                }
+                else
+                {
+                    border.BorderBrush = new SolidColorBrush(Color.FromRgb(0x76, 0x75, 0x75));
+                    border.BorderThickness = new Thickness(1);
+                }
+            }
+        }
+    }
+
+    private BitmapSource ExtractTile(int tileId)
+    {
+        if (_tilesetImage == null) return null!;
+
+        int tileSize = _target.Specs.TileWidth;
+        int srcX = (tileId % _tilesetColumns) * tileSize;
+        int srcY = (tileId / _tilesetColumns) * tileSize;
+
+        var croppedBitmap = new CroppedBitmap(_tilesetImage, new Int32Rect(srcX, srcY, tileSize, tileSize));
+        croppedBitmap.Freeze();
+        return croppedBitmap;
+    }
+
+    private void RenderTileAt(int x, int y, int tileId, double scaledTileSize)
+    {
+        if (_tilesetImage == null || tileId <= 0) return;
+
+        var tileImage = ExtractTile(tileId);
+        if (tileImage == null) return;
+
+        var image = new System.Windows.Controls.Image
+        {
+            Width = scaledTileSize,
+            Height = scaledTileSize,
+            Source = tileImage,
+            Stretch = System.Windows.Media.Stretch.Fill
+        };
+        RenderOptions.SetBitmapScalingMode(image, BitmapScalingMode.NearestNeighbor);
+
+        Canvas.SetLeft(image, x * scaledTileSize);
+        Canvas.SetTop(image, y * scaledTileSize);
+        TilemapCanvas.Children.Add(image);
     }
 }

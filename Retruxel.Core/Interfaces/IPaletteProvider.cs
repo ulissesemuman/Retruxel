@@ -1,4 +1,4 @@
-namespace Retruxel.SDK.PaletteEditor;
+namespace Retruxel.Core.Interfaces;
 
 /// <summary>
 /// Interface that target-specific IToolExtension implementations must provide

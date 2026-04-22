@@ -1,5 +1,4 @@
 using Retruxel.Core.Interfaces;
-using Retruxel.SDK.PaletteEditor;
 
 namespace Retruxel.Target.SMS.Tools;
 

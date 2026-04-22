@@ -22,6 +22,7 @@ using System.Runtime.CompilerServices;
 [assembly: TypeForwardedTo(typeof(Retruxel.Core.Interfaces.IUndoableCommand))]
 [assembly: TypeForwardedTo(typeof(Retruxel.Core.Interfaces.ILocalizationService))]
 [assembly: TypeForwardedTo(typeof(Retruxel.Core.Interfaces.IEmulatorConnection))]
+[assembly: TypeForwardedTo(typeof(Retruxel.Core.Interfaces.IPaletteProvider))]
 [assembly: TypeForwardedTo(typeof(Retruxel.Core.Interfaces.RetruxelServices))]
 
 // ── Enums ─────────────────────────────────────────────────────────────────────

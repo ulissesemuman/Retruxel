@@ -3,8 +3,8 @@ using System.Collections.Generic;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
+using Retruxel.Core.Interfaces;
 using Retruxel.Core.Services;
-using Retruxel.SDK.PaletteEditor;
 
 namespace Retruxel.Tool.PaletteEditor;
 

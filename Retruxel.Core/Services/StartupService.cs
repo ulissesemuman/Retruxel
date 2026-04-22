@@ -19,8 +19,16 @@ public static class StartupService
     /// <summary>
     /// Runs all startup tasks in sequence, reporting progress to the splash screen.
     /// targets: list of registered targets passed from the shell.
+    /// toolRegistry: registry for visual tools (IVisualTool).
+    /// toolLoader: loader for standard tools (ITool).
+    /// basePath: application base directory.
     /// </summary>
-    public static async Task InitializeAsync(IProgress<string> progress, IEnumerable<Core.Interfaces.ITarget> targets)
+    public static async Task InitializeAsync(
+        IProgress<string> progress,
+        IEnumerable<Core.Interfaces.ITarget> targets,
+        object toolRegistry,
+        object toolLoader,
+        string basePath)
     {
         var loc = LocalizationService.Instance;
 
@@ -38,9 +46,9 @@ public static class StartupService
         progress.Report(loc.Get("startup.check_toolchain"));
         await VerifyToolchainsAsync(progress, targets);
 
-        // 4. Stubs — placeholders for future systems
+        // 4. Tool discovery — discover ITool and IVisualTool plugins
         progress.Report(loc.Get("startup.scan_plugins"));
-        await Task.Delay(50);
+        await DiscoverToolsAsync(progress, toolRegistry, toolLoader, basePath);
 
         progress.Report(loc.Get("startup.ready"));
         await Task.Delay(100);
@@ -73,6 +81,55 @@ public static class StartupService
                     foreach (var path in binaryPaths.Where(p => !File.Exists(p)))
                         progress.Report($"    MISSING: {Path.GetFileName(path)}");
                 }
+            }
+        });
+    }
+
+    // ── Tool Discovery ────────────────────────────────────────────────
+
+    /// <summary>
+    /// Discovers and registers tools from Plugins/Tools/ folder.
+    /// Reports progress for each tool discovered.
+    /// </summary>
+    private static async Task DiscoverToolsAsync(
+        IProgress<string> progress,
+        object toolRegistry,
+        object toolLoader,
+        string basePath)
+    {
+        await Task.Run(() =>
+        {
+            // Discover standard tools (ITool) via ToolLoader
+            var discoverMethod = toolLoader.GetType().GetMethod("DiscoverTools");
+            if (discoverMethod != null)
+            {
+                discoverMethod.Invoke(toolLoader, null);
+                var getToolsMethod = toolLoader.GetType().GetMethod("GetAllTools");
+                if (getToolsMethod != null)
+                {
+                    var tools = getToolsMethod.Invoke(toolLoader, null) as System.Collections.IEnumerable;
+                    if (tools != null)
+                    {
+                        foreach (var tool in tools)
+                        {
+                            var toolIdProp = tool.GetType().GetProperty("ToolId");
+                            if (toolIdProp != null)
+                            {
+                                var toolId = toolIdProp.GetValue(tool) as string;
+                                progress.Report($"  TOOL: {toolId?.ToUpper()}");
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Discover visual tools (IVisualTool) via ToolRegistry
+            var pluginsPath = Path.Combine(basePath, "Plugins");
+            var discoverToolsMethod = toolRegistry.GetType().GetMethod("DiscoverTools");
+            if (discoverToolsMethod != null)
+            {
+                var progressWrapper = new Progress<string>(msg => progress.Report(msg));
+                discoverToolsMethod.Invoke(toolRegistry, new object[] { pluginsPath, progressWrapper });
             }
         });
     }

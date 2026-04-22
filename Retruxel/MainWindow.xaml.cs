@@ -13,8 +13,6 @@ public partial class MainWindow : Window
 {
     private readonly BuildConsoleView _buildConsoleView = new();
     private readonly ProjectManager _projectManager = new();
-    private readonly ToolLoader _toolLoader;
-    private readonly ToolRegistry _toolRegistry = new();
     private bool _isDraggingOverlay = false;
     private Point _overlayDragStart;
 
@@ -25,20 +23,11 @@ public partial class MainWindow : Window
         WelcomeView.OnProjectCreated += OnProjectCreated;
         WelcomeView.OnAboutRequested += () => ShowOverlay("ABOUT", new AboutView());
 
-        // Initialize ToolLoader with base path
-        var basePath = AppDomain.CurrentDomain.BaseDirectory;
-        _toolLoader = new ToolLoader(basePath);
+        // Initialize VisualToolInvoker with registry from App
+        VisualToolInvoker.Initialize(App.ToolRegistry);
 
-        // Discover tools on startup
-        _toolLoader.DiscoverTools();
-
-        // Discover and register visual tools
-        var pluginsPath = Path.Combine(basePath, "Plugins");
-        var progress = new Progress<string>(msg => System.Diagnostics.Debug.WriteLine(msg));
-        _toolRegistry.DiscoverTools(pluginsPath, progress);
-
-        // Initialize VisualToolInvoker with registry
-        VisualToolInvoker.Initialize(_toolRegistry);
+        // Configure wizard button
+        ConfigureWizardButton();
 
         // Ctrl+S to save
         KeyDown += MainWindow_KeyDown;
@@ -289,10 +278,25 @@ public partial class MainWindow : Window
         settingsWindow.ShowDialog();
     }
 
+    private void ConfigureWizardButton()
+    {
+        var wizardTool = App.ToolLoader.GetToolById("retruxel.wizard");
+        
+        if (wizardTool != null)
+        {
+            BtnTestWizard.IsEnabled = true;
+        }
+        else
+        {
+            BtnTestWizard.IsEnabled = false;
+            BtnTestWizard.ToolTip = "Wizard tool not installed";
+        }
+    }
+
     private void TestWizard_Click(object sender, RoutedEventArgs e)
     {
-        var wizardWindow = new Views.Wizard.WizardMainWindow { Owner = this };
-        wizardWindow.ShowDialog();
+        var wizardTool = App.ToolLoader.GetToolById("retruxel.wizard");
+        wizardTool?.Execute(new Dictionary<string, object>());
     }
 
     private void TitleBar_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)

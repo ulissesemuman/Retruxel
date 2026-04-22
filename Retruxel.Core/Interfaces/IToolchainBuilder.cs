@@ -1,6 +1,6 @@
 using Retruxel.Core.Models;
 
-namespace Retruxel.Toolchain;
+namespace Retruxel.Core.Interfaces;
 
 /// <summary>
 /// Interface for toolchain builders that compile source code into ROM files.

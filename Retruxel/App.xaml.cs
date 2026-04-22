@@ -31,7 +31,7 @@ public partial class App : Application
         LocalizationService.Instance.Load(language, locPath);
 
         // 2.1. Register localization service in SDK for plugin access
-        RetruxelServices.Localization = LocalizationService.Instance;
+        ServiceLocator.Localization = LocalizationService.Instance;
 
         // 3. Target Registry — shell owns this, Core never references it directly
         TargetRegistry.Initialize();
@@ -41,6 +41,9 @@ public partial class App : Application
         var basePath = AppDomain.CurrentDomain.BaseDirectory;
         ToolLoader = new ToolLoader(basePath);
         ToolRegistry = new ToolRegistry();
+
+        // 4.1. Register tool registry in SDK for tool-to-tool invocation
+        ServiceLocator.ToolRegistry = ToolRegistry;
 
         // 5. Splash + real startup tasks
         var splash = new SplashScreen();

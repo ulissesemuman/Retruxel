@@ -1,5 +1,5 @@
 using Microsoft.Win32;
-using Retruxel.Core.Interfaces;
+using Retruxel.Core.Services;
 using Retruxel.Tool.FontImporter.Services;
 using System.Windows;
 using System.Windows.Controls;
@@ -28,7 +28,7 @@ public partial class FontImporterWindow : Window
     {
         InitializeComponent();
 
-        var loc = RetruxelServices.Localization;
+        var loc = ServiceLocator.Localization;
         StatusLabel.Text = loc.Translate("fontimporter.status.no_file");
 
         BuildCharGrid();
@@ -52,7 +52,7 @@ public partial class FontImporterWindow : Window
 
     private void BrowseButton_Click(object sender, RoutedEventArgs e)
     {
-        var loc = RetruxelServices.Localization;
+        var loc = ServiceLocator.Localization;
         var dlg = new OpenFileDialog
         {
             Title = loc.Translate("fontimporter.dialog.select_font"),
@@ -271,7 +271,7 @@ public partial class FontImporterWindow : Window
 
     private void UpdateImportButton()
     {
-        var loc = RetruxelServices.Localization;
+        var loc = ServiceLocator.Localization;
         BtnImport.IsEnabled = _ttfPath is not null && _selectedCodepoints.Count > 0;
         LblFooterMessage.Text = _ttfPath is null ? loc.Translate("fontimporter.error.select_file") : "";
     }
@@ -327,7 +327,7 @@ public partial class FontImporterWindow : Window
 
         try
         {
-            var loc = RetruxelServices.Localization;
+            var loc = ServiceLocator.Localization;
             LblFooterMessage.Text = loc.Translate("fontimporter.status.generating");
             LblFooterMessage.Foreground = (Brush)FindResource("BrushTertiary");
 
@@ -350,7 +350,7 @@ public partial class FontImporterWindow : Window
         }
         catch (Exception ex)
         {
-            var loc = RetruxelServices.Localization;
+            var loc = ServiceLocator.Localization;
             LblFooterMessage.Text = string.Format(loc.Translate("fontimporter.error.generation"), ex.Message);
             LblFooterMessage.Foreground = (Brush)FindResource("BrushError");
         }

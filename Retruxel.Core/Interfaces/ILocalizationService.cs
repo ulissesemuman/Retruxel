@@ -2,7 +2,7 @@ namespace Retruxel.Core.Interfaces;
 
 /// <summary>
 /// Provides localization services for plugins and tools.
-/// Implemented by the main application and exposed through RetruxelServices.
+/// Implemented by the main application and exposed through ServiceLocator.
 /// </summary>
 public interface ILocalizationService
 {

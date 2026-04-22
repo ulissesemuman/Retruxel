@@ -51,7 +51,7 @@ public partial class AssetImporterWindow : Window
 
     private void ApplyLocalization()
     {
-        var loc = RetruxelServices.Localization;
+        var loc = ServiceLocator.Localization;
         TxtTitle.Text = loc.Translate("assetimporter.title");
         // Labels already set in XAML
     }
@@ -129,7 +129,7 @@ public partial class AssetImporterWindow : Window
     {
         try
         {
-            var toolRegistry = (ToolRegistry)RetruxelServices.ToolRegistry;
+            var toolRegistry = (ToolRegistry)ServiceLocator.ToolRegistry;
             var liveLinkTool = toolRegistry.GetTool("retruxel.tool.livelink");
             
             if (liveLinkTool == null)
@@ -159,7 +159,7 @@ public partial class AssetImporterWindow : Window
     {
         // TODO: Convert CaptureResult to PNG and process
         // For now, show placeholder
-        var loc = RetruxelServices.Localization;
+        var loc = ServiceLocator.Localization;
         ShowValidation("Emulator capture processing not yet implemented.");
     }
 
@@ -167,7 +167,7 @@ public partial class AssetImporterWindow : Window
 
     private void BtnBrowse_Click(object sender, RoutedEventArgs e)
     {
-        var loc = RetruxelServices.Localization;
+        var loc = ServiceLocator.Localization;
         var dialog = new OpenFileDialog
         {
             Title = loc.Translate("assetimporter.dialog.select_png"),
@@ -196,7 +196,7 @@ public partial class AssetImporterWindow : Window
 
         if (png is null)
         {
-            var loc = RetruxelServices.Localization;
+            var loc = ServiceLocator.Localization;
             ShowValidation(loc.Translate("assetimporter.error.only_png"));
             return;
         }
@@ -217,7 +217,7 @@ public partial class AssetImporterWindow : Window
             using var stream = File.OpenRead(pngPath);
             using var bitmap = SKBitmap.Decode(stream);
 
-            var loc = RetruxelServices.Localization;
+            var loc = ServiceLocator.Localization;
 
             if (bitmap is null)
             {
@@ -253,7 +253,7 @@ public partial class AssetImporterWindow : Window
         }
         catch (Exception ex)
         {
-            var loc = RetruxelServices.Localization;
+            var loc = ServiceLocator.Localization;
             ShowValidation(string.Format(loc.Translate("assetimporter.error.loading"), ex.Message));
         }
     }
@@ -270,13 +270,13 @@ public partial class AssetImporterWindow : Window
             ReducedHint.Visibility = Visibility.Collapsed;
 
             // Count unique colors in reduced image
-            var loc = RetruxelServices.Localization;
+            var loc = ServiceLocator.Localization;
             var uniqueColors = CountUniqueColors(_reducedPreview);
             TxtReducedInfo.Text = string.Format(loc.Translate("assetimporter.info.colors"), uniqueColors, _target.DisplayName);
         }
         catch (Exception ex)
         {
-            var loc = RetruxelServices.Localization;
+            var loc = ServiceLocator.Localization;
             TxtReducedInfo.Text = string.Format(loc.Translate("assetimporter.error.preview"), ex.Message);
         }
     }
@@ -291,7 +291,7 @@ public partial class AssetImporterWindow : Window
 
     private bool ValidateAssetName()
     {
-        var loc = RetruxelServices.Localization;
+        var loc = ServiceLocator.Localization;
         var name = TxtAssetName.Text.Trim();
 
         if (string.IsNullOrEmpty(name))
@@ -351,7 +351,7 @@ public partial class AssetImporterWindow : Window
         }
         catch (Exception ex)
         {
-            var loc = RetruxelServices.Localization;
+            var loc = ServiceLocator.Localization;
             ShowValidation(string.Format(loc.Translate("assetimporter.error.unexpected"), ex.Message));
         }
         finally

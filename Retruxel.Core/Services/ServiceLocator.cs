@@ -1,11 +1,13 @@
-namespace Retruxel.Core.Interfaces;
+using Retruxel.Core.Interfaces;
+
+namespace Retruxel.Core.Services;
 
 /// <summary>
 /// Static service locator for Retruxel services.
 /// Provides access to core services for plugins and tools without requiring direct Core references.
 /// Services are registered by the main application at startup.
 /// </summary>
-public static class RetruxelServices
+public static class ServiceLocator
 {
     /// <summary>
     /// Localization service for translating UI strings.

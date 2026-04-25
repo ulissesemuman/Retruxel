@@ -491,9 +491,9 @@ public partial class LiveLinkWindow : Window
                 {
                     LogWarning($"{_sourceConsole.ToUpper()} tile capture not yet fully implemented");
                 }
-                else
+                else if (_sourceConsole == "sms" || _sourceConsole == "gg")
                 {
-                    // SMS/GG/SG-1000: Read all VRAM
+                    // SMS/GG: 4bpp, line-interleaved
                     int totalTiles = specs.MaxTilesInVram;
                     int vramSize = totalTiles * bytesPerTile;
                     
@@ -509,22 +509,7 @@ public partial class LiveLinkWindow : Window
                         totalTiles = vramData.Length / bytesPerTile;
                     }
                     
-                    // Determine interleave mode based on console
-                    InterleaveMode interleaveMode;
-                    if (_sourceConsole == "sms" || _sourceConsole == "gg")
-                    {
-                        interleaveMode = InterleaveMode.Line; // SMS/GG use line-interleaved
-                    }
-                    else if (_sourceConsole == "sg1000")
-                    {
-                        interleaveMode = InterleaveMode.Tile; // SG-1000 uses tile-interleaved
-                    }
-                    else
-                    {
-                        interleaveMode = InterleaveMode.Line; // Default
-                    }
-                    
-                    LogInfo($"Decoding {totalTiles} tiles ({bpp}bpp, {interleaveMode})...");
+                    LogInfo($"Decoding {totalTiles} tiles (4bpp, InterleaveMode.Line)...");
                     capture.Tiles = TileConverter.Decode(
                         vramData, 
                         totalTiles, 
@@ -532,8 +517,41 @@ public partial class LiveLinkWindow : Window
                         specs.TileWidth, 
                         specs.TileHeight, 
                         TileFormat.Planar,
-                        interleaveMode);
+                        InterleaveMode.Line);
                     LogSuccess($"Decoded {capture.Tiles.Length} tiles");
+                }
+                else if (_sourceConsole == "sg1000")
+                {
+                    // SG-1000: 1bpp (TMS9918), tile-interleaved
+                    int totalTiles = specs.MaxTilesInVram;
+                    int vramSize = totalTiles * bytesPerTile;
+                    
+                    LogInfo($"VRAM calculation: {totalTiles} tiles × {bytesPerTile} bytes/tile = {vramSize} bytes");
+                    LogInfo($"Requesting tiles from VRAM...");
+                    
+                    byte[] vramData = await _connection.ReadVramAsync(0x0000, vramSize);
+                    LogSuccess($"✓ Received: {vramData.Length} bytes (expected {vramSize})");
+                    
+                    if (vramData.Length < vramSize)
+                    {
+                        LogWarning($"⚠ Received less data than expected, adjusting tile count to {vramData.Length / bytesPerTile} tiles");
+                        totalTiles = vramData.Length / bytesPerTile;
+                    }
+                    
+                    LogInfo($"Decoding {totalTiles} tiles (1bpp, InterleaveMode.Tile)...");
+                    capture.Tiles = TileConverter.Decode(
+                        vramData, 
+                        totalTiles, 
+                        1, // 1bpp for SG-1000
+                        specs.TileWidth, 
+                        specs.TileHeight, 
+                        TileFormat.Planar,
+                        InterleaveMode.Tile);
+                    LogSuccess($"Decoded {capture.Tiles.Length} tiles");
+                }
+                else
+                {
+                    LogWarning($"{_sourceConsole.ToUpper()} tile capture not yet implemented");
                 }
             }
 
@@ -611,7 +629,7 @@ public partial class LiveLinkWindow : Window
                     capture.Palette = DecodeSnesPalette(paletteData);
                     LogSuccess($"Decoded {capture.Palette.Length} colors");
                 }
-                else if (_sourceConsole == "sms" || _sourceConsole == "sg1000")
+                else if (_sourceConsole == "sms")
                 {
                     LogInfo("Requesting SMS palette from CRAM...");
                     
@@ -628,6 +646,26 @@ public partial class LiveLinkWindow : Window
                     LogSuccess($"✓ Palette received: {paletteData.Length} bytes");
                     
                     LogInfo("Decoding SMS palette (6-bit RGB)...");
+                    capture.Palette = DecodeSmsPalette(paletteData);
+                    LogSuccess($"Decoded {capture.Palette.Length} colors");
+                }
+                else if (_sourceConsole == "sg1000")
+                {
+                    LogInfo("Requesting SG-1000 palette from CRAM...");
+                    
+                    byte[] paletteData;
+                    if (_connection is MesenConnection mesenConn)
+                    {
+                        paletteData = await mesenConn.ReadCramAsync(32);
+                    }
+                    else
+                    {
+                        paletteData = await _connection.ReadMemoryAsync(0xC000, 32);
+                    }
+                    
+                    LogSuccess($"✓ Palette received: {paletteData.Length} bytes");
+                    
+                    LogInfo("Decoding SG-1000 palette (6-bit RGB)...");
                     capture.Palette = DecodeSmsPalette(paletteData);
                     LogSuccess($"Decoded {capture.Palette.Length} colors");
                 }
@@ -997,7 +1035,7 @@ public partial class LiveLinkWindow : Window
                 },
                 MaxSpritesOnScreen = 128
             },
-            "sms" or "sg1000" => new TargetSpecs
+            "sms" => new TargetSpecs
             {
                 ScreenWidth = 256,
                 ScreenHeight = 192,
@@ -1010,6 +1048,20 @@ public partial class LiveLinkWindow : Window
                     new VramRegion("sprites", "Sprites", 256, 447)
                 },
                 MaxSpritesOnScreen = 64
+            },
+            "sg1000" => new TargetSpecs
+            {
+                ScreenWidth = 256,
+                ScreenHeight = 192,
+                TileWidth = 8,
+                TileHeight = 8,
+                ColorsPerTile = 2, // 1bpp (TMS9918)
+                VramRegions = new[]
+                {
+                    new VramRegion("background", "Background", 0, 255),
+                    new VramRegion("sprites", "Sprites", 256, 511)
+                },
+                MaxSpritesOnScreen = 32
             },
             "gg" => new TargetSpecs
             {

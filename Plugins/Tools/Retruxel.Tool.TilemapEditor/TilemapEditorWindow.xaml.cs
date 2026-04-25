@@ -1062,10 +1062,10 @@ public partial class TilemapEditorWindow : Window
             // Open palette editor with existing module data and elementId
             var input = new Dictionary<string, object>
             {
-                ["paletteProvider"] = paletteProvider,
-                ["callerId"] = "tilemap_editor",
-                ["elementId"] = paletteId,
-                ["project"] = _project
+                ["target"] = _target,
+                ["project"] = _project,
+                ["toolRegistry"] = _toolRegistry,
+                ["elementId"] = paletteId
             };
             
             if (existingModuleData != null)
@@ -1095,21 +1095,27 @@ public partial class TilemapEditorWindow : Window
                         System.Text.Json.JsonSerializer.Serialize(updatedModuleData)
                     ).RootElement.Clone();
 
-                // Save project
-                _ = _saveProjectCallback?.Invoke();
+                    // Save project
+                    _ = _saveProjectCallback?.Invoke();
 
-                // Reload tileset with updated palette
-                if (CmbTilesetAsset.SelectedItem != null)
-                {
-                    string assetId = CmbTilesetAsset.SelectedItem.ToString()!;
-                    var asset = _project.Assets.FirstOrDefault(a => a.Id == assetId);
-                    if (asset != null)
+                    // Reload tileset with updated palette
+                    if (CmbTilesetAsset.SelectedItem != null)
                     {
-                        LoadTilesetImage(asset);
+                        string assetId = CmbTilesetAsset.SelectedItem.ToString()!;
+                        var asset = _project.Assets.FirstOrDefault(a => a.Id == assetId);
+                        if (asset != null)
+                        {
+                            LoadTilesetImage(asset);
+                        }
                     }
                 }
             }
         }
+        catch (Exception ex)
+        {
+            MessageBox.Show($"Failed to edit palette: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
 
     /// <summary>
     /// Handles palette ComboBox selection change.

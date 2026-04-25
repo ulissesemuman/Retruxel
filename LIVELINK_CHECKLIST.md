@@ -33,13 +33,14 @@
 - [ ] Preview OK (verificar)
 - [ ] Import OK (verificar)
 
-### 🟡 SG-1000 (Sega SG-1000)
+### 🟢 SG-1000 (Sega SG-1000)
 - [x] Tiles (1bpp, InterleaveMode.Tile)
 - [x] Palette (TMS9918 fixed 16-color palette)
-- [ ] **Nametable** - Endereço incorreto (0x1800 retorna zeros, testando 0x3800)
-- [x] Preview OK (tiles)
-- [x] Tiles renderizam em branco/preto (fix temporário)
-- [ ] **Color Table** - Implementar leitura da Color Table separada (0x2000, 32 bytes) para cores corretas
+- [x] Nametable (32x24, 1 byte/entry, 0x3800)
+- [x] Color Table (0x2000, 32 bytes, FG/BG per 8 tiles)
+- [x] Preview OK
+- [x] Import OK com cores corretas
+- [x] **COMPLETO** - SG-1000 totalmente funcional!
 
 ### 🟡 GB/GBC (Game Boy / Game Boy Color)
 - [x] Tiles (2bpp, InterleaveMode.Line)

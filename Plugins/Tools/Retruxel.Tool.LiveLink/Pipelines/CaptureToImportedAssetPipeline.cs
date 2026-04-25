@@ -35,6 +35,7 @@ public class CaptureToImportedAssetPipeline : AssetPipelineBase<CaptureResult, I
             var maxValue = input.Tiles.SelectMany(t => t).Max();
             result.BitsPerPixel = maxValue switch
             {
+                <= 1 => 1,   // SG-1000 (2 colors)
                 <= 3 => 2,   // NES/GB (4 colors)
                 <= 15 => 4,  // SMS/GG (16 colors)
                 _ => 8       // SNES/GBA (256 colors)

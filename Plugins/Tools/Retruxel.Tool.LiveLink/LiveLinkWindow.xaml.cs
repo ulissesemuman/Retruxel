@@ -600,10 +600,19 @@ public partial class LiveLinkWindow : Window
                     byte[] nametableData = await _connection.ReadVramAsync(0x1800, 32 * 24);
                     LogSuccess($"✓ Nametable received: {nametableData.Length} bytes");
                     
+                    // Debug: Log first 32 bytes to verify data
+                    var preview = string.Join(" ", nametableData.Take(32).Select(b => b.ToString("X2")));
+                    LogInfo($"First 32 bytes: {preview}");
+                    
                     LogInfo("Decoding nametable...");
                     capture.Nametable = NametableDecoder.Decode(nametableData, 32, 24, 1);
                     capture.NametableWidth = 32;
                     capture.NametableHeight = 24;
+                    
+                    // Debug: Log first 32 decoded entries
+                    var decodedPreview = string.Join(" ", capture.Nametable.Take(32).Select(n => n.ToString("X2")));
+                    LogInfo($"First 32 decoded: {decodedPreview}");
+                    
                     LogSuccess($"Decoded nametable: {capture.NametableWidth}x{capture.NametableHeight}");
                 }
             }

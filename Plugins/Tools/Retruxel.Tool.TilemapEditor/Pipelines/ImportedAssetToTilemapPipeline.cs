@@ -132,9 +132,21 @@ public class ImportedAssetToTilemapPipeline : AssetPipelineBase<ImportedAssetDat
                         if (pixelIndex >= tilePixels.Length) continue;
 
                         byte colorIndex = tilePixels[pixelIndex];
-                        if (colorIndex >= palette.Length) continue;
-
-                        uint color = palette[colorIndex];
+                        
+                        // Special handling for 1bpp (SG-1000): use white/black instead of palette
+                        // TODO: Implement proper Color Table reading for SG-1000
+                        uint color;
+                        if (palette.Length == 16 && colorIndex <= 1)
+                        {
+                            // 1bpp: 0=black, 1=white (temporary fix until Color Table is implemented)
+                            color = colorIndex == 0 ? 0xFF000000 : 0xFFFFFFFF;
+                        }
+                        else
+                        {
+                            if (colorIndex >= palette.Length) continue;
+                            color = palette[colorIndex];
+                        }
+                        
                         byte a = (byte)((color >> 24) & 0xFF);
                         byte r = (byte)((color >> 16) & 0xFF);
                         byte g = (byte)((color >> 8) & 0xFF);

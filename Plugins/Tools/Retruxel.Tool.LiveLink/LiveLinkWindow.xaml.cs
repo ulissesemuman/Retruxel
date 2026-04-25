@@ -580,9 +580,10 @@ public partial class LiveLinkWindow : Window
                     // For now, skip nametable capture for SNES
                     LogWarning("SNES nametable capture not yet implemented");
                 }
-                else if (_sourceConsole == "sms" || _sourceConsole == "gg" || _sourceConsole == "sg1000")
+                else if (_sourceConsole == "sms" || _sourceConsole == "gg")
                 {
-                    LogInfo("Requesting SMS nametable from VRAM (0x3800)...");
+                    // SMS/GG nametable at 0x3800 (32x28, 2 bytes per entry)
+                    LogInfo("Requesting SMS/GG nametable from VRAM (0x3800)...");
                     byte[] nametableData = await _connection.ReadVramAsync(0x3800, 32 * 28 * 2);
                     LogSuccess($"✓ Nametable received: {nametableData.Length} bytes");
                     
@@ -590,6 +591,19 @@ public partial class LiveLinkWindow : Window
                     capture.Nametable = NametableDecoder.Decode(nametableData, 32, 28, 2);
                     capture.NametableWidth = 32;
                     capture.NametableHeight = 28;
+                    LogSuccess($"Decoded nametable: {capture.NametableWidth}x{capture.NametableHeight}");
+                }
+                else if (_sourceConsole == "sg1000")
+                {
+                    // SG-1000 (TMS9918) nametable at 0x1800 (32x24, 1 byte per entry)
+                    LogInfo("Requesting SG-1000 nametable from VRAM (0x1800)...");
+                    byte[] nametableData = await _connection.ReadVramAsync(0x1800, 32 * 24);
+                    LogSuccess($"✓ Nametable received: {nametableData.Length} bytes");
+                    
+                    LogInfo("Decoding nametable...");
+                    capture.Nametable = NametableDecoder.Decode(nametableData, 32, 24, 1);
+                    capture.NametableWidth = 32;
+                    capture.NametableHeight = 24;
                     LogSuccess($"Decoded nametable: {capture.NametableWidth}x{capture.NametableHeight}");
                 }
             }
@@ -651,23 +665,34 @@ public partial class LiveLinkWindow : Window
                 }
                 else if (_sourceConsole == "sg1000")
                 {
-                    LogInfo("Requesting SG-1000 palette from CRAM...");
+                    LogInfo("Using SG-1000 fixed TMS9918 palette...");
                     
-                    byte[] paletteData;
-                    if (_connection is MesenConnection mesenConn)
+                    // TMS9918 has a fixed 16-color palette (no CRAM)
+                    // Colors are: Transparent, Black, Medium Green, Light Green, Dark Blue, Light Blue,
+                    // Dark Red, Cyan, Medium Red, Light Red, Dark Yellow, Light Yellow,
+                    // Dark Green, Magenta, Gray, White
+                    uint[] tms9918Palette = new uint[16]
                     {
-                        paletteData = await mesenConn.ReadCramAsync(32);
-                    }
-                    else
-                    {
-                        paletteData = await _connection.ReadMemoryAsync(0xC000, 32);
-                    }
+                        0x00000000, // 0: Transparent
+                        0xFF000000, // 1: Black
+                        0xFF21C842, // 2: Medium Green
+                        0xFF5EDC78, // 3: Light Green
+                        0xFF5455ED, // 4: Dark Blue
+                        0xFF7D76FC, // 5: Light Blue
+                        0xFFD4524D, // 6: Dark Red
+                        0xFF42EBF5, // 7: Cyan
+                        0xFFFC5554, // 8: Medium Red
+                        0xFFFF7978, // 9: Light Red
+                        0xFFD4C154, // 10: Dark Yellow
+                        0xFFE6CE80, // 11: Light Yellow
+                        0xFF21B03B, // 12: Dark Green
+                        0xFFC95BBA, // 13: Magenta
+                        0xFFCCCCCC, // 14: Gray
+                        0xFFFFFFFF  // 15: White
+                    };
                     
-                    LogSuccess($"✓ Palette received: {paletteData.Length} bytes");
-                    
-                    LogInfo("Decoding SG-1000 palette (6-bit RGB)...");
-                    capture.Palette = DecodeSmsPalette(paletteData);
-                    LogSuccess($"Decoded {capture.Palette.Length} colors");
+                    capture.Palette = tms9918Palette;
+                    LogSuccess($"Loaded TMS9918 fixed palette: {capture.Palette.Length} colors");
                 }
                 else if (_sourceConsole == "gg")
                 {

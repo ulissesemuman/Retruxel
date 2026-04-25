@@ -284,9 +284,24 @@
                                            Style="{StaticResource TextLabelCaps}"
                                            Foreground="{StaticResource BrushOnSurfaceVariant}"
                                            Margin="0,0,0,6"/>
-                                <ComboBox x:Name="CmbPalette"
-                                          SelectionChanged="CmbPalette_SelectionChanged"
-                                          DropDownClosed="CmbPalette_DropDownClosed"/>
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="8"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <ComboBox x:Name="CmbPalette"
+                                              Grid.Column="0"
+                                              SelectionChanged="CmbPalette_SelectionChanged"
+                                              DropDownClosed="CmbPalette_DropDownClosed"/>
+                                    <Button x:Name="BtnEditPalette"
+                                            Grid.Column="2"
+                                            Content="EDIT"
+                                            Click="BtnEditPalette_Click"
+                                            Style="{StaticResource ButtonSecondary}"
+                                            Padding="12,0"
+                                            Height="32"/>
+                                </Grid>
                                 <TextBlock x:Name="TxtPaletteModeInfo"
                                            Style="{StaticResource TextLabel}"
                                            Foreground="{StaticResource BrushOnSurfaceVariant}"

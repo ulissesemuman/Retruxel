@@ -159,6 +159,21 @@ public partial class TilemapEditorWindow : Window
             }
         }
 
+        // Load associated palette
+        if (moduleData.ContainsKey("paletteRef"))
+        {
+            string paletteRef = moduleData["paletteRef"].ToString()!;
+            System.Diagnostics.Debug.WriteLine($"  Palette Ref: {paletteRef}");
+            for (int i = 0; i < CmbPalette.Items.Count; i++)
+            {
+                if (CmbPalette.Items[i].ToString() == paletteRef)
+                {
+                    CmbPalette.SelectedIndex = i;
+                    break;
+                }
+            }
+        }
+
         // Try both 'mapData' (TilemapModule) and 'data' (legacy)
         if (moduleData.ContainsKey("mapData"))
         {
@@ -977,8 +992,119 @@ public partial class TilemapEditorWindow : Window
     }
 
     /// <summary>
+    /// Opens PaletteEditor to edit the currently selected palette.
+    /// </summary>
+    private void BtnEditPalette_Click(object sender, RoutedEventArgs e)
+    {
+        if (CmbPalette.SelectedItem == null || CmbPalette.SelectedItem.ToString() == "<New Palette>")
+        {
+            MessageBox.Show("Please select a palette to edit.", "No Palette Selected", MessageBoxButton.OK, MessageBoxImage.Information);
+            return;
+        }
+
+        string paletteId = CmbPalette.SelectedItem.ToString()!;
+        
+        // Find palette element in project
+        var paletteElement = _project.Scenes
+            .SelectMany(s => s.Elements)
+            .FirstOrDefault(e => e.ModuleId == "palette" && e.ElementId == paletteId);
+
+        if (paletteElement == null)
+        {
+            MessageBox.Show($"Palette '{paletteId}' not found in project.", "Palette Not Found", MessageBoxButton.OK, MessageBoxImage.Warning);
+            return;
+        }
+
+        try
+        {
+            if (_toolRegistry == null)
+            {
+                MessageBox.Show("Tool registry not available.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                return;
+            }
+
+            // Get palette editor tool
+            var paletteEditorTool = _toolRegistry.GetVisualTool("palette_editor");
+            if (paletteEditorTool == null)
+            {
+                MessageBox.Show("Palette Editor tool not found.", "Tool Not Found", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            // Get palette provider extension from target
+            var extension = _toolRegistry.GetTool($"palette_editor_ext_{_target.TargetId}");
+            if (extension == null)
+            {
+                MessageBox.Show($"Target '{_target.DisplayName}' does not support Palette Editor yet.", "Not Supported", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            var extensionResult = extension.Execute(new Dictionary<string, object>());
+            if (!extensionResult.ContainsKey("paletteProvider"))
+            {
+                MessageBox.Show($"Target '{_target.DisplayName}' palette extension is invalid.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                return;
+            }
+
+            var paletteProvider = (IPaletteProvider)extensionResult["paletteProvider"];
+
+            // Extract existing palette data
+            var moduleState = paletteElement.ModuleState;
+            byte[]? existingColors = null;
+            
+            if (moduleState.TryGetProperty("colors", out var colorsProperty))
+            {
+                var colorsList = new List<byte>();
+                foreach (var colorElement in colorsProperty.EnumerateArray())
+                {
+                    colorsList.Add((byte)colorElement.GetInt32());
+                }
+                existingColors = colorsList.ToArray();
+            }
+
+            // Open palette editor with existing data and elementId
+            var paletteEditor = new Tool.PaletteEditor.PaletteEditorWindow(
+                paletteProvider, 
+                "tilemap_editor", 
+                existingColors, 
+                paletteId,  // Pass elementId so it can show usage
+                _project)
+            {
+                Owner = this
+            };
+
+            if (paletteEditor.ShowDialog() == true && paletteEditor.ModuleData != null)
+            {
+                // Update palette element in project
+                paletteElement.ModuleState = System.Text.Json.JsonDocument.Parse(
+                    System.Text.Json.JsonSerializer.Serialize(paletteEditor.ModuleData)
+                ).RootElement.Clone();
+
+                // Save project
+                _ = _saveProjectCallback?.Invoke();
+
+                // Reload tileset with updated palette
+                if (CmbTilesetAsset.SelectedItem != null)
+                {
+                    string assetId = CmbTilesetAsset.SelectedItem.ToString()!;
+                    var asset = _project.Assets.FirstOrDefault(a => a.Id == assetId);
+                    if (asset != null)
+                    {
+                        LoadTilesetImage(asset);
+                    }
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show($"Failed to open Palette Editor: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+
+    /// <summary>
     /// Handles palette ComboBox selection change.
     /// Opens PaletteEditor if <New Palette> is selected.
+    /// Reloads tileset with new palette colors.
     /// </summary>
     private void CmbPalette_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
@@ -988,6 +1114,19 @@ public partial class TilemapEditorWindow : Window
         if (CmbPalette.SelectedItem?.ToString() == "<New Palette>")
         {
             OpenPaletteEditor();
+        }
+        else
+        {
+            // Reload tileset with new palette colors
+            if (CmbTilesetAsset.SelectedItem != null)
+            {
+                string assetId = CmbTilesetAsset.SelectedItem.ToString()!;
+                var asset = _project.Assets.FirstOrDefault(a => a.Id == assetId);
+                if (asset != null)
+                {
+                    LoadTilesetImage(asset);
+                }
+            }
         }
     }
 

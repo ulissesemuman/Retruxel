@@ -1132,16 +1132,16 @@ public partial class SceneEditorView : UserControl
                 if (isLogicModule)
                 {
                     // Allow negative positions and positions beyond canvas
-                    tileX = (int)adjustedX / 8;
-                    tileY = (int)adjustedY / 8;
+                    tileX = (int)(adjustedX / 8);
+                    tileY = (int)(adjustedY / 8);
                 }
                 else
                 {
                     // Clamp graphic modules to canvas bounds
                     var maxTileX = (int)(SceneCanvas.Width / 8) - 1;
                     var maxTileY = (int)(SceneCanvas.Height / 8) - 1;
-                    tileX = Math.Clamp((int)adjustedX / 8, 0, maxTileX);
-                    tileY = Math.Clamp((int)adjustedY / 8, 0, maxTileY);
+                    tileX = Math.Clamp((int)(adjustedX / 8), 0, maxTileX);
+                    tileY = Math.Clamp((int)(adjustedY / 8), 0, maxTileY);
                 }
 
                 Canvas.SetLeft(border, tileX * 8);

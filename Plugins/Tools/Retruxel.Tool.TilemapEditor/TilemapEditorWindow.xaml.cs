@@ -1048,37 +1048,52 @@ public partial class TilemapEditorWindow : Window
 
             var paletteProvider = (IPaletteProvider)extensionResult["paletteProvider"];
 
-            // Extract existing palette data
+            // Extract existing palette module data
             var moduleState = paletteElement.ModuleState;
-            byte[]? existingColors = null;
+            Dictionary<string, object>? existingModuleData = null;
             
-            if (moduleState.TryGetProperty("colors", out var colorsProperty))
+            if (moduleState.ValueKind != System.Text.Json.JsonValueKind.Undefined &&
+                moduleState.ValueKind != System.Text.Json.JsonValueKind.Null)
             {
-                var colorsList = new List<byte>();
-                foreach (var colorElement in colorsProperty.EnumerateArray())
-                {
-                    colorsList.Add((byte)colorElement.GetInt32());
-                }
-                existingColors = colorsList.ToArray();
+                var rawJson = moduleState.GetRawText();
+                existingModuleData = System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, object>>(rawJson);
             }
 
-            // Open palette editor with existing data and elementId
-            var paletteEditor = new Tool.PaletteEditor.PaletteEditorWindow(
-                paletteProvider, 
-                "tilemap_editor", 
-                existingColors, 
-                paletteId,  // Pass elementId so it can show usage
-                _project)
+            // Open palette editor with existing module data and elementId
+            var input = new Dictionary<string, object>
             {
-                Owner = this
+                ["paletteProvider"] = paletteProvider,
+                ["callerId"] = "tilemap_editor",
+                ["elementId"] = paletteId,
+                ["project"] = _project
             };
-
-            if (paletteEditor.ShowDialog() == true && paletteEditor.ModuleData != null)
+            
+            if (existingModuleData != null)
             {
-                // Update palette element in project
-                paletteElement.ModuleState = System.Text.Json.JsonDocument.Parse(
-                    System.Text.Json.JsonSerializer.Serialize(paletteEditor.ModuleData)
-                ).RootElement.Clone();
+                input["moduleData"] = existingModuleData;
+            }
+            
+            var paletteEditorWindow = paletteEditorTool.CreateWindow(input);
+            if (paletteEditorWindow is not Window wpfWindow)
+            {
+                MessageBox.Show("Palette Editor did not return a valid window.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                return;
+            }
+            
+            wpfWindow.Owner = this;
+
+            if (wpfWindow.ShowDialog() == true)
+            {
+                // Extract ModuleData from window
+                var moduleDataProp = wpfWindow.GetType().GetProperty("ModuleData");
+                var updatedModuleData = moduleDataProp?.GetValue(wpfWindow) as Dictionary<string, object>;
+                
+                if (updatedModuleData != null)
+                {
+                    // Update palette element in project
+                    paletteElement.ModuleState = System.Text.Json.JsonDocument.Parse(
+                        System.Text.Json.JsonSerializer.Serialize(updatedModuleData)
+                    ).RootElement.Clone();
 
                 // Save project
                 _ = _saveProjectCallback?.Invoke();
@@ -1095,11 +1110,6 @@ public partial class TilemapEditorWindow : Window
                 }
             }
         }
-        catch (Exception ex)
-        {
-            MessageBox.Show($"Failed to open Palette Editor: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-        }
-    }
 
     /// <summary>
     /// Handles palette ComboBox selection change.
@@ -1117,7 +1127,14 @@ public partial class TilemapEditorWindow : Window
         }
         else
         {
-            // Reload tileset with new palette colors
+            // TODO: Reload tileset with new palette colors
+            // Currently, tileset is loaded directly from PNG file without palette application
+            // To properly show palette changes, we would need to:
+            // 1. Load tileset as indexed image
+            // 2. Apply selected palette colors to indices
+            // 3. Render recolored tileset
+            // For now, tileset shows original PNG colors
+            
             if (CmbTilesetAsset.SelectedItem != null)
             {
                 string assetId = CmbTilesetAsset.SelectedItem.ToString()!;

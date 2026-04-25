@@ -38,7 +38,7 @@
 - [x] Palette (TMS9918 fixed 16-color palette)
 - [x] Nametable (32x24, 1 byte/entry, 0x1800)
 - [x] Preview OK
-- [ ] **REGRESSÃO: Tilesets e paleta não importam (tudo preto)** - investigar
+- [x] **REGRESSÃO RESOLVIDA**: Tiles e paleta agora importam corretamente (fix: detecção 1bpp)
 - [ ] **Color Table** - Implementar leitura da Color Table separada (atualmente só captura tiles monocromáticos)
 
 ### 🟡 GB/GBC (Game Boy / Game Boy Color)
@@ -74,14 +74,12 @@
 
 ## 🚨 Issues Prioritários
 
-### 1. 🔴 SG-1000 Regressão - Tilesets e Paleta Pretos
-**Status**: Investigando  
+### 1. 🟢 SG-1000 Regressão - Tilesets e Paleta Pretos (RESOLVIDO)
+**Status**: ✅ Resolvido  
 **Descrição**: Preview OK mas na importação tilesets e paleta vêm todos pretos  
-**Possível Causa**: Pipeline de conversão não está lidando corretamente com 1bpp ou paleta fixa TMS9918  
-**Próximos Passos**:
-- [ ] Verificar CaptureToImportedAssetPipeline
-- [ ] Verificar se paleta TMS9918 está sendo passada corretamente
-- [ ] Verificar se tiles 1bpp estão sendo convertidos corretamente
+**Causa**: Pipeline de conversão não estava detectando 1bpp corretamente (maxValue <= 1)  
+**Solução**: Adicionado case `<= 1 => 1` no switch de detecção de BPP  
+**Commit**: 69ee772
 
 ### 2. 🟡 SNES Preview com Pontos Coloridos
 **Status**: Pendente  

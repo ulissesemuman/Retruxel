@@ -38,7 +38,8 @@
 - [x] Palette (TMS9918 fixed 16-color palette)
 - [x] Nametable (32x24, 1 byte/entry, 0x1800)
 - [x] Preview OK
-- [x] **REGRESSÃO RESOLVIDA**: Tiles agora renderizam em branco/preto (fix temporário)
+- [x] Tilemap agora usa índices corretos (fix: máscara 8-bit)
+- [x] Tiles renderizam em branco/preto (fix temporário)
 - [ ] **Color Table** - Implementar leitura da Color Table separada (0x2000, 32 bytes) para cores corretas
 
 ### 🟡 GB/GBC (Game Boy / Game Boy Color)

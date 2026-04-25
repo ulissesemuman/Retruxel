@@ -595,9 +595,11 @@ public partial class LiveLinkWindow : Window
                 }
                 else if (_sourceConsole == "sg1000")
                 {
-                    // SG-1000 (TMS9918) nametable at 0x1800 (32x24, 1 byte per entry)
-                    LogInfo("Requesting SG-1000 nametable from VRAM (0x1800)...");
-                    byte[] nametableData = await _connection.ReadVramAsync(0x1800, 32 * 24);
+                    // SG-1000 (TMS9918) nametable
+                    // TMS9918 Name Table is typically at 0x3800 (not 0x1800)
+                    // Address is configurable via VDP registers, but 0x3800 is most common
+                    LogInfo("Requesting SG-1000 nametable from VRAM (0x3800)...");
+                    byte[] nametableData = await _connection.ReadVramAsync(0x3800, 32 * 24);
                     LogSuccess($"✓ Nametable received: {nametableData.Length} bytes");
                     
                     // Debug: Log first 32 bytes to verify data

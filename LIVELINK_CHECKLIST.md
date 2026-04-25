@@ -36,9 +36,8 @@
 ### 🟡 SG-1000 (Sega SG-1000)
 - [x] Tiles (1bpp, InterleaveMode.Tile)
 - [x] Palette (TMS9918 fixed 16-color palette)
-- [x] Nametable (32x24, 1 byte/entry, 0x1800)
-- [x] Preview OK
-- [x] Tilemap agora usa índices corretos (fix: máscara 8-bit)
+- [ ] **Nametable** - Endereço incorreto (0x1800 retorna zeros, testando 0x3800)
+- [x] Preview OK (tiles)
 - [x] Tiles renderizam em branco/preto (fix temporário)
 - [ ] **Color Table** - Implementar leitura da Color Table separada (0x2000, 32 bytes) para cores corretas
 

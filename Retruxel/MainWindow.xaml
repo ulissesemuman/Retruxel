@@ -60,6 +60,12 @@
                                Height="15"
                                VerticalAlignment="Center"
                                RenderOptions.BitmapScalingMode="HighQuality"/>
+                        <TextBlock x:Name="TxtProjectName"
+                                   Style="{StaticResource TextLabel}"
+                                   Foreground="{StaticResource BrushOnSurfaceVariant}"
+                                   VerticalAlignment="Center"
+                                   Margin="12,0,0,0"
+                                   Visibility="Collapsed"/>
                     </StackPanel>
 
                     <!-- Nav tabs (not yet implemented) -->
@@ -87,13 +93,6 @@
                                 Margin="0,0,16,0"
                                 Click="SettingsButton_Click"
                                 ToolTip="Settings"/>
-
-                        <!-- Generate ROM (visible only when project is open) -->
-                        <Button x:Name="BtnGenerateRom"
-                                Content="GENERATE ROM"
-                                Style="{StaticResource ButtonPrimary}"
-                                Padding="16,8" Margin="0,0,8,0"
-                                Visibility="Collapsed"/>
 
                         <!-- Minimize -->
                         <Button Content="─"

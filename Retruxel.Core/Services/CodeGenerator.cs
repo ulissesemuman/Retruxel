@@ -20,10 +20,10 @@ public class CodeGenerator
         _moduleRegistry = moduleRegistry;
         _moduleRenderer = moduleRenderer;
         _target = target;
-        
+
         // Set target assembly for ModuleRenderer to discover IToolExtension implementations
         _moduleRenderer.SetTargetAssembly(target.GetType().Assembly);
-        
+
         // Set module registry for dynamic singleton checking
         _moduleRenderer.SetModuleRegistry(moduleRegistry);
     }
@@ -71,12 +71,12 @@ public class CodeGenerator
 
                 var moduleType = moduleTemplate.GetType();
                 var module = (IModule)Activator.CreateInstance(moduleType)!;
-                
+
                 var moduleStateJson = elementData.ModuleState.ValueKind != System.Text.Json.JsonValueKind.Undefined &&
                                       elementData.ModuleState.ValueKind != System.Text.Json.JsonValueKind.Null
                     ? elementData.ModuleState.GetRawText()
                     : "{}";
-                
+
                 module.Deserialize(moduleStateJson);
 
                 if (!instancesByModule.ContainsKey(elementData.ModuleId))
@@ -177,7 +177,7 @@ public class CodeGenerator
             mainFile = _target.GenerateMainFile(project, sourceFiles);
             progress?.Report("INFO: main.c generated via target fallback.");
         }
-        
+
         sourceFiles.Insert(0, mainFile);
 
         progress?.Report($"INFO: {sourceFiles.Count} source files generated.");

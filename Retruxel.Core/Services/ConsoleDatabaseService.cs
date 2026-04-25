@@ -1,8 +1,5 @@
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Text.Json;
 using Retruxel.Core.Models;
+using System.Text.Json;
 
 namespace Retruxel.Core.Services;
 
@@ -35,7 +32,7 @@ public static class ConsoleDatabaseService
         if (string.IsNullOrWhiteSpace(query))
             return _consoles ?? new List<ConsoleSpec>();
 
-        return _consoles?.Where(c => 
+        return _consoles?.Where(c =>
             c.Name.Contains(query, System.StringComparison.OrdinalIgnoreCase) ||
             c.Manufacturer.Contains(query, System.StringComparison.OrdinalIgnoreCase)
         ).ToList() ?? new List<ConsoleSpec>();

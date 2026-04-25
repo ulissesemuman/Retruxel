@@ -23,6 +23,7 @@ public class PaletteModule : IGraphicModule
     public ModuleType Type => ModuleType.Logic;
     public bool IsSingleton => false;
     public string[] Compatibility { get; set; } = [];
+    public string? VisualToolId => "palette_editor";
 
     private static readonly JsonSerializerOptions _jsonOptions = new()
     {

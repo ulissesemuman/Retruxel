@@ -14,6 +14,7 @@ public class SceneModuleConnector : IToolConnector
 
     public void Connect(Dictionary<string, object> toolOutput, ToolExecutionContext context)
     {
+        System.Diagnostics.Debug.WriteLine($"[SceneModuleConnector] Connect called with keys: {string.Join(", ", toolOutput.Keys)}");
         if (context.CurrentScene == null)
         {
             context.AddError("SceneModuleConnector: No active scene in context");
@@ -26,17 +27,22 @@ public class SceneModuleConnector : IToolConnector
             return;
         }
 
+        System.Diagnostics.Debug.WriteLine($"[SceneModuleConnector] ModuleId: {moduleId}");
+
         // Serialize module data to JSON
         string moduleJson = JsonSerializer.Serialize(toolOutput, new JsonSerializerOptions
         {
             PropertyNamingPolicy = JsonNamingPolicy.CamelCase
         });
+        
+        System.Diagnostics.Debug.WriteLine($"[SceneModuleConnector] Serialized JSON: {moduleJson}");
 
         var moduleState = JsonDocument.Parse(moduleJson).RootElement.Clone();
 
         // Check if updating existing module or creating new one
         if (toolOutput.TryGetValue("instanceId", out var instanceIdObj) && instanceIdObj is string instanceId)
         {
+            System.Diagnostics.Debug.WriteLine($"[SceneModuleConnector] Updating existing element: {instanceId}");
             // Update existing module
             var existingElement = context.CurrentScene.Elements
                 .FirstOrDefault(e => e.ElementId == instanceId);
@@ -44,6 +50,7 @@ public class SceneModuleConnector : IToolConnector
             if (existingElement != null)
             {
                 existingElement.ModuleState = moduleState;
+                System.Diagnostics.Debug.WriteLine($"[SceneModuleConnector] Element updated successfully");
             }
             else
             {
@@ -52,9 +59,10 @@ public class SceneModuleConnector : IToolConnector
         }
         else
         {
+            System.Diagnostics.Debug.WriteLine($"[SceneModuleConnector] Creating new element");
             // Create new element instance
             string newElementId = $"{moduleId}_{context.CurrentScene.Elements.Count(e => e.ModuleId == moduleId)}";
-            
+
             var element = new SceneElementData
             {
                 ElementId = newElementId,
@@ -66,6 +74,7 @@ public class SceneModuleConnector : IToolConnector
             };
 
             context.CurrentScene.Elements.Add(element);
+            System.Diagnostics.Debug.WriteLine($"[SceneModuleConnector] New element created: {newElementId}");
         }
     }
 }

@@ -58,11 +58,11 @@ public partial class TargetGridControl : UserControl
     {
         var currentSort = _currentSort;
         var currentFilter = _currentFilter;
-        
+
         RebuildComboBoxes();
-        
+
         SortComboBox.SelectedIndex = currentSort == "manufacturer" ? 1 : 0;
-        
+
         if (currentFilter == "all")
             FilterComboBox.SelectedIndex = 0;
         else if (currentFilter == "favorites")
@@ -71,7 +71,7 @@ public partial class TargetGridControl : UserControl
         {
             for (int i = 2; i < FilterComboBox.Items.Count; i++)
             {
-                if (FilterComboBox.Items[i] is ComboBoxItem item && 
+                if (FilterComboBox.Items[i] is ComboBoxItem item &&
                     item.Tag?.ToString() == currentFilter)
                 {
                     FilterComboBox.SelectedIndex = i;
@@ -80,20 +80,20 @@ public partial class TargetGridControl : UserControl
             }
         }
     }
-    
+
     private void RebuildComboBoxes()
     {
         var loc = LocalizationService.Instance;
-        
+
         SortComboBox.Items.Clear();
         SortComboBox.Items.Add(new ComboBoxItem { Content = loc.Get("welcome.sort.name"), Tag = "name" });
         SortComboBox.Items.Add(new ComboBoxItem { Content = loc.Get("welcome.sort.manufacturer"), Tag = "manufacturer" });
         if (SortComboBox.SelectedIndex == -1) SortComboBox.SelectedIndex = 0;
-        
+
         FilterComboBox.Items.Clear();
         FilterComboBox.Items.Add(new ComboBoxItem { Content = loc.Get("welcome.filter.all"), Tag = "all" });
         FilterComboBox.Items.Add(new ComboBoxItem { Content = loc.Get("welcome.filter.favorites"), Tag = "favorites" });
-        
+
         var manufacturers = TargetRegistry.GetManufacturers().OrderBy(m => m);
         foreach (var manufacturer in manufacturers)
         {

@@ -99,11 +99,19 @@
   <Target Name="CopyToolsToPluginsFolder" AfterTargets="Build">
     <MakeDir Directories="$(OutputPath)Plugins\Tools" />
     <ItemGroup>
-      <ToolDlls Include="..\Plugins\Tools\**\bin\$(Configuration)\net10.0\*.dll" />
-      <ToolDllsWindows Include="..\Plugins\Tools\**\bin\$(Configuration)\net10.0-windows\*.dll" />
+      <!-- Only copy from direct tool project bin folders, not nested dependencies -->
+      <ToolDlls Include="..\Plugins\Tools\Retruxel.Tool.*\bin\$(Configuration)\net10.0\Retruxel.Tool.*.dll" />
+      <ToolDllsWindows Include="..\Plugins\Tools\Retruxel.Tool.*\bin\$(Configuration)\net10.0-windows\Retruxel.Tool.*.dll" />
+      <!-- Also copy library DLLs -->
+      <LibDlls Include="..\Plugins\Tools\**\Retruxel.Lib.*\bin\$(Configuration)\net10.0\Retruxel.Lib.*.dll" />
     </ItemGroup>
-    <Copy SourceFiles="@(ToolDlls)" DestinationFolder="$(OutputPath)Plugins\Tools" SkipUnchangedFiles="true" Condition="Exists('%(ToolDlls.FullPath)')" />
-    <Copy SourceFiles="@(ToolDllsWindows)" DestinationFolder="$(OutputPath)Plugins\Tools" SkipUnchangedFiles="true" Condition="Exists('%(ToolDllsWindows.FullPath)')" />
+    <!-- Force overwrite by deleting first -->
+    <Delete Files="$(OutputPath)Plugins\Tools\%(ToolDlls.Filename)%(ToolDlls.Extension)" />
+    <Delete Files="$(OutputPath)Plugins\Tools\%(ToolDllsWindows.Filename)%(ToolDllsWindows.Extension)" />
+    <Delete Files="$(OutputPath)Plugins\Tools\%(LibDlls.Filename)%(LibDlls.Extension)" />
+    <Copy SourceFiles="@(ToolDlls)" DestinationFolder="$(OutputPath)Plugins\Tools" Condition="Exists('%(ToolDlls.FullPath)')" />
+    <Copy SourceFiles="@(ToolDllsWindows)" DestinationFolder="$(OutputPath)Plugins\Tools" Condition="Exists('%(ToolDllsWindows.FullPath)')" />
+    <Copy SourceFiles="@(LibDlls)" DestinationFolder="$(OutputPath)Plugins\Tools" Condition="Exists('%(LibDlls.FullPath)')" />
   </Target>
 
   <!-- Copy CodeGens folder to Plugins/CodeGens after build -->
@@ -121,6 +129,15 @@
       <TargetDlls Include="..\Plugins\Targets\**\bin\$(Configuration)\net10.0\Retruxel.Target.*.dll" />
     </ItemGroup>
     <Copy SourceFiles="@(TargetDlls)" DestinationFolder="$(OutputPath)Plugins\Targets" SkipUnchangedFiles="true" Condition="Exists('%(TargetDlls.FullPath)')" />
+  </Target>
+
+  <!-- Remove plugin DLLs from root bin folder (they should only be in Plugins subfolders) -->
+  <Target Name="CleanPluginDllsFromRoot" AfterTargets="CopyTargetsToPluginsFolder">
+    <ItemGroup>
+      <PluginDllsToRemove Include="$(OutputPath)Retruxel.Tool.*.dll" />
+      <PluginDllsToRemove Include="$(OutputPath)Retruxel.Lib.*.dll" />
+    </ItemGroup>
+    <Delete Files="@(PluginDllsToRemove)" />
   </Target>
 
 </Project>

@@ -20,7 +20,7 @@ public static class PaletteExtractor
         {
             // Strip alpha channel, keep only RGB
             var rgb = pixel & 0x00FFFFFF;
-            
+
             // Skip fully transparent pixels
             if ((pixel >> 24) > 0)
                 colors.Add(rgb);

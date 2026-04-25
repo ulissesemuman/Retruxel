@@ -1,9 +1,9 @@
 
 
-using Retruxel.Target.SMS.Modules.Splash;
 using Retruxel.Core.Interfaces;
 using Retruxel.Core.Models;
 using Retruxel.Core.Services;
+using Retruxel.Target.SMS.Modules.Splash;
 
 namespace Retruxel.Target.SMS;
 
@@ -20,12 +20,12 @@ public class SmsTarget : ITarget
     public TargetSpecs Specs => new()
     {
         // Screen
-        ScreenWidth  = 256,
+        ScreenWidth = 256,
         ScreenHeight = 192,
 
         // Tiles
-        TileWidth      = 8,
-        TileHeight     = 8,
+        TileWidth = 8,
+        TileHeight = 8,
         VramRegions =
         [
             new VramRegion("bg",     "Background", 0,   255),
@@ -34,13 +34,13 @@ public class SmsTarget : ITarget
 
         // Colors & Palettes
         // SMS VDP: 2 bits per channel (R, G, B) → 4 levels per channel → 64 total colors
-        TotalColors                = 64,
-        ColorDepthBitsPerChannel   = 2,
-        ColorsPerTile              = 4,
-        ColorsPerPalette           = 16,
-        SimultaneousPalettes       = 2,
-        BgPalettes                 = 2,   // both palettes available for BG tiles
-        SpritePalettes             = 2,   // both palettes available for sprites
+        TotalColors = 64,
+        ColorDepthBitsPerChannel = 2,
+        ColorsPerTile = 16,
+        ColorsPerPalette = 16,
+        SimultaneousPalettes = 2,
+        BgPalettes = 2,   // both palettes available for BG tiles
+        SpritePalettes = 2,   // both palettes available for sprites
 
         // Tilemap
         Tilemap = new TilemapSpecs
@@ -58,29 +58,29 @@ public class SmsTarget : ITarget
         },
 
         // Sprites
-        SpritesPerScanline          = 8,
-        MaxSpritesOnScreen          = 64,
-        SpriteWidth                 = 8,
-        SpriteHeight                = 8,
+        SpritesPerScanline = 8,
+        MaxSpritesOnScreen = 64,
+        SpriteWidth = 8,
+        SpriteHeight = 8,
         SupportsDoubleHeightSprites = true,   // 8×16 mode via VDP register
 
         // Memory
-        RamBytes    = 8192,
+        RamBytes = 8192,
         Banks =
         [
             new RomBank("rom", "ROM", 524288)
         ],
 
         // CPU
-        CPU        = "Zilog Z80",
+        CPU = "Zilog Z80",
         CpuClockHz = 3546893,
 
         // Manufacturer
         Manufacturer = "Sega",
 
         // Sound
-        SoundChip          = "SN76489",
-        SoundToneChannels  = 3,
+        SoundChip = "SN76489",
+        SoundToneChannels = 3,
         SoundNoiseChannels = 1
     };
 
@@ -201,8 +201,7 @@ public class SmsTarget : ITarget
         new ModuleOverride
         {
             ModuleId = "palette",
-            IsSingleton = true,
-            MaxInstances = 1
+            MaxInstances = 2  // BG palette + Sprite palette
         },
         new ModuleOverride
         {
@@ -280,7 +279,7 @@ public class SmsTarget : ITarget
 
         // Modules that have init functions (not text.display)
         var modulesWithInit = new HashSet<string> { "entity", "enemy", "scroll", "palette", "tilemap", "sprite", "input", "physics", "animation" };
-        
+
         // Generate init calls - one per module type
         var initCalls = moduleGroups
             .Where(g => modulesWithInit.Contains(g.Key))
@@ -288,11 +287,11 @@ public class SmsTarget : ITarget
 
         // Modules that have update functions
         var modulesWithUpdate = new HashSet<string> { "entity", "enemy", "scroll", "input", "physics", "animation" };
-        
+
         var updateCalls = moduleGroups
             .Where(g => modulesWithUpdate.Contains(g.Key))
             .Select(g => $"        {g.Key.Replace(".", "_")}_update();");
-        
+
         // text.display calls (one per instance) - use _init suffix
         var textDisplayCalls = fileList
             .Where(f => f.SourceModuleId == "text.display" && f.FileType == GeneratedFileType.Source)
@@ -334,7 +333,7 @@ public class SmsTarget : ITarget
             SourceModuleId = "retruxel.core"
         };
     }
-        // Helpers
+    // Helpers
 
     /// <summary>
     /// Prepends validation warnings as C comments to the first source file in the list.

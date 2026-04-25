@@ -5,11 +5,20 @@
     <UseWPF>true</UseWPF>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
+    <DisableFastUpToDateCheck>true</DisableFastUpToDateCheck>
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\..\Retruxel.Core\Retruxel.Core.csproj" />
-    <ProjectReference Include="..\..\..\Retruxel.SDK\Retruxel.SDK.csproj" />
+    <ProjectReference Include="..\..\..\Retruxel.Core\Retruxel.Core.csproj">
+      <Private>false</Private>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\Retruxel.SDK\Retruxel.SDK.csproj">
+      <Private>false</Private>
+    </ProjectReference>
   </ItemGroup>
+
+  <Target Name="CopyToRetruxelOutput" AfterTargets="Build">
+    <Copy SourceFiles="$(TargetPath)" DestinationFolder="$(SolutionDir)Retruxel\bin\$(Configuration)\$(TargetFramework)\Plugins\Tools\" SkipUnchangedFiles="false" />
+  </Target>
 
 </Project>

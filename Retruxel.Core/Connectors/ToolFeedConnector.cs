@@ -46,7 +46,7 @@ public class ToolFeedConnector : IToolConnector
         }
 
         var mapped = new Dictionary<string, object>();
-        
+
         foreach (var (outputKey, inputKey) in _mapping)
         {
             if (output.TryGetValue(outputKey, out var value))

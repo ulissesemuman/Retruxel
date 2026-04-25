@@ -170,7 +170,7 @@ public class TilemapModule : IGraphicModule
         public int MapHeight { get; set; } = 24;
         public int[] MapData { get; set; } = [];
         public int[] SolidTiles { get; set; } = [];
-        
+
         /// <summary>Palette reference — elementId of a PaletteModule in the same scene.</summary>
         public string PaletteRef { get; set; } = string.Empty;
     }

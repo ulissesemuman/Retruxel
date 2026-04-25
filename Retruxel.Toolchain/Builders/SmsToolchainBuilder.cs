@@ -200,7 +200,7 @@ public class SmsToolchainBuilder : IToolchainBuilder
         List<BuildLogEntry> log, IProgress<string> progress, bool suppressWarnings = false)
     {
         var sdccBinPath = Path.Combine(ToolchainPath, "compilers", "sdcc", "bin");
-        
+
         var psi = new ProcessStartInfo(exe, args)
         {
             WorkingDirectory = workingDir,
@@ -209,7 +209,7 @@ public class SmsToolchainBuilder : IToolchainBuilder
             UseShellExecute = false,
             CreateNoWindow = true
         };
-        
+
         // Add SDCC bin to PATH so sdcpp can find cc1
         psi.Environment["PATH"] = sdccBinPath + ";" + psi.Environment["PATH"];
 

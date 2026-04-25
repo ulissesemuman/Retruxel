@@ -53,6 +53,13 @@ public class GeneralSettings
     [JsonPropertyName("undoHistoryLimit")]
     public int UndoHistoryLimit { get; set; } = 32;
 
+    /// <summary>
+    /// Whether to enable auto-save every 30 seconds.
+    /// Default: true.
+    /// </summary>
+    [JsonPropertyName("autoSaveEnabled")]
+    public bool AutoSaveEnabled { get; set; } = true;
+
     /// <summary>Last folder used in the New Project dialog.</summary>
     [JsonPropertyName("lastProjectLocation")]
     public string LastProjectLocation { get; set; } = Path.Combine(
@@ -135,4 +142,10 @@ public class TargetSettings
 
     [JsonPropertyName("launchEmulatorAfterBuild")]
     public bool LaunchEmulatorAfterBuild { get; set; } = false;
+
+    [JsonPropertyName("liveLinkEmulatorPath")]
+    public string LiveLinkEmulatorPath { get; set; } = string.Empty;
+
+    [JsonPropertyName("liveLinkEmulatorArguments")]
+    public string LiveLinkEmulatorArguments { get; set; } = string.Empty;
 }

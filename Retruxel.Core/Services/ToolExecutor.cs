@@ -36,7 +36,7 @@ public class ToolExecutor
 
             // 3. Apply connectors
             var execContext = new ToolExecutionContext(context, output, currentProject, currentScene);
-            
+
             foreach (var connector in activeConnectors)
             {
                 try

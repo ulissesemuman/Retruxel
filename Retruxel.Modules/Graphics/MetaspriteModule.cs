@@ -35,16 +35,16 @@ namespace Retruxel.Modules.Graphics;
 [Obsolete("Use SpriteModule v2.0.0 with Frames property instead. This module will be removed in v0.8.0.")]
 public class MetaspriteModule : IGraphicModule
 {
-    public string ModuleId    => "metasprite";
+    public string ModuleId => "metasprite";
     public string DisplayName => "Metasprite";
-    public string Category    => "Graphics";
-    public ModuleType Type    => ModuleType.Graphics;
-    public bool IsSingleton   => false;
+    public string Category => "Graphics";
+    public ModuleType Type => ModuleType.Graphics;
+    public bool IsSingleton => false;
     public string[] Compatibility { get; set; } = [];
 
     private static readonly JsonSerializerOptions _jsonOptions = new()
     {
-        PropertyNamingPolicy        = JsonNamingPolicy.CamelCase,
+        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
         PropertyNameCaseInsensitive = true
     };
 
@@ -53,8 +53,8 @@ public class MetaspriteModule : IGraphicModule
     public ModuleManifest GetManifest() => new()
     {
         ModuleId = ModuleId,
-        Version  = "1.0.0",
-        Type     = ModuleType.Graphics,
+        Version = "1.0.0",
+        Type = ModuleType.Graphics,
         Parameters =
         [
             new ParameterDefinition
@@ -84,9 +84,9 @@ public class MetaspriteModule : IGraphicModule
 
     public IEnumerable<GeneratedFile> GenerateCode() => [];
 
-    public string Serialize()              => JsonSerializer.Serialize(_state, _jsonOptions);
-    public void   Deserialize(string json) => _state = JsonSerializer.Deserialize<MetaspriteState>(json, _jsonOptions) ?? new();
-    public string GetValidationSample()    => JsonSerializer.Serialize(new MetaspriteState(), _jsonOptions);
+    public string Serialize() => JsonSerializer.Serialize(_state, _jsonOptions);
+    public void Deserialize(string json) => _state = JsonSerializer.Deserialize<MetaspriteState>(json, _jsonOptions) ?? new();
+    public string GetValidationSample() => JsonSerializer.Serialize(new MetaspriteState(), _jsonOptions);
 
     private class MetaspriteState
     {

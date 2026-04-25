@@ -86,7 +86,7 @@ public class SmsDiagnosticsProvider
             {
                 // Match: const unsigned char name[] = { 0x00, 0x01, ... };
                 var matches = Regex.Matches(file.Content, @"const\s+unsigned\s+char\s+\w+\[\]\s*=\s*\{([^}]+)\}");
-                
+
                 foreach (Match match in matches)
                 {
                     // Count hex values (0xNN)

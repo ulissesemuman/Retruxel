@@ -2,7 +2,6 @@ using Microsoft.Win32;
 using Retruxel.Core.Interfaces;
 using Retruxel.Core.Models;
 using Retruxel.Core.Services;
-using Retruxel.Core.Services;
 using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
@@ -70,7 +69,7 @@ public partial class BuildConsoleView : UserControl
         // Build module registry: orchestrates module loading and codegen discovery
         var moduleRegistry = new ModuleRegistry(AppDomain.CurrentDomain.BaseDirectory);
         moduleRegistry.RegisterBuiltinModules(target);
-        
+
         var progress = new Progress<string>(msg => Dispatcher.Invoke(() => AppendLog(msg)));
         moduleRegistry.LoadForTarget(target, progress);
 
@@ -303,7 +302,7 @@ public partial class BuildConsoleView : UserControl
         if (_diagnosticsPanel is null)
         {
             _diagnosticsPanel = new BuildDiagnosticsPanel();
-            
+
             // Find the parent container (assuming LogPanel is in a parent StackPanel)
             var parent = LogPanel.Parent as Panel;
             if (parent is not null)
@@ -311,7 +310,7 @@ public partial class BuildConsoleView : UserControl
                 // Add diagnostics panel after the log scroll viewer
                 var logScrollViewer = parent.Children.OfType<ScrollViewer>()
                     .FirstOrDefault(sv => sv.Name == "LogScrollViewer");
-                
+
                 if (logScrollViewer is not null)
                 {
                     var index = parent.Children.IndexOf(logScrollViewer);

@@ -1,3 +1,5 @@
+using Retruxel.Core.Models;
+
 namespace Retruxel.Target.SMS.Tools;
 
 /// <summary>
@@ -14,29 +16,28 @@ public static class SmsColorUtils
 
     /// <summary>
     /// Generates all 64 possible SMS hardware colors.
-    /// Returns array of anonymous objects with R, G, B properties.
+    /// Returns array of HardwareColor objects.
     /// </summary>
     public static object[] GenerateAllColors()
     {
         var colors = new object[64];
         int index = 0;
-        
+
         for (int b = 0; b < 4; b++)
         {
             for (int g = 0; g < 4; g++)
             {
                 for (int r = 0; r < 4; r++)
                 {
-                    colors[index++] = new 
-                    { 
-                        R = ColorLevels[r], 
-                        G = ColorLevels[g], 
-                        B = ColorLevels[b] 
-                    };
+                    colors[index++] = new HardwareColor(
+                        ColorLevels[r],
+                        ColorLevels[g],
+                        ColorLevels[b]
+                    );
                 }
             }
         }
-        
+
         return colors;
     }
 

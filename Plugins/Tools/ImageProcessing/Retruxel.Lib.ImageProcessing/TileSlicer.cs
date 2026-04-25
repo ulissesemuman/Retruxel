@@ -1,6 +1,4 @@
-using System;
 using System.Collections.Generic;
-using System.Linq;
 
 namespace Retruxel.Lib.ImageProcessing;
 
@@ -41,10 +39,10 @@ public static class TileSlicer
                         int x = tx * tileWidth + px;
                         int y = ty * tileHeight + py;
                         int srcIndex = y * width + x;
-                        
+
                         // Get RGB (strip alpha)
                         uint rgb = pixels[srcIndex] & 0x00FFFFFF;
-                        
+
                         // Map to palette index
                         if (paletteLookup.TryGetValue(rgb, out var paletteIndex))
                             tilePixels[pixelIndex++] = paletteIndex;

@@ -1,6 +1,6 @@
+using Retruxel.Core.Interfaces;
 using System.Net.Sockets;
 using System.Text;
-using Retruxel.Core.Interfaces;
 
 namespace Retruxel.Tool.LiveLink.Emulators;
 
@@ -26,7 +26,7 @@ public class BgbConnection : IEmulatorConnection
             _client = new TcpClient();
             await _client.ConnectAsync(host, port);
             _stream = _client.GetStream();
-            
+
             // BGB doesn't require handshake, just start sending commands
             return true;
         }
@@ -46,7 +46,7 @@ public class BgbConnection : IEmulatorConnection
             await _stream.DisposeAsync();
             _stream = null;
         }
-        
+
         _client?.Dispose();
         _client = null;
     }
@@ -54,14 +54,14 @@ public class BgbConnection : IEmulatorConnection
     public async Task<byte[]> ReadMemoryAsync(uint address, int length)
     {
         var bytes = new byte[length];
-        
+
         for (int i = 0; i < length; i++)
         {
             var command = $"r {address + i:X4}\n";
             var response = await SendCommandAsync(command);
             bytes[i] = ParseByteResponse(response);
         }
-        
+
         return bytes;
     }
 
@@ -75,7 +75,7 @@ public class BgbConnection : IEmulatorConnection
     {
         var command = "r pc\n";
         var response = await SendCommandAsync(command);
-        
+
         return new EmulatorState
         {
             IsRunning = !string.IsNullOrEmpty(response),
@@ -90,7 +90,7 @@ public class BgbConnection : IEmulatorConnection
 
         var data = Encoding.ASCII.GetBytes(command);
         await _stream.WriteAsync(data);
-        
+
         var buffer = new byte[1024];
         int bytesRead = await _stream.ReadAsync(buffer);
         return Encoding.ASCII.GetString(buffer, 0, bytesRead).Trim();
@@ -101,10 +101,10 @@ public class BgbConnection : IEmulatorConnection
         // BGB returns format like "A=42" or just "42"
         var parts = response.Split('=');
         var hexValue = parts.Length > 1 ? parts[1].Trim() : response.Trim();
-        
+
         if (byte.TryParse(hexValue, System.Globalization.NumberStyles.HexNumber, null, out byte result))
             return result;
-        
+
         return 0;
     }
 }

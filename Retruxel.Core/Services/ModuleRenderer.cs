@@ -43,7 +43,7 @@ public class ModuleRenderer
         _targetAssembly = targetAssembly;
         _tools = DiscoverTools();
         _codeGens = DiscoverCodeGens(progress);
-        
+
         // Debug: log discovered CodeGens
         progress?.Report($"DEBUG: ModuleRenderer initialized with {_codeGens.Count} CodeGens");
         foreach (var (key, manifest) in _codeGens)
@@ -87,7 +87,7 @@ public class ModuleRenderer
     {
         var key = Key(targetId, "main");
         progress?.Report($"DEBUG: Looking for CodeGen key: {key}");
-        
+
         if (!_codeGens.TryGetValue(key, out var manifest))
         {
             progress?.Report($"DEBUG: CodeGen not found for key: {key}");
@@ -101,7 +101,7 @@ public class ModuleRenderer
         }
 
         progress?.Report($"DEBUG: Found system module CodeGen, rendering...");
-        
+
         var filesList = moduleFiles.ToList();
         progress?.Report($"DEBUG: Total module files: {filesList.Count}");
         foreach (var f in filesList)
@@ -191,7 +191,7 @@ public class ModuleRenderer
         // Inject instanceId for non-singleton modules
         // Query ModuleRegistry if available, otherwise use module's IsSingleton
         var effectiveSingleton = _moduleRegistry?.IsModuleSingleton(moduleId) ?? isSingleton;
-        
+
         if (!effectiveSingleton)
         {
             if (!_instanceCounters.ContainsKey(key))
@@ -328,7 +328,7 @@ public class ModuleRenderer
                         return match;
                     }
                 }
-                
+
                 // Handle != comparison
                 if (part.Contains("!="))
                 {
@@ -342,10 +342,10 @@ public class ModuleRenderer
                         return match;
                     }
                 }
-                
+
                 return true;
             });
-            
+
             Console.WriteLine($"[EvaluateFileFilter] Final result: {result}");
             return result;
         }
@@ -450,14 +450,14 @@ public class ModuleRenderer
             return str.Length;
 
         // If value is a Base64 string (palette colors), convert to hex array format
-        if (value is string base64Str && !string.IsNullOrEmpty(base64Str) && 
-            (varDef.Name.Contains("Color", StringComparison.OrdinalIgnoreCase) || 
+        if (value is string base64Str && !string.IsNullOrEmpty(base64Str) &&
+            (varDef.Name.Contains("Color", StringComparison.OrdinalIgnoreCase) ||
              varDef.Name.Contains("Palette", StringComparison.OrdinalIgnoreCase)))
         {
             try
             {
                 var bytes = Convert.FromBase64String(base64Str);
-                var hexValues = bytes.Select((b, i) => 
+                var hexValues = bytes.Select((b, i) =>
                     i == bytes.Length - 1 ? $"0x{b:X2}" : $"0x{b:X2},");
                 return string.Join(" ", hexValues);
             }
@@ -512,7 +512,7 @@ public class ModuleRenderer
                         JsonValueKind.True => true,
                         JsonValueKind.False => false,
                         JsonValueKind.Array => v.EnumerateArray()
-                            .Select(e => e.ValueKind == JsonValueKind.Number 
+                            .Select(e => e.ValueKind == JsonValueKind.Number
                                 ? (e.TryGetInt32(out var ai) ? (object)ai : e.GetDouble())
                                 : e.GetString() ?? "")
                             .ToArray(),
@@ -580,7 +580,7 @@ public class ModuleRenderer
             {
                 var asm = Assembly.LoadFrom(dllPath);
                 var dllName = Path.GetFileNameWithoutExtension(dllPath);
-                
+
                 foreach (var type in asm.GetTypes())
                 {
                     if (!type.IsClass || type.IsAbstract || !typeof(ITool).IsAssignableFrom(type))
@@ -590,7 +590,7 @@ public class ModuleRenderer
                     {
                         // Index by ToolId (for backward compatibility)
                         result[tool.ToolId] = tool;
-                        
+
                         // Also index by DLL name (without extension) for simplified codegen.json references
                         // Example: "Retruxel.Tool.TilemapPreprocessor" instead of "tilemap_preprocessor"
                         result[dllName] = tool;

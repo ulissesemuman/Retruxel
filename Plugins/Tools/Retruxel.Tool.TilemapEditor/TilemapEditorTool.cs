@@ -32,13 +32,16 @@ public class TilemapEditorTool : IVisualTool
         var target = (ITarget)input["target"];
         var project = (RetruxelProject)input["project"];
         var projectPath = (string)input["projectPath"];
+        var toolRegistry = input.ContainsKey("toolRegistry") ? (Core.Services.ToolRegistry)input["toolRegistry"] : null;
+        var saveProjectCallback = input.ContainsKey("saveProjectCallback") ? (Func<System.Threading.Tasks.Task>)input["saveProjectCallback"] : null;
+        var sceneEditor = input.ContainsKey("sceneEditor") ? input["sceneEditor"] : null;
 
         // Optional: module instance data (when editing existing module)
         var moduleData = input.ContainsKey("moduleData")
             ? (Dictionary<string, object>)input["moduleData"]
             : null;
 
-        var window = new TilemapEditorWindow(target, project, projectPath);
+        var window = new TilemapEditorWindow(target, project, projectPath, toolRegistry, saveProjectCallback, sceneEditor);
 
         // If editing existing module, load its data
         if (moduleData != null)

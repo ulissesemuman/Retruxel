@@ -1,5 +1,3 @@
-using Retruxel.Core.Interfaces;
-using Retruxel.Core.Services;
 using Retruxel.Core.Services;
 using System.IO;
 using System.Windows;

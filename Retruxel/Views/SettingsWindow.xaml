@@ -99,6 +99,16 @@
                             </Grid>
                         </Border>
 
+                        <Border x:Name="NavEmulators" Style="{StaticResource NavItem}"
+                                MouseLeftButtonDown="NavEmulators_Click">
+                            <Grid>
+                                <Border x:Name="AccentEmulators" Width="3" HorizontalAlignment="Left"
+                                        Background="{StaticResource BrushPrimary}" Visibility="Collapsed"/>
+                                <TextBlock Text="LIVELINK" Style="{StaticResource TextLabelCaps}"
+                                           Margin="12,0,0,0" VerticalAlignment="Center"/>
+                            </Grid>
+                        </Border>
+
                         <Separator Margin="16,12"/>
 
                         <TextBlock Text="{loc:Tr Key='settings.nav.targets'}" Style="{StaticResource TextLabelCaps}"
@@ -221,6 +231,26 @@
                                     <TextBlock Text="{loc:Tr Key='settings.section.editor'}" Style="{StaticResource TextLabelCaps}"
                                                Foreground="{StaticResource BrushPrimary}" Margin="0,16,0,8"/>
                                     <Border Style="{StaticResource SettingRow}">
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="Auto"/>
+                                            </Grid.ColumnDefinitions>
+                                            <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                                                <TextBlock Text="Auto-save"
+                                                           Style="{StaticResource TextBody}"
+                                                           Foreground="{StaticResource BrushOnSurface}"/>
+                                                <TextBlock Text="Automatically save project every 30 seconds"
+                                                           Style="{StaticResource TextLabel}"/>
+                                            </StackPanel>
+                                            <CheckBox x:Name="ChkAutoSave" Grid.Column="1"
+                                                      Style="{StaticResource ToggleSwitch}"
+                                                      VerticalAlignment="Center"
+                                                      Checked="ChkAutoSave_Changed"
+                                                      Unchecked="ChkAutoSave_Changed"/>
+                                        </Grid>
+                                    </Border>
+                                    <Border Style="{StaticResource SettingRow}">
                                         <StackPanel>
                                             <Grid Margin="0,0,0,8">
                                                 <Grid.ColumnDefinitions>
@@ -329,6 +359,31 @@
                                                   Unchecked="ChkShowWarnings_Changed"/>
                                     </Grid>
                                 </Border>
+                            </StackPanel>
+                        </ScrollViewer>
+                    </Grid>
+
+                    <!-- LIVELINK PANEL -->
+                    <Grid x:Name="PanelEmulators" Visibility="Collapsed">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="*"/>
+                        </Grid.RowDefinitions>
+                        <Border Grid.Row="0" Background="{StaticResource BrushSurfaceContainerLow}"
+                                Padding="16,0" Height="30">
+                            <StackPanel Orientation="Horizontal">
+                                <Button x:Name="TabEmulatorsGeneral" Content="EMULATORS" Style="{StaticResource ButtonTabActive}"/>
+                            </StackPanel>
+                        </Border>
+                        <ScrollViewer Grid.Row="1" Padding="24,20" VerticalScrollBarVisibility="Auto">
+                            <StackPanel x:Name="EmulatorsStack">
+                                <TextBlock Text="LIVELINK EMULATORS" Style="{StaticResource TextLabelCaps}"
+                                           Foreground="{StaticResource BrushPrimary}" Margin="0,0,0,8"/>
+                                <TextBlock Text="Configure emulator executables for LiveLink real-time development. Use {ROM} placeholder for ROM file path."
+                                           Style="{StaticResource TextLabel}"
+                                           TextWrapping="Wrap"
+                                           Margin="0,0,0,16"/>
+                                <!-- Emulator settings will be added dynamically here -->
                             </StackPanel>
                         </ScrollViewer>
                     </Grid>

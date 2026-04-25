@@ -49,6 +49,16 @@
                 <StackPanel Grid.Column="2" Orientation="Horizontal"
                             VerticalAlignment="Center"
                             Margin="0 0 12 0">
+                    
+                    <!-- Save indicator -->
+                    <TextBlock x:Name="TxtSaveIndicator"
+                               Text="💾"
+                               FontSize="14"
+                               VerticalAlignment="Center"
+                               Margin="0 0 8 0"
+                               Opacity="0.3"
+                               ToolTip="Auto-save"/>
+                    
                     <Button x:Name="BtnUndo"
                             Content="↩"
                             IsEnabled="False"
@@ -261,23 +271,35 @@
         <Border Grid.Row="1" Grid.Column="2" Grid.RowSpan="2"
                 Background="{StaticResource BrushSurfaceContainerLow}"
                 Padding="16">
-            <StackPanel>
-                <TextBlock Text="{loc:Tr Key='scene.properties'}"
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+
+                <TextBlock Grid.Row="0"
+                           Text="{loc:Tr Key='scene.properties'}"
                            Style="{StaticResource TextLabel}"
                            Foreground="{StaticResource BrushPrimary}"
                            Margin="0,0,0,16"/>
 
-                <!-- Empty state -->
-                <TextBlock Text="{loc:Tr Key='scene.no_selection'}"
-                           x:Name="TxtNoSelection"
-                           Style="{StaticResource TextBody}"
-                           TextWrapping="Wrap"
-                           Visibility="Visible"/>
+                <ScrollViewer Grid.Row="1"
+                              VerticalScrollBarVisibility="Auto"
+                              HorizontalScrollBarVisibility="Disabled">
+                    <StackPanel>
+                        <!-- Empty state -->
+                        <TextBlock Text="{loc:Tr Key='scene.no_selection'}"
+                                   x:Name="TxtNoSelection"
+                                   Style="{StaticResource TextBody}"
+                                   TextWrapping="Wrap"
+                                   Visibility="Visible"/>
 
-                <!-- Properties content — shown when element selected -->
-                <StackPanel x:Name="PropertiesPanel"
-                            Visibility="Collapsed"/>
-            </StackPanel>
+                        <!-- Properties content — shown when element selected -->
+                        <StackPanel x:Name="PropertiesPanel"
+                                    Visibility="Collapsed"/>
+                    </StackPanel>
+                </ScrollViewer>
+            </Grid>
         </Border>
 
         <!-- ===== BOTTOM — EVENTS PANEL ===== -->

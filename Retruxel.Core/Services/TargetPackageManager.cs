@@ -1,6 +1,5 @@
 using Retruxel.Core.Models;
 using System.IO.Compression;
-using System.Net.Http;
 using System.Security.Cryptography;
 using System.Text.Json;
 
@@ -27,7 +26,7 @@ namespace Retruxel.Core.Services;
 public class TargetPackageManager
 {
     private const string ManifestUrl = "https://raw.githubusercontent.com/ulissesemuman/Retruxel/main/targets-manifest.json";
-    
+
     private readonly string _targetsPath;
     private readonly string _toolchainPath;
     private readonly string _codegensPath;
@@ -37,11 +36,11 @@ public class TargetPackageManager
     {
         var appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
         var retruxelData = Path.Combine(appData, "Retruxel");
-        
+
         _targetsPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "targets");
         _toolchainPath = Path.Combine(retruxelData, "toolchain");
         _codegensPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "..", "Plugins", "CodeGens");
-        
+
         _httpClient = new HttpClient();
         _httpClient.DefaultRequestHeaders.Add("User-Agent", "Retruxel/0.7.1");
     }
@@ -54,10 +53,10 @@ public class TargetPackageManager
         try
         {
             var manifest = await DownloadManifestAsync();
-            
+
             foreach (var target in manifest)
                 target.IsInstalled = await IsInstalledAsync(target.TargetId);
-            
+
             return manifest;
         }
         catch (Exception ex)
@@ -76,9 +75,9 @@ public class TargetPackageManager
     {
         // Use convention: Retruxel.Target.{PascalCase}.dll
         // Convert targetId to PascalCase (e.g., "sms" -> "Sms", "sg1000" -> "Sg1000")
-        var pascalCase = string.Concat(targetId.Split('-', '_').Select(s => 
+        var pascalCase = string.Concat(targetId.Split('-', '_').Select(s =>
             char.ToUpper(s[0]) + s.Substring(1).ToLower()));
-        
+
         var dllPath = Path.Combine(_targetsPath, $"Retruxel.Target.{pascalCase}.dll");
         return await Task.FromResult(File.Exists(dllPath));
     }
@@ -95,7 +94,7 @@ public class TargetPackageManager
 
         // 1. Download ZIP to temp location
         var tempZip = Path.Combine(Path.GetTempPath(), $"{target.TargetId}-{target.Version}.zip");
-        
+
         try
         {
             await DownloadFileAsync(target.DownloadUrl, tempZip, progress, cancellationToken);
@@ -116,7 +115,7 @@ public class TargetPackageManager
 
             // 4. Register target in TargetRegistry (dynamic loading)
             // This will be handled by TargetRegistry.Refresh() on next startup
-            
+
             progress?.Report(1.0);
         }
         finally
@@ -135,9 +134,9 @@ public class TargetPackageManager
         await Task.Run(() =>
         {
             // Remove DLL using PascalCase convention
-            var pascalCase = string.Concat(targetId.Split('-', '_').Select(s => 
+            var pascalCase = string.Concat(targetId.Split('-', '_').Select(s =>
                 char.ToUpper(s[0]) + s.Substring(1).ToLower()));
-            
+
             var dllPath = Path.Combine(_targetsPath, $"Retruxel.Target.{pascalCase}.dll");
             if (File.Exists(dllPath))
                 File.Delete(dllPath);

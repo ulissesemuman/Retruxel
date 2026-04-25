@@ -61,7 +61,7 @@ public static class AssetImporter
         // 5. Determine output path
         var region = target.Specs.VramRegions.FirstOrDefault(r => r.Id == vramRegionId)
             ?? throw new AssetImportException($"VRAM region '{vramRegionId}' not found in target specs.");
-        
+
         var subfolder = region.Id;
         var assetId = Path.GetFileNameWithoutExtension(sourcePngPath);
         var assetFileName = assetId + ".png";

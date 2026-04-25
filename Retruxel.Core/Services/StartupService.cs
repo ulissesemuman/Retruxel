@@ -104,7 +104,7 @@ public static class StartupService
             {
                 var discoverMethod = toolLoader.GetType().GetMethod("DiscoverTools");
                 discoverMethod?.Invoke(toolLoader, null);
-                
+
                 var getToolsMethod = toolLoader.GetType().GetMethod("GetAllTools");
                 if (getToolsMethod != null)
                 {

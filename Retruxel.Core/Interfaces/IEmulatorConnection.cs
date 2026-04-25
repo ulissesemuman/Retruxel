@@ -9,8 +9,8 @@ public interface IEmulatorConnection
     string DisplayName { get; }
     string[] SupportedTargets { get; }
     bool IsConnected { get; }
-    
-    Task<bool> ConnectAsync(string host = "localhost", int port = 0);
+
+    Task<bool> ConnectAsync(string host = "127.0.0.1", int port = 8888);
     Task DisconnectAsync();
     Task<byte[]> ReadMemoryAsync(uint address, int length);
     Task<byte[]> ReadVramAsync(uint address, int length);

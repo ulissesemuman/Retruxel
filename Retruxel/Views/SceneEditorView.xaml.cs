@@ -1,4 +1,3 @@
-using Retruxel.Core.Services;
 using Retruxel.Core.Interfaces;
 using Retruxel.Core.Models;
 using Retruxel.Core.Services;
@@ -25,6 +24,7 @@ public partial class SceneEditorView : UserControl
     private SceneElement? _draggedElement;
     private ProjectManager? _projectManager;
     private ModuleRegistry? _moduleRegistry;
+    private StateManager? _stateManager;
     private bool _isUpdatingUI;
     private bool _isLoadingProject;
 
@@ -44,8 +44,117 @@ public partial class SceneEditorView : UserControl
         Focusable = true;
     }
 
-    public void SetProjectManager(ProjectManager manager) => _projectManager = manager;
+    public void SetProjectManager(ProjectManager manager)
+    {
+        _projectManager = manager;
+        
+        // Initialize StateManager when ProjectManager is set
+        if (_stateManager == null)
+        {
+            _stateManager = new StateManager(manager, _undoRedo);
+            _stateManager.SavingStateChanged += OnSavingStateChanged;
+            _stateManager.StateChanged += () => SyncProjectModules();
+        }
+    }
+
+    /// <summary>
+    /// Animates the save indicator when saving.
+    /// </summary>
+    private void OnSavingStateChanged(bool isSaving)
+    {
+        Dispatcher.InvokeAsync(() =>
+        {
+            if (FindName("TxtSaveIndicator") is not TextBlock indicator) return;
+
+            if (isSaving)
+            {
+                // Pulse animation: fade to full opacity
+                var animation = new System.Windows.Media.Animation.DoubleAnimation
+                {
+                    From = 0.3,
+                    To = 1.0,
+                    Duration = TimeSpan.FromMilliseconds(200),
+                    AutoReverse = false
+                };
+                indicator.BeginAnimation(UIElement.OpacityProperty, animation);
+            }
+            else
+            {
+                // Fade back to dim
+                var animation = new System.Windows.Media.Animation.DoubleAnimation
+                {
+                    From = 1.0,
+                    To = 0.3,
+                    Duration = TimeSpan.FromMilliseconds(400),
+                    AutoReverse = false
+                };
+                indicator.BeginAnimation(UIElement.OpacityProperty, animation);
+            }
+        });
+    }
     public void SetModuleRegistry(ModuleRegistry registry) => _moduleRegistry = registry;
+
+    /// <summary>
+    /// Adds a module element to the current scene from external tools (e.g., TilemapEditor creating a palette).
+    /// This method deserializes the module, creates the visual element, and adds it to the scene.
+    /// </summary>
+    public void AddElementFromData(SceneElementData elementData)
+    {
+        if (_currentScene is null || _moduleRegistry is null) return;
+
+        try
+        {
+            var module = DeserializeModule(elementData.ModuleId, elementData.ModuleState);
+            if (module is null)
+            {
+                System.Diagnostics.Debug.WriteLine($"Failed to deserialize module: {elementData.ModuleId}");
+                return;
+            }
+
+            var element = new SceneElement
+            {
+                ElementId = elementData.ElementId,
+                UserId = elementData.UserId,
+                ModuleId = elementData.ModuleId,
+                Module = module,
+                TileX = elementData.TileX,
+                TileY = elementData.TileY,
+                Trigger = elementData.Trigger
+            };
+
+            UpdateModulePosition(module, elementData.TileX, elementData.TileY);
+            _elements.Add(element);
+
+            System.Diagnostics.Debug.WriteLine($"Added element: {elementData.ModuleId}, Trigger: {elementData.Trigger}, TileX: {elementData.TileX}, TileY: {elementData.TileY}");
+
+            // Determine if module should be on canvas or only in events
+            // Graphic modules (tilemap, sprite) go on canvas
+            // Logic modules without visual representation (palette, text) only go in events
+            bool isGraphicModule = _moduleRegistry.GraphicModules.ContainsKey(elementData.ModuleId);
+            bool hasCanvasPosition = elementData.TileX >= 0 && elementData.TileY >= 0;
+
+            if (isGraphicModule && hasCanvasPosition)
+            {
+                var visual = BuildCanvasElement(element);
+                Canvas.SetLeft(visual, element.TileX * 8);
+                Canvas.SetTop(visual, element.TileY * 8);
+                SceneCanvas.Children.Add(visual);
+                element.CanvasVisual = visual;
+            }
+
+            // Add to event panel if it has a trigger
+            if (!string.IsNullOrEmpty(elementData.Trigger))
+            {
+                AddModuleToEvent(elementData.Trigger, elementData.ModuleId, element);
+            }
+
+            RefreshModulePalette();
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"Error in AddElementFromData: {ex.Message}");
+        }
+    }
 
     private void BtnUndo_Click(object sender, RoutedEventArgs e) => _undoRedo.Undo();
     private void BtnRedo_Click(object sender, RoutedEventArgs e) => _undoRedo.Redo();
@@ -112,6 +221,7 @@ public partial class SceneEditorView : UserControl
         grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
         grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
         grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
 
         // Color indicator
         var indicator = new Border
@@ -142,14 +252,35 @@ public partial class SceneEditorView : UserControl
         {
             Text = $"{asset.TileCount}t",
             VerticalAlignment = VerticalAlignment.Center,
-            FontSize = 10
+            FontSize = 10,
+            Margin = new Thickness(0, 0, 8, 0)
         };
         count.SetResourceReference(TextBlock.ForegroundProperty, "BrushOnSurfaceVariant");
         Grid.SetColumn(count, 2);
+        
+        // Delete button
+        var deleteBtn = new TextBlock
+        {
+            Text = "✕",
+            FontSize = 12,
+            Cursor = Cursors.Hand,
+            VerticalAlignment = VerticalAlignment.Center,
+            ToolTip = "Delete asset"
+        };
+        deleteBtn.SetResourceReference(TextBlock.ForegroundProperty, "BrushOnSurfaceVariant");
+        deleteBtn.MouseEnter += (s, e) => deleteBtn.SetResourceReference(TextBlock.ForegroundProperty, "BrushError");
+        deleteBtn.MouseLeave += (s, e) => deleteBtn.SetResourceReference(TextBlock.ForegroundProperty, "BrushOnSurfaceVariant");
+        deleteBtn.MouseLeftButtonDown += (s, e) =>
+        {
+            e.Handled = true;
+            DeleteAsset(asset);
+        };
+        Grid.SetColumn(deleteBtn, 3);
 
         grid.Children.Add(indicator);
         grid.Children.Add(name);
         grid.Children.Add(count);
+        grid.Children.Add(deleteBtn);
         border.Child = grid;
 
         // Enable drag from asset panel to canvas
@@ -194,10 +325,92 @@ public partial class SceneEditorView : UserControl
                 return;
             }
 
-            _project.Assets.Add(window.ImportedAsset);
-            _ = _projectManager?.SaveAsync();
-            RefreshAssetPanel();
+            var asset = window.ImportedAsset;
+
+            // Create state change for importing asset (Large change — auto-saves)
+            var change = new StateChange
+            {
+                Description = $"Import asset '{asset.Id}'",
+                Type = ChangeType.Large,
+                Execute = () =>
+                {
+                    _project.Assets.Add(asset);
+                    RefreshAssetPanel();
+                },
+                IsUndoable = false // Asset import is not undoable (file already copied)
+            };
+
+            _stateManager?.ApplyChange(change);
         }
+    }
+    
+    /// <summary>
+    /// Deletes an asset from the project after confirmation.
+    /// Checks if the asset is in use by any modules before deletion.
+    /// </summary>
+    private void DeleteAsset(AssetEntry asset)
+    {
+        if (_project is null) return;
+        
+        // Check if asset is in use
+        var usedBy = new List<string>();
+        foreach (var scene in _project.Scenes)
+        {
+            foreach (var element in scene.Elements)
+            {
+                if (element.ModuleState.ValueKind == System.Text.Json.JsonValueKind.Undefined ||
+                    element.ModuleState.ValueKind == System.Text.Json.JsonValueKind.Null)
+                    continue;
+                    
+                if (element.ModuleState.TryGetProperty("tilesAssetId", out var assetId))
+                {
+                    if (assetId.GetString() == asset.Id)
+                    {
+                        var label = !string.IsNullOrEmpty(element.UserId) ? element.UserId : element.ElementId[..8];
+                        usedBy.Add($"{scene.SceneName}/{label}");
+                    }
+                }
+            }
+        }
+        
+        if (usedBy.Count > 0)
+        {
+            var modules = string.Join("\n  • ", usedBy);
+            var result = MessageBox.Show(
+                $"Asset '{asset.Id}' is currently used by:\n  • {modules}\n\nDelete anyway?",
+                "Asset In Use",
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Warning);
+            
+            if (result != MessageBoxResult.Yes)
+                return;
+        }
+        else
+        {
+            var result = MessageBox.Show(
+                $"Delete asset '{asset.Id}'?\n\nThis action cannot be undone.",
+                "Delete Asset",
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Question);
+            
+            if (result != MessageBoxResult.Yes)
+                return;
+        }
+        
+        // Create state change for deleting asset (Large change — auto-saves)
+        var change = new StateChange
+        {
+            Description = $"Delete asset '{asset.Id}'",
+            Type = ChangeType.Large,
+            Execute = () =>
+            {
+                _project.Assets.Remove(asset);
+                RefreshAssetPanel();
+            },
+            IsUndoable = false // Asset deletion not undoable (file operations)
+        };
+
+        _stateManager?.ApplyChange(change);
     }
 
     // ── New Scene ─────────────────────────────────────────────────────────────
@@ -215,11 +428,22 @@ public partial class SceneEditorView : UserControl
         }
 
         var scene = new SceneData { SceneId = Guid.NewGuid().ToString(), SceneName = newName };
-        _project.Scenes.Add(scene);
-        _ = _projectManager?.SaveAsync();
 
-        RebuildSceneTabs();
-        ActivateScene(scene);
+        // Create state change for new scene (Large change — auto-saves)
+        var change = new StateChange
+        {
+            Description = $"Create scene '{newName}'",
+            Type = ChangeType.Large,
+            Execute = () =>
+            {
+                _project.Scenes.Add(scene);
+                RebuildSceneTabs();
+                ActivateScene(scene);
+            },
+            IsUndoable = false // Scene creation not undoable (would need to track all elements)
+        };
+
+        _stateManager?.ApplyChange(change);
     }
 
     // ── Scene tabs ────────────────────────────────────────────────────────────
@@ -362,9 +586,22 @@ public partial class SceneEditorView : UserControl
                 return;
             }
 
-            scene.SceneName = newName;
-            _ = _projectManager?.SaveAsync();
-            RebuildSceneTabs();
+            var oldName = scene.SceneName;
+
+            // Create state change for renaming scene (Small change — marks dirty only)
+            var change = new StateChange
+            {
+                Description = $"Rename scene '{oldName}' to '{newName}'",
+                Type = ChangeType.Small,
+                Execute = () =>
+                {
+                    scene.SceneName = newName;
+                    RebuildSceneTabs();
+                },
+                IsUndoable = false // Scene rename not undoable (low priority)
+            };
+
+            _stateManager?.ApplyChange(change);
         }
 
         textBox.KeyDown += (_, e) =>
@@ -382,14 +619,24 @@ public partial class SceneEditorView : UserControl
     {
         if (_project is null || _project.Scenes.Count <= 1) return;
 
-        _project.Scenes.Remove(scene);
+        // Create state change for deleting scene (Large change — auto-saves)
+        var change = new StateChange
+        {
+            Description = $"Delete scene '{scene.SceneName}'",
+            Type = ChangeType.Large,
+            Execute = () =>
+            {
+                _project.Scenes.Remove(scene);
 
-        if (_currentScene?.SceneId == scene.SceneId)
-            ActivateScene(_project.Scenes[0]);
-        else
-            RebuildSceneTabs();
+                if (_currentScene?.SceneId == scene.SceneId)
+                    ActivateScene(_project.Scenes[0]);
+                else
+                    RebuildSceneTabs();
+            },
+            IsUndoable = false // Scene deletion not undoable
+        };
 
-        _ = _projectManager?.SaveAsync();
+        _stateManager?.ApplyChange(change);
     }
 
     private void SceneEditorView_KeyDown(object sender, KeyEventArgs e)
@@ -397,6 +644,13 @@ public partial class SceneEditorView : UserControl
         if (e.Key == Key.Delete && _selectedElement is not null)
         {
             RemoveElement(_selectedElement);
+            e.Handled = true;
+        }
+
+        // Ctrl+S: Save project
+        if (e.Key == Key.S && Keyboard.Modifiers == ModifierKeys.Control)
+        {
+            _ = _stateManager?.SaveNowAsync();
             e.Handled = true;
         }
 
@@ -481,6 +735,15 @@ public partial class SceneEditorView : UserControl
         LoadFromProject();
     }
 
+    /// <summary>
+    /// Cleanup when closing the editor.
+    /// </summary>
+    public void Cleanup()
+    {
+        _stateManager?.Dispose();
+        _stateManager = null;
+    }
+
     private void ApplyTargetSpecs(ITarget target)
     {
         var specs = target.Specs;
@@ -500,8 +763,8 @@ public partial class SceneEditorView : UserControl
     }
 
     /// <summary>
-    /// Rebuilds the module palette sidebar, hiding singleton modules
-    /// that are already placed on the current canvas.
+    /// Rebuilds the module palette sidebar, disabling modules
+    /// that have reached their instance limit (singleton or MaxInstances).
     /// Called on scene load and whenever an element is added or removed.
     /// </summary>
     private void RefreshModulePalette()
@@ -510,33 +773,38 @@ public partial class SceneEditorView : UserControl
 
         if (_moduleRegistry is null) return;
 
-        // Collect IDs of singleton modules already on the canvas
-        var usedSingletons = _elements
-            .Where(e => _moduleRegistry.IsModuleSingleton(e.ModuleId))
-            .Select(e => e.ModuleId)
-            .ToHashSet();
+        // Count instances of each module on the canvas
+        var instanceCounts = _elements
+            .GroupBy(e => e.ModuleId)
+            .ToDictionary(g => g.Key, g => g.Count());
 
-        var modules = new List<(string Category, string ModuleId, string DisplayName)>();
+        var modules = new List<(string Category, string ModuleId, string DisplayName, bool IsDisabled)>();
 
         foreach (var (moduleId, module) in _moduleRegistry.LogicModules)
         {
             var m = (IModule)module;
-            if (_moduleRegistry.IsModuleSingleton(moduleId) && usedSingletons.Contains(moduleId)) continue;
-            modules.Add((m.Category, moduleId, m.DisplayName));
+            var currentCount = instanceCounts.GetValueOrDefault(moduleId, 0);
+            var maxInstances = _moduleRegistry.GetMaxInstances(moduleId);
+            var isDisabled = maxInstances.HasValue && currentCount >= maxInstances.Value;
+            modules.Add((m.Category, moduleId, m.DisplayName, isDisabled));
         }
 
         foreach (var (moduleId, module) in _moduleRegistry.GraphicModules)
         {
             var m = (IModule)module;
-            if (_moduleRegistry.IsModuleSingleton(moduleId) && usedSingletons.Contains(moduleId)) continue;
-            modules.Add((m.Category, moduleId, m.DisplayName));
+            var currentCount = instanceCounts.GetValueOrDefault(moduleId, 0);
+            var maxInstances = _moduleRegistry.GetMaxInstances(moduleId);
+            var isDisabled = maxInstances.HasValue && currentCount >= maxInstances.Value;
+            modules.Add((m.Category, moduleId, m.DisplayName, isDisabled));
         }
 
         foreach (var (moduleId, module) in _moduleRegistry.AudioModules)
         {
             var m = (IModule)module;
-            if (_moduleRegistry.IsModuleSingleton(moduleId) && usedSingletons.Contains(moduleId)) continue;
-            modules.Add((m.Category, moduleId, m.DisplayName));
+            var currentCount = instanceCounts.GetValueOrDefault(moduleId, 0);
+            var maxInstances = _moduleRegistry.GetMaxInstances(moduleId);
+            var isDisabled = maxInstances.HasValue && currentCount >= maxInstances.Value;
+            modules.Add((m.Category, moduleId, m.DisplayName, isDisabled));
         }
 
         var grouped = modules.GroupBy(m => m.Category);
@@ -553,29 +821,33 @@ public partial class SceneEditorView : UserControl
 
             foreach (var module in group)
             {
-            var item = BuildModulePaletteItem(module.ModuleId, module.DisplayName);
+                var item = BuildModulePaletteItem(module.ModuleId, module.DisplayName, module.IsDisabled);
                 ModulePalettePanel.Children.Add(item);
             }
         }
     }
 
-    private Border BuildModulePaletteItem(string moduleId, string displayName)
+    private Border BuildModulePaletteItem(string moduleId, string displayName, bool isDisabled)
     {
         var item = new Border
         {
             Background = new SolidColorBrush(Color.FromRgb(0x1E, 0x1E, 0x1E)),
             Padding = new Thickness(12, 8, 12, 8),
             Margin = new Thickness(8, 0, 8, 4),
-            Cursor = Cursors.Hand,
-            Tag = moduleId
+            Cursor = isDisabled ? Cursors.Arrow : Cursors.Hand,
+            Tag = moduleId,
+            Opacity = isDisabled ? 0.5 : 1.0
         };
 
         var panel = new StackPanel { Orientation = Orientation.Horizontal };
 
+        // Red square for disabled, green for enabled
         panel.Children.Add(new TextBlock
         {
             Text = "⬛ ",
-            Foreground = new SolidColorBrush(Color.FromRgb(0x8E, 0xFF, 0x71)),
+            Foreground = new SolidColorBrush(isDisabled 
+                ? Color.FromRgb(0xFF, 0x52, 0x52)  // Red
+                : Color.FromRgb(0x8E, 0xFF, 0x71)), // Green
             FontSize = 10,
             VerticalAlignment = VerticalAlignment.Center
         });
@@ -584,20 +856,25 @@ public partial class SceneEditorView : UserControl
         {
             Text = displayName,
             Style = (Style)FindResource("TextBody"),
-            Foreground = Brushes.White,
+            Foreground = isDisabled 
+                ? new SolidColorBrush(Color.FromRgb(0x76, 0x75, 0x75))  // Gray
+                : Brushes.White,
             VerticalAlignment = VerticalAlignment.Center
         });
 
         item.Child = panel;
 
-        // Enable drag from palette to canvas or events
-        item.MouseMove += (s, e) =>
+        // Only enable drag if not disabled
+        if (!isDisabled)
         {
-            if (e.LeftButton == MouseButtonState.Pressed)
+            item.MouseMove += (s, e) =>
             {
-                DragDrop.DoDragDrop(item, moduleId, DragDropEffects.Copy);
-            }
-        };
+                if (e.LeftButton == MouseButtonState.Pressed)
+                {
+                    DragDrop.DoDragDrop(item, moduleId, DragDropEffects.Copy);
+                }
+            };
+        }
 
         return item;
     }
@@ -728,17 +1005,19 @@ public partial class SceneEditorView : UserControl
 
     /// <summary>
     /// Adds a module element to the canvas at the given tile position.
-    /// Wrapped in an AddElementCommand for undo support.
+    /// Uses StateManager for centralized state management.
     /// </summary>
     private void AddModuleToCanvas(string moduleId, int tileX, int tileY)
     {
         var element = CreateSceneElement(moduleId, tileX, tileY);
-
         var displayName = element.Module is IModule m ? m.DisplayName : moduleId;
 
-        _undoRedo.Push(new AddElementCommand(
-            description: $"Add {displayName}",
-            add: () =>
+        // Create state change for adding element (Large change — auto-saves)
+        var change = new StateChange
+        {
+            Description = $"Add {displayName}",
+            Type = ChangeType.Large,
+            Execute = () =>
             {
                 _elements.Add(element);
 
@@ -750,16 +1029,44 @@ public partial class SceneEditorView : UserControl
 
                 AddModuleToEvent("OnStart", moduleId, element);
                 SelectElement(element);
-                SyncProjectModules();
                 RefreshModulePalette();
+                
+                // Open visual tool if available
+                if (element.Module is IModule mod && !string.IsNullOrEmpty(mod.VisualToolId))
+                {
+                    Dispatcher.InvokeAsync(() => OpenVisualToolForElement(element), 
+                        System.Windows.Threading.DispatcherPriority.Background);
+                }
             },
-            remove: () =>
-            {
-                RemoveElementCore(element);
-                SyncProjectModules();
-                RefreshModulePalette();
-            }
-        ));
+            IsUndoable = true,
+            UndoCommand = new AddElementCommand(
+                description: $"Add {displayName}",
+                add: () =>
+                {
+                    _elements.Add(element);
+                    var visual = BuildCanvasElement(element);
+                    Canvas.SetLeft(visual, tileX * 8);
+                    Canvas.SetTop(visual, tileY * 8);
+                    SceneCanvas.Children.Add(visual);
+                    element.CanvasVisual = visual;
+                    AddModuleToEvent("OnStart", moduleId, element);
+                    SelectElement(element);
+                    RefreshModulePalette();
+                    if (element.Module is IModule mod && !string.IsNullOrEmpty(mod.VisualToolId))
+                    {
+                        Dispatcher.InvokeAsync(() => OpenVisualToolForElement(element), 
+                            System.Windows.Threading.DispatcherPriority.Background);
+                    }
+                },
+                remove: () =>
+                {
+                    RemoveElementCore(element);
+                    RefreshModulePalette();
+                }
+            )
+        };
+
+        _stateManager?.ApplyChange(change);
     }
 
     private Border BuildCanvasElement(SceneElement element)
@@ -769,7 +1076,7 @@ public partial class SceneEditorView : UserControl
             Background = new SolidColorBrush(Color.FromArgb(0xCC, 0x1E, 0x1E, 0x1E)),
             BorderBrush = new SolidColorBrush(Color.FromRgb(0x8E, 0xFF, 0x71)),
             BorderThickness = new Thickness(1),
-            Padding = new Thickness(4, 2, 4, 2),
+            Padding = new Thickness(0),
             Cursor = Cursors.Hand,
             Tag = element
         };
@@ -778,24 +1085,21 @@ public partial class SceneEditorView : UserControl
         var assetVisual = TryBuildAssetVisual(element);
         if (assetVisual is not null)
         {
-            border.Padding = new Thickness(0);
             border.Child = assetVisual;
         }
         else
         {
-            border.Child = new TextBlock
-            {
-                Text = element.DisplayLabel,
-                FontFamily = new FontFamily("Consolas"),
-                FontSize = 9,
-                Foreground = new SolidColorBrush(Color.FromRgb(0x8E, 0xFF, 0x71))
-            };
+            border.Padding = new Thickness(4, 2, 4, 2);
+            border.Child = BuildModuleLabel(element);
         }
         border.MouseLeftButtonDown += (s, e) =>
         {
             if (e.ClickCount == 2)
             {
-                // Double click → open visual tool if available
+                // Double click → cancel any drag and open visual tool
+                _isDragging = false;
+                _draggedElement = null;
+                border.ReleaseMouseCapture();
                 OpenVisualToolForElement(element);
                 e.Handled = true;
                 return;
@@ -820,11 +1124,25 @@ public partial class SceneEditorView : UserControl
                 var adjustedX = canvasPos.X - _dragOffset.X;
                 var adjustedY = canvasPos.Y - _dragOffset.Y;
 
-                var maxTileX = (int)(SceneCanvas.Width / 8) - 1;
-                var maxTileY = (int)(SceneCanvas.Height / 8) - 1;
-
-                var tileX = Math.Clamp((int)adjustedX / 8, 0, maxTileX);
-                var tileY = Math.Clamp((int)adjustedY / 8, 0, maxTileY);
+                // Logic modules can be placed anywhere (even outside canvas)
+                // Graphic modules are clamped to canvas bounds
+                bool isLogicModule = _moduleRegistry?.LogicModules.ContainsKey(element.ModuleId) ?? false;
+                
+                int tileX, tileY;
+                if (isLogicModule)
+                {
+                    // Allow negative positions and positions beyond canvas
+                    tileX = (int)adjustedX / 8;
+                    tileY = (int)adjustedY / 8;
+                }
+                else
+                {
+                    // Clamp graphic modules to canvas bounds
+                    var maxTileX = (int)(SceneCanvas.Width / 8) - 1;
+                    var maxTileY = (int)(SceneCanvas.Height / 8) - 1;
+                    tileX = Math.Clamp((int)adjustedX / 8, 0, maxTileX);
+                    tileY = Math.Clamp((int)adjustedY / 8, 0, maxTileY);
+                }
 
                 Canvas.SetLeft(border, tileX * 8);
                 Canvas.SetTop(border, tileY * 8);
@@ -855,29 +1173,32 @@ public partial class SceneEditorView : UserControl
                 {
                     var startX = _dragStartTileX;
                     var startY = _dragStartTileY;
-
                     var displayName = element.Module is IModule m ? m.DisplayName : element.ModuleId;
 
-                    // Push without re-executing — element already moved via MouseMove
-                    var cmd = new MoveElementCommand(
-                        description: $"Move {displayName}",
-                        moveTo: (tx, ty) =>
-                        {
-                            element.TileX = tx;
-                            element.TileY = ty;
-                            Canvas.SetLeft(border, tx * 8);
-                            Canvas.SetTop(border, ty * 8);
-                            UpdateModulePosition(element.Module, tx, ty);
-                            SyncProjectModules();
-                        },
-                        prevX: startX, prevY: startY,
-                        newX: endTileX, newY: endTileY);
+                    // Create state change for moving element (Small change — marks dirty only)
+                    var change = new StateChange
+                    {
+                        Description = $"Move {displayName}",
+                        Type = ChangeType.Small,
+                        Execute = () => { }, // Already executed by drag
+                        IsUndoable = true,
+                        UndoCommand = new MoveElementCommand(
+                            description: $"Move {displayName}",
+                            moveTo: (tx, ty) =>
+                            {
+                                element.TileX = tx;
+                                element.TileY = ty;
+                                Canvas.SetLeft(border, tx * 8);
+                                Canvas.SetTop(border, ty * 8);
+                                UpdateModulePosition(element.Module, tx, ty);
+                            },
+                            prevX: startX, prevY: startY,
+                            newX: endTileX, newY: endTileY)
+                    };
 
-                    // Add to stack without calling Execute() — already done by drag
-                    _undoRedo.PushWithoutExecute(cmd);
+                    _stateManager?.RegisterChange(change);
                 }
 
-                SyncProjectModules();
                 e.Handled = true;
             }
         };
@@ -1043,16 +1364,28 @@ public partial class SceneEditorView : UserControl
         };
 
         var grid = new Grid();
+        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
         grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
         grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
 
+        // Category icon
+        var icon = new TextBlock
+        {
+            Text = "⬛",
+            FontSize = 10,
+            Margin = new Thickness(0, 0, 6, 0),
+            VerticalAlignment = VerticalAlignment.Center,
+            Foreground = new SolidColorBrush(GetCategoryColor(element))
+        };
+
         var label = new TextBlock
         {
-            Text = element.DisplayLabel,
+            Text = GetModuleDisplayText(element),
             FontFamily = new FontFamily("Consolas"),
             FontSize = 10,
-            Foreground = new SolidColorBrush(Color.FromRgb(0x8E, 0xFF, 0x71)),
-            VerticalAlignment = VerticalAlignment.Center
+            Foreground = Brushes.White,
+            VerticalAlignment = VerticalAlignment.Center,
+            TextTrimming = TextTrimming.CharacterEllipsis
         };
 
         var remove = new TextBlock
@@ -1069,8 +1402,10 @@ public partial class SceneEditorView : UserControl
             e.Handled = true;
         };
 
-        Grid.SetColumn(label, 0);
-        Grid.SetColumn(remove, 1);
+        Grid.SetColumn(icon, 0);
+        Grid.SetColumn(label, 1);
+        Grid.SetColumn(remove, 2);
+        grid.Children.Add(icon);
         grid.Children.Add(label);
         grid.Children.Add(remove);
         action.Child = grid;
@@ -1268,28 +1603,53 @@ public partial class SceneEditorView : UserControl
 
             validationText.Text = string.Empty;
 
-            _undoRedo.Push(new ChangePropertyCommand(
-                description: $"Change User ID",
-                apply: val =>
+            // Create state change for User ID change (Small change — marks dirty only)
+            var change = new StateChange
+            {
+                Description = "Change User ID",
+                Type = ChangeType.Small,
+                Execute = () =>
                 {
                     _isUpdatingUI = true;
-                    element.UserId = val;
-                    if (string.IsNullOrEmpty(val))
+                    element.UserId = newValue;
+                    if (string.IsNullOrEmpty(newValue))
                     {
                         textBox.Text = $"(auto: {element.ElementId[..8]}...)";
                         textBox.Foreground = new SolidColorBrush(Color.FromRgb(0x76, 0x75, 0x75));
                     }
                     else
                     {
-                        textBox.Text = val;
+                        textBox.Text = newValue;
                         textBox.Foreground = Brushes.White;
                     }
                     _isUpdatingUI = false;
                     UpdateElementLabel(element);
-                    SyncProjectModules();
                 },
-                previousValue: previousValue,
-                newValue: newValue));
+                IsUndoable = true,
+                UndoCommand = new ChangePropertyCommand(
+                    description: "Change User ID",
+                    apply: val =>
+                    {
+                        _isUpdatingUI = true;
+                        element.UserId = val;
+                        if (string.IsNullOrEmpty(val))
+                        {
+                            textBox.Text = $"(auto: {element.ElementId[..8]}...)";
+                            textBox.Foreground = new SolidColorBrush(Color.FromRgb(0x76, 0x75, 0x75));
+                        }
+                        else
+                        {
+                            textBox.Text = val;
+                            textBox.Foreground = Brushes.White;
+                        }
+                        _isUpdatingUI = false;
+                        UpdateElementLabel(element);
+                    },
+                    previousValue: previousValue,
+                    newValue: newValue)
+            };
+
+            _stateManager?.ApplyChange(change);
         };
 
         input.Child = textBox;
@@ -1375,22 +1735,26 @@ public partial class SceneEditorView : UserControl
             if (previousValue == newValue) return;
 
             var displayName = module.DisplayName;
-            _undoRedo.Push(new ChangePropertyCommand(
-                description: $"Change {param.DisplayName} on {displayName}",
-                apply: val =>
+            
+            // Create state change for parameter change (Small change — marks dirty only)
+            var change = new StateChange
+            {
+                Description = $"Change {param.DisplayName} on {displayName}",
+                Type = ChangeType.Small,
+                Execute = () =>
                 {
                     _isUpdatingUI = true;
-                    textBox.Text = val;
+                    textBox.Text = newValue;
                     _isUpdatingUI = false;
 
-                    SetModuleParameterValue(module, param.Name, val, param.Type);
+                    SetModuleParameterValue(module, param.Name, newValue, param.Type);
 
-                    if (param.Name.Equals("x", StringComparison.OrdinalIgnoreCase) && int.TryParse(val, out var x))
+                    if (param.Name.Equals("x", StringComparison.OrdinalIgnoreCase) && int.TryParse(newValue, out var x))
                     {
                         element.TileX = x;
                         UpdateElementPosition(element);
                     }
-                    else if (param.Name.Equals("y", StringComparison.OrdinalIgnoreCase) && int.TryParse(val, out var y))
+                    else if (param.Name.Equals("y", StringComparison.OrdinalIgnoreCase) && int.TryParse(newValue, out var y))
                     {
                         element.TileY = y;
                         UpdateElementPosition(element);
@@ -1398,10 +1762,37 @@ public partial class SceneEditorView : UserControl
 
                     UpdateElementLabel(element);
                     RefreshElementVisual(element);
-                    SyncProjectModules();
                 },
-                previousValue: previousValue,
-                newValue: newValue));
+                IsUndoable = true,
+                UndoCommand = new ChangePropertyCommand(
+                    description: $"Change {param.DisplayName} on {displayName}",
+                    apply: val =>
+                    {
+                        _isUpdatingUI = true;
+                        textBox.Text = val;
+                        _isUpdatingUI = false;
+
+                        SetModuleParameterValue(module, param.Name, val, param.Type);
+
+                        if (param.Name.Equals("x", StringComparison.OrdinalIgnoreCase) && int.TryParse(val, out var x))
+                        {
+                            element.TileX = x;
+                            UpdateElementPosition(element);
+                        }
+                        else if (param.Name.Equals("y", StringComparison.OrdinalIgnoreCase) && int.TryParse(val, out var y))
+                        {
+                            element.TileY = y;
+                            UpdateElementPosition(element);
+                        }
+
+                        UpdateElementLabel(element);
+                        RefreshElementVisual(element);
+                    },
+                    previousValue: previousValue,
+                    newValue: newValue)
+            };
+
+            _stateManager?.ApplyChange(change);
         };
 
         textBox.TextChanged += (s, e) =>
@@ -1421,7 +1812,9 @@ public partial class SceneEditorView : UserControl
                     UpdateElementPosition(element);
                 }
                 RefreshElementVisual(element);
-                SyncProjectModules();
+                
+                // Mark dirty on text change (real-time feedback)
+                _projectManager?.MarkDirty();
             }
         };
 
@@ -1435,10 +1828,16 @@ public partial class SceneEditorView : UserControl
     /// Tries to build an Image visual from the asset referenced by the module.
     /// Returns null if the module has no asset reference or the asset file is missing —
     /// the caller falls back to the gray box label in that case.
+    /// 
+    /// For tilemap modules, renders the actual tile map instead of showing the raw asset.
     /// </summary>
     private UIElement? TryBuildAssetVisual(SceneElement element)
     {
         if (_project is null || element.Module is not IModule module) return null;
+
+        // Special handling for tilemaps — render the actual map
+        if (element.ModuleId.Contains("tilemap", StringComparison.OrdinalIgnoreCase))
+            return TryBuildTilemapVisual(element);
 
         // Extract tilesAssetId from the module JSON
         var assetId = ExtractAssetId(module);
@@ -1475,6 +1874,152 @@ public partial class SceneEditorView : UserControl
         catch
         {
             return null; // Any I/O or decode failure → fall back to gray box
+        }
+    }
+
+    /// <summary>
+    /// Renders a tilemap module by assembling tiles from the tileset.
+    /// Returns null if tilemap data or asset is missing.
+    /// </summary>
+    private UIElement? TryBuildTilemapVisual(SceneElement element)
+    {
+        if (_project is null || _target is null || element.Module is not IModule module) return null;
+
+        try
+        {
+            var json = module.Serialize();
+            using var doc = System.Text.Json.JsonDocument.Parse(json);
+            var root = doc.RootElement;
+
+            // Extract tilemap properties - try both naming conventions
+            if (!root.TryGetProperty("tilesAssetId", out var assetIdProp)) return null;
+            var assetId = assetIdProp.GetString();
+            if (string.IsNullOrEmpty(assetId)) return null;
+            
+            int width, height;
+            if (root.TryGetProperty("mapWidth", out var mapWidthProp))
+                width = mapWidthProp.GetInt32();
+            else if (root.TryGetProperty("width", out var widthProp))
+                width = widthProp.GetInt32();
+            else
+                return null;
+
+            if (root.TryGetProperty("mapHeight", out var mapHeightProp))
+                height = mapHeightProp.GetInt32();
+            else if (root.TryGetProperty("height", out var heightProp))
+                height = heightProp.GetInt32();
+            else
+                return null;
+
+            string? dataBase64 = null;
+            int[]? mapDataArray = null;
+            
+            if (root.TryGetProperty("mapData", out var mapDataProp))
+            {
+                if (mapDataProp.ValueKind == System.Text.Json.JsonValueKind.Array)
+                {
+                    // int[] format (TilemapModule)
+                    mapDataArray = mapDataProp.EnumerateArray().Select(e => e.GetInt32()).ToArray();
+                }
+                else if (mapDataProp.ValueKind == System.Text.Json.JsonValueKind.String)
+                {
+                    // Base64 string format (legacy)
+                    dataBase64 = mapDataProp.GetString();
+                }
+            }
+            else if (root.TryGetProperty("data", out var dataProp) && dataProp.ValueKind == System.Text.Json.JsonValueKind.String)
+            {
+                dataBase64 = dataProp.GetString();
+            }
+            
+            byte[] tileData;
+            if (mapDataArray != null)
+            {
+                // Convert int[] to byte[]
+                tileData = new byte[mapDataArray.Length];
+                for (int i = 0; i < mapDataArray.Length; i++)
+                {
+                    tileData[i] = mapDataArray[i] < 0 ? (byte)255 : (byte)Math.Min(254, mapDataArray[i]);
+                }
+            }
+            else if (!string.IsNullOrEmpty(dataBase64))
+            {
+                // Decode Base64
+                tileData = Convert.FromBase64String(dataBase64);
+            }
+            else
+            {
+                return null;
+            }
+
+            // Find asset
+            var asset = _project.Assets.FirstOrDefault(a => a.Id == assetId);
+            if (asset is null) return null;
+
+            var absPath = Path.Combine(_project.ProjectPath, asset.RelativePath.Replace('/', Path.DirectorySeparatorChar));
+            if (!File.Exists(absPath)) return null;
+
+            // Load tileset
+            var tileset = new BitmapImage();
+            tileset.BeginInit();
+            tileset.UriSource = new Uri(absPath);
+            tileset.CacheOption = BitmapCacheOption.OnLoad;
+            tileset.EndInit();
+            tileset.Freeze();
+
+            var tileSize = _target.Specs.TileWidth;
+            var tilesetColumns = asset.SourceWidth / tileSize;
+
+            // Create render target
+            var renderWidth = width * tileSize;
+            var renderHeight = height * tileSize;
+            var renderTarget = new RenderTargetBitmap(renderWidth, renderHeight, 96, 96, PixelFormats.Pbgra32);
+
+            var drawingVisual = new DrawingVisual();
+            using (var dc = drawingVisual.RenderOpen())
+            {
+                for (int y = 0; y < height; y++)
+                {
+                    for (int x = 0; x < width; x++)
+                    {
+                        int index = y * width + x;
+                        if (index >= tileData.Length) continue;
+
+                        int tileId = tileData[index];
+                        // 255 is empty marker, skip it
+                        if (tileId < 0 || tileId == 255) continue;
+
+                        // Calculate source rect in tileset
+                        int srcX = (tileId % tilesetColumns) * tileSize;
+                        int srcY = (tileId / tilesetColumns) * tileSize;
+
+                        var sourceRect = new Int32Rect(srcX, srcY, tileSize, tileSize);
+                        var croppedTile = new CroppedBitmap(tileset, sourceRect);
+
+                        // Draw tile at position
+                        var destRect = new Rect(x * tileSize, y * tileSize, tileSize, tileSize);
+                        dc.DrawImage(croppedTile, destRect);
+                    }
+                }
+            }
+
+            renderTarget.Render(drawingVisual);
+            renderTarget.Freeze();
+
+            var img = new System.Windows.Controls.Image
+            {
+                Source = renderTarget,
+                Width = renderWidth,
+                Height = renderHeight,
+                Stretch = System.Windows.Media.Stretch.None,
+                SnapsToDevicePixels = true
+            };
+            RenderOptions.SetBitmapScalingMode(img, BitmapScalingMode.NearestNeighbor);
+            return img;
+        }
+        catch
+        {
+            return null; // Any error → fall back to gray box
         }
     }
 
@@ -1530,13 +2075,20 @@ public partial class SceneEditorView : UserControl
 
     private void UpdateElementLabel(SceneElement element)
     {
-        var label = GetElementDisplayLabel(element);
+        // Refresh canvas visual
+        if (element.CanvasVisual is Border cv && cv.Child is not System.Windows.Controls.Image)
+        {
+            cv.Padding = new Thickness(4, 2, 4, 2);
+            cv.Child = BuildModuleLabel(element);
+        }
 
-        if (element.CanvasVisual is Border cv && cv.Child is TextBlock ctb)
-            ctb.Text = label;
-        if (element.EventVisual is Border ev && ev.Child is Grid g &&
-            g.Children.OfType<TextBlock>().FirstOrDefault() is TextBlock etb)
-            etb.Text = label;
+        // Refresh event panel label
+        if (element.EventVisual is Border ev && ev.Child is Grid g)
+        {
+            var label = g.Children.OfType<TextBlock>().Skip(1).FirstOrDefault();
+            if (label is not null)
+                label.Text = GetModuleDisplayText(element);
+        }
     }
 
     /// <summary>
@@ -1557,13 +2109,15 @@ public partial class SceneEditorView : UserControl
         else
         {
             border.Padding = new Thickness(4, 2, 4, 2);
-            border.Child = new TextBlock
-            {
-                Text = element.DisplayLabel,
-                FontFamily = new FontFamily("Consolas"),
-                FontSize = 9,
-                Foreground = new SolidColorBrush(Color.FromRgb(0x8E, 0xFF, 0x71))
-            };
+            border.Child = BuildModuleLabel(element);
+        }
+
+        // Refresh event panel label too
+        if (element.EventVisual is Border ev && ev.Child is Grid g)
+        {
+            var label = g.Children.OfType<TextBlock>().Skip(1).FirstOrDefault();
+            if (label is not null)
+                label.Text = GetModuleDisplayText(element);
         }
     }
 
@@ -1603,35 +2157,47 @@ public partial class SceneEditorView : UserControl
             }
         }
 
-        _undoRedo.Push(new RemoveElementCommand(
-            description: $"Remove {displayName}",
-            remove: () =>
+        // Create state change for removing element (Large change — auto-saves)
+        var change = new StateChange
+        {
+            Description = $"Remove {displayName}",
+            Type = ChangeType.Large,
+            Execute = () =>
             {
                 RemoveElementCore(element);
-                SyncProjectModules();
                 RefreshModulePalette();
             },
-            restore: () =>
-            {
-                _elements.Add(element);
-
-                if (element.CanvasVisual is not null)
+            IsUndoable = true,
+            UndoCommand = new RemoveElementCommand(
+                description: $"Remove {displayName}",
+                remove: () =>
                 {
-                    Canvas.SetLeft(element.CanvasVisual, element.TileX * 8);
-                    Canvas.SetTop(element.CanvasVisual, element.TileY * 8);
-                    SceneCanvas.Children.Add(element.CanvasVisual);
-                }
-
-                if (element.EventVisual is not null && eventBlock?.Child is StackPanel sp)
+                    RemoveElementCore(element);
+                    RefreshModulePalette();
+                },
+                restore: () =>
                 {
-                    var ap = sp.Children.OfType<StackPanel>().FirstOrDefault();
-                    ap?.Children.Add(element.EventVisual);
-                }
+                    _elements.Add(element);
 
-                SyncProjectModules();
-                RefreshModulePalette();
-            }
-        ));
+                    if (element.CanvasVisual is not null)
+                    {
+                        Canvas.SetLeft(element.CanvasVisual, element.TileX * 8);
+                        Canvas.SetTop(element.CanvasVisual, element.TileY * 8);
+                        SceneCanvas.Children.Add(element.CanvasVisual);
+                    }
+
+                    if (element.EventVisual is not null && eventBlock?.Child is StackPanel sp)
+                    {
+                        var ap = sp.Children.OfType<StackPanel>().FirstOrDefault();
+                        ap?.Children.Add(element.EventVisual);
+                    }
+
+                    RefreshModulePalette();
+                }
+            )
+        };
+
+        _stateManager?.ApplyChange(change);
     }
 
     /// <summary>
@@ -1659,28 +2225,50 @@ public partial class SceneEditorView : UserControl
 
     /// <summary>
     /// Syncs the current scene elements back to the project model.
+    /// Updates existing elements instead of recreating the list to avoid duplication.
     /// </summary>
     private void SyncProjectModules()
     {
         if (_project is null || _currentScene is null) return;
 
-        _currentScene.Elements = _elements.Select(e =>
+        // Update existing elements or add new ones
+        foreach (var element in _elements)
         {
-            var moduleJson = e.Module is Retruxel.Core.Interfaces.IModule module
+            var moduleJson = element.Module is Retruxel.Core.Interfaces.IModule module
                 ? module.Serialize()
                 : "{}";
 
-            return new SceneElementData
+            var existingData = _currentScene.Elements.FirstOrDefault(e => e.ElementId == element.ElementId);
+            
+            if (existingData is not null)
             {
-                ElementId = e.ElementId,
-                UserId = e.UserId,
-                ModuleId = e.ModuleId,
-                TileX = e.TileX,
-                TileY = e.TileY,
-                Trigger = e.Trigger,
-                ModuleState = System.Text.Json.JsonDocument.Parse(moduleJson).RootElement.Clone()
-            };
-        }).ToList();
+                // Update existing element
+                existingData.UserId = element.UserId;
+                existingData.ModuleId = element.ModuleId;
+                existingData.TileX = element.TileX;
+                existingData.TileY = element.TileY;
+                existingData.Trigger = element.Trigger;
+                existingData.ModuleState = System.Text.Json.JsonDocument.Parse(moduleJson).RootElement.Clone();
+            }
+            else
+            {
+                // Add new element
+                _currentScene.Elements.Add(new SceneElementData
+                {
+                    ElementId = element.ElementId,
+                    UserId = element.UserId,
+                    ModuleId = element.ModuleId,
+                    TileX = element.TileX,
+                    TileY = element.TileY,
+                    Trigger = element.Trigger,
+                    ModuleState = System.Text.Json.JsonDocument.Parse(moduleJson).RootElement.Clone()
+                });
+            }
+        }
+
+        // Remove elements that no longer exist in memory
+        var elementIds = _elements.Select(e => e.ElementId).ToHashSet();
+        _currentScene.Elements.RemoveAll(e => !elementIds.Contains(e.ElementId));
 
         _project.DefaultModules = _elements
             .Select(e => e.ModuleId)
@@ -1690,9 +2278,11 @@ public partial class SceneEditorView : UserControl
         _projectManager?.MarkDirty();
     }
 
-    private void GenerateRom_Click(object sender, RoutedEventArgs e)
+    private async void GenerateRom_Click(object sender, RoutedEventArgs e)
     {
-        SyncProjectModules();
+        // Save before building ROM
+        await (_stateManager?.SaveNowAsync() ?? Task.CompletedTask);
+        
         if (_project is not null)
             OnGenerateRomRequested?.Invoke(_project);
     }
@@ -1709,45 +2299,7 @@ public partial class SceneEditorView : UserControl
 
         foreach (var elementData in _currentScene.Elements)
         {
-            try
-            {
-                var module = DeserializeModule(elementData.ModuleId, elementData.ModuleState);
-                if (module is null) continue;
-
-                var element = new SceneElement
-                {
-                    ElementId = elementData.ElementId,
-                    UserId = elementData.UserId,
-                    ModuleId = elementData.ModuleId,
-                    Module = module,
-                    TileX = elementData.TileX,
-                    TileY = elementData.TileY,
-                    Trigger = elementData.Trigger
-                };
-
-                UpdateModulePosition(module, elementData.TileX, elementData.TileY);
-
-                _elements.Add(element);
-
-                // Add to canvas if it has position
-                if (elementData.TileX >= 0 && elementData.TileY >= 0)
-                {
-                    var visual = BuildCanvasElement(element);
-                    Canvas.SetLeft(visual, element.TileX * 8);
-                    Canvas.SetTop(visual, element.TileY * 8);
-                    SceneCanvas.Children.Add(visual);
-                }
-
-                // Add to event panel
-                if (!string.IsNullOrEmpty(elementData.Trigger))
-                {
-                    AddModuleToEvent(elementData.Trigger, elementData.ModuleId, element);
-                }
-            }
-            catch
-            {
-                // Skip corrupted elements
-            }
+            AddElementFromData(elementData);
         }
 
         _isLoadingProject = false;
@@ -1839,6 +2391,7 @@ public partial class SceneEditorView : UserControl
 
     /// <summary>
     /// Opens the visual tool for an element if the module has one.
+    /// Passes the actual module instance from memory, ensuring changes persist.
     /// </summary>
     private void OpenVisualToolForElement(SceneElement element)
     {
@@ -1849,19 +2402,40 @@ public partial class SceneEditorView : UserControl
         // Find corresponding SceneElementData
         var elementData = _currentScene.Elements.FirstOrDefault(e => e.ElementId == element.ElementId);
 
-        VisualToolInvoker.OpenVisualTool(
-            module,
+        // Pass the actual module instance from memory and a callback that marks dirty and saves
+        var toolResult = VisualToolInvoker.OpenVisualTool(
+            module,  // This is the real instance in _elements[].Module
             _target,
             _project,
             _project.ProjectPath,
             _currentScene,
-            elementData);
+            elementData,
+            async () =>
+            {
+                // Mark project as dirty and trigger save
+                _projectManager?.MarkDirty();
+                await (_stateManager?.SaveNowAsync() ?? Task.CompletedTask);
+            },
+            this);
+        
+        // If tool was opened and changes were made, register as a Large change
+        if (toolResult)
+        {
+            var displayName = module.DisplayName;
+            var change = new StateChange
+            {
+                Description = $"Edit {displayName}",
+                Type = ChangeType.Large,
+                Execute = () => { }, // Already executed by visual tool
+                IsUndoable = false // Visual tool changes not undoable
+            };
+            _stateManager?.RegisterChange(change);
+        }
 
         // Refresh UI after tool closes
         RefreshElementVisual(element);
         if (_selectedElement == element)
             BuildPropertiesPanel(element);
-        SyncProjectModules();
     }
 }
 

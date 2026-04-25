@@ -5,11 +5,27 @@
     <UseWPF>true</UseWPF>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <!-- Force rebuild on every F5 during development -->
+    <DisableFastUpToDateCheck>true</DisableFastUpToDateCheck>
   </PropertyGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\..\..\Retruxel.SDK\Retruxel.SDK.csproj" />
-    <ProjectReference Include="..\Retruxel.Tool.AssetImporter\Retruxel.Tool.AssetImporter.csproj" />
+    <ProjectReference Include="..\Retruxel.Tool.AssetImporter\Retruxel.Tool.AssetImporter.csproj">
+      <Private>false</Private>
+    </ProjectReference>
+    <ProjectReference Include="..\Retruxel.Tool.PaletteEditor\Retruxel.Tool.PaletteEditor.csproj">
+      <Private>false</Private>
+    </ProjectReference>
   </ItemGroup>
+
+  <!-- Copy DLL to Retruxel output after every build -->
+  <Target Name="CopyToRetruxelOutput" AfterTargets="Build">
+    <PropertyGroup>
+      <RetruxelOutput>..\..\..\Retruxel\bin\$(Configuration)\net10.0-windows\Plugins\Tools\</RetruxelOutput>
+    </PropertyGroup>
+    <Copy SourceFiles="$(TargetPath)" DestinationFolder="$(RetruxelOutput)" />
+  </Target>
 
 </Project>

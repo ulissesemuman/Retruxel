@@ -197,6 +197,8 @@ public partial class MainWindow : Window
         WelcomeView.Visibility = Visibility.Collapsed;
         SceneEditorView.Visibility = Visibility.Visible;
         BtnHome.Visibility = Visibility.Visible;
+        TxtProjectName.Text = $"· {project.Name}";
+        TxtProjectName.Visibility = Visibility.Visible;
         SceneEditorView.SetProjectManager(_projectManager);
         SceneEditorView.SetModuleRegistry(moduleRegistry);
         SceneEditorView.Initialize(project, target);
@@ -264,6 +266,7 @@ public partial class MainWindow : Window
         SceneEditorView.Visibility = Visibility.Collapsed;
         WelcomeView.Visibility = Visibility.Visible;
         BtnHome.Visibility = Visibility.Collapsed;
+        TxtProjectName.Visibility = Visibility.Collapsed;
 
         // Clear current project
         _projectManager.CurrentProject = null;
@@ -281,7 +284,7 @@ public partial class MainWindow : Window
     private void ConfigureWizardButton()
     {
         var wizardTool = App.ToolLoader.GetToolById("retruxel.wizard");
-        
+
         if (wizardTool != null)
         {
             BtnTestWizard.IsEnabled = true;

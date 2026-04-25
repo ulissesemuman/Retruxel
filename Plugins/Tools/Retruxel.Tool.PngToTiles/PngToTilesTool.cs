@@ -33,9 +33,9 @@ public class PngToTilesTool : ITool
     public Dictionary<string, object> Execute(Dictionary<string, object> input)
     {
         // Extract parameters
-        var imagePath = GetString(input, "imagePath") 
+        var imagePath = GetString(input, "imagePath")
             ?? throw new ArgumentException("imagePath is required");
-        
+
         var tileWidth = GetInt(input, "tileWidth", 8);
         var tileHeight = GetInt(input, "tileHeight", 8);
         var bpp = GetInt(input, "bpp", 4);

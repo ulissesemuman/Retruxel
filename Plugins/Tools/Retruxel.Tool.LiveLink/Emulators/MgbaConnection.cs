@@ -1,6 +1,6 @@
+using Retruxel.Core.Interfaces;
 using System.Net.Sockets;
 using System.Text;
-using Retruxel.Core.Interfaces;
 
 namespace Retruxel.Tool.LiveLink.Emulators;
 
@@ -26,10 +26,10 @@ public class MgbaConnection : IEmulatorConnection
             _client = new TcpClient();
             await _client.ConnectAsync(host, port);
             _stream = _client.GetStream();
-            
+
             // GDB handshake
             await SendGdbCommandAsync("+");
-            
+
             return true;
         }
         catch
@@ -48,7 +48,7 @@ public class MgbaConnection : IEmulatorConnection
             await _stream.DisposeAsync();
             _stream = null;
         }
-        
+
         _client?.Dispose();
         _client = null;
     }
@@ -58,13 +58,15 @@ public class MgbaConnection : IEmulatorConnection
         // GDB command: m<addr>,<length>
         var command = $"m{address:x},{length:x}";
         var response = await SendGdbCommandAsync(command);
-        
+
         return ParseHexData(response);
     }
 
     public async Task<byte[]> ReadVramAsync(uint address, int length)
     {
-        // GBA VRAM starts at 0x06000000
+        // GB/GBC VRAM: 0x8000-0x9FFF (8KB for GB, 16KB for GBC)
+        // GBA VRAM: 0x06000000-0x06017FFF (96KB)
+        // For now, assume GBA. GB/GBC detection would require reading memory to identify console.
         return await ReadMemoryAsync(0x06000000 + address, length);
     }
 
@@ -72,7 +74,7 @@ public class MgbaConnection : IEmulatorConnection
     {
         // GDB command: ?
         var response = await SendGdbCommandAsync("?");
-        
+
         return new EmulatorState
         {
             IsRunning = !response.StartsWith("S"),
@@ -94,13 +96,13 @@ public class MgbaConnection : IEmulatorConnection
         // Format: $<command>#<checksum>
         var packet = $"${command}#{checksum:x2}";
         var data = Encoding.ASCII.GetBytes(packet);
-        
+
         await _stream.WriteAsync(data);
-        
+
         var buffer = new byte[65536];
         int bytesRead = await _stream.ReadAsync(buffer);
         var response = Encoding.ASCII.GetString(buffer, 0, bytesRead);
-        
+
         // Strip $...# wrapper
         if (response.StartsWith("$") && response.Contains("#"))
         {
@@ -108,14 +110,14 @@ public class MgbaConnection : IEmulatorConnection
             int end = response.IndexOf('#');
             return response.Substring(start, end - start);
         }
-        
+
         return response;
     }
 
     private byte[] ParseHexData(string hexString)
     {
         var bytes = new List<byte>();
-        
+
         for (int i = 0; i < hexString.Length; i += 2)
         {
             if (i + 1 < hexString.Length)
@@ -125,7 +127,7 @@ public class MgbaConnection : IEmulatorConnection
                     bytes.Add(b);
             }
         }
-        
+
         return bytes.ToArray();
     }
 }

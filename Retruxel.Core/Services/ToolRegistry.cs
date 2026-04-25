@@ -27,14 +27,21 @@ public class ToolRegistry
         }
 
         var toolsDir = Path.Combine(pluginsPath, "Tools");
-        if (!Directory.Exists(toolsDir))
+        var targetsDir = Path.Combine(pluginsPath, "Targets");
+        
+        var dllFiles = new List<string>();
+        
+        if (Directory.Exists(toolsDir))
         {
-            progress?.Report($"TOOLS_DISCOVERY: Tools directory not found: {toolsDir}");
-            return;
+            dllFiles.AddRange(Directory.GetFiles(toolsDir, "*.dll", SearchOption.AllDirectories));
         }
-
-        var dllFiles = Directory.GetFiles(toolsDir, "*.dll", SearchOption.AllDirectories);
-        progress?.Report($"TOOLS_DISCOVERY: Found {dllFiles.Length} DLL files in Tools directory");
+        
+        if (Directory.Exists(targetsDir))
+        {
+            dllFiles.AddRange(Directory.GetFiles(targetsDir, "*.dll", SearchOption.AllDirectories));
+        }
+        
+        progress?.Report($"TOOLS_DISCOVERY: Found {dllFiles.Count} DLL files in Tools and Targets directories");
 
         // Pre-load Retruxel.SDK.dll if present (dependency for most tools)
         var sdkDll = dllFiles.FirstOrDefault(f => Path.GetFileName(f).Equals("Retruxel.SDK.dll", StringComparison.OrdinalIgnoreCase));
@@ -54,7 +61,7 @@ public class ToolRegistry
             {
                 // Skip native libraries and dependencies
                 var fileName = Path.GetFileName(dllPath);
-                if (fileName.StartsWith("System.") || 
+                if (fileName.StartsWith("System.") ||
                     fileName.StartsWith("Microsoft.") ||
                     fileName.StartsWith("Windows.") ||
                     fileName.Equals("Retruxel.SDK.dll", StringComparison.OrdinalIgnoreCase) ||

@@ -3,7 +3,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Width="1000" Height="600"
         MinWidth="900" MinHeight="500"
-        Background="{StaticResource BrushVoid}"
+        Background="{StaticResource BrushSurfaceContainerLow}"
         WindowStartupLocation="CenterOwner"
         ResizeMode="CanResize">
 
@@ -16,6 +16,12 @@
     </Window.Resources>
 
     <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+        
+        <Grid Grid.Row="0">
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="280"/>
             <ColumnDefinition Width="*"/>
@@ -35,11 +41,14 @@
                 
                 <!-- Header -->
                 <TextBlock x:Name="TxtPalettes" Grid.Row="0" Style="{StaticResource TextLabelCaps}" 
-                           Foreground="{StaticResource BrushTextSecondary}" Margin="0,0,0,8"/>
+                           Foreground="{StaticResource BrushOnSurfaceVariant}" Margin="0,0,0,8"/>
+                
+                <!-- Palette Name Input -->
+                <TextBox x:Name="TxtPaletteName" Grid.Row="1" Margin="0,0,0,16" Height="32"/>
                 
                 <!-- Palette List -->
                 <ListBox x:Name="PaletteListBox" Grid.Row="2" 
-                         Background="{StaticResource BrushVoid}"
+                         Background="{StaticResource BrushSurfaceContainerLow}"
                          BorderThickness="0"
                          Margin="0,0,0,16"/>
                 
@@ -51,7 +60,7 @@
                 </StackPanel>
                 
                 <!-- 16 Slots Grid (8×2) -->
-                <Border Grid.Row="4" Background="{StaticResource BrushVoid}" Padding="8">
+                <Border Grid.Row="4" Background="{StaticResource BrushSurfaceContainerLow}" Padding="8">
                     <Grid>
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto"/>
@@ -59,7 +68,7 @@
                         </Grid.RowDefinitions>
                         
                         <TextBlock x:Name="TxtSlots" Grid.Row="0" Style="{StaticResource TextLabelCaps}" 
-                                   Foreground="{StaticResource BrushTextSecondary}" Margin="0,0,0,8"/>
+                                   Foreground="{StaticResource BrushOnSurfaceVariant}" Margin="0,0,0,8"/>
                         
                         <UniformGrid x:Name="SlotsGrid" Grid.Row="1" Rows="2" Columns="8"/>
                     </Grid>
@@ -77,7 +86,7 @@
                 
                 <!-- Header -->
                 <TextBlock x:Name="TxtHardwareColors" Grid.Row="0" Style="{StaticResource TextLabelCaps}" 
-                           Foreground="{StaticResource BrushTextSecondary}" Margin="0,0,0,16"/>
+                           Foreground="{StaticResource BrushOnSurfaceVariant}" Margin="0,0,0,16"/>
                 
                 <!-- 64 Color Grid (8×8) -->
                 <Viewbox Grid.Row="1" Stretch="Uniform">
@@ -98,7 +107,7 @@
                 </Grid.RowDefinitions>
                 
                 <!-- Slot Detail -->
-                <Border Grid.Row="0" Background="{StaticResource BrushVoid}" Padding="12" Margin="0,0,0,16">
+                <Border Grid.Row="0" Background="{StaticResource BrushSurfaceContainerLow}" Padding="12" Margin="0,0,0,16">
                     <Grid>
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto"/>
@@ -107,7 +116,7 @@
                         </Grid.RowDefinitions>
                         
                         <TextBlock x:Name="TxtSlotDetail" Grid.Row="0" Style="{StaticResource TextLabelCaps}" 
-                                   Foreground="{StaticResource BrushTextSecondary}" Margin="0,0,0,8"/>
+                                   Foreground="{StaticResource BrushOnSurfaceVariant}" Margin="0,0,0,8"/>
                         
                         <StackPanel Grid.Row="1">
                             <TextBlock x:Name="TxtSlotIndex" Style="{StaticResource TextBody}" Margin="0,0,0,4"/>
@@ -117,12 +126,12 @@
                         
                         <!-- Color Preview -->
                         <Border x:Name="ColorPreview" Grid.Row="2" Height="48" Margin="0,12,0,0"
-                                Background="{StaticResource BrushVoid}"/>
+                                Background="{StaticResource BrushSurfaceContainerLow}"/>
                     </Grid>
                 </Border>
                 
                 <!-- Quick Set Buttons -->
-                <Border Grid.Row="1" Background="{StaticResource BrushVoid}" Padding="12" Margin="0,0,0,16">
+                <Border Grid.Row="1" Background="{StaticResource BrushSurfaceContainerLow}" Padding="12" Margin="0,0,0,16">
                     <Grid>
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto"/>
@@ -130,7 +139,7 @@
                         </Grid.RowDefinitions>
                         
                         <TextBlock x:Name="TxtQuickSet" Grid.Row="0" Style="{StaticResource TextLabelCaps}" 
-                                   Foreground="{StaticResource BrushTextSecondary}" Margin="0,0,0,8"/>
+                                   Foreground="{StaticResource BrushOnSurfaceVariant}" Margin="0,0,0,8"/>
                         
                         <StackPanel Grid.Row="1">
                             <Button x:Name="BtnSetBlack" Style="{StaticResource ButtonSecondary}" Margin="0,0,0,4"/>
@@ -141,7 +150,7 @@
                 </Border>
                 
                  <!-- Usage Report -->
-                 <Border Grid.Row="2" Background="{StaticResource BrushVoid}" Padding="12">
+                 <Border Grid.Row="2" Background="{StaticResource BrushSurfaceContainerLow}" Padding="12">
                     <Grid>
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto"/>
@@ -149,11 +158,25 @@
                         </Grid.RowDefinitions>
                         
                         <TextBlock x:Name="TxtUsage" Grid.Row="0" Style="{StaticResource TextLabelCaps}" 
-                                   Foreground="{StaticResource BrushTextSecondary}" Margin="0,0,0,8"/>
+                                   Foreground="{StaticResource BrushOnSurfaceVariant}" Margin="0,0,0,8"/>
                         
                         <StackPanel x:Name="UsagePanel" Grid.Row="1"/>
                     </Grid>
                 </Border>
+            </Grid>
+        </Border>
+        </Grid>
+        
+        <!-- Bottom Action Bar -->
+        <Border Grid.Row="1" Background="{StaticResource BrushSurfaceContainerHigh}" Padding="16" BorderThickness="0,1,0,0" BorderBrush="{StaticResource BrushOnSurfaceVariant}">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                
+                <Button x:Name="BtnCancel" Grid.Column="0" Content="CANCEL" Style="{StaticResource ButtonGhost}" HorizontalAlignment="Left" Width="120" Margin="0,0,8,0"/>
+                <Button x:Name="BtnApply" Grid.Column="1" Content="APPLY" Style="{StaticResource ButtonPrimary}" Width="120"/>
             </Grid>
         </Border>
     </Grid>

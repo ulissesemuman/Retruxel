@@ -35,7 +35,7 @@ public static class ReflectionCodeGenHelper
 
             // Register both with and without target prefix
             cache[moduleId] = type;
-            
+
             if (!moduleId.Contains("."))
                 cache[$"{targetPrefix.ToLower()}.{moduleId}"] = type;
         }

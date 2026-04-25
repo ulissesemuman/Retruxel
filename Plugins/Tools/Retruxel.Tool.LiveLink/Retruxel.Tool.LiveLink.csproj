@@ -1,11 +1,31 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
   <PropertyGroup>
     <TargetFramework>net10.0-windows</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <UseWPF>true</UseWPF>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <!-- Force rebuild on every F5 during development -->
+    <DisableFastUpToDateCheck>true</DisableFastUpToDateCheck>
   </PropertyGroup>
+
   <ItemGroup>
     <ProjectReference Include="..\..\..\Retruxel.SDK\Retruxel.SDK.csproj" />
+    <ProjectReference Include="..\ImageProcessing\Retruxel.Lib.ImageProcessing\Retruxel.Lib.ImageProcessing.csproj" />
   </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="Resources\*.lua" />
+    <None Include="Resources\README.md" />
+  </ItemGroup>
+
+  <!-- Copy DLL to Retruxel output after every build -->
+  <Target Name="CopyToRetruxelOutput" AfterTargets="Build">
+    <PropertyGroup>
+      <RetruxelOutput>..\..\..\Retruxel\bin\$(Configuration)\net10.0-windows\Plugins\Tools\</RetruxelOutput>
+    </PropertyGroup>
+    <Copy SourceFiles="$(TargetPath)" DestinationFolder="$(RetruxelOutput)" />
+  </Target>
+
 </Project>

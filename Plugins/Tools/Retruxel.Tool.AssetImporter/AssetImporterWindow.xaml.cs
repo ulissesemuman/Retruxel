@@ -31,6 +31,7 @@ public partial class AssetImporterWindow : Window
 
     private string? _sourcePngPath;
     private SKBitmap? _reducedPreview;
+    private bool _isInitialized = false;
 
     /// <summary>
     /// The imported asset entry. Only set after a successful import (DialogResult = true).
@@ -47,6 +48,8 @@ public partial class AssetImporterWindow : Window
         TxtTargetLabel.Text = target.DisplayName.ToUpper();
         GenerateRegionControls();
         ApplyLocalization();
+        
+        _isInitialized = true;
     }
 
     private void ApplyLocalization()
@@ -111,16 +114,24 @@ public partial class AssetImporterWindow : Window
 
     private void RbSource_Changed(object sender, RoutedEventArgs e)
     {
-        if (RbSourceFile?.IsChecked == true)
+        // Don't process during initialization
+        if (!_isInitialized)
+            return;
+
+        // Check if controls are initialized
+        if (RbSourceFile == null || RbSourceEmulator == null || DropHint == null || EmulatorHint == null || DropZone == null)
+            return;
+
+        if (RbSourceFile.IsChecked == true)
         {
-            DropHint.Visibility = _sourcePngPath == null ? Visibility.Visible : Visibility.Collapsed;
+            DropHint.Visibility = string.IsNullOrEmpty(_sourcePngPath) ? Visibility.Visible : Visibility.Collapsed;
             EmulatorHint.Visibility = Visibility.Collapsed;
             DropZone.AllowDrop = true;
         }
-        else if (RbSourceEmulator?.IsChecked == true)
+        else if (RbSourceEmulator.IsChecked == true)
         {
             DropHint.Visibility = Visibility.Collapsed;
-            EmulatorHint.Visibility = _sourcePngPath == null ? Visibility.Visible : Visibility.Collapsed;
+            EmulatorHint.Visibility = string.IsNullOrEmpty(_sourcePngPath) ? Visibility.Visible : Visibility.Collapsed;
             DropZone.AllowDrop = false;
         }
     }
@@ -131,7 +142,7 @@ public partial class AssetImporterWindow : Window
         {
             var toolRegistry = (ToolRegistry)ServiceLocator.ToolRegistry;
             var liveLinkTool = toolRegistry.GetTool("retruxel.tool.livelink");
-            
+
             if (liveLinkTool == null)
             {
                 ShowValidation("LiveLink tool not found. Make sure it's installed.");

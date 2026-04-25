@@ -114,7 +114,7 @@ public partial class NewProjectDialog : Window
     private void CreateButton_Click(object sender, RoutedEventArgs e)
     {
         var loc = LocalizationService.Instance;
-        
+
         if (string.IsNullOrWhiteSpace(TxtProjectName.Text))
         {
             MessageBox.Show(loc.Get("newproject.error.name"), "Retruxel",

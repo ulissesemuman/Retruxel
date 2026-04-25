@@ -48,13 +48,13 @@ public class TemplateEngine
     {
         var assembly = System.Reflection.Assembly.GetCallingAssembly();
         using var stream = assembly.GetManifestResourceStream(resourcePath);
-        
+
         if (stream == null)
         {
             // Fallback: try loading from file system
             if (File.Exists(resourcePath))
                 return File.ReadAllText(resourcePath);
-            
+
             throw new FileNotFoundException($"Template not found: {resourcePath}");
         }
 
@@ -246,12 +246,12 @@ public class TemplateEngine
             return doubleVal;
 
         // Arithmetic operations: *, /, +, -
-        var arithmeticOps = new (string op, Func<double, double, double> func)[] 
-        { 
-            ("*", (a, b) => a * b), 
-            ("/", (a, b) => a / b), 
-            ("+", (a, b) => a + b), 
-            ("-", (a, b) => a - b) 
+        var arithmeticOps = new (string op, Func<double, double, double> func)[]
+        {
+            ("*", (a, b) => a * b),
+            ("/", (a, b) => a / b),
+            ("+", (a, b) => a + b),
+            ("-", (a, b) => a - b)
         };
         foreach (var (op, func) in arithmeticOps)
         {

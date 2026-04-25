@@ -1,5 +1,3 @@
-using Retruxel.Core.Models;
-
 namespace Retruxel.Core.Interfaces;
 
 /// <summary>

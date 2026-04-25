@@ -1,7 +1,7 @@
+using Retruxel.Core.Interfaces;
 using System.Net.Sockets;
 using System.Text;
 using System.Text.Json;
-using Retruxel.Core.Interfaces;
 
 namespace Retruxel.Tool.LiveLink.Emulators;
 
@@ -27,11 +27,11 @@ public class MesenSConnection : IEmulatorConnection
             _client = new TcpClient();
             await _client.ConnectAsync(host, port);
             _stream = _client.GetStream();
-            
+
             // Send handshake
             var handshake = new { command = "connect", version = "1.0" };
             await SendCommandAsync(handshake);
-            
+
             return true;
         }
         catch
@@ -50,7 +50,7 @@ public class MesenSConnection : IEmulatorConnection
             await _stream.DisposeAsync();
             _stream = null;
         }
-        
+
         _client?.Dispose();
         _client = null;
     }
@@ -64,7 +64,7 @@ public class MesenSConnection : IEmulatorConnection
             length = length,
             memoryType = "CpuMemory"
         };
-        
+
         var response = await SendCommandAsync(command);
         return Convert.FromBase64String(response.GetProperty("data").GetString() ?? "");
     }
@@ -78,7 +78,7 @@ public class MesenSConnection : IEmulatorConnection
             length = length,
             memoryType = "VideoRam"
         };
-        
+
         var response = await SendCommandAsync(command);
         return Convert.FromBase64String(response.GetProperty("data").GetString() ?? "");
     }
@@ -87,7 +87,7 @@ public class MesenSConnection : IEmulatorConnection
     {
         var command = new { command = "getState" };
         var response = await SendCommandAsync(command);
-        
+
         return new EmulatorState
         {
             IsPaused = response.GetProperty("paused").GetBoolean(),
@@ -103,13 +103,13 @@ public class MesenSConnection : IEmulatorConnection
 
         var json = JsonSerializer.Serialize(command);
         var data = Encoding.UTF8.GetBytes(json + "\n");
-        
+
         await _stream.WriteAsync(data);
-        
+
         var buffer = new byte[65536];
         int bytesRead = await _stream.ReadAsync(buffer);
         var responseJson = Encoding.UTF8.GetString(buffer, 0, bytesRead);
-        
+
         return JsonSerializer.Deserialize<JsonElement>(responseJson);
     }
 }

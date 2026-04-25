@@ -1,6 +1,6 @@
+using Retruxel.Core.Interfaces;
 using System.Net.Sockets;
 using System.Text;
-using Retruxel.Core.Interfaces;
 
 namespace Retruxel.Tool.LiveLink.Emulators;
 
@@ -43,7 +43,7 @@ public class EmuliciousConnection : IEmulatorConnection
             await _stream.DisposeAsync();
             _stream = null;
         }
-        
+
         _client?.Dispose();
         _client = null;
     }
@@ -66,7 +66,7 @@ public class EmuliciousConnection : IEmulatorConnection
     {
         var command = "status\n";
         var response = await SendCommandAsync(command);
-        
+
         return new EmulatorState
         {
             IsPaused = response.Contains("paused", StringComparison.OrdinalIgnoreCase),
@@ -81,7 +81,7 @@ public class EmuliciousConnection : IEmulatorConnection
 
         var data = Encoding.ASCII.GetBytes(command);
         await _stream.WriteAsync(data);
-        
+
         var buffer = new byte[65536];
         int bytesRead = await _stream.ReadAsync(buffer);
         return Encoding.ASCII.GetString(buffer, 0, bytesRead);
@@ -91,7 +91,7 @@ public class EmuliciousConnection : IEmulatorConnection
     {
         var lines = response.Split('\n', StringSplitOptions.RemoveEmptyEntries);
         var bytes = new List<byte>();
-        
+
         foreach (var line in lines)
         {
             var parts = line.Split(' ', StringSplitOptions.RemoveEmptyEntries);
@@ -101,7 +101,7 @@ public class EmuliciousConnection : IEmulatorConnection
                     bytes.Add(b);
             }
         }
-        
+
         return bytes.ToArray();
     }
 }

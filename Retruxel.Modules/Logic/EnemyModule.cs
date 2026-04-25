@@ -144,13 +144,13 @@ public class EnemyModule : ILogicModule
     {
         [Obsolete("Use SpriteRef instead. Kept for backward compatibility.")]
         public int SpriteId { get; set; } = 1;
-        
+
         /// <summary>Reference to a SpriteModule instance — replaces the raw SpriteId int.</summary>
         public string SpriteRef { get; set; } = string.Empty;
-        
+
         /// <summary>Reference to an AnimationModule instance (optional).</summary>
         public string AnimationRef { get; set; } = string.Empty;
-        
+
         public int X { get; set; } = 120;
         public int Y { get; set; } = 144;
         public int Speed { get; set; } = 1;

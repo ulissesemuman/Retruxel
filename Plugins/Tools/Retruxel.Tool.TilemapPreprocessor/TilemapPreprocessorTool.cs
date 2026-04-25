@@ -60,7 +60,7 @@ public class TilemapPreprocessorTool : ITool
 
         // Process map data (add startTile to each tile ID)
         var processedMap = ProcessMapData(mapData, startTile, mapWidth, mapHeight, maxTileSlots);
-        
+
         // Return multiple formats for flexibility
         var processedMapHex = FormatMapAsHex(processedMap, mapWidth, mapHeight);
         var processedMapFlat = string.Join(", ", processedMap.Select(v => $"0x{v:X4}"));
@@ -117,13 +117,13 @@ public class TilemapPreprocessorTool : ITool
             }
 
             int rawId = mapData[i];
-            
+
             // -1 = empty cell → transparent tile 0
             int vramSlot = rawId < 0 ? 0 : rawId + startTile;
-            
+
             // Clamp to valid VRAM range
             if (vramSlot >= maxTileSlots) vramSlot = maxTileSlots - 1;
-            
+
             result[i] = vramSlot;
         }
 

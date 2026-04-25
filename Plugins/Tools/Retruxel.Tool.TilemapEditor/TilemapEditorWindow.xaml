@@ -68,7 +68,8 @@
             <!-- CONTENT -->
             <Grid Grid.Row="1">
                 <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="240"/>
+                    <ColumnDefinition Width="240" MinWidth="180" MaxWidth="600"/>
+                    <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="280"/>
                 </Grid.ColumnDefinitions>
@@ -79,6 +80,8 @@
                         Padding="16">
                     <Grid>
                         <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="8"/>
                             <RowDefinition Height="Auto"/>
                             <RowDefinition Height="8"/>
                             <RowDefinition Height="Auto"/>
@@ -103,8 +106,35 @@
                                    Style="{StaticResource TextLabel}"
                                    Foreground="{StaticResource BrushOnSurfaceVariant}"
                                    TextWrapping="Wrap"/>
+                        
+                        <!-- Zoom controls -->
+                        <StackPanel Grid.Row="4" Orientation="Horizontal" HorizontalAlignment="Center">
+                            <Button x:Name="BtnTileZoom50"
+                                    Content="🔍-"
+                                    Click="BtnTileZoom50_Click"
+                                    Style="{StaticResource ButtonGhost}"
+                                    Width="32" Height="24"
+                                    Padding="0"
+                                    ToolTip="50% zoom"
+                                    Margin="0,0,4,0"/>
+                            <Button x:Name="BtnTileZoom100"
+                                    Content="🔍"
+                                    Click="BtnTileZoom100_Click"
+                                    Style="{StaticResource ButtonGhost}"
+                                    Width="32" Height="24"
+                                    Padding="0"
+                                    ToolTip="100% zoom"
+                                    Margin="0,0,4,0"/>
+                            <Button x:Name="BtnTileZoom200"
+                                    Content="🔍+"
+                                    Click="BtnTileZoom200_Click"
+                                    Style="{StaticResource ButtonGhost}"
+                                    Width="32" Height="24"
+                                    Padding="0"
+                                    ToolTip="200% zoom"/>
+                        </StackPanel>
 
-                        <ScrollViewer Grid.Row="4"
+                        <ScrollViewer Grid.Row="6"
                                       VerticalScrollBarVisibility="Auto"
                                       HorizontalScrollBarVisibility="Disabled">
                             <ItemsControl x:Name="TilesetGrid">
@@ -116,7 +146,12 @@
                             </ItemsControl>
                         </ScrollViewer>
 
-                        <StackPanel Grid.Row="6">
+                        <StackPanel Grid.Row="8">
+                            <Button x:Name="BtnImportFromLiveLink"
+                                    Content="IMPORT FROM LIVELINK"
+                                    Click="BtnImportFromLiveLink_Click"
+                                    Style="{StaticResource ButtonPrimary}"
+                                    Margin="0,0,0,8"/>
                             <Button x:Name="BtnImportAsset"
                                     Content="IMPORT ASSET"
                                     Click="BtnImportAsset_Click"
@@ -129,9 +164,17 @@
                         </StackPanel>
                     </Grid>
                 </Border>
+                
+                <!-- SPLITTER -->
+                <GridSplitter Grid.Column="1"
+                              Width="4"
+                              HorizontalAlignment="Stretch"
+                              VerticalAlignment="Stretch"
+                              Background="{StaticResource BrushSurface}"
+                              ShowsPreview="False"/>
 
                 <!-- CENTER PANEL - CANVAS -->
-                <Border Grid.Column="1"
+                <Border Grid.Column="2"
                         Background="{StaticResource BrushSurface}"
                         Padding="16">
                     <Grid>
@@ -185,19 +228,18 @@
                 </Border>
 
                 <!-- RIGHT PANEL - PROPERTIES -->
-                <Border Grid.Column="2"
-                        Background="{StaticResource BrushSurfaceContainerLow}"
-                        Padding="16">
-                    <ScrollViewer VerticalScrollBarVisibility="Auto">
-                        <StackPanel x:Name="PropertiesPanel">
-                            <TextBlock x:Name="LblName"
-                                       Text="NAME"
-                                       Style="{StaticResource TextLabelCaps}"
-                                       Foreground="{StaticResource BrushOnSurfaceVariant}"
-                                       Margin="0,0,0,6"/>
-                            <TextBox x:Name="TxtName"
-                                     Margin="0,0,0,16"/>
-
+                <Grid Grid.Column="3">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+                    
+                    <!-- Scrollable content -->
+                    <Border Grid.Row="0"
+                            Background="{StaticResource BrushSurfaceContainerLow}"
+                            Padding="16">
+                        <ScrollViewer VerticalScrollBarVisibility="Auto">
+                            <StackPanel x:Name="PropertiesPanel">
                             <TextBlock x:Name="LblDimensions"
                                        Text="DIMENSIONS"
                                        Style="{StaticResource TextLabelCaps}"
@@ -243,7 +285,8 @@
                                            Foreground="{StaticResource BrushOnSurfaceVariant}"
                                            Margin="0,0,0,6"/>
                                 <ComboBox x:Name="CmbPalette"
-                                          SelectionChanged="CmbPalette_SelectionChanged"/>
+                                          SelectionChanged="CmbPalette_SelectionChanged"
+                                          DropDownClosed="CmbPalette_DropDownClosed"/>
                                 <TextBlock x:Name="TxtPaletteModeInfo"
                                            Style="{StaticResource TextLabel}"
                                            Foreground="{StaticResource BrushOnSurfaceVariant}"
@@ -287,6 +330,17 @@
                                        Foreground="{StaticResource BrushOnSurfaceVariant}"
                                        Margin="0,0,0,16"/>
 
+                            </StackPanel>
+                        </ScrollViewer>
+                    </Border>
+                    
+                    <!-- Fixed action buttons -->
+                    <Border Grid.Row="1"
+                            Background="{StaticResource BrushSurfaceContainerLow}"
+                            Padding="16"
+                            BorderBrush="{StaticResource BrushOnSurfaceVariant}"
+                            BorderThickness="0,1,0,0">
+                        <StackPanel>
                             <Button x:Name="BtnClear"
                                     Content="CLEAR MAP"
                                     Click="BtnClear_Click"
@@ -302,8 +356,8 @@
                                     Click="BtnExportPng_Click"
                                     Style="{StaticResource ButtonSecondary}"/>
                         </StackPanel>
-                    </ScrollViewer>
-                </Border>
+                    </Border>
+                </Grid>
             </Grid>
 
             <!-- FOOTER -->

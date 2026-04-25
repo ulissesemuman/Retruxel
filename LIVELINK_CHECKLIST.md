@@ -33,13 +33,13 @@
 - [ ] Preview OK (verificar)
 - [ ] Import OK (verificar)
 
-### 🔴 SG-1000 (Sega SG-1000)
+### 🟡 SG-1000 (Sega SG-1000)
 - [x] Tiles (1bpp, InterleaveMode.Tile)
 - [x] Palette (TMS9918 fixed 16-color palette)
 - [x] Nametable (32x24, 1 byte/entry, 0x1800)
 - [x] Preview OK
-- [x] **REGRESSÃO RESOLVIDA**: Tiles e paleta agora importam corretamente (fix: detecção 1bpp)
-- [ ] **Color Table** - Implementar leitura da Color Table separada (atualmente só captura tiles monocromáticos)
+- [x] **REGRESSÃO RESOLVIDA**: Tiles agora renderizam em branco/preto (fix temporário)
+- [ ] **Color Table** - Implementar leitura da Color Table separada (0x2000, 32 bytes) para cores corretas
 
 ### 🟡 GB/GBC (Game Boy / Game Boy Color)
 - [x] Tiles (2bpp, InterleaveMode.Line)
@@ -74,12 +74,13 @@
 
 ## 🚨 Issues Prioritários
 
-### 1. 🟢 SG-1000 Regressão - Tilesets e Paleta Pretos (RESOLVIDO)
-**Status**: ✅ Resolvido  
-**Descrição**: Preview OK mas na importação tilesets e paleta vêm todos pretos  
-**Causa**: Pipeline de conversão não estava detectando 1bpp corretamente (maxValue <= 1)  
-**Solução**: Adicionado case `<= 1 => 1` no switch de detecção de BPP  
-**Commit**: 69ee772
+### 1. 🟡 SG-1000 Tiles Pretos (PARCIALMENTE RESOLVIDO)
+**Status**: ✅ Fix temporário aplicado  
+**Descrição**: Tiles importavam todos pretos  
+**Causa 1**: Pipeline não detectava 1bpp corretamente → ✅ Resolvido  
+**Causa 2**: Paleta TMS9918 tem índice 0=transparente, 1=preto → 🟡 Fix temporário (usa branco/preto)  
+**Solução Definitiva**: Implementar leitura da Color Table (0x2000, 32 bytes) que define foreground/background por grupo de tiles  
+**Commits**: 69ee772, 5aea109
 
 ### 2. 🟡 SNES Preview com Pontos Coloridos
 **Status**: Pendente  

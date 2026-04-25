@@ -60,14 +60,15 @@ public class CaptureToImportedAssetPipeline : AssetPipelineBase<CaptureResult, I
     private int[] ConvertNametableToTilemapData(ushort[] nametable)
     {
         // Convert ushort nametable entries to int tilemap data
-        // For SMS: nametable entry = tile index (lower 9 bits) + attributes (upper 7 bits)
-        // We extract just the tile index for now
         var tilemapData = new int[nametable.Length];
         
         for (int i = 0; i < nametable.Length; i++)
         {
-            // Extract tile index (bits 0-8)
-            tilemapData[i] = nametable[i] & 0x1FF;
+            // For SG-1000: nametable entry is just tile index (8 bits)
+            // For SMS/GG: nametable entry = tile index (9 bits) + attributes (7 bits)
+            // For NES: nametable entry is just tile index (8 bits)
+            // Extract tile index - use full value for now (mask will be applied by target if needed)
+            tilemapData[i] = nametable[i] & 0xFF; // Use 8 bits for compatibility
         }
 
         return tilemapData;

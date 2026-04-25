@@ -95,13 +95,20 @@ public class ImportedAssetToTilemapPipeline : AssetPipelineBase<ImportedAssetDat
         // Create bitmap
         var bitmap = new WriteableBitmap(tilesetWidth, tilesetHeight, 96, 96, System.Windows.Media.PixelFormats.Bgra32, null);
 
+        // Extract Color Table from metadata if available (SG-1000)
+        byte[]? colorTable = null;
+        if (input.Metadata.ContainsKey("colorTable") && input.Metadata["colorTable"] is byte[] ct)
+        {
+            colorTable = ct;
+        }
+
         // Draw tiles to bitmap
         for (int tileIndex = 0; tileIndex < input.Tiles.Length; tileIndex++)
         {
             int tileX = (tileIndex % tilesPerRow) * input.TileWidth;
             int tileY = (tileIndex / tilesPerRow) * input.TileHeight;
 
-            DrawTileToBitmap(bitmap, input.Tiles[tileIndex], input.Palette, tileX, tileY, input.TileWidth, input.TileHeight);
+            DrawTileToBitmap(bitmap, input.Tiles[tileIndex], input.Palette, tileX, tileY, input.TileWidth, input.TileHeight, tileIndex, colorTable);
         }
 
         // Save bitmap as PNG
@@ -113,7 +120,7 @@ public class ImportedAssetToTilemapPipeline : AssetPipelineBase<ImportedAssetDat
         return assetPath;
     }
 
-    private void DrawTileToBitmap(WriteableBitmap bitmap, byte[] tilePixels, uint[] palette, int offsetX, int offsetY, int tileWidth, int tileHeight)
+    private void DrawTileToBitmap(WriteableBitmap bitmap, byte[] tilePixels, uint[] palette, int offsetX, int offsetY, int tileWidth, int tileHeight, int tileIndex = -1, byte[]? colorTable = null)
     {
         bitmap.Lock();
 
@@ -133,10 +140,31 @@ public class ImportedAssetToTilemapPipeline : AssetPipelineBase<ImportedAssetDat
 
                         byte colorIndex = tilePixels[pixelIndex];
                         
-                        // Special handling for 1bpp (SG-1000): use white/black instead of palette
-                        // TODO: Implement proper Color Table reading for SG-1000
                         uint color;
-                        if (palette.Length == 16 && colorIndex <= 1)
+                        
+                        // SG-1000 with Color Table: Apply FG/BG colors from Color Table
+                        if (colorTable != null && tileIndex >= 0 && palette.Length == 16)
+                        {
+                            // Color Table: Each byte controls 8 tiles
+                            int colorTableIndex = tileIndex / 8;
+                            if (colorTableIndex < colorTable.Length)
+                            {
+                                byte colorByte = colorTable[colorTableIndex];
+                                byte fgColor = (byte)((colorByte >> 4) & 0x0F); // High 4 bits
+                                byte bgColor = (byte)(colorByte & 0x0F);        // Low 4 bits
+                                
+                                // 1bpp: 0=background, 1=foreground
+                                byte paletteIndex = colorIndex == 0 ? bgColor : fgColor;
+                                color = palette[paletteIndex];
+                            }
+                            else
+                            {
+                                // Fallback: use black/white
+                                color = colorIndex == 0 ? 0xFF000000 : 0xFFFFFFFF;
+                            }
+                        }
+                        // Special handling for 1bpp without Color Table (temporary fix)
+                        else if (palette.Length == 16 && colorIndex <= 1)
                         {
                             // 1bpp: 0=black, 1=white (temporary fix until Color Table is implemented)
                             color = colorIndex == 0 ? 0xFF000000 : 0xFFFFFFFF;

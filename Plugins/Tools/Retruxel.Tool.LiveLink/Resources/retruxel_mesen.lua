@@ -159,6 +159,24 @@ function verificarSocket()
                     emu.log("Retruxel: Sending " .. #b64 .. " bytes (base64)")
                     client:send(b64 .. "\n")
                 end
+            elseif line:match("^READ_VDP_REGS$") then
+                emu.log("Retruxel: Matched READ_VDP_REGS")
+                -- Read VDP registers for SMS/GG/SG-1000 (TMS9918/VDP)
+                -- Registers 0-10 are standard
+                local data = {}
+                if consoleType == "Sms" or consoleType == "GameGear" or consoleType == "Sg1000" then
+                    -- SMS VDP has 11 registers (0-10)
+                    for i = 0, 10 do
+                        -- Try to read VDP register via I/O port or state
+                        -- Mesen may expose this via debug state
+                        table.insert(data, 0) -- Placeholder - need to find correct API
+                    end
+                end
+                
+                local bytes = string.char(table.unpack(data))
+                local b64 = base64Encode(bytes)
+                emu.log("Retruxel: Sending VDP registers - " .. #b64 .. " bytes (base64)")
+                client:send(b64 .. "\n")
             else
                 emu.log("Retruxel: Unknown command: " .. line)
                 emu.log("Retruxel: Sending OK")

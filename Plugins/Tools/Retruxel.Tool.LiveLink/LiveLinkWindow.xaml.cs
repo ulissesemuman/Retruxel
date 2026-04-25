@@ -704,6 +704,19 @@ public partial class LiveLinkWindow : Window
                     
                     capture.Palette = tms9918Palette;
                     LogSuccess($"Loaded TMS9918 fixed palette: {capture.Palette.Length} colors");
+                    
+                    // Read Color Table (0x2000, 32 bytes)
+                    // Each byte defines FG/BG colors for 8 consecutive tiles
+                    LogInfo("Requesting SG-1000 Color Table from VRAM (0x2000)...");
+                    byte[] colorTableData = await _connection.ReadVramAsync(0x2000, 32);
+                    LogSuccess($"✓ Color Table received: {colorTableData.Length} bytes");
+                    
+                    // Debug: Log first 16 bytes
+                    var ctPreview = string.Join(" ", colorTableData.Take(16).Select(b => b.ToString("X2")));
+                    LogInfo($"First 16 bytes: {ctPreview}");
+                    
+                    // Store Color Table in metadata for later processing
+                    capture.Metadata["colorTable"] = colorTableData;
                 }
                 else if (_sourceConsole == "gg")
                 {

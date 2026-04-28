@@ -15,6 +15,13 @@
       "toolInput": {
         "frames": "frames"
       }
+    },
+    "tilesData": {
+      "from": "tool",
+      "tool": "png_to_tiles",
+      "toolInput": {
+        "assetId": "tilesAssetId"
+      }
     }
   }
 }

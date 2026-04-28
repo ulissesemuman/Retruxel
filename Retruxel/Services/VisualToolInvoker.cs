@@ -137,9 +137,20 @@ public static class VisualToolInvoker
 
         var moduleData = moduleDataProp.GetValue(window) as Dictionary<string, object>;
         if (moduleData is null || moduleData.Count == 0)
+        {
+            System.Diagnostics.Debug.WriteLine($"[VisualToolInvoker] ModuleData is null or empty!");
             return false;
+        }
 
         System.Diagnostics.Debug.WriteLine($"[VisualToolInvoker] Received module data, keys: {string.Join(", ", moduleData.Keys)}");
+        
+        // Log mapData size if present
+        if (moduleData.ContainsKey("mapData") && moduleData["mapData"] is int[] mapData)
+        {
+            System.Diagnostics.Debug.WriteLine($"[VisualToolInvoker] mapData array length: {mapData.Length}");
+            int nonEmpty = mapData.Count(t => t >= 0);
+            System.Diagnostics.Debug.WriteLine($"[VisualToolInvoker] Non-empty tiles: {nonEmpty}");
+        }
         
         // Update the module instance in memory directly
         var moduleJson = System.Text.Json.JsonSerializer.Serialize(moduleData);

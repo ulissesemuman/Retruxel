@@ -267,6 +267,81 @@
                                 </StackPanel>
                             </Grid>
 
+                            <TextBlock x:Name="LblMapOffset"
+                                       Text="MAP OFFSET (VIEWPORT)"
+                                       Style="{StaticResource TextLabelCaps}"
+                                       Foreground="{StaticResource BrushOnSurfaceVariant}"
+                                       Margin="0,0,0,6"/>
+                            <Grid Margin="0,0,0,16">
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="4"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="4"/>
+                                    <RowDefinition Height="Auto"/>
+                                </Grid.RowDefinitions>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="4"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="4"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                
+                                <!-- Up arrow -->
+                                <Button x:Name="BtnOffsetUp"
+                                        Grid.Row="0" Grid.Column="2"
+                                        Content="▲"
+                                        Click="BtnOffsetUp_Click"
+                                        Style="{StaticResource ButtonSecondary}"
+                                        Width="32" Height="32"
+                                        Padding="0"
+                                        ToolTip="Move map up (1 tile row)"/>
+                                
+                                <!-- Left arrow -->
+                                <Button x:Name="BtnOffsetLeft"
+                                        Grid.Row="2" Grid.Column="0"
+                                        Content="◄"
+                                        Click="BtnOffsetLeft_Click"
+                                        Style="{StaticResource ButtonSecondary}"
+                                        Width="32" Height="32"
+                                        Padding="0"
+                                        ToolTip="Move map left (1 tile column)"/>
+                                
+                                <!-- Center info -->
+                                <Border Grid.Row="2" Grid.Column="2"
+                                        Background="{StaticResource BrushSurfaceContainerHigh}"
+                                        Width="32" Height="32">
+                                    <TextBlock x:Name="TxtMapOffset"
+                                               Text="0,0"
+                                               Style="{StaticResource TextLabel}"
+                                               Foreground="{StaticResource BrushOnSurface}"
+                                               HorizontalAlignment="Center"
+                                               VerticalAlignment="Center"
+                                               FontSize="9"/>
+                                </Border>
+                                
+                                <!-- Right arrow -->
+                                <Button x:Name="BtnOffsetRight"
+                                        Grid.Row="2" Grid.Column="4"
+                                        Content="►"
+                                        Click="BtnOffsetRight_Click"
+                                        Style="{StaticResource ButtonSecondary}"
+                                        Width="32" Height="32"
+                                        Padding="0"
+                                        ToolTip="Move map right (1 tile column)"/>
+                                
+                                <!-- Down arrow -->
+                                <Button x:Name="BtnOffsetDown"
+                                        Grid.Row="4" Grid.Column="2"
+                                        Content="▼"
+                                        Click="BtnOffsetDown_Click"
+                                        Style="{StaticResource ButtonSecondary}"
+                                        Width="32" Height="32"
+                                        Padding="0"
+                                        ToolTip="Move map down (1 tile row)"/>
+                            </Grid>
+
                             <TextBlock x:Name="LblTileset"
                                        Text="TILESET"
                                        Style="{StaticResource TextLabelCaps}"
@@ -384,9 +459,13 @@
                     <StackPanel Orientation="Horizontal"
                                 HorizontalAlignment="Left"
                                 VerticalAlignment="Center">
-                        <TextBlock x:Name="TxtTileUsage"
+                        <TextBlock x:Name="TxtViewportInfo"
                                    Style="{StaticResource TextLabel}"
                                    Foreground="{StaticResource BrushOnSurfaceVariant}"/>
+                        <TextBlock x:Name="TxtTileUsage"
+                                   Style="{StaticResource TextLabel}"
+                                   Foreground="{StaticResource BrushOnSurfaceVariant}"
+                                   Margin="16,0,0,0"/>
                         <TextBlock x:Name="TxtLayerInfo"
                                    Style="{StaticResource TextLabel}"
                                    Foreground="{StaticResource BrushOnSurfaceVariant}"

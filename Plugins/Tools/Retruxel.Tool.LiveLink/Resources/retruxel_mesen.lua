@@ -177,6 +177,68 @@ function verificarSocket()
                 local b64 = base64Encode(bytes)
                 emu.log("Retruxel: Sending VDP registers - " .. #b64 .. " bytes (base64)")
                 client:send(b64 .. "\n")
+            elseif line:match("^GET_SCREEN$") then
+                emu.log("Retruxel: Matched GET_SCREEN")
+                local screenData = emu.getScreenBuffer()
+                
+                if screenData then
+                    local pixelCount = #screenData
+                    emu.log("Retruxel: Screen buffer size: " .. pixelCount .. " pixels")
+                    
+                    -- Get screen dimensions
+                    local screenSize = emu.getScreenSize()
+                    emu.log("Retruxel: Screen dimensions: " .. screenSize.width .. "x" .. screenSize.height)
+                    
+                    -- Convert RGB table to RGBA bytes in chunks
+                    local chunks = {}
+                    local chunkSize = 2000
+                    
+                    for chunkStart = 1, pixelCount, chunkSize do
+                        local chunkEnd = math.min(chunkStart + chunkSize - 1, pixelCount)
+                        local bytes = {}
+                        
+                        for i = chunkStart, chunkEnd do
+                            local rgb = screenData[i]
+                            local r = (rgb >> 16) & 0xFF
+                            local g = (rgb >> 8) & 0xFF
+                            local b = rgb & 0xFF
+                            table.insert(bytes, r)
+                            table.insert(bytes, g)
+                            table.insert(bytes, b)
+                            table.insert(bytes, 255)
+                        end
+                        
+                        table.insert(chunks, string.char(table.unpack(bytes)))
+                    end
+                    
+                    local bytesStr = table.concat(chunks)
+                    emu.log("Retruxel: Converted to " .. #bytesStr .. " bytes (RGBA)")
+                    
+                    -- Encode to base64
+                    local b64 = base64Encode(bytesStr)
+                    emu.log("Retruxel: Encoded to " .. #b64 .. " bytes (base64)")
+                    
+                    -- Switch to blocking mode for large data transfer
+                    client:settimeout(10)
+                    
+                    -- Send size first
+                    client:send(#b64 .. "\n")
+                    
+                    -- Send all data at once (blocking mode will handle it)
+                    local sent, err = client:send(b64 .. "\n")
+                    
+                    if sent then
+                        emu.log("Retruxel: Sent " .. sent .. " bytes")
+                    else
+                        emu.log("Retruxel: Send error: " .. tostring(err))
+                    end
+                    
+                    -- Switch back to non-blocking mode
+                    client:settimeout(0)
+                else
+                    emu.log("Retruxel: Failed to get screen buffer")
+                    client:send("ERROR\n")
+                end
             else
                 emu.log("Retruxel: Unknown command: " .. line)
                 emu.log("Retruxel: Sending OK")

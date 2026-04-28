@@ -4,13 +4,14 @@ using Retruxel.Core.Services;
 using Retruxel.Tool.LiveLink.Emulators;
 using Retruxel.Tool.LiveLink.Pipelines;
 using Retruxel.Lib.ImageProcessing;
+using Retruxel.Tool.LiveLink.Services;
 using System.Diagnostics;
 using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
-using Retruxel.Tool.LiveLink.Services;
+using System.Windows.Media.Imaging;
 
 namespace Retruxel.Tool.LiveLink;
 
@@ -109,7 +110,8 @@ public partial class LiveLinkWindow : Window
             _connection = null;
             BtnConnect.Content = "SELECT ROM & CONNECT";
             BtnConnect.IsEnabled = true;
-            BtnCapture.IsEnabled = false;
+            BtnCaptureVRAM.IsEnabled = false;
+            BtnCaptureScreen.IsEnabled = false;
             TxtStatus.Text = "Disconnected";
             TxtStatus.Foreground = Brushes.Gray;
             
@@ -156,7 +158,9 @@ public partial class LiveLinkWindow : Window
             
             // Disable button immediately after ROM selection
             BtnConnect.IsEnabled = false;
-            BtnCapture.IsEnabled = false;
+            BtnCaptureVRAM.IsEnabled = false;
+            BtnCaptureScreen.IsEnabled = false;
+            BtnValidateSmsColors.IsEnabled = false;
             
             LogInfo($"Selected ROM: {Path.GetFileName(romPath)}");
             
@@ -282,7 +286,9 @@ public partial class LiveLinkWindow : Window
             {
                 BtnConnect.Content = "DISCONNECT";
                 BtnConnect.IsEnabled = true;
-                BtnCapture.IsEnabled = true;
+                BtnCaptureVRAM.IsEnabled = true;
+                BtnCaptureScreen.IsEnabled = true;
+                BtnValidateSmsColors.IsEnabled = true;
                 TxtStatus.Text = $"Connected to {_connection.DisplayName}";
                 TxtStatus.Foreground = Brushes.LimeGreen;
                 LogSuccess($"✓ Connected to {_connection.DisplayName}");
@@ -291,7 +297,9 @@ public partial class LiveLinkWindow : Window
             {
                 BtnConnect.Content = "SELECT ROM & CONNECT";
                 BtnConnect.IsEnabled = true;
-                BtnCapture.IsEnabled = false;
+                BtnCaptureVRAM.IsEnabled = false;
+                BtnCaptureScreen.IsEnabled = false;
+                BtnValidateSmsColors.IsEnabled = false;
                 LogError("Connection failed - check if emulator is running and script loaded");
                 TxtStatus.Text = "Connection failed";
                 TxtStatus.Foreground = Brushes.OrangeRed;
@@ -302,7 +310,9 @@ public partial class LiveLinkWindow : Window
             _connection = null;
             BtnConnect.Content = "SELECT ROM & CONNECT";
             BtnConnect.IsEnabled = true;
-            BtnCapture.IsEnabled = false;
+            BtnCaptureVRAM.IsEnabled = false;
+            BtnCaptureScreen.IsEnabled = false;
+            BtnValidateSmsColors.IsEnabled = false;
             LogError($"Error: {ex.Message}");
             MessageBox.Show($"Error: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
             TxtStatus.Text = "Error";
@@ -321,7 +331,7 @@ public partial class LiveLinkWindow : Window
         };
     }
 
-    private async void BtnCapture_Click(object sender, RoutedEventArgs e)
+    private async void BtnCaptureVRAM_Click(object sender, RoutedEventArgs e)
     {
         if (_connection == null || !_connection.IsConnected)
         {
@@ -424,22 +434,28 @@ public partial class LiveLinkWindow : Window
                     // Recalculate based on detected bpp
                     int detectedBytesPerTile = (specs.TileWidth * specs.TileHeight * detectedBpp) / 8;
                     
-                    // SNES: 64KB VRAM, capture based on bpp
-                    int totalTiles = detectedBpp switch
-                    {
-                        2 => 1024,  // 2bpp: 16 bytes/tile = 1024 tiles in 16KB
-                        4 => 512,   // 4bpp: 32 bytes/tile = 512 tiles in 16KB
-                        8 => 256,   // 8bpp: 64 bytes/tile = 256 tiles in 16KB
-                        _ => 512
-                    };
-                    
+                    // SNES: Start with smaller capture to test (256 tiles = 8KB)
+                    int totalTiles = 256; // Start with 256 tiles to test
                     int vramSize = totalTiles * detectedBytesPerTile;
                     
                     LogInfo($"Using {detectedBpp}bpp mode: {totalTiles} tiles × {detectedBytesPerTile} bytes/tile = {vramSize} bytes");
-                    LogInfo($"Requesting tiles from VRAM...");
+                    LogInfo($"Requesting tiles from VRAM (0x0000)...");
                     
                     byte[] vramData = await _connection.ReadVramAsync(0x0000, vramSize);
                     LogSuccess($"✓ Received: {vramData.Length} bytes (expected {vramSize})");
+                    
+                    // Debug: Log first 64 bytes to check if data looks valid
+                    var preview = string.Join(" ", vramData.Take(64).Select(b => b.ToString("X2")));
+                    LogInfo($"First 64 bytes: {preview}");
+                    
+                    // Check if data looks like valid tile data (not all zeros or all 0xFF)
+                    int zeroCount = vramData.Take(256).Count(b => b == 0x00);
+                    int ffCount = vramData.Take(256).Count(b => b == 0xFF);
+                    if (zeroCount > 240 || ffCount > 240)
+                    {
+                        LogWarning($"⚠ VRAM data looks suspicious: {zeroCount} zeros, {ffCount} 0xFF in first 256 bytes");
+                        LogWarning($"⚠ This may indicate VRAM is not initialized or wrong memory type");
+                    }
                     
                     if (vramData.Length < vramSize)
                     {
@@ -447,7 +463,7 @@ public partial class LiveLinkWindow : Window
                         totalTiles = vramData.Length / detectedBytesPerTile;
                     }
                     
-                    LogInfo($"Decoding {totalTiles} tiles ({detectedBpp}bpp)...");
+                    LogInfo($"Decoding {totalTiles} tiles ({detectedBpp}bpp, line-interleaved)...");
                     capture.Tiles = TileConverter.Decode(
                         vramData, 
                         totalTiles, 
@@ -568,10 +584,20 @@ public partial class LiveLinkWindow : Window
                     byte[] nametableData = await _connection.ReadVramAsync(nametableAddr, 32 * 30);
                     LogSuccess($"✓ Nametable received: {nametableData.Length} bytes");
                     
+                    // Read attribute table (64 bytes after nametable)
+                    uint attributeAddr = nametableAddr + 0x3C0; // 960 bytes after nametable start
+                    LogInfo($"Requesting NES attribute table from VRAM (0x{attributeAddr:X4})...");
+                    byte[] attributeData = await _connection.ReadVramAsync(attributeAddr, 64);
+                    LogSuccess($"✓ Attribute table received: {attributeData.Length} bytes");
+                    
                     LogInfo("Decoding nametable...");
                     capture.Nametable = NametableDecoder.Decode(nametableData, 32, 30, 1);
                     capture.NametableWidth = 32;
                     capture.NametableHeight = 30;
+                    
+                    // Store attribute table in metadata
+                    capture.Metadata["attributeTable"] = attributeData;
+                    
                     LogSuccess($"Decoded nametable: {capture.NametableWidth}x{capture.NametableHeight}");
                 }
                 else if (_sourceConsole == "snes")
@@ -705,18 +731,29 @@ public partial class LiveLinkWindow : Window
                     capture.Palette = tms9918Palette;
                     LogSuccess($"Loaded TMS9918 fixed palette: {capture.Palette.Length} colors");
                     
-                    // Read Color Table (0x2000, 32 bytes)
-                    // Each byte defines FG/BG colors for 8 consecutive tiles
+                    // Read Color Table
+                    // Graphics Mode I: 32 bytes at 0x2000 (1 byte per 8 tiles)
+                    // Graphics Mode II: 6144 bytes at 0x2000 (8 bytes per tile, 768 tiles)
+                    // Try reading more to detect mode
                     LogInfo("Requesting SG-1000 Color Table from VRAM (0x2000)...");
-                    byte[] colorTableData = await _connection.ReadVramAsync(0x2000, 32);
+                    byte[] colorTableData = await _connection.ReadVramAsync(0x2000, 2048); // Read first 2KB to check
                     LogSuccess($"✓ Color Table received: {colorTableData.Length} bytes");
                     
-                    // Debug: Log first 16 bytes
-                    var ctPreview = string.Join(" ", colorTableData.Take(16).Select(b => b.ToString("X2")));
-                    LogInfo($"First 16 bytes: {ctPreview}");
+                    // Debug: Log first 32 bytes
+                    var ctPreview = string.Join(" ", colorTableData.Take(32).Select(b => b.ToString("X2")));
+                    LogInfo($"First 32 bytes: {ctPreview}");
+                    
+                    // Debug: Log bytes 32-64 to check if Mode II
+                    var ctPreview2 = string.Join(" ", colorTableData.Skip(32).Take(32).Select(b => b.ToString("X2")));
+                    LogInfo($"Bytes 32-64: {ctPreview2}");
+                    
+                    // Check if Graphics Mode II (bytes should vary after first 32)
+                    bool isGraphicsModeII = !colorTableData.Skip(32).Take(32).All(b => b == colorTableData[0]);
+                    LogInfo($"Graphics Mode: {(isGraphicsModeII ? "Mode II (per-line colors)" : "Mode I (per-8-tiles colors)")}");
                     
                     // Store Color Table in metadata for later processing
                     capture.Metadata["colorTable"] = colorTableData;
+                    capture.Metadata["graphicsMode"] = isGraphicsModeII ? "mode2" : "mode1";
                 }
                 else if (_sourceConsole == "gg")
                 {
@@ -857,11 +894,37 @@ public partial class LiveLinkWindow : Window
         };
         
         var palette = new uint[paletteData.Length];
+        
+        // Debug: Log raw palette data
+        var rawIndices = string.Join(" ", paletteData.Select(b => $"{b:X2}"));
+        LogInfo($"NES palette raw bytes: {rawIndices}");
+        
         for (int i = 0; i < paletteData.Length; i++)
         {
             byte colorIndex = (byte)(paletteData[i] & 0x3F); // NES palette is 6-bit
             palette[i] = nesMasterPalette[colorIndex];
         }
+        
+        // Debug: Count unique colors
+        var uniqueColors = palette.Distinct().ToList();
+        LogInfo($"NES palette: {palette.Length} total entries, {uniqueColors.Count} unique colors");
+        
+        // Debug: Show which palette slots use which colors
+        for (int pal = 0; pal < 8; pal++)
+        {
+            var palColors = new List<string>();
+            for (int col = 0; col < 4; col++)
+            {
+                int idx = pal * 4 + col;
+                if (idx < paletteData.Length)
+                {
+                    byte rawIdx = paletteData[idx];
+                    palColors.Add($"{rawIdx:X2}");
+                }
+            }
+            LogInfo($"  Palette {pal}: [{string.Join(", ", palColors)}]");
+        }
+        
         return palette;
     }
 
@@ -875,6 +938,99 @@ public partial class LiveLinkWindow : Window
 
         try
         {
+            // Open palette optimization preview window
+            LogInfo("Opening palette optimization preview...");
+            
+            // Use the SAME bitmap that's being displayed in ImgPreview
+            var previewBitmap = ImgPreview.Source as BitmapSource;
+            if (previewBitmap == null)
+            {
+                LogError("No preview image available");
+                return;
+            }
+            
+            // Determine target color count based on destination target
+            int targetColorCount = 16; // Default
+            if (_input?.TryGetValue("targetId", out var targetObj) == true)
+            {
+                var targetId = targetObj?.ToString();
+                targetColorCount = targetId switch
+                {
+                    "sms" => 32,  // 2 palettes × 16 colors (hardware max)
+                    "gg" => 32,   // 2 palettes × 16 colors (hardware max)
+                    "nes" => 16,  // 4 palettes × 4 colors (hardware max)
+                    "snes" => 256, // 8 palettes × 32 colors (common mode)
+                    "gb" => 32,   // 8 palettes × 4 colors
+                    "gbc" => 64,  // 8 palettes × 4 colors (BG) + 8 palettes × 4 colors (sprites)
+                    _ => 16
+                };
+            }
+            
+            // Open preview window - it will handle optimization internally
+            var previewWindow = new Windows.PaletteOptimizationWindow(
+                previewBitmap,
+                targetColorCount,
+                ChkUseLab.IsChecked == true,
+                _input?.TryGetValue("targetId", out var targetIdForPreview) == true ? targetIdForPreview?.ToString() ?? "sms" : "sms");
+            
+            previewWindow.Owner = this;
+            
+            if (previewWindow.ShowDialog() != true)
+            {
+                LogInfo("Import cancelled by user");
+                return;
+            }
+            
+            // User confirmed - get the optimized bitmap and palette from preview
+            var optimizedBitmap = previewWindow.OptimizedBitmap;
+            var optimizedPalette = previewWindow.OptimizedPalette;
+            double selectedDiversity = previewWindow.SelectedDiversity;
+            
+            LogInfo($"User selected diversity: {selectedDiversity:F2}");
+            LogInfo($"Optimized palette: {optimizedPalette.Count} colors");
+            
+            // Check if capture has nametable (tilemap) or is tileset-only
+            bool hasNametable = _lastCapture.Nametable != null && 
+                               _lastCapture.NametableWidth > 0 && 
+                               _lastCapture.NametableHeight > 0;
+            
+            LogInfo($"Capture type: {(hasNametable ? "Tilemap (with nametable)" : "Tileset only (no nametable)")}");
+            
+            CaptureResult optimizedCapture;
+            
+            if (hasNametable)
+            {
+                // Convert optimized bitmap back to tiles + nametable
+                LogInfo("Converting optimized image to tiles...");
+                
+                // Extract pixels from optimized bitmap
+                var optimizedPixels = ExtractPixelsFromBitmap(optimizedBitmap);
+                
+                // Convert to CaptureResult format
+                optimizedCapture = ConvertBitmapToCapture(optimizedBitmap, optimizedPalette, _lastCapture);
+            }
+            else
+            {
+                // Tileset-only mode: keep original tiles, just update palette
+                LogInfo("Tileset-only mode: using original tiles with optimized palette");
+                
+                var newPalette = optimizedPalette.Select(c => 
+                    (uint)(0xFF000000 | (c.R << 16) | (c.G << 8) | c.B)).ToArray();
+                
+                optimizedCapture = new CaptureResult
+                {
+                    Tiles = _lastCapture.Tiles,
+                    Palette = newPalette,
+                    Nametable = Array.Empty<ushort>(),
+                    NametableWidth = 0,
+                    NametableHeight = 0,
+                    TileWidth = _lastCapture.TileWidth,
+                    TileHeight = _lastCapture.TileHeight,
+                    TargetId = _lastCapture.TargetId,
+                    Metadata = new Dictionary<string, object>(_lastCapture.Metadata)
+                };
+            }
+            
             LogInfo("Converting capture to standardized format...");
             
             // Use pipeline to convert CaptureResult → ImportedAssetData
@@ -882,10 +1038,21 @@ public partial class LiveLinkWindow : Window
             var options = new Dictionary<string, object>
             {
                 ["sourceEmulator"] = _connection?.EmulatorId ?? "unknown",
-                ["destinationTarget"] = _input?.TryGetValue("targetId", out var target) == true ? target : null!
+                ["destinationTarget"] = _input?.TryGetValue("targetId", out var target) == true ? target : null!,
+                ["useLab"] = ChkUseLab.IsChecked == true,
+                ["diversity"] = selectedDiversity
             };
             
-            var importedData = pipeline.ProcessTyped(_lastCapture, options);
+            var importedData = pipeline.ProcessTyped(optimizedCapture, options);
+            
+            // If no nametable, pass the optimized bitmap to be saved directly
+            if (!hasNametable)
+            {
+                options["optimizedBitmap"] = optimizedBitmap;
+                options["originalPalette"] = _lastCapture.Palette; // Original RGB palette from emulator
+                LogInfo("Passing optimized bitmap for direct PNG save (tileset-only mode)");
+            }
+            
             LogSuccess($"Converted: {importedData.GetSummary()}");
             
             if (!importedData.IsValid(out var errorMessage))
@@ -898,6 +1065,15 @@ public partial class LiveLinkWindow : Window
             if (_captureMode && !string.IsNullOrEmpty(_callerId))
             {
                 LogSuccess($"Returning imported data to {_callerId}");
+                
+                // Store options in metadata so they can be passed to the pipeline
+                if (!hasNametable)
+                {
+                    importedData.Metadata["optimizedBitmap"] = optimizedBitmap;
+                    importedData.Metadata["originalPalette"] = _lastCapture.Palette;
+                    LogInfo("Stored optimized bitmap in ImportedAssetData metadata");
+                }
+                
                 DialogResult = true;
                 ModuleData = new Dictionary<string, object>
                 {
@@ -914,6 +1090,334 @@ public partial class LiveLinkWindow : Window
         {
             LogError($"Import failed: {ex.Message}");
         }
+    }
+    
+    private CaptureResult ConvertBitmapToCapture(BitmapSource bitmap, List<(byte R, byte G, byte B)> palette, CaptureResult originalCapture)
+    {
+        // Convert palette to uint[]
+        var paletteUint = palette.Select(c => 
+            (uint)(0xFF000000 | (c.R << 16) | (c.G << 8) | c.B)).ToArray();
+        
+        // Create palette lookup for fast color-to-index conversion
+        var paletteLookup = new Dictionary<uint, byte>();
+        for (int i = 0; i < paletteUint.Length; i++)
+        {
+            paletteLookup[paletteUint[i]] = (byte)i;
+        }
+        
+        // Extract pixels from bitmap
+        int width = bitmap.PixelWidth;
+        int height = bitmap.PixelHeight;
+        
+        BitmapSource convertedBitmap = bitmap;
+        if (bitmap.Format != System.Windows.Media.PixelFormats.Bgra32)
+        {
+            convertedBitmap = new FormatConvertedBitmap(bitmap, System.Windows.Media.PixelFormats.Bgra32, null, 0);
+        }
+        
+        int stride = width * 4;
+        byte[] pixels = new byte[height * stride];
+        convertedBitmap.CopyPixels(pixels, stride, 0);
+        
+        // Convert pixels to tiles using original nametable structure
+        int tileSize = 8;
+        var tiles = new byte[originalCapture.Tiles.Length][];
+        
+        for (int tileIdx = 0; tileIdx < tiles.Length; tileIdx++)
+        {
+            tiles[tileIdx] = new byte[tileSize * tileSize];
+        }
+        
+        // Map pixels to tiles based on nametable
+        for (int ty = 0; ty < originalCapture.NametableHeight; ty++)
+        {
+            for (int tx = 0; tx < originalCapture.NametableWidth; tx++)
+            {
+                int nametableIdx = ty * originalCapture.NametableWidth + tx;
+                if (nametableIdx >= originalCapture.Nametable.Length)
+                    continue;
+                
+                ushort tileIdx = originalCapture.Nametable[nametableIdx];
+                if (tileIdx >= tiles.Length)
+                    continue;
+                
+                for (int py = 0; py < tileSize; py++)
+                {
+                    for (int px = 0; px < tileSize; px++)
+                    {
+                        int x = tx * tileSize + px;
+                        int y = ty * tileSize + py;
+                        
+                        if (x >= width || y >= height)
+                            continue;
+                        
+                        int pixelOffset = y * stride + x * 4;
+                        byte b = pixels[pixelOffset + 0];
+                        byte g = pixels[pixelOffset + 1];
+                        byte r = pixels[pixelOffset + 2];
+                        
+                        uint color = (uint)(0xFF000000 | (r << 16) | (g << 8) | b);
+                        
+                        byte colorIdx = paletteLookup.TryGetValue(color, out var idx) ? idx : (byte)0;
+                        
+                        int tilePixelIdx = py * tileSize + px;
+                        tiles[tileIdx][tilePixelIdx] = colorIdx;
+                    }
+                }
+            }
+        }
+        
+        return new CaptureResult
+        {
+            Tiles = tiles,
+            Palette = paletteUint,
+            Nametable = originalCapture.Nametable,
+            NametableWidth = originalCapture.NametableWidth,
+            NametableHeight = originalCapture.NametableHeight,
+            TileWidth = originalCapture.TileWidth,
+            TileHeight = originalCapture.TileHeight,
+            TargetId = originalCapture.TargetId,
+            Metadata = new Dictionary<string, object>(originalCapture.Metadata)
+        };
+    }
+    
+    private List<(byte R, byte G, byte B)> ExtractPixelsFromBitmap(BitmapSource bitmap)
+    {
+        int width = bitmap.PixelWidth;
+        int height = bitmap.PixelHeight;
+        
+        BitmapSource convertedBitmap = bitmap;
+        if (bitmap.Format != System.Windows.Media.PixelFormats.Bgra32)
+        {
+            convertedBitmap = new FormatConvertedBitmap(bitmap, System.Windows.Media.PixelFormats.Bgra32, null, 0);
+        }
+        
+        int stride = width * 4;
+        byte[] pixels = new byte[height * stride];
+        
+        convertedBitmap.CopyPixels(pixels, stride, 0);
+        
+        var result = new List<(byte R, byte G, byte B)>();
+        for (int i = 0; i < pixels.Length; i += 4)
+        {
+            result.Add((pixels[i + 2], pixels[i + 1], pixels[i]));
+        }
+        
+        return result;
+    }
+    
+    private CaptureResult ApplyOptimizedPaletteToCapture(CaptureResult originalCapture, List<(byte R, byte G, byte B)> optimizedPalette)
+    {
+        // Convert optimized palette to uint[]
+        var newPalette = optimizedPalette.Select(c => 
+            (uint)(0xFF000000 | (c.R << 16) | (c.G << 8) | c.B)).ToArray();
+        
+        // Remap tile color indices to new palette
+        var newTiles = new byte[originalCapture.Tiles.Length][];
+        
+        for (int i = 0; i < originalCapture.Tiles.Length; i++)
+        {
+            var oldTile = originalCapture.Tiles[i];
+            var newTile = new byte[oldTile.Length];
+            
+            for (int j = 0; j < oldTile.Length; j++)
+            {
+                byte oldColorIdx = oldTile[j];
+                if (oldColorIdx < originalCapture.Palette.Length)
+                {
+                    uint oldColor = originalCapture.Palette[oldColorIdx];
+                    byte oldR = (byte)((oldColor >> 16) & 0xFF);
+                    byte oldG = (byte)((oldColor >> 8) & 0xFF);
+                    byte oldB = (byte)(oldColor & 0xFF);
+                    
+                    // Find closest color in new palette
+                    int closestIdx = 0;
+                    double minDist = double.MaxValue;
+                    
+                    for (int k = 0; k < optimizedPalette.Count; k++)
+                    {
+                        var newColor = optimizedPalette[k];
+                        double dist = Math.Sqrt(
+                            Math.Pow(oldR - newColor.R, 2) +
+                            Math.Pow(oldG - newColor.G, 2) +
+                            Math.Pow(oldB - newColor.B, 2));
+                        
+                        if (dist < minDist)
+                        {
+                            minDist = dist;
+                            closestIdx = k;
+                        }
+                    }
+                    
+                    newTile[j] = (byte)closestIdx;
+                }
+            }
+            
+            newTiles[i] = newTile;
+        }
+        
+        // Create new capture with optimized palette
+        return new CaptureResult
+        {
+            Tiles = newTiles,
+            Palette = newPalette,
+            Nametable = originalCapture.Nametable,
+            NametableWidth = originalCapture.NametableWidth,
+            NametableHeight = originalCapture.NametableHeight,
+            TileWidth = originalCapture.TileWidth,
+            TileHeight = originalCapture.TileHeight,
+            TargetId = originalCapture.TargetId,
+            Metadata = new Dictionary<string, object>(originalCapture.Metadata)
+        };
+    }
+    
+    private System.Windows.Media.Imaging.BitmapSource? CreatePreviewBitmap(CaptureResult capture)
+    {
+        // This creates a bitmap with ORIGINAL source console colors (not mapped to target hardware)
+        if (capture.Tiles == null || capture.Tiles.Length == 0 || capture.Palette == null || capture.Palette.Length == 0)
+            return null;
+        
+        if (capture.Nametable == null || capture.NametableWidth == 0 || capture.NametableHeight == 0)
+            return null;
+        
+        int tileSize = 8;
+        int width = capture.NametableWidth * tileSize;
+        int height = capture.NametableHeight * tileSize;
+        
+        // Detect console type and palette format
+        bool isNes = capture.Metadata.ContainsKey("attributeTable");
+        byte[]? nesAttributeTable = isNes ? capture.Metadata["attributeTable"] as byte[] : null;
+        
+        bool hasMultiplePalettes = capture.Palette.Length > 16;
+        int colorsPerPalette = hasMultiplePalettes ? 16 : capture.Palette.Length;
+        
+        LogInfo($"CreatePreviewBitmap: Console={(_sourceConsole ?? "unknown")}, Palette has {capture.Palette.Length} colors, hasMultiplePalettes={hasMultiplePalettes}, colorsPerPalette={colorsPerPalette}");
+        
+        if (isNes && nesAttributeTable != null)
+        {
+            LogInfo($"NES mode: Using attribute table ({nesAttributeTable.Length} bytes)");
+        }
+        
+        // Debug: Log first few nametable entries
+        var sampleEntries = capture.Nametable.Take(10).Select(e => $"0x{e:X4}");
+        LogInfo($"Sample nametable entries: {string.Join(", ", sampleEntries)}");
+        
+        var bitmap = new System.Windows.Media.Imaging.WriteableBitmap(
+            width, height, 96, 96,
+            System.Windows.Media.PixelFormats.Bgra32, null);
+        
+        bitmap.Lock();
+        
+        unsafe
+        {
+            byte* ptr = (byte*)bitmap.BackBuffer;
+            int stride = bitmap.BackBufferStride;
+            
+            for (int ty = 0; ty < capture.NametableHeight; ty++)
+            {
+                for (int tx = 0; tx < capture.NametableWidth; tx++)
+                {
+                    int nametableIdx = ty * capture.NametableWidth + tx;
+                    if (nametableIdx >= capture.Nametable.Length)
+                        continue;
+                    
+                    ushort nametableEntry = capture.Nametable[nametableIdx];
+                    
+                    ushort tileIdx;
+                    bool hFlip = false;
+                    bool vFlip = false;
+                    byte paletteIdx = 0;
+                    
+                    if (isNes && nesAttributeTable != null)
+                    {
+                        // NES: Nametable entry is just tile index
+                        tileIdx = nametableEntry;
+                        
+                        // Get palette from attribute table
+                        // Each attribute byte controls 4x4 tiles (2 bits per 2x2 tile group)
+                        int attrX = tx / 4;
+                        int attrY = ty / 4;
+                        int attrIdx = attrY * 8 + attrX; // 8 attribute bytes per row (32 tiles / 4)
+                        
+                        if (attrIdx < nesAttributeTable.Length)
+                        {
+                            byte attrByte = nesAttributeTable[attrIdx];
+                            
+                            // Determine which 2x2 quadrant within the 4x4 block
+                            int quadX = (tx % 4) / 2; // 0 or 1
+                            int quadY = (ty % 4) / 2; // 0 or 1
+                            int quadrant = quadY * 2 + quadX; // 0=TL, 1=TR, 2=BL, 3=BR
+                            
+                            // Extract 2 bits for this quadrant
+                            paletteIdx = (byte)((attrByte >> (quadrant * 2)) & 0x03);
+                        }
+                    }
+                    else
+                    {
+                        // SMS/GG: Extract tile attributes from nametable entry
+                        tileIdx = (ushort)(nametableEntry & 0x1FF); // Bits 0-8: tile index
+                        hFlip = (nametableEntry & 0x200) != 0;        // Bit 9: horizontal flip
+                        vFlip = (nametableEntry & 0x400) != 0;        // Bit 10: vertical flip
+                        paletteIdx = (byte)((nametableEntry >> 11) & 0x01); // Bit 11: palette select
+                    }
+                    
+                    if (tileIdx >= capture.Tiles.Length)
+                        continue;
+                    
+                    var tile = capture.Tiles[tileIdx];
+                    
+                    for (int py = 0; py < tileSize; py++)
+                    {
+                        for (int px = 0; px < tileSize; px++)
+                        {
+                            // Apply flip transformations
+                            int srcPx = hFlip ? (tileSize - 1 - px) : px;
+                            int srcPy = vFlip ? (tileSize - 1 - py) : py;
+                            int pixelIdx = srcPy * tileSize + srcPx;
+                            
+                            if (pixelIdx >= tile.Length)
+                                continue;
+                            
+                            byte colorIdx = tile[pixelIdx];
+                            
+                            // Apply palette offset
+                            int finalColorIdx = colorIdx;
+                            if (isNes)
+                            {
+                                // NES: 4 palettes of 4 colors each (indices 0-3 per palette)
+                                // Palette 0 at indices 0-3, Palette 1 at 4-7, etc.
+                                finalColorIdx = (paletteIdx * 4) + colorIdx;
+                            }
+                            else if (hasMultiplePalettes && paletteIdx > 0)
+                            {
+                                // SMS/GG: 2 palettes of 16 colors each
+                                finalColorIdx = colorIdx + (paletteIdx * colorsPerPalette);
+                            }
+                            
+                            if (finalColorIdx >= capture.Palette.Length)
+                                continue;
+                            
+                            uint color = capture.Palette[finalColorIdx];
+                            
+                            int x = tx * tileSize + px;
+                            int y = ty * tileSize + py;
+                            int offset = y * stride + x * 4;
+                            
+                            ptr[offset + 0] = (byte)((color >> 0) & 0xFF);  // B
+                            ptr[offset + 1] = (byte)((color >> 8) & 0xFF);  // G
+                            ptr[offset + 2] = (byte)((color >> 16) & 0xFF); // R
+                            ptr[offset + 3] = (byte)((color >> 24) & 0xFF); // A
+                        }
+                    }
+                }
+            }
+        }
+        
+        bitmap.AddDirtyRect(new System.Windows.Int32Rect(0, 0, width, height));
+        bitmap.Unlock();
+        bitmap.Freeze();
+        
+        return bitmap;
     }
 
     private void BtnCopyLog_Click(object sender, RoutedEventArgs e)
@@ -1093,7 +1597,7 @@ public partial class LiveLinkWindow : Window
                 ColorsPerTile = 16, // 4bpp
                 VramRegions = new[]
                 {
-                    new VramRegion("background", "Background", 0, 447),
+                    new VramRegion("background", "Background", 0, 255),
                     new VramRegion("sprites", "Sprites", 256, 447)
                 },
                 MaxSpritesOnScreen = 64
@@ -1121,7 +1625,7 @@ public partial class LiveLinkWindow : Window
                 ColorsPerTile = 16, // 4bpp
                 VramRegions = new[]
                 {
-                    new VramRegion("background", "Background", 0, 447),
+                    new VramRegion("background", "Background", 0, 255),
                     new VramRegion("sprites", "Sprites", 256, 447)
                 },
                 MaxSpritesOnScreen = 64
@@ -1190,7 +1694,25 @@ public partial class LiveLinkWindow : Window
             return;
         }
         
-        // Render tiles in a grid (16 tiles per row)
+        // If we have nametable AND palette, render the full scene (tilemap)
+        if (capture.Nametable != null && capture.NametableWidth > 0 && capture.NametableHeight > 0 && capture.Palette != null)
+        {
+            var sceneBitmap = CreatePreviewBitmap(capture);
+            if (sceneBitmap != null)
+            {
+                ImgPreview.Source = sceneBitmap;
+                LogInfo("Preview: Rendered tilemap (nametable + tiles + palette)");
+                return;
+            }
+        }
+        
+        // Otherwise render tiles in a grid (fallback when no nametable or no palette)
+        LogInfo("Preview: Rendering tiles in grid (no nametable or no palette)");
+        RenderTilesInGrid(capture);
+    }
+    
+    private void RenderTilesInGrid(CaptureResult capture)
+    {
         int tilesPerRow = 16;
         int tileSize = 8;
         int rows = (capture.Tiles.Length + tilesPerRow - 1) / tilesPerRow;
@@ -1209,30 +1731,66 @@ public partial class LiveLinkWindow : Window
             byte* ptr = (byte*)bitmap.BackBuffer;
             int stride = bitmap.BackBufferStride;
             
+            // For NES sprite tiles without nametable, cycle through sprite palettes (4-7)
+            bool isNesSprites = _sourceConsole == "nes" && capture.Palette != null && capture.Palette.Length == 32;
+            int nesPaletteOffset = isNesSprites ? 16 : 0; // Sprite palettes start at index 16
+            
             for (int tileIdx = 0; tileIdx < capture.Tiles.Length; tileIdx++)
             {
                 var tile = capture.Tiles[tileIdx];
                 int tileX = (tileIdx % tilesPerRow) * tileSize;
                 int tileY = (tileIdx / tilesPerRow) * tileSize;
                 
+                // Cycle through palettes for variety
+                int paletteNum = (tileIdx / tilesPerRow) % 4; // Change palette every row
+                
                 for (int py = 0; py < tileSize; py++)
                 {
                     for (int px = 0; px < tileSize; px++)
                     {
                         int pixelIdx = py * tileSize + px;
+                        if (pixelIdx >= tile.Length)
+                            continue;
+                        
                         byte colorIdx = tile[pixelIdx];
                         
-                        // Use grayscale for preview (0-15 -> 0-255)
-                        byte gray = (byte)(colorIdx * 17);
+                        uint color;
+                        if (capture.Palette != null)
+                        {
+                            int finalColorIdx = colorIdx;
+                            
+                            if (isNesSprites)
+                            {
+                                // NES sprites: use sprite palettes (4-7)
+                                finalColorIdx = nesPaletteOffset + (paletteNum * 4) + colorIdx;
+                            }
+                            
+                            if (finalColorIdx < capture.Palette.Length)
+                            {
+                                color = capture.Palette[finalColorIdx];
+                            }
+                            else
+                            {
+                                // Fallback to grayscale
+                                byte gray = (byte)(colorIdx * 85);
+                                color = (uint)(0xFF000000 | (gray << 16) | (gray << 8) | gray);
+                            }
+                        }
+                        else
+                        {
+                            // Fallback to grayscale
+                            byte gray = (byte)(colorIdx * 85);
+                            color = (uint)(0xFF000000 | (gray << 16) | (gray << 8) | gray);
+                        }
                         
                         int x = tileX + px;
                         int y = tileY + py;
                         int offset = y * stride + x * 4;
                         
-                        ptr[offset + 0] = gray; // B
-                        ptr[offset + 1] = gray; // G
-                        ptr[offset + 2] = gray; // R
-                        ptr[offset + 3] = 255;  // A
+                        ptr[offset + 0] = (byte)((color >> 0) & 0xFF);  // B
+                        ptr[offset + 1] = (byte)((color >> 8) & 0xFF);  // G
+                        ptr[offset + 2] = (byte)((color >> 16) & 0xFF); // R
+                        ptr[offset + 3] = (byte)((color >> 24) & 0xFF); // A
                     }
                 }
             }
@@ -1243,5 +1801,217 @@ public partial class LiveLinkWindow : Window
         bitmap.Freeze();
         
         ImgPreview.Source = bitmap;
+    }
+
+    private async void BtnCaptureScreen_Click(object sender, RoutedEventArgs e)
+    {
+        if (_connection == null || !_connection.IsConnected)
+        {
+            LogError("Not connected to emulator");
+            MessageBox.Show("Not connected to emulator.", "Error", MessageBoxButton.OK, MessageBoxImage.Warning);
+            return;
+        }
+
+        if (_connection is not MesenConnection mesenConn)
+        {
+            LogError("Screen capture only supported for Mesen 2");
+            MessageBox.Show("Screen capture is currently only supported for Mesen 2.", "Not Supported", MessageBoxButton.OK, MessageBoxImage.Information);
+            return;
+        }
+
+        try
+        {
+            LogInfo("Starting screen capture...");
+            
+            LogInfo("Requesting screen buffer...");
+            byte[] screenBuffer = await mesenConn.GetScreenBufferAsync();
+            LogSuccess($"✓ Received screen buffer: {screenBuffer.Length} bytes");
+            
+            // Get console specs for screen dimensions
+            var specs = GetConsoleSpecs(_sourceConsole!);
+            if (specs == null)
+            {
+                LogError($"No specs available for console: {_sourceConsole}");
+                return;
+            }
+            
+            int width = specs.ScreenWidth;
+            int height = specs.ScreenHeight;
+            int expectedSize = width * height * 4; // RGBA
+            
+            LogInfo($"Screen dimensions: {width}x{height} (expected {expectedSize} bytes)");
+            
+            if (screenBuffer.Length != expectedSize)
+            {
+                LogWarning($"⚠ Buffer size mismatch: got {screenBuffer.Length}, expected {expectedSize}");
+            }
+            
+            // Convert screen buffer to bitmap for preview
+            var bitmap = new System.Windows.Media.Imaging.WriteableBitmap(
+                width, height, 96, 96,
+                System.Windows.Media.PixelFormats.Bgra32, null);
+            
+            bitmap.Lock();
+            
+            unsafe
+            {
+                byte* ptr = (byte*)bitmap.BackBuffer;
+                int stride = bitmap.BackBufferStride;
+                
+                for (int y = 0; y < height; y++)
+                {
+                    for (int x = 0; x < width; x++)
+                    {
+                        int srcIdx = (y * width + x) * 4;
+                        int dstIdx = y * stride + x * 4;
+                        
+                        if (srcIdx + 3 < screenBuffer.Length)
+                        {
+                            ptr[dstIdx + 0] = screenBuffer[srcIdx + 2]; // B
+                            ptr[dstIdx + 1] = screenBuffer[srcIdx + 1]; // G
+                            ptr[dstIdx + 2] = screenBuffer[srcIdx + 0]; // R
+                            ptr[dstIdx + 3] = screenBuffer[srcIdx + 3]; // A
+                        }
+                    }
+                }
+            }
+            
+            bitmap.AddDirtyRect(new System.Windows.Int32Rect(0, 0, width, height));
+            bitmap.Unlock();
+            bitmap.Freeze();
+            
+            ImgPreview.Source = bitmap;
+            LogSuccess("✓ Screen capture complete!");
+            
+            // Convert screen to tiles + palette + nametable
+            LogInfo("Converting screen to tiles...");
+            
+            // Get destination target from project (not source console)
+            string? destinationTarget = null;
+            if (_input?.TryGetValue("targetId", out var targetObj) == true)
+            {
+                destinationTarget = targetObj?.ToString();
+            }
+            
+            var conversion = ScreenToTilesConverter.Convert(
+                screenBuffer,
+                width,
+                height,
+                destinationTarget ?? _sourceConsole!);
+            
+            LogSuccess($"✓ Converted to {conversion.Tiles.Length} tiles, {conversion.Palette.Length} colors");
+            LogInfo($"Nametable: {conversion.NametableWidth}×{conversion.NametableHeight}");
+            
+            // Log color distribution
+            var colorGroups = conversion.Palette.GroupBy(c => c).OrderByDescending(g => g.Count());
+            LogInfo($"Color distribution: {string.Join(", ", colorGroups.Take(5).Select(g => $"#{g.Key:X6} ({g.Count()}x)"))}");
+            
+            // Check tile limit for DESTINATION target (not source console)
+            if (!string.IsNullOrEmpty(destinationTarget))
+            {
+                var targetSpecs = GetConsoleSpecs(destinationTarget);
+                if (targetSpecs != null)
+                {
+                    int maxTiles = targetSpecs.MaxTilesInVram;
+                    if (conversion.Tiles.Length > maxTiles)
+                    {
+                        LogWarning($"⚠ Generated {conversion.Tiles.Length} tiles, but target {destinationTarget.ToUpper()} supports max {maxTiles} tiles");
+                        LogWarning($"⚠ Use Tile Optimizer tool to deduplicate and reduce tile count");
+                    }
+                    else
+                    {
+                        LogInfo($"✓ Tile count ({conversion.Tiles.Length}) is within {destinationTarget.ToUpper()} limit ({maxTiles})");
+                    }
+                }
+            }
+            else
+            {
+                LogInfo($"No destination target specified - skipping tile limit check");
+            }
+            
+            // Store in capture result
+            _lastCapture = new CaptureResult
+            {
+                Tiles = conversion.Tiles,
+                Palette = conversion.Palette,
+                Nametable = conversion.Nametable,
+                NametableWidth = conversion.NametableWidth,
+                NametableHeight = conversion.NametableHeight,
+                TileWidth = 8,
+                TileHeight = 8,
+                TargetId = _sourceConsole!,
+                Metadata = new Dictionary<string, object>
+                {
+                    ["source"] = "screen_capture",
+                    ["tilePaletteAssignments"] = conversion.TilePaletteAssignments
+                }
+            };
+            
+            BtnImport.IsEnabled = true;
+            LogSuccess("✓ Ready to import!");
+        }
+        catch (Exception ex)
+        {
+            LogError($"Screen capture failed: {ex.Message}");
+            System.Diagnostics.Debug.WriteLine($"[LiveLink] Screen capture error: {ex}");
+        }
+    }
+    
+    private void BtnValidateSmsColors_Click(object sender, RoutedEventArgs e)
+    {
+        var previewBitmap = ImgPreview.Source as BitmapSource;
+        if (previewBitmap == null)
+        {
+            LogError("No preview image available");
+            MessageBox.Show("No preview image available. Capture a screen first.", "No Image", MessageBoxButton.OK, MessageBoxImage.Information);
+            return;
+        }
+        
+        try
+        {
+            LogInfo("Validating SMS colors...");
+            
+            var result = SmsColorValidator.ValidateImage(previewBitmap);
+            
+            if (result.IsValid)
+            {
+                LogSuccess($"✓ Image contains ONLY Master System colors ({result.TotalColors} unique colors)");
+                MessageBox.Show(
+                    $"✓ Valid SMS Image\n\n" +
+                    $"All {result.TotalColors} colors are from the Master System palette (64 colors, 6-bit RGB).\n\n" +
+                    $"This image can be used directly without color conversion.",
+                    "SMS Color Validation",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Information);
+            }
+            else
+            {
+                LogWarning($"⚠ Image contains {result.InvalidColors} non-SMS colors (total: {result.TotalColors} unique colors)");
+                
+                // Show first 10 invalid colors
+                var invalidSample = string.Join(", ", result.InvalidColorList.Take(10).Select(c => $"RGB({c.R},{c.G},{c.B})"));
+                if (result.InvalidColorList.Count > 10)
+                    invalidSample += $"... and {result.InvalidColorList.Count - 10} more";
+                
+                LogInfo($"Invalid colors: {invalidSample}");
+                
+                MessageBox.Show(
+                    $"⚠ Invalid SMS Colors\n\n" +
+                    $"Found {result.InvalidColors} colors that are NOT in the Master System palette.\n" +
+                    $"Total unique colors: {result.TotalColors}\n\n" +
+                    $"Master System uses 6-bit RGB (64 colors total).\n" +
+                    $"Valid RGB values: 0, 85, 170, 255 for each channel.\n\n" +
+                    $"Examples of invalid colors:\n{invalidSample}\n\n" +
+                    $"Use palette optimization to convert to SMS colors.",
+                    "SMS Color Validation",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Warning);
+            }
+        }
+        catch (Exception ex)
+        {
+            LogError($"Validation failed: {ex.Message}");
+            MessageBox.Show($"Validation failed: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
     }
 }

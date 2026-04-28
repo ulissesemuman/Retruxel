@@ -39,6 +39,7 @@
     <Project Path="Plugins/Tools/ImageProcessing/Retruxel.Lib.ImageProcessing/Retruxel.Lib.ImageProcessing.csproj" />
   </Folder>
   <Project Path="Retruxel.Core/Retruxel.Core.csproj" Id="57a90c60-69b1-4159-98bb-db3d8b36ed42" />
+  <Project Path="Retruxel.Emulation/Retruxel.Emulation.csproj" />
   <Project Path="Retruxel.Modules/Retruxel.Modules.csproj" />
   <Project Path="Retruxel.SDK/Retruxel.SDK.csproj" Id="77d05622-a6f7-4660-927d-95faa479e4aa" />
   <Project Path="Retruxel.Toolchain/Retruxel.Toolchain.csproj" Id="d17d81ab-b325-4aa9-9d0d-a41eeb5a9de8" />

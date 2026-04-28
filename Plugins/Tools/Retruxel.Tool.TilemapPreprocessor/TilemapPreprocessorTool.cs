@@ -1,5 +1,6 @@
 
 using Retruxel.Core.Interfaces;
+using Retruxel.Core.Helpers;
 
 namespace Retruxel.Tool.TilemapPreprocessor;
 
@@ -46,10 +47,50 @@ public class TilemapPreprocessorTool : ITool
         // Extract parameters
         var solidTiles = GetIntArray(input, "solidTiles");
         var mapData = GetIntArray(input, "mapData");
+        
+        // DEBUG: Log mapData info
+        System.Diagnostics.Debug.WriteLine($"[TilemapPreprocessor] mapData received: Length={mapData.Length}");
+        if (mapData.Length > 0)
+        {
+            System.Diagnostics.Debug.WriteLine($"[TilemapPreprocessor] First 10 values: {string.Join(", ", mapData.Take(10))}");
+        }
+        else
+        {
+            System.Diagnostics.Debug.WriteLine($"[TilemapPreprocessor] WARNING: mapData is EMPTY!");
+            if (input.TryGetValue("mapData", out var rawMapData))
+            {
+                System.Diagnostics.Debug.WriteLine($"[TilemapPreprocessor] Raw mapData type: {rawMapData?.GetType().Name}");
+                if (rawMapData is object[] objArr)
+                {
+                    System.Diagnostics.Debug.WriteLine($"[TilemapPreprocessor] object[] length: {objArr.Length}");
+                    if (objArr.Length > 0)
+                    {
+                        System.Diagnostics.Debug.WriteLine($"[TilemapPreprocessor] First element type: {objArr[0]?.GetType().Name}, value: {objArr[0]}");
+                    }
+                }
+            }
+        }
+        
         var startTile = GetInt(input, "startTile", 0);
         var mapWidth = GetInt(input, "mapWidth", 32);
         var mapHeight = GetInt(input, "mapHeight", 24);
         var maxTileSlots = GetInt(input, "maxTileSlots", 448);
+        var targetMaxHeight = GetInt(input, "targetMaxHeight", mapHeight); // Target's max supported height
+
+        // Check if truncation is needed
+        bool truncated = false;
+        int originalHeight = mapHeight;
+        string? truncationWarning = null;
+        
+        if (mapHeight > targetMaxHeight)
+        {
+            truncated = true;
+            int excessLines = mapHeight - targetMaxHeight;
+            truncationWarning = $"Tilemap height ({mapHeight}) exceeds target maximum ({targetMaxHeight}). " +
+                              $"Lines {targetMaxHeight + 1}-{mapHeight} will be ignored. " +
+                              $"({excessLines} line(s) × {mapWidth} tiles = {excessLines * mapWidth} tiles truncated)";
+            mapHeight = targetMaxHeight;
+        }
 
         // Calculate collision bytes needed
         var collisionBytes = (maxTileSlots + 7) / 8;
@@ -58,14 +99,14 @@ public class TilemapPreprocessorTool : ITool
         var collisionArray = GenerateCollisionBitfield(solidTiles, maxTileSlots, collisionBytes);
         var collisionHex = string.Join(", ", collisionArray.Select(b => $"0x{b:X2}"));
 
-        // Process map data (add startTile to each tile ID)
+        // Process map data (add startTile to each tile ID) with truncation
         var processedMap = ProcessMapData(mapData, startTile, mapWidth, mapHeight, maxTileSlots);
 
         // Return multiple formats for flexibility
         var processedMapHex = FormatMapAsHex(processedMap, mapWidth, mapHeight);
         var processedMapFlat = string.Join(", ", processedMap.Select(v => $"0x{v:X4}"));
 
-        return new Dictionary<string, object>
+        var result = new Dictionary<string, object>
         {
             // Collision data
             ["collisionBytes"] = collisionBytes,
@@ -78,8 +119,20 @@ public class TilemapPreprocessorTool : ITool
             ["processedMap"] = processedMap,
             ["processedMapHex"] = processedMapHex,
             ["processedMapFlat"] = processedMapFlat,
-            ["mapEntryCount"] = processedMap.Length
+            ["mapEntryCount"] = processedMap.Length,
+            
+            // Truncation info
+            ["truncated"] = truncated,
+            ["originalHeight"] = originalHeight,
+            ["actualHeight"] = mapHeight
         };
+        
+        if (truncationWarning != null)
+        {
+            result["truncationWarning"] = truncationWarning;
+        }
+        
+        return result;
     }
 
     /// <summary>
@@ -175,11 +228,7 @@ public class TilemapPreprocessorTool : ITool
     private int[] GetIntArray(Dictionary<string, object> input, string key)
     {
         if (input.TryGetValue(key, out var value))
-        {
-            if (value is int[] arr) return arr;
-            if (value is List<int> list) return list.ToArray();
-            if (value is object[] objArr) return objArr.Select(o => Convert.ToInt32(o)).ToArray();
-        }
+            return ArrayConversionHelper.ToIntArray(value);
         return Array.Empty<int>();
     }
 }

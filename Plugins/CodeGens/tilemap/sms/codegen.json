@@ -16,6 +16,13 @@
     "mapData": { "from": "module", "path": "mapData", "default": [] },
     "solidTiles": { "from": "module", "path": "solidTiles", "default": [] },
     "maxTileSlots": { "from": "module", "path": "maxTileSlots", "default": 448 },
+    "tilesData": {
+      "from": "tool",
+      "tool": "png_to_tiles",
+      "toolInput": {
+        "assetId": "tilesAssetId"
+      }
+    },
     "preprocessed": {
       "from": "tool",
       "tool": "tilemap_preprocessor",

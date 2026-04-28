@@ -233,6 +233,41 @@ public class OptimizationResult
 - Eliminar necessidade de hardcoded addresses
 - Suportar jogos que usam configurações não-padrão
 
+### PaletteOptimizer - Ler Configurações do Target
+**Problema atual:** Constantes hardcoded em `OptimizeForSms()` e `OptimizeForNes()`
+```csharp
+const int paletteCount = 2;        // SMS: 2 paletas
+const int colorsPerPalette = 16;   // SMS: 16 cores por paleta
+const int filledColors = 4;        // SMS: apenas 4 preenchidas
+```
+
+**Solução futura:** Ler do `TargetSpecs`
+```csharp
+public static OptimizedPalette OptimizeForTarget(
+    byte[][] tiles, 
+    uint[] sourceColors, 
+    ITarget target,
+    int maxIterations = 20)
+{
+    var paletteSpecs = target.Specs.Palette;
+    int paletteCount = paletteSpecs.MaxPalettes;
+    int colorsPerPalette = paletteSpecs.ColorsPerPalette;
+    int filledColors = paletteSpecs.UsableColors; // Novo campo
+    
+    // Resto do código usa variáveis ao invés de constantes
+}
+```
+
+**Benefícios:**
+- Suporta novos targets sem modificar código
+- Configuração centralizada em `TargetSpecs`
+- Facilita testes com diferentes configurações
+
+**Implementação:**
+1. Adicionar campos ao `PaletteSpecs` (Core)
+2. Atualizar `OptimizeForSms/Nes` para usar método genérico
+3. Passar `ITarget` ao invés de string `targetId`
+
 ### Asset Pipeline - Conversores Bidirecionais
 - Atualmente: Emulator → Retruxel (import only)
 - Futuro: Retruxel → Emulator (export para teste)

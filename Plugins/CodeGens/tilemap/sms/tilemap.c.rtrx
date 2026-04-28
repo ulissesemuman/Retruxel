@@ -51,7 +51,20 @@ const unsigned char tilemap_{{instanceId}}_collision[] = {
 const unsigned char tilemap_{{instanceId}}_placeholder_tiles[] = { 0 };
 
 {{/ifnot}}
-{{#if mapData.length > 0}}
+{{#if tilesAssetId}}
+// Tile data from asset: {{tilesAssetId}}
+// {{tilesData.tileCount}} tiles, {{tilesData.totalBytes}} bytes
+const unsigned char {{tilesAssetId}}[] = {
+{{#if tilesData.tilesHex}}
+{{tilesData.tilesHex}}
+{{/if}}
+{{#ifnot tilesData.tilesHex}}
+    0 /* Warning: tilesData.tilesHex is empty */
+{{/ifnot}}
+};
+
+{{/if}}
+{{#if preprocessed.mapEntryCount > 0}}
 // Nametable map — {{mapWidth}}×{{mapHeight}} = {{preprocessed.mapEntryCount}} entries
 // Tile indices are absolute VRAM slots (startTile={{startTile}} already added)
 const unsigned int tilemap_{{instanceId}}_map[{{preprocessed.mapEntryCount}}] = {
@@ -59,7 +72,7 @@ const unsigned int tilemap_{{instanceId}}_map[{{preprocessed.mapEntryCount}}] = 
 };
 
 {{/if}}
-{{#if mapData.length == 0}}
+{{#ifnot preprocessed.mapEntryCount > 0}}
 {{#ifnot mapAssetId}}
 // Placeholder nametable map — paint tiles in the Tilemap Editor
 // Map is {{mapWidth}}×{{mapHeight}} tiles = {{mapWidth * mapHeight}} entries
@@ -77,10 +90,10 @@ void tilemap_{{instanceId}}_init(void) {
 {{/ifnot}}
 
     // Load nametable map at position ({{mapX}}, {{mapY}})
-{{#if mapData.length > 0}}
+{{#if preprocessed.mapEntryCount > 0}}
     SMS_loadTileMap({{mapX}}, {{mapY}}, tilemap_{{instanceId}}_map, sizeof(tilemap_{{instanceId}}_map));
 {{/if}}
-{{#if mapData.length == 0}}
+{{#ifnot preprocessed.mapEntryCount > 0}}
 {{#if mapAssetId}}
     SMS_loadTileMap({{mapX}}, {{mapY}}, {{mapAssetId}}, sizeof({{mapAssetId}}));
 {{/if}}
@@ -88,5 +101,8 @@ void tilemap_{{instanceId}}_init(void) {
     // TODO: SMS_loadTileMap({{mapX}}, {{mapY}}, tilemap_{{instanceId}}_placeholder_map, sizeof(tilemap_{{instanceId}}_placeholder_map));
 {{/ifnot}}
 {{/if}}
+
+    // Turn on display
+    SMS_displayOn();
 }
 // @retruxel:end

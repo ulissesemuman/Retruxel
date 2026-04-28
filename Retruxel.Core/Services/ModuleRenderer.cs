@@ -1,5 +1,6 @@
 using Retruxel.Core.Interfaces;
 using Retruxel.Core.Models;
+using Retruxel.Core.Helpers;
 using System.Reflection;
 using System.Text.Json;
 
@@ -179,14 +180,15 @@ public class ModuleRenderer
         string moduleId,
         string targetId,
         string moduleJson,
-        bool isSingleton)
+        bool isSingleton,
+        string? projectPath = null)
     {
         var key = Key(targetId, moduleId);
         if (!_codeGens.TryGetValue(key, out var manifest))
             yield break;
 
         // Build variable dictionary
-        var variables = ResolveVariables(manifest, moduleJson);
+        var variables = ResolveVariables(manifest, moduleJson, projectPath);
 
         // Inject instanceId for non-singleton modules
         // Query ModuleRegistry if available, otherwise use module's IsSingleton
@@ -397,9 +399,14 @@ public class ModuleRenderer
 
     private Dictionary<string, object> ResolveVariables(
         CodeGenManifest manifest,
-        string moduleJson)
+        string moduleJson,
+        string? projectPath = null)
     {
         var result = new Dictionary<string, object>();
+
+        // Add projectPath to context if available
+        if (!string.IsNullOrEmpty(projectPath))
+            result["projectPath"] = projectPath;
 
         using var doc = JsonDocument.Parse(moduleJson);
         var root = doc.RootElement;
@@ -412,8 +419,12 @@ public class ModuleRenderer
                     result[varName] = ReadModuleValue(root, varDef);
                     break;
 
+                case "asset":
+                    result[varName] = ResolveAssetValue(root, varDef);
+                    break;
+
                 case "tool":
-                    var toolValues = InvokeTool(varDef, root);
+                    var toolValues = InvokeTool(varDef, root, result);
                     // Store tool output as nested object under the variable name
                     // so template can access as {{varName.property}}
                     result[varName] = toolValues;
@@ -470,9 +481,27 @@ public class ModuleRenderer
         return value;
     }
 
+    private object ResolveAssetValue(JsonElement root, VariableDefinition varDef)
+    {
+        // Get asset ID from module JSON
+        var assetIdPath = varDef.ToolInput?["assetId"] ?? varDef.Path ?? "assetId";
+        if (!root.TryGetProperty(assetIdPath, out var assetIdProp))
+            return varDef.Default ?? "";
+
+        var assetId = assetIdProp.GetString();
+        if (string.IsNullOrEmpty(assetId))
+            return varDef.Default ?? "";
+
+        // Load project to find asset
+        // This requires access to the project context - we'll need to pass it through
+        // For now, return empty string as fallback
+        return varDef.Default ?? "";
+    }
+
     private Dictionary<string, object> InvokeTool(
         VariableDefinition varDef,
-        JsonElement moduleRoot)
+        JsonElement moduleRoot,
+        Dictionary<string, object> resolvedVariables)
     {
         if (varDef.ToolId is null)
             return new();
@@ -482,6 +511,10 @@ public class ModuleRenderer
 
         // 1. Collect defaults from tool
         var input = tool.GetDefaultParameters();
+
+        // 1.5. Inject projectPath automatically if available
+        if (resolvedVariables.TryGetValue("projectPath", out var projectPathObj))
+            input["projectPath"] = projectPathObj;
 
         // 2. If extension exists, let it override defaults before tool executes
         IToolExtension? extension = null;
@@ -499,31 +532,50 @@ public class ModuleRenderer
             }
         }
 
-        // 3. Merge module JSON values (highest priority — explicit project values override defaults)
+        // 3. Merge tool input values from codegen.json
         if (varDef.ToolInput is not null)
         {
-            foreach (var (inputKey, moduleJsonPath) in varDef.ToolInput)
+            foreach (var (inputKey, valueSource) in varDef.ToolInput)
             {
-                if (moduleRoot.TryGetProperty(moduleJsonPath, out var v))
+                // Check if valueSource is a reference to another variable
+                if (resolvedVariables.ContainsKey(valueSource))
+                {
+                    input[inputKey] = resolvedVariables[valueSource];
+                    Console.WriteLine($"[ModuleRenderer] Tool input '{inputKey}' = resolvedVariables['{valueSource}'] (type: {resolvedVariables[valueSource]?.GetType().Name})");
+                }
+                // Otherwise try to read from module JSON
+                else if (moduleRoot.TryGetProperty(valueSource, out var v))
                 {
                     input[inputKey] = v.ValueKind switch
                     {
                         JsonValueKind.Number => v.TryGetInt32(out var i) ? (object)i : v.GetDouble(),
                         JsonValueKind.True => true,
                         JsonValueKind.False => false,
-                        JsonValueKind.Array => v.EnumerateArray()
-                            .Select(e => e.ValueKind == JsonValueKind.Number
-                                ? (e.TryGetInt32(out var ai) ? (object)ai : e.GetDouble())
-                                : e.GetString() ?? "")
-                            .ToArray(),
+                        JsonValueKind.Array => ArrayConversionHelper.ToIntArray(v),
                         _ => v.GetString() ?? ""
                     };
+                    Console.WriteLine($"[ModuleRenderer] Tool input '{inputKey}' = moduleRoot['{valueSource}'] (type: {input[inputKey]?.GetType().Name}, count: {(input[inputKey] is Array arr ? arr.Length : "N/A")})");
+                }
+                // Otherwise use the literal value
+                else
+                {
+                    input[inputKey] = valueSource;
+                    Console.WriteLine($"[ModuleRenderer] Tool input '{inputKey}' = literal '{valueSource}'");
                 }
             }
         }
 
         // 4. Execute generic tool with fully resolved input
-        var toolResult = tool.Execute(input);
+        Dictionary<string, object> toolResult;
+        try
+        {
+            toolResult = tool.Execute(input);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[ModuleRenderer] ERROR: Tool '{varDef.ToolId}' failed: {ex.Message}");
+            return new() { ["error"] = ex.Message };
+        }
 
         // 5. Execute extension post-processing (receives tool output merged into input)
         if (extension is not null)

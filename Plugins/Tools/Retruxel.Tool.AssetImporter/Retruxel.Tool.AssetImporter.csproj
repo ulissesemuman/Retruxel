@@ -5,10 +5,12 @@
     <UseWPF>true</UseWPF>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\..\..\Retruxel.SDK\Retruxel.SDK.csproj" />
+    <ProjectReference Include="..\Retruxel.Tool.LiveLink\Retruxel.Tool.LiveLink.csproj" />
   </ItemGroup>
 
   <ItemGroup>

@@ -27,15 +27,34 @@ public class SmsPngToTilesExtension : IToolExtension
 
     public Dictionary<string, object> Execute(Dictionary<string, object> input)
     {
-        if (!input.TryGetValue("palette", out var paletteObj) || paletteObj is not uint[] palette)
-            return new();
+        var result = new Dictionary<string, object>();
 
-        var smsPalette = SmsColorUtils.ConvertPaletteToSmsRgb222(palette);
-
-        return new Dictionary<string, object>
+        // 1. Process Palette
+        if (input.TryGetValue("palette", out var paletteObj) && paletteObj is uint[] palette)
         {
-            ["paletteHardware"] = smsPalette,
-            ["paletteHex"] = string.Join(", ", smsPalette.Select(b => $"0x{b:X2}"))
-        };
+            var smsPalette = SmsColorUtils.ConvertPaletteToSmsRgb222(palette);
+            result["paletteHardware"] = smsPalette;
+            result["paletteHex"] = string.Join(", ", smsPalette.Select(b => $"0x{b:X2}"));
+        }
+
+        // 2. Process Tiles
+        if (input.TryGetValue("tilesArray", out var tilesObj) && tilesObj is byte[] tiles)
+        {
+            result["totalBytes"] = tiles.Length;
+            
+            // Format tiles as hex string, 16 bytes per line for readability
+            var hexLines = new List<string>();
+            for (int i = 0; i < tiles.Length; i += 16)
+            {
+                var chunk = tiles.Skip(i).Take(16);
+                hexLines.Add("    " + string.Join(", ", chunk.Select(b => $"0x{b:X2}")));
+            }
+            result["tilesHex"] = string.Join(",\n", hexLines);
+            
+            if (input.TryGetValue("tileCount", out var count))
+                result["tileCount"] = count;
+        }
+
+        return result;
     }
 }

@@ -1,4 +1,4 @@
-﻿{
+{
   "moduleId": "sprite",
   "targetId": "sms",
   "version": "1.0.0",
@@ -6,6 +6,13 @@
   "variables": {
     "tilesAssetId": { "from": "module", "path": "tilesAssetId", "default": "" },
     "startTile": { "from": "module", "path": "startTile", "default": 0 },
-    "doubleHeight": { "from": "module", "path": "doubleHeight", "default": false }
+    "doubleHeight": { "from": "module", "path": "doubleHeight", "default": false },
+    "tilesData": {
+      "from": "tool",
+      "tool": "png_to_tiles",
+      "toolInput": {
+        "assetId": "tilesAssetId"
+      }
+    }
   }
 }

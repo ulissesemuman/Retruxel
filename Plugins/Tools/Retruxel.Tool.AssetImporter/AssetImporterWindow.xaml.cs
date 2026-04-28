@@ -3,6 +3,7 @@ using Retruxel.Core.Interfaces;
 using Retruxel.Core.Models;
 using Retruxel.Core.Services;
 using Retruxel.Tool.AssetImporter.Services;
+using Retruxel.Tool.LiveLink.Windows;
 using SkiaSharp;
 using System.IO;
 using System.Windows;
@@ -336,25 +337,72 @@ public partial class AssetImporterWindow : Window
 
     private void BtnImport_Click(object sender, RoutedEventArgs e)
     {
-        if (_sourcePngPath is null) return;
+        if (_sourcePngPath is null || _reducedPreview is null) return;
 
         var assetName = TxtAssetName.Text.Trim();
         var regionId = GetSelectedRegionId();
 
-        var tempPath = _sourcePngPath;
-        var nameFromFile = Path.GetFileNameWithoutExtension(_sourcePngPath);
-
-        if (!string.Equals(nameFromFile, assetName, StringComparison.OrdinalIgnoreCase))
-        {
-            tempPath = Path.Combine(Path.GetTempPath(), assetName + ".png");
-            File.Copy(_sourcePngPath, tempPath, overwrite: true);
-        }
-
         try
         {
-            ImportedAsset = Services.AssetImporter.Import(tempPath, _projectPath, regionId, _target);
-            DialogResult = true;
-            Close();
+            // Convert SKBitmap to WPF BitmapSource for optimization window
+            var previewBitmap = SkiaBitmapToWpf(_reducedPreview);
+            
+            // Determine target color count
+            int targetColorCount = _target.TargetId switch
+            {
+                "sms" => 32,  // 2 palettes × 16 colors
+                "gg" => 32,   // 2 palettes × 16 colors
+                "nes" => 16,  // 4 palettes × 4 colors
+                "snes" => 256, // 8 palettes × 32 colors
+                "gb" => 32,   // 8 palettes × 4 colors
+                "gbc" => 64,  // 8 palettes × 4 colors (BG) + 8 palettes × 4 colors (sprites)
+                _ => 16
+            };
+            
+            // Open palette optimization preview window
+            var optimizationWindow = new PaletteOptimizationWindow(
+                previewBitmap,
+                targetColorCount,
+                useLab: true, // Use LAB color space for better perceptual matching
+                _target.TargetId);
+            
+            optimizationWindow.Owner = this;
+            
+            if (optimizationWindow.ShowDialog() != true)
+            {
+                // User cancelled optimization
+                return;
+            }
+            
+            // Get optimized bitmap and palette
+            var optimizedBitmap = optimizationWindow.OptimizedBitmap;
+            var optimizedPalette = optimizationWindow.OptimizedPalette;
+            
+            // Convert optimized WPF bitmap back to SKBitmap for import
+            var optimizedSkBitmap = WpfBitmapToSkia(optimizedBitmap);
+            
+            // Save optimized bitmap to temp file
+            var tempPath = Path.Combine(Path.GetTempPath(), assetName + ".png");
+            using (var stream = File.OpenWrite(tempPath))
+            {
+                using var image = SKImage.FromBitmap(optimizedSkBitmap);
+                using var data = image.Encode(SKEncodedImageFormat.Png, 100);
+                data.SaveTo(stream);
+            }
+            
+            optimizedSkBitmap.Dispose();
+
+            try
+            {
+                ImportedAsset = Services.AssetImporter.Import(tempPath, _projectPath, regionId, _target);
+                DialogResult = true;
+                Close();
+            }
+            finally
+            {
+                if (File.Exists(tempPath))
+                    File.Delete(tempPath);
+            }
         }
         catch (AssetImportException ex)
         {
@@ -364,11 +412,6 @@ public partial class AssetImporterWindow : Window
         {
             var loc = ServiceLocator.Localization;
             ShowValidation(string.Format(loc.Translate("assetimporter.error.unexpected"), ex.Message));
-        }
-        finally
-        {
-            if (tempPath != _sourcePngPath && File.Exists(tempPath))
-                File.Delete(tempPath);
         }
     }
 
@@ -404,6 +447,37 @@ public partial class AssetImporterWindow : Window
         bmp.EndInit();
         bmp.Freeze();
         return bmp;
+    }
+    
+    private static SKBitmap WpfBitmapToSkia(BitmapSource wpfBitmap)
+    {
+        // Convert WPF bitmap to byte array
+        int width = wpfBitmap.PixelWidth;
+        int height = wpfBitmap.PixelHeight;
+        
+        var convertedBitmap = wpfBitmap;
+        if (wpfBitmap.Format != System.Windows.Media.PixelFormats.Bgra32)
+        {
+            convertedBitmap = new FormatConvertedBitmap(wpfBitmap, System.Windows.Media.PixelFormats.Bgra32, null, 0);
+        }
+        
+        int stride = width * 4;
+        byte[] pixels = new byte[height * stride];
+        convertedBitmap.CopyPixels(pixels, stride, 0);
+        
+        // Create SKBitmap and copy pixels
+        var skBitmap = new SKBitmap(width, height, SKColorType.Bgra8888, SKAlphaType.Premul);
+        
+        unsafe
+        {
+            var ptr = (byte*)skBitmap.GetPixels();
+            for (int i = 0; i < pixels.Length; i++)
+            {
+                ptr[i] = pixels[i];
+            }
+        }
+        
+        return skBitmap;
     }
 
     private static int CountUniqueColors(SKBitmap bitmap)

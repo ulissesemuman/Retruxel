@@ -64,11 +64,8 @@ public class CaptureToImportedAssetPipeline : AssetPipelineBase<CaptureResult, I
         
         for (int i = 0; i < nametable.Length; i++)
         {
-            // For SG-1000: nametable entry is just tile index (8 bits)
-            // For SMS/GG: nametable entry = tile index (9 bits) + attributes (7 bits)
-            // For NES: nametable entry is just tile index (8 bits)
-            // Extract tile index - use full value for now (mask will be applied by target if needed)
-            tilemapData[i] = nametable[i] & 0xFF; // Use 8 bits for compatibility
+            // Use full ushort value (0-65535) to support large tile counts
+            tilemapData[i] = nametable[i];
         }
 
         return tilemapData;

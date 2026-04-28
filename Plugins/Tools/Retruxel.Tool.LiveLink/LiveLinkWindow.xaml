@@ -158,6 +158,7 @@
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
                     </Grid.RowDefinitions>
 
                     <!-- CONNECTION -->
@@ -185,20 +186,72 @@
                         </StackPanel>
                     </Border>
 
-                    <!-- CAPTURE OPTIONS -->
+                    <!-- ACTIONS -->
                     <Border Grid.Row="1"
                             Background="{StaticResource BrushSurface}"
                             Padding="24,16">
                         <StackPanel>
+                            <TextBlock Text="ACTIONS"
+                                       Style="{StaticResource TextLabelCaps}"
+                                       Foreground="{StaticResource BrushPrimary}"
+                                       Margin="0,0,0,12"/>
+
+                            <Button x:Name="BtnCaptureVRAM"
+                                    Content="CAPTURE VRAM"
+                                    Style="{StaticResource ButtonSecondary}"
+                                    Height="40"
+                                    IsEnabled="False"
+                                    Click="BtnCaptureVRAM_Click"
+                                    Margin="0,0,0,8"/>
+                            
+                            <Button x:Name="BtnCaptureScreen"
+                                    Content="CAPTURE SCREEN"
+                                    Style="{StaticResource ButtonSecondary}"
+                                    Height="40"
+                                    IsEnabled="False"
+                                    Click="BtnCaptureScreen_Click"
+                                    Margin="0,0,0,8"/>
+                            
+                            <Button x:Name="BtnValidateSmsColors"
+                                    Content="VALIDATE SMS COLORS"
+                                    Style="{StaticResource ButtonGhost}"
+                                    Height="40"
+                                    IsEnabled="False"
+                                    Click="BtnValidateSmsColors_Click"/>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- CAPTURE OPTIONS (SCROLLABLE) -->
+                    <ScrollViewer Grid.Row="2"
+                                  VerticalScrollBarVisibility="Auto"
+                                  Background="{StaticResource BrushSurfaceContainerLow}">
+                        <Border Padding="24,16">
+                            <StackPanel>
                             <TextBlock Text="CAPTURE OPTIONS"
                                        Style="{StaticResource TextLabelCaps}"
                                        Foreground="{StaticResource BrushPrimary}"
                                        Margin="0,0,0,12"/>
 
-                            <CheckBox x:Name="ChkCaptureTiles"
-                                      Content="TILES"
-                                      IsChecked="True"
-                                      Margin="0,0,0,8"/>
+                            <Border Style="{StaticResource SettingRow}" Padding="0" Margin="0,0,0,8">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                                        <TextBlock Text="Tiles"
+                                                   Style="{StaticResource TextBody}"
+                                                   Foreground="{StaticResource BrushOnSurface}"/>
+                                        <TextBlock Text="Capture tile data from VRAM"
+                                                   Style="{StaticResource TextLabel}"
+                                                   TextWrapping="Wrap"/>
+                                    </StackPanel>
+                                    <CheckBox x:Name="ChkCaptureTiles" Grid.Column="1"
+                                              Style="{StaticResource ToggleSwitch}"
+                                              IsChecked="True"
+                                              VerticalAlignment="Center"/>
+                                </Grid>
+                            </Border>
                             
                             <StackPanel x:Name="PanelTileOptions" Margin="20,0,0,8" Visibility="Collapsed">
                                 <TextBlock Text="Pattern Table:"
@@ -215,10 +268,26 @@
                                 </ComboBox>
                             </StackPanel>
                             
-                            <CheckBox x:Name="ChkCaptureNametable"
-                                      Content="NAMETABLE"
-                                      IsChecked="True"
-                                      Margin="0,0,0,8"/>
+                            <Border Style="{StaticResource SettingRow}" Padding="0" Margin="0,0,0,8">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                                        <TextBlock Text="Nametable"
+                                                   Style="{StaticResource TextBody}"
+                                                   Foreground="{StaticResource BrushOnSurface}"/>
+                                        <TextBlock Text="Capture tilemap layout"
+                                                   Style="{StaticResource TextLabel}"
+                                                   TextWrapping="Wrap"/>
+                                    </StackPanel>
+                                    <CheckBox x:Name="ChkCaptureNametable" Grid.Column="1"
+                                              Style="{StaticResource ToggleSwitch}"
+                                              IsChecked="True"
+                                              VerticalAlignment="Center"/>
+                                </Grid>
+                            </Border>
                             
                             <StackPanel x:Name="PanelNametableOptions" Margin="20,0,0,8" Visibility="Collapsed">
                                 <TextBlock Text="Nametable:"
@@ -236,30 +305,57 @@
                                 </ComboBox>
                             </StackPanel>
                             
-                            <CheckBox x:Name="ChkCapturePalette"
-                                      Content="PALETTE"
-                                      IsChecked="True"/>
-                        </StackPanel>
-                    </Border>
-
-                    <!-- ACTIONS -->
-                    <Border Grid.Row="2"
-                            Background="{StaticResource BrushSurfaceContainerLow}"
-                            Padding="24,16">
-                        <StackPanel VerticalAlignment="Bottom">
-                            <TextBlock Text="ACTIONS"
+                            <Border Style="{StaticResource SettingRow}" Padding="0" Margin="0,0,0,16">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                                        <TextBlock Text="Palette"
+                                                   Style="{StaticResource TextBody}"
+                                                   Foreground="{StaticResource BrushOnSurface}"/>
+                                        <TextBlock Text="Capture color palette from CRAM"
+                                                   Style="{StaticResource TextLabel}"
+                                                   TextWrapping="Wrap"/>
+                                    </StackPanel>
+                                    <CheckBox x:Name="ChkCapturePalette" Grid.Column="1"
+                                              Style="{StaticResource ToggleSwitch}"
+                                              IsChecked="True"
+                                              VerticalAlignment="Center"/>
+                                </Grid>
+                            </Border>
+                            
+                            <Separator Margin="0,0,0,16"/>
+                            
+                            <TextBlock Text="COLOR MAPPING"
                                        Style="{StaticResource TextLabelCaps}"
                                        Foreground="{StaticResource BrushPrimary}"
                                        Margin="0,0,0,12"/>
-
-                            <Button x:Name="BtnCapture"
-                                    Content="CAPTURE"
-                                    Style="{StaticResource ButtonSecondary}"
-                                    Height="40"
-                                    IsEnabled="False"
-                                    Click="BtnCapture_Click"/>
-                        </StackPanel>
-                    </Border>
+                            
+                            <Border Style="{StaticResource SettingRow}" Padding="0">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                                        <TextBlock Text="LAB Color Space"
+                                                   Style="{StaticResource TextBody}"
+                                                   Foreground="{StaticResource BrushOnSurface}"/>
+                                        <TextBlock Text="Perceptually accurate color matching"
+                                                   Style="{StaticResource TextLabel}"
+                                                   TextWrapping="Wrap"/>
+                                    </StackPanel>
+                                    <CheckBox x:Name="ChkUseLab" Grid.Column="1"
+                                              Style="{StaticResource ToggleSwitch}"
+                                              IsChecked="True"
+                                              VerticalAlignment="Center"/>
+                                </Grid>
+                            </Border>
+                            </StackPanel>
+                        </Border>
+                    </ScrollViewer>
                 </Grid>
             </Grid>
 
@@ -269,11 +365,6 @@
                     CornerRadius="0,0,6,6"
                     Padding="24,16">
                 <Grid>
-                    <TextBlock Text="Real-time asset capture from emulator"
-                               Style="{StaticResource TextLabel}"
-                               Foreground="{StaticResource BrushOnSurfaceVariant}"
-                               VerticalAlignment="Center"/>
-                    
                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
                         <Button x:Name="BtnCancel"
                                 Content="CANCEL"

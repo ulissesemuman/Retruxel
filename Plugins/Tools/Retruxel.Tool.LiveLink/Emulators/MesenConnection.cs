@@ -157,4 +157,66 @@ public class MesenConnection : IEmulatorConnection
             LoadedRom = "Unknown"
         };
     }
+
+    public async Task<byte[]> GetScreenBufferAsync()
+    {
+        if (_writer == null || _reader == null || _stream == null)
+            throw new InvalidOperationException("Not connected");
+
+        Log("Sending: GET_SCREEN");
+        await _writer.WriteLineAsync("GET_SCREEN");
+        await _writer.FlushAsync();
+        Log("Waiting for screen buffer size...");
+
+        // Read size first
+        var sizeLine = await _reader.ReadLineAsync();
+        if (sizeLine == null || sizeLine == "ERROR")
+            throw new IOException("Failed to get screen buffer");
+        
+        if (!int.TryParse(sizeLine, out int dataSize))
+            throw new IOException($"Invalid size received: {sizeLine}");
+        
+        Log($"Expecting {dataSize} bytes of base64 data");
+        
+        // Read data in chunks to avoid blocking
+        List<byte> dataBuffer = new List<byte>(dataSize + 1);
+        byte[] readBuffer = new byte[8192];
+        int totalRead = 0;
+        int targetSize = dataSize + 1; // +1 for \n
+        while (totalRead < targetSize)
+        {
+            int toRead = Math.Min(readBuffer.Length, targetSize - totalRead);
+            int bytesRead = await _stream.ReadAsync(readBuffer, 0, toRead);
+            
+            if (bytesRead == 0)
+                throw new IOException("Connection closed while reading screen buffer");
+            
+            dataBuffer.AddRange(readBuffer.Take(bytesRead));
+            totalRead += bytesRead;
+            
+            if (totalRead % 65536 == 0) // Log every 64KB
+                Log($"Read {totalRead}/{targetSize} bytes...");
+        }
+        
+        Log($"Read complete: {totalRead} bytes from stream");
+        
+        // Convert to string (excluding the \n at the end)
+        byte[] allData = dataBuffer.ToArray();
+        string base64Data = System.Text.Encoding.ASCII.GetString(allData, 0, dataSize);
+        Log($"Decoding {base64Data.Length} chars of base64...");
+        
+        var decoded = Convert.FromBase64String(base64Data);
+        Log($"Decoded to {decoded.Length} bytes");
+        
+        // Debug: Log first pixel of lines 7 and 8
+        // Line 7 starts at pixel (0, 56) = offset 57344 (256 * 56 * 4)
+        // Line 8 starts at pixel (0, 64) = offset 65536 (256 * 64 * 4)
+        if (decoded.Length >= 65540)
+        {
+            Log($"Line 7 first pixel (offset 57344): R={decoded[57344]}, G={decoded[57345]}, B={decoded[57346]}, A={decoded[57347]}");
+            Log($"Line 8 first pixel (offset 65536): R={decoded[65536]}, G={decoded[65537]}, B={decoded[65538]}, A={decoded[65539]}");
+        }
+
+        return decoded;
+    }
 }

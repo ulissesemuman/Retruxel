@@ -52,7 +52,10 @@ public class CodeGenerator
         {
             foreach (var elementData in scene.Elements)
             {
-                progress?.Report($"PROC: Loading element {elementData.ElementId.Substring(0, 8)}...");
+                var elementIdShort = elementData.ElementId.Length > 8 
+                    ? elementData.ElementId.Substring(0, 8) 
+                    : elementData.ElementId;
+                progress?.Report($"PROC: Loading element {elementIdShort}...");
 
                 IModule? moduleTemplate = null;
 
@@ -110,7 +113,8 @@ public class CodeGenerator
                         module.ModuleId,
                         project.TargetId,
                         moduleJson,
-                        module.IsSingleton).ToList();
+                        module.IsSingleton,
+                        project.ProjectPath).ToList();
                     progress?.Report($"INFO: {module.ModuleId} generated via ModuleRenderer.");
                 }
                 // Priority 2: Ask target to translate (legacy fallback)

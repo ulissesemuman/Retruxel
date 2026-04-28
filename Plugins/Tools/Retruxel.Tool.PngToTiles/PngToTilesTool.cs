@@ -1,5 +1,7 @@
 using Retruxel.Core.Interfaces;
+using Retruxel.Core.Models;
 using Retruxel.Lib.ImageProcessing;
+using System.Text.Json;
 
 namespace Retruxel.Tool.PngToTiles;
 
@@ -32,9 +34,18 @@ public class PngToTilesTool : ITool
 
     public Dictionary<string, object> Execute(Dictionary<string, object> input)
     {
-        // Extract parameters
-        var imagePath = GetString(input, "imagePath")
-            ?? throw new ArgumentException("imagePath is required");
+        // Extract parameters - support both imagePath and assetId
+        var imagePath = GetString(input, "imagePath");
+        var assetId = GetString(input, "assetId");
+
+        // If assetId is provided, resolve it to imagePath via project
+        if (string.IsNullOrEmpty(imagePath) && !string.IsNullOrEmpty(assetId))
+        {
+            imagePath = ResolveAssetPath(assetId, input);
+        }
+
+        if (string.IsNullOrEmpty(imagePath))
+            throw new ArgumentException("Either imagePath or assetId is required");
 
         var tileWidth = GetInt(input, "tileWidth", 8);
         var tileHeight = GetInt(input, "tileHeight", 8);
@@ -83,6 +94,43 @@ public class PngToTilesTool : ITool
         };
     }
 
+    private string? ResolveAssetPath(string assetId, Dictionary<string, object> input)
+    {
+        // Try to get projectPath from input
+        var projectPath = GetString(input, "projectPath");
+        if (string.IsNullOrEmpty(projectPath))
+            return null;
+
+        // Load project file
+        var projectFile = Path.Combine(projectPath, Path.GetFileName(projectPath) + ".rtrxproject");
+        if (!File.Exists(projectFile))
+            return null;
+
+        try
+        {
+            var json = File.ReadAllText(projectFile);
+            using var doc = JsonDocument.Parse(json);
+            var root = doc.RootElement;
+
+            if (root.TryGetProperty("Assets", out var assets))
+            {
+                foreach (var asset in assets.EnumerateArray())
+                {
+                    if (asset.TryGetProperty("Id", out var id) && id.GetString() == assetId)
+                    {
+                        if (asset.TryGetProperty("RelativePath", out var relPath))
+                        {
+                            return Path.Combine(projectPath, relPath.GetString() ?? "");
+                        }
+                    }
+                }
+            }
+        }
+        catch { }
+
+        return null;
+    }
+
     // Helper methods
     private string? GetString(Dictionary<string, object> input, string key)
         => input.TryGetValue(key, out var value) ? value as string : null;
@@ -107,5 +155,20 @@ public class PngToTilesTool : ITool
                 return parsed;
         }
         return defaultValue;
+    }
+
+    public Dictionary<string, object> GetDefaultParameters()
+    {
+        return new Dictionary<string, object>
+        {
+            ["imagePath"] = "",
+            ["assetId"] = "",
+            ["tileWidth"] = 8,
+            ["tileHeight"] = 8,
+            ["bpp"] = 4,
+            ["maxColors"] = 16,
+            ["tileFormat"] = TileFormat.Planar,
+            ["interleaveMode"] = InterleaveMode.Line
+        };
     }
 }

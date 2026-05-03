@@ -200,18 +200,6 @@ public partial class SceneEditorView
             Type = ChangeType.Large,
             Execute = () =>
             {
-                _elements.Add(element);
-
-                var visual = BuildCanvasElement(element);
-                Canvas.SetLeft(visual, tileX * 8);
-                Canvas.SetTop(visual, tileY * 8);
-                SceneCanvas.Children.Add(visual);
-                element.CanvasVisual = visual;
-
-                AddModuleToEvent("OnStart", moduleId, element);
-                SelectElement(element);
-                RefreshModulePalette();
-                
                 if (element.Module is Core.Interfaces.IModule mod && !string.IsNullOrEmpty(mod.VisualToolId))
                 {
                     Dispatcher.InvokeAsync(() => OpenVisualToolForElement(element), 

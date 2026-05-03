@@ -43,6 +43,13 @@ public partial class TilemapEditorWindow
             }
 
             _tilesetRenderer.LoadTileset(absPath, _target.Specs.TileWidth);
+            
+            // Auto-calculate columns for import
+            int imageWidth = asset.SourceWidth;
+            int tileSize = _target.Specs.TileWidth;
+            int calculatedColumns = imageWidth / tileSize;
+            TxtImportColumns.Text = calculatedColumns.ToString();
+            
             PopulateTilesetGrid();
             RenderCanvas();
         }
@@ -59,7 +66,12 @@ public partial class TilemapEditorWindow
         TilesetGrid.Items.Clear();
 
         int tileSize = _target.Specs.TileWidth;
-        int totalTiles = _tilesetRenderer.TotalTiles;
+        
+        // Use asset.TileCount instead of _tilesetRenderer.TotalTiles to avoid showing padding tiles
+        string? assetId = CmbTilesetAsset.SelectedItem?.ToString();
+        var asset = _project.Assets.FirstOrDefault(a => a.Id == assetId);
+        int totalTiles = asset?.TileCount ?? _tilesetRenderer.TotalTiles;
+        
         int scaledSize = (int)(tileSize * _tileZoomLevel);
 
         for (int tileId = 0; tileId < totalTiles; tileId++)
@@ -87,48 +99,15 @@ public partial class TilemapEditorWindow
             RenderOptions.SetBitmapScalingMode(image, BitmapScalingMode.NearestNeighbor);
 
             border.Child = image;
-            border.MouseLeftButtonDown += (s, e) =>
-            {
-                _selectedTileId = (int)((Border)s).Tag;
-                UpdateTileSelection();
-            };
+            border.MouseLeftButtonDown += TileButton_MouseDown;
+            border.MouseMove += TileButton_MouseMove;
+            border.MouseLeftButtonUp += TileButton_MouseUp;
 
             TilesetGrid.Items.Add(border);
         }
 
-        UpdateTileSelection();
-    }
-
-    private void UpdateTileSelection()
-    {
-        foreach (var item in TilesetGrid.Items)
-        {
-            if (item is Border border)
-            {
-                int tileId = (int)border.Tag;
-                if (tileId == _selectedTileId)
-                {
-                    border.BorderBrush = new SolidColorBrush(Color.FromRgb(0x8E, 0xFF, 0x71));
-                    border.BorderThickness = new Thickness(2);
-                }
-                else
-                {
-                    border.BorderBrush = new SolidColorBrush(Color.FromRgb(0x76, 0x75, 0x75));
-                    border.BorderThickness = new Thickness(1);
-                }
-            }
-        }
-
-        if (_tilesetRenderer.Image != null && _selectedTileId >= 0)
-        {
-            var tileImage = _tilesetRenderer.ExtractTile(_selectedTileId);
-            if (tileImage != null)
-            {
-                ImgSelectedTile.Source = tileImage;
-                ImgSelectedTile.Stretch = Stretch.Fill;
-                TxtSelectedTileInfo.Text = $"Tile ID: {_selectedTileId}";
-            }
-        }
+        UpdateTileSelectionVisual();
+        UpdateSelectedTilePreview();
     }
 
     private void CmbTilesetAsset_SelectionChanged(object sender, SelectionChangedEventArgs e)

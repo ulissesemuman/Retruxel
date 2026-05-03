@@ -3,26 +3,68 @@
 // Generated at: {{timestamp}}
 
 #include "SMSlib.h"
+#include "engine.h"
 {{#each headers}}
 {{this}}
 {{/each}}
 
+// Global game state
+GameState g_gameState;
+
 void main(void) {
+    // Initialize game state to zero (SDCC does not zero-initialize globals)
+    unsigned char* ptr = (unsigned char*)&g_gameState;
+    unsigned int i;
+    for (i = 0; i < sizeof(GameState); i++) {
+        ptr[i] = 0;
+    }
+
 {{#if splashEnabled}}
     splash_show();
 {{/if}}
-{{#each initCalls}}
-{{this}}
-{{/each}}
-{{#each textDisplayCalls}}
-{{this}}
+
+    // Clear VRAM and turn on display
+    Engine_Init();
+
+    // Setup text renderer before any tile loading.
+    // SMS_autoSetUpTextRenderer() loads the ASCII font into tiles 0-255 AND
+    // overwrites palette BG entries 0 and 1 with black/white.
+    // It must run FIRST so that palette_init() can restore the correct colors
+    // immediately after, and tilemap startTile must be >= 256 to avoid
+    // overwriting font tiles.
+{{#if hasTextDisplay}}
+    SMS_autoSetUpTextRenderer();
+{{/if}}
+
+    // OnStart: Initialize modules
+    // Order guaranteed by ModuleRenderer: palette → tilemap → sprite → text → logic
+{{#each onStartCalls}}
+{{this.call}}
+{{#if this.isGraphicModule}}
+    Engine_Render(&g_gameState);
+    Engine_ClearDirtyFlags(&g_gameState);
+{{/if}}
 {{/each}}
 
     while(1) {
         SMS_waitForVBlank();
+
+        // OnInput: Process input first — all logic reads from this frame's state
+{{#each inputCalls}}
+{{this}}
+{{/each}}
+
+        // OnVBlank: Update game logic
+{{#each onVBlankCalls}}
+{{this}}
+{{/each}}
 {{#each updateCalls}}
 {{this}}
 {{/each}}
+
+        // Render: Apply state changes to VRAM
+        Engine_Render(&g_gameState);
+        Engine_ClearDirtyFlags(&g_gameState);
     }
 }
 

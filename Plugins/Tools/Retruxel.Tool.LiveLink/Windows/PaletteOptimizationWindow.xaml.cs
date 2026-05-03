@@ -12,7 +12,7 @@ namespace Retruxel.Tool.LiveLink.Windows
     {
         private readonly BitmapSource _originalBitmap;
         private readonly int _targetColorCount;
-        private readonly bool _useLab;
+        private bool _useLab;
         private readonly string _targetConsole;
         private double _currentDiversity = 1.25;
         
@@ -20,8 +20,8 @@ namespace Retruxel.Tool.LiveLink.Windows
         private readonly List<(byte R, byte G, byte B)> _originalPixels;
         
         public double SelectedDiversity => _currentDiversity;
-        public List<(byte R, byte G, byte B)> OptimizedPalette { get; private set; }
-        public BitmapSource OptimizedBitmap { get; private set; }
+        public List<(byte R, byte G, byte B)> OptimizedPalette { get; private set; } = new();
+        public BitmapSource OptimizedBitmap { get; private set; } = null!;
 
         public PaletteOptimizationWindow(BitmapSource originalBitmap, int targetColorCount, bool useLab, string targetConsole)
         {
@@ -56,6 +56,12 @@ namespace Retruxel.Tool.LiveLink.Windows
             _currentDiversity = SliderDiversity.Value / 100.0;
             TxtDiversityValue.Text = _currentDiversity.ToString("F2");
             
+            UpdateOptimizedPreview();
+        }
+
+        private void ColorSpace_Changed(object sender, RoutedEventArgs e)
+        {
+            _useLab = RbLab.IsChecked == true;
             UpdateOptimizedPreview();
         }
 
@@ -110,7 +116,7 @@ namespace Retruxel.Tool.LiveLink.Windows
             return mappedPalette;
         }
         
-        private List<(byte R, byte G, byte B)> GetTargetHardwarePalette(string targetConsole)
+        private List<(byte R, byte G, byte B)>? GetTargetHardwarePalette(string targetConsole)
         {
             return targetConsole switch
             {
@@ -159,10 +165,69 @@ namespace Retruxel.Tool.LiveLink.Windows
             if (OptimizedPalette == null)
                 return;
             
-            var brushes = OptimizedPalette.Select(c => 
-                new SolidColorBrush(Color.FromRgb(c.R, c.G, c.B))).ToList();
+            var brushes = OptimizedPalette
+                .Distinct()
+                .OrderBy(c => RgbToHue(c.R, c.G, c.B))
+                .ThenBy(c => RgbToLightness(c.R, c.G, c.B))
+                .ThenBy(c => RgbToSaturation(c.R, c.G, c.B))
+                .Select(c => new SolidColorBrush(Color.FromRgb(c.R, c.G, c.B)))
+                .ToList();
             
             PalettePreview.ItemsSource = brushes;
+        }
+        
+        private static double RgbToHue(byte r, byte g, byte b)
+        {
+            double rd = r / 255.0;
+            double gd = g / 255.0;
+            double bd = b / 255.0;
+            
+            double max = Math.Max(rd, Math.Max(gd, bd));
+            double min = Math.Min(rd, Math.Min(gd, bd));
+            double delta = max - min;
+            
+            if (delta == 0) return 0;
+            
+            double hue = 0;
+            if (max == rd)
+                hue = ((gd - bd) / delta) % 6;
+            else if (max == gd)
+                hue = (bd - rd) / delta + 2;
+            else
+                hue = (rd - gd) / delta + 4;
+            
+            hue *= 60;
+            if (hue < 0) hue += 360;
+            
+            return hue;
+        }
+        
+        private static double RgbToLightness(byte r, byte g, byte b)
+        {
+            double rd = r / 255.0;
+            double gd = g / 255.0;
+            double bd = b / 255.0;
+            
+            double max = Math.Max(rd, Math.Max(gd, bd));
+            double min = Math.Min(rd, Math.Min(gd, bd));
+            
+            return (max + min) / 2.0;
+        }
+        
+        private static double RgbToSaturation(byte r, byte g, byte b)
+        {
+            double rd = r / 255.0;
+            double gd = g / 255.0;
+            double bd = b / 255.0;
+            
+            double max = Math.Max(rd, Math.Max(gd, bd));
+            double min = Math.Min(rd, Math.Min(gd, bd));
+            double delta = max - min;
+            
+            if (delta == 0) return 0;
+            
+            double lightness = (max + min) / 2.0;
+            return delta / (1 - Math.Abs(2 * lightness - 1));
         }
 
         private List<(byte R, byte G, byte B)> ExtractPixels(BitmapSource bitmap)
@@ -194,7 +259,7 @@ namespace Retruxel.Tool.LiveLink.Windows
             return result;
         }
 
-        private BitmapSource ApplyPalette(BitmapSource original, List<(byte R, byte G, byte B)> palette, bool useLab)
+        private BitmapSource? ApplyPalette(BitmapSource? original, List<(byte R, byte G, byte B)> palette, bool useLab)
         {
             if (original == null || palette == null || palette.Count == 0)
                 return original;
@@ -233,86 +298,9 @@ namespace Retruxel.Tool.LiveLink.Windows
         private (byte R, byte G, byte B) FindClosestColor((byte R, byte G, byte B) color, 
             List<(byte R, byte G, byte B)> palette, bool useLab)
         {
-            if (useLab)
-            {
-                var lab = RgbToLab(color.R, color.G, color.B);
-                double minDistance = double.MaxValue;
-                var closest = palette[0];
-
-                foreach (var p in palette)
-                {
-                    var pLab = RgbToLab(p.R, p.G, p.B);
-                    double distance = Math.Sqrt(
-                        Math.Pow(lab.L - pLab.L, 2) +
-                        Math.Pow(lab.A - pLab.A, 2) +
-                        Math.Pow(lab.B - pLab.B, 2));
-
-                    if (distance < minDistance)
-                    {
-                        minDistance = distance;
-                        closest = p;
-                    }
-                }
-
-                return closest;
-            }
-            else
-            {
-                double minDistance = double.MaxValue;
-                var closest = palette[0];
-
-                foreach (var p in palette)
-                {
-                    double distance = Math.Sqrt(
-                        Math.Pow(color.R - p.R, 2) +
-                        Math.Pow(color.G - p.G, 2) +
-                        Math.Pow(color.B - p.B, 2));
-
-                    if (distance < minDistance)
-                    {
-                        minDistance = distance;
-                        closest = p;
-                    }
-                }
-
-                return closest;
-            }
-        }
-
-        private (double L, double A, double B) RgbToLab(byte r, byte g, byte b)
-        {
-            double rLinear = RgbToLinear(r / 255.0);
-            double gLinear = RgbToLinear(g / 255.0);
-            double bLinear = RgbToLinear(b / 255.0);
-
-            double x = rLinear * 0.4124564 + gLinear * 0.3575761 + bLinear * 0.1804375;
-            double y = rLinear * 0.2126729 + gLinear * 0.7151522 + bLinear * 0.0721750;
-            double z = rLinear * 0.0193339 + gLinear * 0.1191920 + bLinear * 0.9503041;
-
-            x /= 0.95047;
-            y /= 1.00000;
-            z /= 1.08883;
-
-            double fx = LabF(x);
-            double fy = LabF(y);
-            double fz = LabF(z);
-
-            double L = 116.0 * fy - 16.0;
-            double A = 500.0 * (fx - fy);
-            double B = 200.0 * (fy - fz);
-
-            return (L, A, B);
-        }
-
-        private double RgbToLinear(double c)
-        {
-            return c <= 0.04045 ? c / 12.92 : Math.Pow((c + 0.055) / 1.055, 2.4);
-        }
-
-        private double LabF(double t)
-        {
-            const double delta = 6.0 / 29.0;
-            return t > delta * delta * delta ? Math.Pow(t, 1.0 / 3.0) : t / (3.0 * delta * delta) + 4.0 / 29.0;
+            return useLab 
+                ? Retruxel.Lib.ImageProcessing.ColorMatching.FindNearestLab(color, palette)
+                : Retruxel.Lib.ImageProcessing.ColorMatching.FindNearestRgb(color, palette);
         }
 
         private void BtnOk_Click(object sender, RoutedEventArgs e)

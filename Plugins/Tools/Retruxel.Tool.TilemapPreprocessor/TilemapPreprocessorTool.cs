@@ -74,22 +74,36 @@ public class TilemapPreprocessorTool : ITool
         var startTile = GetInt(input, "startTile", 0);
         var mapWidth = GetInt(input, "mapWidth", 32);
         var mapHeight = GetInt(input, "mapHeight", 24);
+        var mapX = GetInt(input, "mapX", 0);
+        var mapY = GetInt(input, "mapY", 0);
         var maxTileSlots = GetInt(input, "maxTileSlots", 448);
-        var targetMaxHeight = GetInt(input, "targetMaxHeight", mapHeight); // Target's max supported height
 
-        // Check if truncation is needed
-        bool truncated = false;
-        int originalHeight = mapHeight;
-        string? truncationWarning = null;
+        // Only apply clipping if mapX < 0 or mapY < 0 (tilemap starts off-screen)
+        bool needsClipping = mapX < 0 || mapY < 0;
         
-        if (mapHeight > targetMaxHeight)
+        int[] processedMapData;
+        int finalWidth;
+        int finalHeight;
+        int drawX;
+        int drawY;
+
+        if (needsClipping)
         {
-            truncated = true;
-            int excessLines = mapHeight - targetMaxHeight;
-            truncationWarning = $"Tilemap height ({mapHeight}) exceeds target maximum ({targetMaxHeight}). " +
-                              $"Lines {targetMaxHeight + 1}-{mapHeight} will be ignored. " +
-                              $"({excessLines} line(s) × {mapWidth} tiles = {excessLines * mapWidth} tiles truncated)";
-            mapHeight = targetMaxHeight;
+            var clippingResult = ApplyClipping(mapData, mapWidth, mapHeight, mapX, mapY);
+            processedMapData = clippingResult.clippedData;
+            finalWidth = clippingResult.width;
+            finalHeight = clippingResult.height;
+            drawX = clippingResult.drawX;
+            drawY = clippingResult.drawY;
+        }
+        else
+        {
+            // No clipping needed - use full tilemap
+            processedMapData = mapData;
+            finalWidth = mapWidth;
+            finalHeight = mapHeight;
+            drawX = mapX;
+            drawY = mapY;
         }
 
         // Calculate collision bytes needed
@@ -99,11 +113,11 @@ public class TilemapPreprocessorTool : ITool
         var collisionArray = GenerateCollisionBitfield(solidTiles, maxTileSlots, collisionBytes);
         var collisionHex = string.Join(", ", collisionArray.Select(b => $"0x{b:X2}"));
 
-        // Process map data (add startTile to each tile ID) with truncation
-        var processedMap = ProcessMapData(mapData, startTile, mapWidth, mapHeight, maxTileSlots);
+        // Process map data (add startTile to each tile ID)
+        var processedMap = ProcessMapData(processedMapData, startTile, finalWidth, finalHeight, maxTileSlots);
 
         // Return multiple formats for flexibility
-        var processedMapHex = FormatMapAsHex(processedMap, mapWidth, mapHeight);
+        var processedMapHex = FormatMapAsHex(processedMap, finalWidth, finalHeight);
         var processedMapFlat = string.Join(", ", processedMap.Select(v => $"0x{v:X4}"));
 
         var result = new Dictionary<string, object>
@@ -121,18 +135,73 @@ public class TilemapPreprocessorTool : ITool
             ["processedMapFlat"] = processedMapFlat,
             ["mapEntryCount"] = processedMap.Length,
             
-            // Truncation info
-            ["truncated"] = truncated,
-            ["originalHeight"] = originalHeight,
-            ["actualHeight"] = mapHeight
+            // Clipping info
+            ["clippedWidth"] = finalWidth,
+            ["clippedHeight"] = finalHeight,
+            ["drawX"] = drawX,
+            ["drawY"] = drawY,
+            ["originalWidth"] = mapWidth,
+            ["originalHeight"] = mapHeight,
+            ["wasClipped"] = needsClipping
         };
         
-        if (truncationWarning != null)
-        {
-            result["truncationWarning"] = truncationWarning;
-        }
-        
         return result;
+    }
+
+    /// <summary>
+    /// Applies clipping to the tilemap when it starts off-screen (negative mapX or mapY).
+    /// Returns only the visible portion by skipping the off-screen tiles.
+    /// </summary>
+    private (int[] clippedData, int width, int height, int drawX, int drawY) ApplyClipping(
+        int[] mapData, int mapWidth, int mapHeight, int mapX, int mapY)
+    {
+        int sourceOffsetX = 0;
+        int sourceOffsetY = 0;
+        int drawX = mapX;
+        int drawY = mapY;
+        int drawWidth = mapWidth;
+        int drawHeight = mapHeight;
+
+        // Handle negative X offset (tilemap starts off-screen to the left)
+        if (mapX < 0)
+        {
+            sourceOffsetX = -mapX;
+            drawX = 0;
+            drawWidth = mapWidth - sourceOffsetX;
+        }
+
+        // Handle negative Y offset (tilemap starts off-screen at the top)
+        if (mapY < 0)
+        {
+            sourceOffsetY = -mapY;
+            drawY = 0;
+            drawHeight = mapHeight - sourceOffsetY;
+        }
+
+        // Extract the visible portion
+        var clippedData = new int[drawWidth * drawHeight];
+        for (int y = 0; y < drawHeight; y++)
+        {
+            for (int x = 0; x < drawWidth; x++)
+            {
+                int sourceX = sourceOffsetX + x;
+                int sourceY = sourceOffsetY + y;
+                
+                if (sourceX >= mapWidth || sourceY >= mapHeight)
+                {
+                    clippedData[y * drawWidth + x] = -1; // Empty tile
+                    continue;
+                }
+
+                int sourceIndex = sourceY * mapWidth + sourceX;
+                if (sourceIndex < mapData.Length)
+                    clippedData[y * drawWidth + x] = mapData[sourceIndex];
+                else
+                    clippedData[y * drawWidth + x] = -1;
+            }
+        }
+
+        return (clippedData, drawWidth, drawHeight, drawX, drawY);
     }
 
     /// <summary>

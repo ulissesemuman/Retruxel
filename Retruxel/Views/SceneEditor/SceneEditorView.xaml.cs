@@ -34,19 +34,8 @@ public partial class SceneEditorView : UserControl
     private int _dragStartTileX;
     private int _dragStartTileY;
 
-    // Pan and zoom state
-    private bool _isPanning;
-    private Point _panStart;
-    private double _panOffsetX;
-    private double _panOffsetY;
-    private double _zoomLevel = 1.0;
     private const double MinZoom = 0.25;
     private const double MaxZoom = 4.0;
-    
-    // Box selection state
-    private bool _isBoxSelecting;
-    private Point _boxSelectStart;
-    private System.Windows.Shapes.Rectangle? _selectionBox;
     private readonly List<SceneElement> _selectedElements = [];
 
     public event Action<RetruxelProject>? OnGenerateRomRequested;

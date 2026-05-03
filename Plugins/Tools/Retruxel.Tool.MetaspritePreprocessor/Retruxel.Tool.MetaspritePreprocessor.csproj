@@ -10,4 +10,11 @@
     <ProjectReference Include="..\..\..\Retruxel.SDK\Retruxel.SDK.csproj" />
   </ItemGroup>
 
+  <Target Name="CopyToPlugins" AfterTargets="Build">
+    <ItemGroup>
+      <PluginFiles Include="$(OutputPath)**\*.*" />
+    </ItemGroup>
+    <Copy SourceFiles="@(PluginFiles)" DestinationFolder="$(SolutionDir)Retruxel\bin\$(Configuration)\$(TargetFramework)\Plugins\Tools\$(ProjectName)\%(RecursiveDir)" SkipUnchangedFiles="true" />
+  </Target>
+
 </Project>

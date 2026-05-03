@@ -254,10 +254,9 @@ public partial class SceneEditorView
 
             System.Diagnostics.Debug.WriteLine($"Added element: {elementData.ModuleId}, Trigger: {elementData.Trigger}, TileX: {elementData.TileX}, TileY: {elementData.TileY}");
 
+            // Create canvas visual for graphic modules
             bool isGraphicModule = _moduleRegistry.GraphicModules.ContainsKey(elementData.ModuleId);
-            bool hasCanvasPosition = elementData.TileX >= 0 && elementData.TileY >= 0;
-
-            if (isGraphicModule && hasCanvasPosition)
+            if (isGraphicModule)
             {
                 var visual = BuildCanvasElement(element);
                 Canvas.SetLeft(visual, element.TileX * 8);
@@ -266,9 +265,15 @@ public partial class SceneEditorView
                 element.CanvasVisual = visual;
             }
 
+            // Add to event panel if trigger is specified
             if (!string.IsNullOrEmpty(elementData.Trigger))
             {
+                System.Diagnostics.Debug.WriteLine($"Adding module {elementData.ModuleId} to event {elementData.Trigger}");
                 AddModuleToEvent(elementData.Trigger, elementData.ModuleId, element);
+            }
+            else
+            {
+                System.Diagnostics.Debug.WriteLine($"WARNING: Module {elementData.ModuleId} has no trigger specified");
             }
 
             RefreshModulePalette();

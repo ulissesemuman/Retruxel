@@ -24,7 +24,7 @@ public partial class TilemapEditorWindow : Window
 
     private int _selectedTileId = 0;
     private int _currentLayerIndex = 0;
-    private double _zoomLevel = 1.0;
+    private double _canvasZoom = 1.0;
     private double _tileZoomLevel = 1.0;
     private bool _isPainting = false;
     private bool _isInitializing = true;
@@ -46,6 +46,7 @@ public partial class TilemapEditorWindow : Window
 
         TxtTargetLabel.Text = target.DisplayName.ToUpper();
 
+        InitializeSelection();
         InitializeUI();
         LoadAssets();
     }

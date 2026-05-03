@@ -117,6 +117,7 @@ public static class AssetImporter
         IReadOnlyList<HardwareColor> palette)
     {
         var result = new SKBitmap(source.Width, source.Height, SKColorType.Rgba8888, SKAlphaType.Premul);
+        var rgbPalette = palette.Select(c => (c.R, c.G, c.B)).ToList();
 
         for (int y = 0; y < source.Height; y++)
         {
@@ -131,40 +132,13 @@ public static class AssetImporter
                     continue;
                 }
 
-                var nearest = FindNearestColor(pixel, palette);
+                var nearest = Retruxel.Lib.ImageProcessing.ColorMatching.FindNearestRgb(
+                    (pixel.Red, pixel.Green, pixel.Blue), rgbPalette);
                 result.SetPixel(x, y, new SKColor(nearest.R, nearest.G, nearest.B, pixel.Alpha));
             }
         }
 
         return result;
-    }
-
-    /// <summary>
-    /// Finds the nearest hardware color to the given pixel using Euclidean distance in RGB space.
-    /// </summary>
-    private static HardwareColor FindNearestColor(SKColor pixel, IReadOnlyList<HardwareColor> palette)
-    {
-        var bestColor = palette[0];
-        var bestDistance = double.MaxValue;
-
-        foreach (var color in palette)
-        {
-            var dr = (double)(pixel.Red - color.R);
-            var dg = (double)(pixel.Green - color.G);
-            var db = (double)(pixel.Blue - color.B);
-
-            var distance = dr * dr + dg * dg + db * db;
-
-            if (distance < bestDistance)
-            {
-                bestDistance = distance;
-                bestColor = color;
-
-                if (distance == 0) break; // Exact match — no need to continue
-            }
-        }
-
-        return bestColor;
     }
 
     // ── Validation ────────────────────────────────────────────────────────────

@@ -1,18 +1,17 @@
 {
   "moduleId": "enemy",
   "targetId": "sms",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "template": "enemy.c.rtrx",
   "variables": {
-    "x": { "from": "module", "path": "x", "default": 120 },
-    "y": { "from": "module", "path": "y", "default": 144 },
-    "speed": { "from": "module", "path": "speed", "default": 1 },
-    "health": { "from": "module", "path": "health", "default": 1 },
-    "spriteId": { "from": "module", "path": "spriteId", "default": 1 },
-    "spriteRef": { "from": "module", "path": "spriteRef", "default": "" },
+    "x":            { "from": "module", "path": "x",            "default": 120 },
+    "y":            { "from": "module", "path": "y",            "default": 144 },
+    "speed":        { "from": "module", "path": "speed",        "default": 1 },
+    "health":       { "from": "module", "path": "health",       "default": 1 },
+    "spriteRef":    { "from": "module", "path": "spriteRef",    "default": "" },
     "animationRef": { "from": "module", "path": "animationRef", "default": "" },
-    "patrolRange": { "from": "module", "path": "patrolRange", "default": 64 },
-    "pattern": { "from": "module", "path": "pattern", "default": ["Patrol", "Static", "Chase"] },
+    "patrolRange":  { "from": "module", "path": "patrolRange",  "default": 64 },
+    "pattern":      { "from": "module", "path": "pattern",      "default": "Patrol" },
     "useAnimation": { "from": "module", "path": "useAnimation", "default": false }
   }
 }

@@ -30,6 +30,8 @@
         "solidTiles": "solidTiles",
         "mapData": "mapData",
         "startTile": "startTile",
+        "mapX": "mapX",
+        "mapY": "mapY",
         "mapWidth": "mapWidth",
         "mapHeight": "mapHeight",
         "maxTileSlots": "maxTileSlots"

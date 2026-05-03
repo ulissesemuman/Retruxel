@@ -217,7 +217,15 @@
                                     Style="{StaticResource ButtonGhost}"
                                     Height="40"
                                     IsEnabled="False"
-                                    Click="BtnValidateSmsColors_Click"/>
+                                    Click="BtnValidateSmsColors_Click"
+                                    Margin="0,0,0,8"/>
+                            
+                            <Button x:Name="BtnExpandCanvas"
+                                    Content="EXPAND CANVAS"
+                                    Style="{StaticResource ButtonGhost}"
+                                    Height="40"
+                                    IsEnabled="False"
+                                    Click="BtnExpandCanvas_Click"/>
                         </StackPanel>
                     </Border>
 

@@ -157,6 +157,42 @@
                                     Click="BtnImportAsset_Click"
                                     Style="{StaticResource ButtonSecondary}"
                                     Margin="0,0,0,8"/>
+                            
+                            <!-- Import Tileset as Map -->
+                            <Border Background="{StaticResource BrushSurfaceContainerHigh}"
+                                    Padding="8"
+                                    Margin="0,0,0,8">
+                                <StackPanel>
+                                    <TextBlock Text="IMPORT TILESET AS MAP"
+                                               Style="{StaticResource TextLabelCaps}"
+                                               Foreground="{StaticResource BrushOnSurfaceVariant}"
+                                               Margin="0,0,0,4"/>
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition Width="4"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Grid.Column="0"
+                                                   Text="Columns:"
+                                                   Style="{StaticResource TextLabel}"
+                                                   Foreground="{StaticResource BrushOnSurface}"
+                                                   VerticalAlignment="Center"/>
+                                        <TextBox x:Name="TxtImportColumns"
+                                                 Grid.Column="2"
+                                                 Text="16"
+                                                 Height="28"
+                                                 VerticalContentAlignment="Center"
+                                                 ToolTip="Number of tile columns in the tileset image"/>
+                                    </Grid>
+                                    <Button x:Name="BtnImportTilesetAsMap"
+                                            Content="IMPORT 1:1"
+                                            Click="BtnImportTilesetAsMap_Click"
+                                            Style="{StaticResource ButtonSecondary}"
+                                            Margin="0,4,0,0"/>
+                                </StackPanel>
+                            </Border>
+                            
                             <Button x:Name="BtnOptimize"
                                     Content="OPTIMIZE"
                                     Click="BtnOptimize_Click"
@@ -193,6 +229,8 @@
                                         Background="Transparent"
                                         MouseLeftButtonDown="Canvas_MouseLeftButtonDown"
                                         MouseMove="Canvas_MouseMove"
+                                        MouseLeftButtonUp="Canvas_MouseLeftButtonUp"
+                                        MouseLeave="Canvas_MouseLeave"
                                         MouseRightButtonDown="Canvas_MouseRightButtonDown"/>
                             </ScrollViewer>
                         </Border>

@@ -131,7 +131,16 @@ public partial class SceneEditorView
         element.Trigger = trigger;
 
         if (existingElement is null)
+        {
             _elements.Add(element);
+            
+            // Create canvas visual for the element
+            var visual = BuildCanvasElement(element);
+            Canvas.SetLeft(visual, 0);
+            Canvas.SetTop(visual, 0);
+            SceneCanvas.Children.Add(visual);
+            element.CanvasVisual = visual;
+        }
 
         // Find the actions panel for this trigger
         foreach (Border block in EventsPanel.Children)

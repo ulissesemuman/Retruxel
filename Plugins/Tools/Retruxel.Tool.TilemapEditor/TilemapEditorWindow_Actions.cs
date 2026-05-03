@@ -30,6 +30,13 @@ public partial class TilemapEditorWindow
             return;
         }
 
+        // Validate asset colors
+        if (!ValidateAssetColors(out var invalidColors))
+        {
+            if (!HandleInvalidColors(invalidColors))
+                return; // User chose to stay in editor or cancelled
+        }
+
         var base64Data = TilemapSerializer.ToBase64(_tilemapData.GetLayer(_currentLayerIndex));
         var bytes = Convert.FromBase64String(base64Data);
         var mapDataArray = new int[bytes.Length / 2];
@@ -78,6 +85,57 @@ public partial class TilemapEditorWindow
     {
         _tilemapData.FillLayer(_currentLayerIndex, _selectedTileId);
         RenderCanvas();
+    }
+
+    private void BtnImportTilesetAsMap_Click(object sender, RoutedEventArgs e)
+    {
+        if (_tilesetRenderer.Image == null || CmbTilesetAsset.SelectedItem == null)
+        {
+            MessageBox.Show("Please select a tileset asset first.", "No Tileset", MessageBoxButton.OK, MessageBoxImage.Warning);
+            return;
+        }
+
+        if (!int.TryParse(TxtImportColumns.Text, out int columns) || columns <= 0)
+        {
+            MessageBox.Show("Please enter a valid number of columns (greater than 0).", "Invalid Columns", MessageBoxButton.OK, MessageBoxImage.Warning);
+            return;
+        }
+
+        try
+        {
+            var assetId = CmbTilesetAsset.SelectedItem.ToString()!;
+            var asset = _project.Assets.FirstOrDefault(a => a.Id == assetId);
+            if (asset == null) return;
+
+            int tileCount = asset.TileCount;
+            int rows = (int)Math.Ceiling((double)tileCount / columns);
+
+            // Resize tilemap to match tileset dimensions
+            TxtWidth.Text = columns.ToString();
+            TxtHeight.Text = rows.ToString();
+            _tilemapData.Resize(columns, rows);
+
+            // Fill tilemap with tiles in order (0, 1, 2, ...)
+            var currentLayer = _tilemapData.GetLayer(_currentLayerIndex);
+            for (int i = 0; i < currentLayer.Length && i < tileCount; i++)
+            {
+                currentLayer[i] = i;
+            }
+
+            RenderCanvas();
+
+            MessageBox.Show(
+                $"Tileset imported as {columns}×{rows} tilemap.\n\n" +
+                $"Total tiles: {tileCount}\n\n" +
+                $"You can now edit the tilemap and save it.",
+                "Import Complete",
+                MessageBoxButton.OK,
+                MessageBoxImage.Information);
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show($"Import failed: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
     }
 
     public void LoadModuleData(Dictionary<string, object> moduleData)

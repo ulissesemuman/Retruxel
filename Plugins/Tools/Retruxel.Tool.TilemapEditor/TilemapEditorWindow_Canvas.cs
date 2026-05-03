@@ -16,7 +16,7 @@ public partial class TilemapEditorWindow
         int height = int.Parse(TxtHeight.Text);
         int tileSize = _target.Specs.TileWidth;
 
-        double scaledTileSize = tileSize * _zoomLevel;
+        double scaledTileSize = tileSize * _canvasZoom;
 
         TilemapCanvas.Width = width * scaledTileSize;
         TilemapCanvas.Height = height * scaledTileSize;
@@ -159,18 +159,51 @@ public partial class TilemapEditorWindow
     private void Canvas_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
     {
         _isPainting = true;
-        PaintTile(e.GetPosition(TilemapCanvas));
+        Point position = e.GetPosition(TilemapCanvas);
+        int tileSize = _target.Specs.TileWidth;
+        double scaledTileSize = tileSize * _canvasZoom;
+
+        int tileX = (int)(position.X / scaledTileSize);
+        int tileY = (int)(position.Y / scaledTileSize);
+
+        // Paint block if multiple tiles selected, otherwise single tile
+        if (_selectedTileIds.Count > 1)
+            PlaceTileBlock(tileX, tileY);
+        else
+            PaintTile(position);
     }
 
     private void Canvas_MouseMove(object sender, MouseEventArgs e)
     {
+        Point position = e.GetPosition(TilemapCanvas);
+        int tileSize = _target.Specs.TileWidth;
+        double scaledTileSize = tileSize * _canvasZoom;
+
+        int tileX = (int)(position.X / scaledTileSize);
+        int tileY = (int)(position.Y / scaledTileSize);
+
+        int width = int.Parse(TxtWidth.Text);
+        int height = int.Parse(TxtHeight.Text);
+
+        // Show paint preview if mouse is within bounds
+        if (tileX >= 0 && tileX < width && tileY >= 0 && tileY < height)
+            ShowPaintPreview(tileX, tileY);
+        else
+            HidePaintPreview();
+
+        // Paint if mouse button is pressed
         if (_isPainting && e.LeftButton == MouseButtonState.Pressed)
-            PaintTile(e.GetPosition(TilemapCanvas));
+            PaintTile(position);
     }
 
     private void Canvas_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
     {
         _isPainting = false;
+    }
+
+    private void Canvas_MouseLeave(object sender, MouseEventArgs e)
+    {
+        HidePaintPreview();
     }
 
     private void Canvas_MouseRightButtonDown(object sender, MouseButtonEventArgs e)
@@ -184,7 +217,7 @@ public partial class TilemapEditorWindow
     private void PaintTile(Point position)
     {
         int tileSize = _target.Specs.TileWidth;
-        double scaledTileSize = tileSize * _zoomLevel;
+        double scaledTileSize = tileSize * _canvasZoom;
 
         int tileX = (int)(position.X / scaledTileSize);
         int tileY = (int)(position.Y / scaledTileSize);
@@ -201,14 +234,14 @@ public partial class TilemapEditorWindow
 
     private void BtnZoomFit_Click(object sender, RoutedEventArgs e)
     {
-        _zoomLevel = 1.0;
+        _canvasZoom = 1.0;
         TxtZoomLevel.Text = "100%";
         RenderCanvas();
     }
 
     private void BtnZoom100_Click(object sender, RoutedEventArgs e)
     {
-        _zoomLevel = 1.0;
+        _canvasZoom = 1.0;
         TxtZoomLevel.Text = "100%";
         RenderCanvas();
     }

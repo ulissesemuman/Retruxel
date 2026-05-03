@@ -239,6 +239,9 @@ function verificarSocket()
                     emu.log("Retruxel: Failed to get screen buffer")
                     client:send("ERROR\n")
                 end
+            elseif line:match("^PING$") then
+                -- Keep-alive ping - respond immediately
+                client:send("PONG\n")
             else
                 emu.log("Retruxel: Unknown command: " .. line)
                 emu.log("Retruxel: Sending OK")

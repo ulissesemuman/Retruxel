@@ -44,13 +44,6 @@ public class ModuleRenderer
         _targetAssembly = targetAssembly;
         _tools = DiscoverTools();
         _codeGens = DiscoverCodeGens(progress);
-
-        // Debug: log discovered CodeGens
-        progress?.Report($"DEBUG: ModuleRenderer initialized with {_codeGens.Count} CodeGens");
-        foreach (var (key, manifest) in _codeGens)
-        {
-            progress?.Report($"DEBUG: CodeGen registered: {key} (IsSystemModule={manifest.IsSystemModule})");
-        }
     }
 
     /// <summary>
@@ -84,31 +77,18 @@ public class ModuleRenderer
         string targetId,
         RetruxelProject project,
         IEnumerable<GeneratedFile> moduleFiles,
+        Dictionary<Core.Interfaces.IModule, string> triggersByElement,
         IProgress<string>? progress = null)
     {
         var key = Key(targetId, "main");
-        progress?.Report($"DEBUG: Looking for CodeGen key: {key}");
 
         if (!_codeGens.TryGetValue(key, out var manifest))
-        {
-            progress?.Report($"DEBUG: CodeGen not found for key: {key}");
             return null;
-        }
 
         if (!manifest.IsSystemModule)
-        {
-            progress?.Report($"DEBUG: CodeGen found but IsSystemModule=false");
             return null;
-        }
-
-        progress?.Report($"DEBUG: Found system module CodeGen, rendering...");
 
         var filesList = moduleFiles.ToList();
-        progress?.Report($"DEBUG: Total module files: {filesList.Count}");
-        foreach (var f in filesList)
-        {
-            progress?.Report($"DEBUG: File: {f.FileName}, Type: {f.FileType}, Module: {f.SourceModuleId}");
-        }
 
         // Build variable dictionary from project and moduleFiles
         var variables = new Dictionary<string, object>
@@ -144,17 +124,41 @@ public class ModuleRenderer
                     break;
 
                 case "moduleFiles":
-                    var result = ProcessModuleFiles(filesList, varDef, variables);
-                    variables[varName] = result;
-                    if (result is List<string> list)
-                        progress?.Report($"DEBUG: Variable '{varName}' has {list.Count} items");
+                    // Special case: hasTextDisplay should resolve to a boolean, not a list
+                    if (varName == "hasTextDisplay")
+                    {
+                        var hasText = filesList.Any(f => f.SourceModuleId == "text.display");
+                        variables[varName] = hasText;
+                    }
+                    else
+                    {
+                        var result = ProcessModuleFiles(filesList, varDef, variables);
+                        variables[varName] = result;
+                    }
                     break;
 
                 case "updateCalls":
-                    // Generate update calls for modules that have _update() functions
-                    var updateCalls = GenerateUpdateCalls(filesList, progress);
+                    var updateCalls = GenerateUpdateCalls(filesList);
                     variables[varName] = updateCalls;
-                    progress?.Report($"DEBUG: Generated {updateCalls.Count} update calls");
+                    break;
+
+                case "inputCalls":
+                    var inputCalls = GenerateInputCalls(filesList);
+                    variables[varName] = inputCalls;
+                    break;
+                    
+                case "onStartCalls":
+                    var onStartCalls = GenerateEventCalls(filesList, triggersByElement, "OnStart", _moduleRegistry);
+                    variables[varName] = onStartCalls;
+                    break;
+                    
+                case "onVBlankCalls":
+                    var onVBlankCalls = GenerateEventCalls(filesList, triggersByElement, "OnVBlank", _moduleRegistry);
+                    // Extract just the call strings for onVBlankCalls (template uses {{this}})
+                    variables[varName] = onVBlankCalls
+                        .Cast<Dictionary<string, object>>()
+                        .Select(d => d["call"].ToString())
+                        .ToList();
                     break;
             }
         }
@@ -274,12 +278,7 @@ public class ModuleRenderer
 
         if (!string.IsNullOrEmpty(varDef.Path))
         {
-            Console.WriteLine($"[ProcessModuleFiles] Filter: {varDef.Path}");
-            Console.WriteLine($"[ProcessModuleFiles] Files before filter: {files.Count}");
             filtered = filtered.Where(f => EvaluateFileFilter(f, varDef.Path, existingVariables));
-            var filteredList = filtered.ToList();
-            Console.WriteLine($"[ProcessModuleFiles] Files after filter: {filteredList.Count}");
-            filtered = filteredList;
         }
 
         // Group by sourceModuleId if varDef has groupBy
@@ -309,13 +308,9 @@ public class ModuleRenderer
                 .Replace("fileName", $"'{file.FileName}'")
                 .Replace("sourceModuleId", $"'{file.SourceModuleId}'");
 
-            Console.WriteLine($"[EvaluateFileFilter] File: {file.FileName}, Type: {file.FileType}, Module: {file.SourceModuleId}");
-            Console.WriteLine($"[EvaluateFileFilter] Filter: {filter}");
-            Console.WriteLine($"[EvaluateFileFilter] After replace: {expr}");
-
             // Split by && and evaluate each condition
             var parts = expr.Split(new[] { "&&" }, StringSplitOptions.TrimEntries);
-            var result = parts.All(part =>
+            return parts.All(part =>
             {
                 // Handle == comparison
                 if (part.Contains("=="))
@@ -325,9 +320,7 @@ public class ModuleRenderer
                     {
                         var left = tokens[0].Trim('\'');
                         var right = tokens[1].Trim('\'');
-                        var match = left == right;
-                        Console.WriteLine($"[EvaluateFileFilter] Compare: '{left}' == '{right}' = {match}");
-                        return match;
+                        return left == right;
                     }
                 }
 
@@ -339,17 +332,12 @@ public class ModuleRenderer
                     {
                         var left = tokens[0].Trim('\'');
                         var right = tokens[1].Trim('\'');
-                        var match = left != right;
-                        Console.WriteLine($"[EvaluateFileFilter] Compare: '{left}' != '{right}' = {match}");
-                        return match;
+                        return left != right;
                     }
                 }
 
                 return true;
             });
-
-            Console.WriteLine($"[EvaluateFileFilter] Final result: {result}");
-            return result;
         }
         catch
         {
@@ -541,7 +529,6 @@ public class ModuleRenderer
                 if (resolvedVariables.ContainsKey(valueSource))
                 {
                     input[inputKey] = resolvedVariables[valueSource];
-                    Console.WriteLine($"[ModuleRenderer] Tool input '{inputKey}' = resolvedVariables['{valueSource}'] (type: {resolvedVariables[valueSource]?.GetType().Name})");
                 }
                 // Otherwise try to read from module JSON
                 else if (moduleRoot.TryGetProperty(valueSource, out var v))
@@ -554,13 +541,11 @@ public class ModuleRenderer
                         JsonValueKind.Array => ArrayConversionHelper.ToIntArray(v),
                         _ => v.GetString() ?? ""
                     };
-                    Console.WriteLine($"[ModuleRenderer] Tool input '{inputKey}' = moduleRoot['{valueSource}'] (type: {input[inputKey]?.GetType().Name}, count: {(input[inputKey] is Array arr ? arr.Length : "N/A")})");
                 }
                 // Otherwise use the literal value
                 else
                 {
                     input[inputKey] = valueSource;
-                    Console.WriteLine($"[ModuleRenderer] Tool input '{inputKey}' = literal '{valueSource}'");
                 }
             }
         }
@@ -573,7 +558,6 @@ public class ModuleRenderer
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"[ModuleRenderer] ERROR: Tool '{varDef.ToolId}' failed: {ex.Message}");
             return new() { ["error"] = ex.Message };
         }
 
@@ -649,9 +633,11 @@ public class ModuleRenderer
                     }
                 }
             }
-            catch
+            catch (Exception ex)
             {
-                // Skip malformed DLLs
+                // Skip malformed DLLs - only log if it's a real error
+                if (!ex.Message.Contains("BadImageFormatException"))
+                    Console.WriteLine($"[ModuleRenderer] WARN: Failed to load tool from {dllPath}: {ex.Message}");
             }
         }
 
@@ -663,22 +649,16 @@ public class ModuleRenderer
         var result = new Dictionary<string, CodeGenManifest>(StringComparer.OrdinalIgnoreCase);
         var codeGensDir = Path.Combine(_pluginsPath, "CodeGens");
 
-        progress?.Report($"DEBUG: Scanning CodeGens directory: {codeGensDir}");
-        progress?.Report($"DEBUG: Directory exists: {Directory.Exists(codeGensDir)}");
-
         if (!Directory.Exists(codeGensDir))
             return result;
 
         // Scan all subdirectories recursively — no naming convention enforced
         var dirs = Directory.GetDirectories(codeGensDir, "*", SearchOption.AllDirectories);
-        progress?.Report($"DEBUG: Found {dirs.Length} subdirectories in CodeGens");
 
         foreach (var dir in dirs)
         {
             var manifestPath = Path.Combine(dir, "codegen.json");
             if (!File.Exists(manifestPath)) continue;
-
-            progress?.Report($"DEBUG: Found manifest: {manifestPath}");
 
             try
             {
@@ -705,19 +685,11 @@ public class ModuleRenderer
                            File.ReadAllText(manifestPath), opts);
 
             if (raw is null || raw.ModuleId is null || raw.TargetId is null || raw.Template is null)
-            {
-                progress?.Report($"WARN: Invalid manifest at {manifestPath} (moduleId={raw?.ModuleId}, targetId={raw?.TargetId}, template={raw?.Template})");
                 return null;
-            }
 
             var templatePath = Path.Combine(dir, raw.Template);
             if (!File.Exists(templatePath))
-            {
-                progress?.Report($"WARN: Template not found: {templatePath}");
                 return null;
-            }
-
-            progress?.Report($"DEBUG: Loaded CodeGen: {raw.TargetId}::{raw.ModuleId} (IsSystemModule={raw.IsSystemModule})");
 
             return new CodeGenManifest
             {
@@ -797,14 +769,33 @@ public class ModuleRenderer
 
     /// <summary>
     /// Generates update calls for modules that have _update() functions.
-    /// Modules with update: input, animation, entity, enemy, scroll.
-    /// Modules without update: palette, tilemap, sprite, physics (only init).
+    /// 
+    /// With state-based rendering, graphic modules need _update() to keep dirty flags set.
+    /// Otherwise Engine_ClearDirtyFlags() will clear them and the module disappears.
+    /// 
+    /// Modules with update:
+    ///   - Logic: animation, entity, enemy, scroll, input
+    ///   - Graphics: text.display, sprite (if animated)
+    /// 
+    /// Modules without update (static, only need init):
+    ///   - tilemap (loaded once, stays in VRAM)
+    ///   - palette (loaded once, stays in CRAM)
+    ///   - physics (only provides collision detection)
+    /// 
+    /// Note: This is a pragmatic solution. Ideally, GameState would have
+    /// 'persistent' flags to avoid clearing dirty flags for static modules.
     /// </summary>
-    private static List<string> GenerateUpdateCalls(List<GeneratedFile> files, IProgress<string>? progress = null)
+    private static List<string> GenerateUpdateCalls(List<GeneratedFile> files)
     {
         var modulesWithUpdate = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
         {
-            "input", "animation", "entity", "enemy", "scroll"
+            // Logic modules (always need update)
+            "animation", 
+            "entity", 
+            "enemy", 
+            "scroll"
+            // text.display removed: no longer has _update(), uses _set() for runtime changes
+            // sprite removed: sprite rendering is driven by entity/enemy _update(), not standalone
         };
 
         var updateCalls = new List<string>();
@@ -824,11 +815,117 @@ public class ModuleRenderer
                 var baseName = Path.GetFileNameWithoutExtension(file.FileName);
                 updateCalls.Add($"        {baseName}_update();");
                 processedModules.Add(moduleId);
-                progress?.Report($"DEBUG: Added update call for {moduleId} ({baseName})");
             }
         }
 
         return updateCalls;
+    }
+
+    /// <summary>
+    /// Generates input update calls separately to ensure they execute first in the main loop.
+    /// </summary>
+    private static List<string> GenerateInputCalls(List<GeneratedFile> files)
+    {
+        var inputCalls = new List<string>();
+        var processedModules = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        foreach (var file in files)
+        {
+            if (file.FileType != GeneratedFileType.Header)
+                continue;
+
+            var moduleId = file.SourceModuleId;
+            if (string.IsNullOrEmpty(moduleId) || processedModules.Contains(moduleId))
+                continue;
+
+            if (moduleId.Equals("input", StringComparison.OrdinalIgnoreCase))
+            {
+                var baseName = Path.GetFileNameWithoutExtension(file.FileName);
+                inputCalls.Add($"        {baseName}_update();");
+                processedModules.Add(moduleId);
+            }
+        }
+
+        return inputCalls;
+    }
+    
+    /// <summary>
+    /// Generates event-specific initialization or update calls based on trigger.
+    /// Filters modules by their assigned trigger (OnStart, OnVBlank, etc.).
+    /// Returns objects with 'call' and 'isGraphicModule' properties.
+    /// Palettes are sorted first to ensure they load before tiles.
+    /// </summary>
+    private static List<object> GenerateEventCalls(
+        List<GeneratedFile> files,
+        Dictionary<Core.Interfaces.IModule, string> triggersByElement,
+        string targetTrigger,
+        ModuleRegistry? moduleRegistry)
+    {
+        var calls = new List<object>();
+        var processedFiles = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        
+        var graphicModuleIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+        {
+            "tilemap", "sprite", "text.display", "palette", "background", "animation"
+        };
+
+        // Collect all calls first
+        var allCalls = new List<(string fileName, string moduleId, string baseName, bool isGraphic, bool isTextDisplay, bool isPalette)>();
+
+        foreach (var file in files)
+        {
+            if (file.FileType != GeneratedFileType.Header)
+                continue;
+
+            var moduleId = file.SourceModuleId;
+            if (string.IsNullOrEmpty(moduleId))
+                continue;
+                
+            // Skip system modules
+            if (moduleId.Equals("retruxel.core", StringComparison.OrdinalIgnoreCase) ||
+                moduleId.Equals("retruxel.splash", StringComparison.OrdinalIgnoreCase) ||
+                moduleId.Equals("retruxel.engine", StringComparison.OrdinalIgnoreCase))
+                continue;
+
+            // Check if this file's module instance has the target trigger
+            var hasTargetTrigger = triggersByElement.Any(kvp => 
+                kvp.Key.ModuleId == moduleId && 
+                kvp.Value.Equals(targetTrigger, StringComparison.OrdinalIgnoreCase));
+
+            if (!hasTargetTrigger)
+                continue;
+
+            // Avoid duplicate calls for singleton modules
+            if (processedFiles.Contains(file.FileName))
+                continue;
+
+            var baseName = Path.GetFileNameWithoutExtension(file.FileName);
+            var isGraphic = graphicModuleIds.Contains(moduleId);
+            var isTextDisplay = moduleId.Equals("text.display", StringComparison.OrdinalIgnoreCase);
+            var isPalette = moduleId.Equals("palette", StringComparison.OrdinalIgnoreCase);
+            
+            allCalls.Add((file.FileName, moduleId, baseName, isGraphic, isTextDisplay, isPalette));
+            processedFiles.Add(file.FileName);
+        }
+
+        // Sort: palettes first, text.display last, everything else in between
+        var sortedCalls = allCalls
+            .OrderByDescending(c => c.isPalette)
+            .ThenBy(c => c.isTextDisplay)
+            .ToList();
+
+        // Convert to output format
+        foreach (var (fileName, moduleId, baseName, isGraphic, isTextDisplay, isPalette) in sortedCalls)
+        {
+            calls.Add(new Dictionary<string, object>
+            {
+                ["call"] = $"    {baseName}_init();",
+                ["isGraphicModule"] = isGraphic,
+                ["isTextDisplay"] = isTextDisplay
+            });
+        }
+
+        return calls;
     }
 
     // ── Internal models ───────────────────────────────────────────────────────

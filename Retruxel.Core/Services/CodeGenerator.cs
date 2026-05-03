@@ -45,8 +45,9 @@ public class CodeGenerator
         // Reset renderer state before generation
         _moduleRenderer.ResetState();
 
-        // Collect all module instances from scenes
+        // Collect all module instances from scenes, grouped by trigger
         var instancesByModule = new Dictionary<string, List<IModule>>();
+        var triggersByElement = new Dictionary<IModule, string>(); // Track trigger for each instance
 
         foreach (var scene in project.Scenes)
         {
@@ -86,6 +87,10 @@ public class CodeGenerator
                     instancesByModule[elementData.ModuleId] = new List<IModule>();
 
                 instancesByModule[elementData.ModuleId].Add(module);
+                
+                // Track trigger for this instance (default to OnStart if not set)
+                var trigger = string.IsNullOrEmpty(elementData.Trigger) ? "OnStart" : elementData.Trigger;
+                triggersByElement[module] = trigger;
             }
         }
 
@@ -162,15 +167,24 @@ public class CodeGenerator
             }
         }
 
+        // Validate tile conflicts between tilemap and text.display
+        ValidateTileConflicts(instancesByModule, progress);
+
         // Generate target-specific main entry point
-        // First, check if target wants to inject additional files (like splash screens)
+        // First, generate engine runtime files (engine.h, engine.c) if target provides them
+        var engineFiles = _target.GenerateEngineRuntime();
+        sourceFiles.AddRange(engineFiles);
+        if (engineFiles.Any())
+            progress?.Report($"INFO: {engineFiles.Count()} engine runtime files generated.");
+        
+        // Check if target wants to inject additional files (like splash screens)
         var systemFiles = _target.GenerateSystemFiles();
         sourceFiles.AddRange(systemFiles);
         if (systemFiles.Any())
             progress?.Report($"INFO: {systemFiles.Count()} system files generated.");
 
         // Priority 1: Try declarative main.c generation via ModuleRenderer
-        var mainFile = _moduleRenderer.RenderMainFile(project.TargetId, project, sourceFiles, progress);
+        var mainFile = _moduleRenderer.RenderMainFile(project.TargetId, project, sourceFiles, triggersByElement, progress);
         if (mainFile is not null)
         {
             progress?.Report("INFO: main.c generated via ModuleRenderer.");
@@ -213,6 +227,47 @@ public class CodeGenerator
         }
 
         return buildContext;
+    }
+
+    /// <summary>
+    /// Validates tile conflicts between tilemap and text.display modules.
+    /// SMS_autoSetUpTextRenderer() loads ASCII font into tiles 0-255.
+    /// If tilemap startTile < 256, it will overwrite the font.
+    /// </summary>
+    private static void ValidateTileConflicts(
+        Dictionary<string, List<IModule>> instancesByModule,
+        IProgress<string>? progress)
+    {
+        // Check if both tilemap and text.display are present
+        var hasTilemap = instancesByModule.ContainsKey("tilemap");
+        var hasTextDisplay = instancesByModule.ContainsKey("text.display");
+
+        if (!hasTilemap || !hasTextDisplay)
+            return;
+
+        // Check each tilemap instance for startTile < 256
+        foreach (var tilemapModule in instancesByModule["tilemap"])
+        {
+            var json = tilemapModule.Serialize();
+            try
+            {
+                var node = JsonNode.Parse(json) as JsonObject;
+                if (node is null) continue;
+
+                var startTile = node["startTile"]?.GetValue<int>() ?? 0;
+
+                if (startTile < 256)
+                {
+                    progress?.Report($"WARN: Tilemap startTile={startTile} conflicts with text.display font (tiles 0-255).");
+                    progress?.Report($"WARN: Set tilemap startTile >= 256 to avoid overwriting the ASCII font.");
+                    progress?.Report($"WARN: Text will appear corrupted if tilemap overwrites font tiles.");
+                }
+            }
+            catch
+            {
+                // Skip validation if JSON parsing fails
+            }
+        }
     }
 
     /// <summary>

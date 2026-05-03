@@ -145,6 +145,38 @@
                                HorizontalAlignment="Right"/>
                 </Grid>
                 
+                <!-- Color Space Selector -->
+                <Grid Margin="0,16,0,0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    
+                    <TextBlock Grid.Column="0" 
+                               Text="COLOR SPACE" 
+                               FontSize="12" 
+                               FontWeight="Bold"
+                               VerticalAlignment="Center"/>
+                    
+                    <StackPanel Grid.Column="2" Orientation="Horizontal">
+                        <RadioButton x:Name="RbRgb"
+                                     Content="RGB"
+                                     GroupName="ColorSpace"
+                                     Style="{StaticResource SegmentedRadio}"
+                                     Checked="ColorSpace_Changed"
+                                     Margin="0,0,0,0"/>
+                        
+                        <RadioButton x:Name="RbLab"
+                                     Content="LAB"
+                                     GroupName="ColorSpace"
+                                     IsChecked="True"
+                                     Style="{StaticResource SegmentedRadio}"
+                                     Checked="ColorSpace_Changed"
+                                     Margin="0,0,0,0"/>
+                    </StackPanel>
+                </Grid>
+                
                 <!-- Palette Preview -->
                 <Border Margin="0,16,0,0"
                         Background="#1a1a1a"

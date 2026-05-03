@@ -1,0 +1,224 @@
+<Window x:Class="Retruxel.Tool.LiveLink.Windows.CanvasExpansionWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="CANVAS EXPANSION"
+        Height="480" Width="520"
+        WindowStartupLocation="CenterOwner"
+        Background="Transparent"
+        AllowsTransparency="True"
+        WindowStyle="None"
+        ResizeMode="NoResize">
+
+    <Window.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="pack://application:,,,/Retruxel;component/Themes/RetruxelTheme.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </Window.Resources>
+
+    <Border CornerRadius="6"
+            Background="{StaticResource BrushSurface}"
+            BorderBrush="#3a3a3a"
+            BorderThickness="1">
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="48"/>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="56"/>
+            </Grid.RowDefinitions>
+
+            <!-- TITLE BAR -->
+            <Border Grid.Row="0"
+                    Background="{StaticResource BrushSurfaceContainerLow}"
+                    CornerRadius="6,6,0,0"
+                    MouseLeftButtonDown="TitleBar_MouseLeftButtonDown">
+                <Grid Margin="24,0,8,0">
+                    <TextBlock Text="CANVAS EXPANSION"
+                               Style="{StaticResource TextHeadline}"
+                               Foreground="{StaticResource BrushPrimary}"
+                               VerticalAlignment="Center"/>
+                    <Button Content="✕"
+                            HorizontalAlignment="Right"
+                            Click="BtnClose_Click"
+                            Style="{StaticResource ButtonTitleBarClose}"/>
+                </Grid>
+            </Border>
+
+            <!-- CONTENT -->
+            <ScrollViewer Grid.Row="1"
+                          VerticalScrollBarVisibility="Auto"
+                          Padding="24">
+                <StackPanel>
+                    <TextBlock Text="Expand the current VRAM capture by searching for the maptable in ROM."
+                               Style="{StaticResource TextBody}"
+                               Foreground="{StaticResource BrushOnSurfaceVariant}"
+                               TextWrapping="Wrap"
+                               Margin="0,0,0,16"/>
+
+                    <TextBlock Text="EXPANSION SIZE"
+                               Style="{StaticResource TextLabelCaps}"
+                               Foreground="{StaticResource BrushOnSurfaceVariant}"
+                               Margin="0,0,0,8"/>
+
+                    <Border Background="{StaticResource BrushSurfaceContainerHigh}"
+                            Padding="16"
+                            Margin="0,0,0,16">
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="8"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="8"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="8"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="8"/>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="8"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+
+                            <!-- Row 1: Left and Right -->
+                            <TextBlock Grid.Row="0" Grid.Column="0"
+                                       Text="Left:"
+                                       Style="{StaticResource TextLabel}"
+                                       Foreground="{StaticResource BrushOnSurface}"
+                                       VerticalAlignment="Center"/>
+                            <TextBox x:Name="TxtExpandLeft"
+                                     Grid.Row="0" Grid.Column="2"
+                                     Text="0"
+                                     Height="32"
+                                     VerticalContentAlignment="Center"/>
+                            <TextBlock Grid.Row="0" Grid.Column="4"
+                                       Text="Right:"
+                                       Style="{StaticResource TextLabel}"
+                                       Foreground="{StaticResource BrushOnSurface}"
+                                       VerticalAlignment="Center"/>
+                            <TextBox x:Name="TxtExpandRight"
+                                     Grid.Row="0" Grid.Column="6"
+                                     Text="96"
+                                     Height="32"
+                                     VerticalContentAlignment="Center"/>
+
+                            <!-- Row 2: Up and Down -->
+                            <TextBlock Grid.Row="2" Grid.Column="0"
+                                       Text="Up:"
+                                       Style="{StaticResource TextLabel}"
+                                       Foreground="{StaticResource BrushOnSurface}"
+                                       VerticalAlignment="Center"/>
+                            <TextBox x:Name="TxtExpandUp"
+                                     Grid.Row="2" Grid.Column="2"
+                                     Text="0"
+                                     Height="32"
+                                     VerticalContentAlignment="Center"/>
+                            <TextBlock Grid.Row="2" Grid.Column="4"
+                                       Text="Down:"
+                                       Style="{StaticResource TextLabel}"
+                                       Foreground="{StaticResource BrushOnSurface}"
+                                       VerticalAlignment="Center"/>
+                            <TextBox x:Name="TxtExpandDown"
+                                     Grid.Row="2" Grid.Column="6"
+                                     Text="0"
+                                     Height="32"
+                                     VerticalContentAlignment="Center"/>
+
+                            <!-- Preview -->
+                            <Border Grid.Row="4" Grid.Column="0" Grid.ColumnSpan="7"
+                                    Background="{StaticResource BrushSurface}"
+                                    Padding="8">
+                                <TextBlock x:Name="TxtPreview"
+                                           Text="New size: 128×28 tiles (32×28 + 96 right)"
+                                           Style="{StaticResource TextLabel}"
+                                           Foreground="{StaticResource BrushPrimary}"
+                                           HorizontalAlignment="Center"/>
+                            </Border>
+                        </Grid>
+                    </Border>
+
+                    <TextBlock Text="HOW IT WORKS"
+                               Style="{StaticResource TextLabelCaps}"
+                               Foreground="{StaticResource BrushOnSurfaceVariant}"
+                               Margin="0,0,0,8"/>
+
+                    <Border Background="{StaticResource BrushSurfaceContainerHigh}"
+                            Padding="12"
+                            Margin="0,0,0,16">
+                        <StackPanel>
+                            <TextBlock Style="{StaticResource TextBody}"
+                                       Foreground="{StaticResource BrushOnSurface}"
+                                       TextWrapping="Wrap">
+                                <Run Text="1. Searches ROM for current nametable pattern"/>
+                            </TextBlock>
+                            <TextBlock Style="{StaticResource TextBody}"
+                                       Foreground="{StaticResource BrushOnSurface}"
+                                       TextWrapping="Wrap"
+                                       Margin="0,4,0,0">
+                                <Run Text="2. Reads adjacent tiles from ROM"/>
+                            </TextBlock>
+                            <TextBlock Style="{StaticResource TextBody}"
+                                       Foreground="{StaticResource BrushOnSurface}"
+                                       TextWrapping="Wrap"
+                                       Margin="0,4,0,0">
+                                <Run Text="3. Renders expanded map with current tileset"/>
+                            </TextBlock>
+                            <TextBlock Style="{StaticResource TextBody}"
+                                       Foreground="{StaticResource BrushOnSurface}"
+                                       TextWrapping="Wrap"
+                                       Margin="0,4,0,0">
+                                <Run Text="4. You visually confirm if it's correct"/>
+                            </TextBlock>
+                        </StackPanel>
+                    </Border>
+
+                    <TextBlock Text="⚠ This method works best when:"
+                               Style="{StaticResource TextLabel}"
+                               Foreground="{StaticResource BrushOnSurfaceVariant}"
+                               TextWrapping="Wrap"
+                               Margin="0,0,0,4"/>
+                    <TextBlock Text="• Map is stored uncompressed in ROM"
+                               Style="{StaticResource TextBody}"
+                               Foreground="{StaticResource BrushOnSurfaceVariant}"
+                               TextWrapping="Wrap"
+                               Margin="0,0,0,2"/>
+                    <TextBlock Text="• Map uses consistent tile layout"
+                               Style="{StaticResource TextBody}"
+                               Foreground="{StaticResource BrushOnSurfaceVariant}"
+                               TextWrapping="Wrap"
+                               Margin="0,0,0,2"/>
+                    <TextBlock Text="• You're expanding horizontally (most common)"
+                               Style="{StaticResource TextBody}"
+                               Foreground="{StaticResource BrushOnSurfaceVariant}"
+                               TextWrapping="Wrap"/>
+                </StackPanel>
+            </ScrollViewer>
+
+            <!-- FOOTER -->
+            <Border Grid.Row="2"
+                    Background="{StaticResource BrushSurfaceContainerLow}"
+                    CornerRadius="0,0,6,6"
+                    Padding="24,0">
+                <Grid>
+                    <StackPanel Orientation="Horizontal"
+                                HorizontalAlignment="Right"
+                                VerticalAlignment="Center">
+                        <Button x:Name="BtnCancel"
+                                Content="CANCEL"
+                                Click="BtnCancel_Click"
+                                Style="{StaticResource ButtonGhost}"
+                                Padding="24,0" Height="40"
+                                Margin="0,0,8,0"/>
+                        <Button x:Name="BtnExpand"
+                                Content="EXPAND CANVAS"
+                                Click="BtnExpand_Click"
+                                Style="{StaticResource ButtonPrimary}"
+                                Padding="32,0" Height="40"/>
+                    </StackPanel>
+                </Grid>
+            </Border>
+        </Grid>
+    </Border>
+</Window>

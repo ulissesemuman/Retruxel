@@ -101,6 +101,13 @@ public interface ITarget
     IEnumerable<GeneratedFile> GenerateSystemFiles();
 
     /// <summary>
+    /// Generates engine runtime files (engine.h, engine.c) for this target.
+    /// Returns empty list if target doesn't use the engine architecture.
+    /// Targets that implement state-based rendering should provide their backend here.
+    /// </summary>
+    IEnumerable<GeneratedFile> GenerateEngineRuntime() => Enumerable.Empty<GeneratedFile>();
+
+    /// <summary>
     /// Analyzes the build output and returns hardware usage diagnostics.
     /// Called by the Core after code generation, before compilation.
     /// The target inspects SourceFiles to count tiles, sprites, map entries, etc.

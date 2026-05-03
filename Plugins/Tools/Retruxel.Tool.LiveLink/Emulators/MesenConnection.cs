@@ -157,6 +157,30 @@ public class MesenConnection : IEmulatorConnection
             LoadedRom = "Unknown"
         };
     }
+    
+    /// <summary>
+    /// Lightweight ping to check if connection is alive.
+    /// Returns true if connection is responsive, false otherwise.
+    /// </summary>
+    public async Task<bool> PingAsync()
+    {
+        if (_writer == null || _reader == null)
+            return false;
+        
+        try
+        {
+            await _writer.WriteLineAsync("PING");
+            
+            var cts = new CancellationTokenSource(2000); // 2s timeout
+            var response = await _reader.ReadLineAsync(cts.Token);
+            
+            return response?.Contains("PONG") == true;
+        }
+        catch
+        {
+            return false;
+        }
+    }
 
     public async Task<byte[]> GetScreenBufferAsync()
     {

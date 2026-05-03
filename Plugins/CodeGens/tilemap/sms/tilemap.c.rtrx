@@ -8,20 +8,34 @@
 #ifndef TILEMAP_{{instanceId}}_H
 #define TILEMAP_{{instanceId}}_H
 
+#include "engine.h"
+
 #define TILEMAP_{{instanceId}}_START_TILE  {{startTile}}
-#define TILEMAP_{{instanceId}}_MAP_X       {{mapX}}
-#define TILEMAP_{{instanceId}}_MAP_Y       {{mapY}}
-#define TILEMAP_{{instanceId}}_MAP_WIDTH   {{mapWidth}}
-#define TILEMAP_{{instanceId}}_MAP_HEIGHT  {{mapHeight}}
+#define TILEMAP_{{instanceId}}_MAP_X       {{preprocessed.drawX}}
+#define TILEMAP_{{instanceId}}_MAP_Y       {{preprocessed.drawY}}
+#define TILEMAP_{{instanceId}}_MAP_WIDTH   {{preprocessed.clippedWidth}}
+#define TILEMAP_{{instanceId}}_MAP_HEIGHT  {{preprocessed.clippedHeight}}
 
 // Collision lookup table — 1 bit per VRAM tile slot ({{preprocessed.collisionBytes}} bytes total)
 // {{preprocessed.solidTilesCount}} solid tile(s) registered
 extern const unsigned char tilemap_{{instanceId}}_collision[{{preprocessed.collisionBytes}}];
+extern const unsigned int tilemap_{{instanceId}}_map[];
 
 // Returns non-zero if the given tile ID is solid.
 // tileId is the raw index from mapData (before adding startTile).
 #define tilemap_{{instanceId}}_is_solid(tileId) \
     (tilemap_{{instanceId}}_collision[(unsigned char)(tileId) >> 3] & (1 << ((unsigned char)(tileId) & 7)))
+
+/* Maps (tile_x, tile_y) to the raw tile ID stored in the nametable */
+#define tilemap_{{instanceId}}_tile_at(tx, ty) \
+    (tilemap_{{instanceId}}_map[(ty) * TILEMAP_{{instanceId}}_MAP_WIDTH + (tx)])
+
+/* Returns non-zero if the tile at grid position (tx, ty) is solid.
+   Subtracts startTile so the index matches the collision bitfield. */
+#define tilemap_{{instanceId}}_solid_at(tx, ty) \
+    tilemap_{{instanceId}}_is_solid( \
+        tilemap_{{instanceId}}_tile_at((tx), (ty)) \
+        - TILEMAP_{{instanceId}}_START_TILE)
 
 void tilemap_{{instanceId}}_init(void);
 
@@ -65,44 +79,43 @@ const unsigned char {{tilesAssetId}}[] = {
 
 {{/if}}
 {{#if preprocessed.mapEntryCount > 0}}
-// Nametable map — {{mapWidth}}×{{mapHeight}} = {{preprocessed.mapEntryCount}} entries
+// Nametable map — {{preprocessed.clippedWidth}}×{{preprocessed.clippedHeight}} = {{preprocessed.mapEntryCount}} entries (clipped from {{preprocessed.originalWidth}}×{{preprocessed.originalHeight}})
 // Tile indices are absolute VRAM slots (startTile={{startTile}} already added)
 const unsigned int tilemap_{{instanceId}}_map[{{preprocessed.mapEntryCount}}] = {
 {{preprocessed.processedMapHex}}
 };
-
 {{/if}}
 {{#ifnot preprocessed.mapEntryCount > 0}}
-{{#ifnot mapAssetId}}
 // Placeholder nametable map — paint tiles in the Tilemap Editor
 // Map is {{mapWidth}}×{{mapHeight}} tiles = {{mapWidth * mapHeight}} entries
-const unsigned int tilemap_{{instanceId}}_placeholder_map[{{mapWidth * mapHeight}}] = { 0 };
-
+const unsigned int tilemap_{{instanceId}}_map[{{mapWidth * mapHeight}}] = { 0 };
 {{/ifnot}}
-{{/if}}
+
 void tilemap_{{instanceId}}_init(void) {
-    // Load tile graphics into VRAM starting at slot {{startTile}}
-{{#if tilesAssetId}}
-    SMS_loadTiles({{tilesAssetId}}, {{startTile}}, sizeof({{tilesAssetId}}));
-{{/if}}
-{{#ifnot tilesAssetId}}
-    // TODO: SMS_loadTiles(tilemap_{{instanceId}}_placeholder_tiles, {{startTile}}, sizeof(tilemap_{{instanceId}}_placeholder_tiles));
-{{/ifnot}}
-
-    // Load nametable map at position ({{mapX}}, {{mapY}})
-{{#if preprocessed.mapEntryCount > 0}}
-    SMS_loadTileMap({{mapX}}, {{mapY}}, tilemap_{{instanceId}}_map, sizeof(tilemap_{{instanceId}}_map));
-{{/if}}
-{{#ifnot preprocessed.mapEntryCount > 0}}
-{{#if mapAssetId}}
-    SMS_loadTileMap({{mapX}}, {{mapY}}, {{mapAssetId}}, sizeof({{mapAssetId}}));
-{{/if}}
-{{#ifnot mapAssetId}}
-    // TODO: SMS_loadTileMap({{mapX}}, {{mapY}}, tilemap_{{instanceId}}_placeholder_map, sizeof(tilemap_{{instanceId}}_placeholder_map));
-{{/ifnot}}
-{{/if}}
-
-    // Turn on display
-    SMS_displayOn();
+    extern GameState g_gameState;
+    
+    {{#if tilesAssetId}}
+    g_gameState.tilemaps.layers[{{instanceId}}].tileData = {{tilesAssetId}};
+    g_gameState.tilemaps.layers[{{instanceId}}].tileDataSize = sizeof({{tilesAssetId}});
+    {{/if}}
+    {{#ifnot tilesAssetId}}
+    g_gameState.tilemaps.layers[{{instanceId}}].tileData = tilemap_{{instanceId}}_placeholder_tiles;
+    g_gameState.tilemaps.layers[{{instanceId}}].tileDataSize = sizeof(tilemap_{{instanceId}}_placeholder_tiles);
+    {{/ifnot}}
+    
+    g_gameState.tilemaps.layers[{{instanceId}}].mapData = tilemap_{{instanceId}}_map;
+    g_gameState.tilemaps.layers[{{instanceId}}].mapDataSize = sizeof(tilemap_{{instanceId}}_map);
+    g_gameState.tilemaps.layers[{{instanceId}}].startTile = {{startTile}};
+    g_gameState.tilemaps.layers[{{instanceId}}].mapX = {{preprocessed.drawX}};
+    g_gameState.tilemaps.layers[{{instanceId}}].mapY = {{preprocessed.drawY}};
+    g_gameState.tilemaps.layers[{{instanceId}}].mapWidth = {{preprocessed.clippedWidth}};
+    g_gameState.tilemaps.layers[{{instanceId}}].mapHeight = {{preprocessed.clippedHeight}};
+    
+    // Update layer count if this is a new layer
+    if (g_gameState.tilemaps.layerCount <= {{instanceId}}) {
+        g_gameState.tilemaps.layerCount = {{instanceId}} + 1;
+    }
+    
+    g_gameState.tilemaps.dirty = true;
 }
 // @retruxel:end

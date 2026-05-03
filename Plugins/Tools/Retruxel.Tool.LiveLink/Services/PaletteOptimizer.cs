@@ -247,7 +247,7 @@ public class PaletteOptimizer
         var colorSet = new HashSet<uint>();
         foreach (var (r, g, b) in pixels)
         {
-            uint color = (uint)(0xFF000000 | (r << 16) | (g << 8) | b);
+            uint color = 0xFF000000u | ((uint)r << 16) | ((uint)g << 8) | b;
             colorSet.Add(color);
         }
         
@@ -490,7 +490,7 @@ public class PaletteOptimizer
         byte avgG = (byte)(g / count);
         byte avgB = (byte)(b / count);
         
-        return (uint)(0xFF000000 | (avgR << 16) | (avgG << 8) | avgB);
+        return 0xFF000000u | ((uint)avgR << 16) | ((uint)avgG << 8) | avgB;
     }
 
     private static byte[] AssignTilesToPalettes(byte[][] tiles, uint[] sourceColors, uint[][] palettes, int colorsPerPalette)

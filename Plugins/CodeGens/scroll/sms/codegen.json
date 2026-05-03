@@ -1,11 +1,11 @@
-﻿{
+{
   "moduleId": "scroll",
   "targetId": "sms",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "template": "scroll.c.rtrx",
   "variables": {
-    "speed": { "from": "module", "path": "speed", "default": 1 },
-    "direction": { "from": "module", "path": "direction", "default": ["Left", "Right"] },
-    "loop": { "from": "module", "path": "loop", "default": true }
+    "speed":     { "from": "module", "path": "speed",     "default": 1 },
+    "direction": { "from": "module", "path": "direction", "default": "Left" },
+    "loop":      { "from": "module", "path": "loop",      "default": true }
   }
 }

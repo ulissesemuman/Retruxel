@@ -181,6 +181,13 @@ public partial class TilemapEditorWindow
 
             var paletteProvider = (IPaletteProvider)extensionResult["paletteProvider"];
 
+            // If no sourceAsset provided, try to get currently selected asset
+            if (sourceAsset == null && CmbTilesetAsset.SelectedItem != null)
+            {
+                var assetId = CmbTilesetAsset.SelectedItem.ToString()!;
+                sourceAsset = _project.Assets.FirstOrDefault(a => a.Id == assetId);
+            }
+
             byte[]? initialColors = null;
             if (sourceAsset != null)
                 initialColors = ExtractColorsFromAsset(sourceAsset, paletteProvider);
@@ -225,10 +232,40 @@ public partial class TilemapEditorWindow
                 {
                     _project.Scenes[0].Elements.Add(paletteElement);
 
+                    // Add visual element to scene editor
                     if (_sceneEditor != null)
                     {
-                        var addMethod = _sceneEditor.GetType().GetMethod("AddElementFromData");
-                        addMethod?.Invoke(_sceneEditor, new object[] { paletteElement });
+                        try
+                        {
+                            var addMethod = _sceneEditor.GetType().GetMethod("AddElementFromData", 
+                                System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance);
+                            
+                            if (addMethod != null)
+                            {
+                                addMethod.Invoke(_sceneEditor, new object[] { paletteElement });
+                                System.Diagnostics.Debug.WriteLine($"Successfully added palette element '{paletteId}' to scene");
+                            }
+                            else
+                            {
+                                System.Diagnostics.Debug.WriteLine("WARNING: AddElementFromData method not found on SceneEditor");
+                                MessageBox.Show(
+                                    $"Palette '{paletteId}' was created but may not appear in the scene editor.\n" +
+                                    "Please close and reopen the project to see it.",
+                                    "Warning",
+                                    MessageBoxButton.OK,
+                                    MessageBoxImage.Warning);
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            System.Diagnostics.Debug.WriteLine($"ERROR: Failed to invoke AddElementFromData: {ex.Message}\n{ex.StackTrace}");
+                            MessageBox.Show(
+                                $"Palette '{paletteId}' was created but may not appear in the scene editor.\n" +
+                                "Please close and reopen the project to see it.",
+                                "Warning",
+                                MessageBoxButton.OK,
+                                MessageBoxImage.Warning);
+                        }
                     }
 
                     if (_saveProjectCallback != null)

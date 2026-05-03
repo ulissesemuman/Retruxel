@@ -132,7 +132,6 @@ public class SmsTarget : ITarget
             new Retruxel.Modules.Graphics.PaletteModule(),
             new Retruxel.Modules.Graphics.TilemapModule(),
             new Retruxel.Modules.Graphics.SpriteModule(),
-            new Retruxel.Modules.Graphics.MetaspriteModule(),
             new Retruxel.Modules.Graphics.TextDisplayModule()
         ];
     }
@@ -153,14 +152,14 @@ public class SmsTarget : ITarget
             TemplateId = "sms.platformer",
             DisplayName = "Platformer",
             Description = "Pre-configured with tiles, sprites, physics and input modules.",
-            DefaultModules = ["tilemap", "sprite", "physics", "input"]
+            DefaultModules = []
         },
         new ProjectTemplate
         {
             TemplateId = "sms.beatemup",
             DisplayName = "Beat Em Up",
             Description = "Pre-configured for side-scrolling beat em up games.",
-            DefaultModules = ["tilemap", "sprite", "physics", "input", "scroll"]
+            DefaultModules = []
         }
     ];
 
@@ -254,6 +253,16 @@ public class SmsTarget : ITarget
         [
             splashGen.GenerateHeader(),
             splashGen.GenerateCode()
+        ];
+    }
+
+    public IEnumerable<GeneratedFile> GenerateEngineRuntime()
+    {
+        var backend = new Rendering.SmsRenderBackend();
+        return
+        [
+            backend.GenerateEngineHeader(),
+            backend.GenerateEngineSource()
         ];
     }
 

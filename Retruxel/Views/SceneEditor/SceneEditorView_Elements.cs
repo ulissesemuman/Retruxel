@@ -241,16 +241,12 @@ public partial class SceneEditorView
 
             System.Diagnostics.Debug.WriteLine($"Added element: {elementData.ModuleId}, Trigger: {elementData.Trigger}, TileX: {elementData.TileX}, TileY: {elementData.TileY}");
 
-            // Create canvas visual only for canvas modules (entity, enemy, scroll)
-            var destination = GetModuleDestination(elementData.ModuleId);
-            if (destination == "CANVAS")
-            {
-                var visual = BuildCanvasElement(element);
-                Canvas.SetLeft(visual, element.TileX * 8);
-                Canvas.SetTop(visual, element.TileY * 8);
-                SceneCanvas.Children.Add(visual);
-                element.CanvasVisual = visual;
-            }
+            // Create canvas visual for all modules
+            var visual = BuildCanvasElement(element);
+            Canvas.SetLeft(visual, element.TileX * 8);
+            Canvas.SetTop(visual, element.TileY * 8);
+            SceneCanvas.Children.Add(visual);
+            element.CanvasVisual = visual;
 
             RefreshModulePalette();
         }

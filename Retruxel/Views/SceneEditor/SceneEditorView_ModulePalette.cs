@@ -29,8 +29,8 @@ public partial class SceneEditorView
         {
             var m = (IModule)module;
             var currentCount = instanceCounts.GetValueOrDefault(moduleId, 0);
-            var maxInstances = _moduleRegistry.GetMaxInstances(moduleId);
-            var isDisabled = maxInstances.HasValue && currentCount >= maxInstances.Value;
+            var policy = _moduleRegistry.GetModulePolicy(moduleId);
+            var isDisabled = policy != SingletonPolicy.Multiple && currentCount >= 1;
             modules.Add((m.Category, moduleId, m.DisplayName, isDisabled));
         }
 
@@ -38,8 +38,8 @@ public partial class SceneEditorView
         {
             var m = (IModule)module;
             var currentCount = instanceCounts.GetValueOrDefault(moduleId, 0);
-            var maxInstances = _moduleRegistry.GetMaxInstances(moduleId);
-            var isDisabled = maxInstances.HasValue && currentCount >= maxInstances.Value;
+            var policy = _moduleRegistry.GetModulePolicy(moduleId);
+            var isDisabled = policy != SingletonPolicy.Multiple && currentCount >= 1;
             modules.Add((m.Category, moduleId, m.DisplayName, isDisabled));
         }
 
@@ -47,8 +47,8 @@ public partial class SceneEditorView
         {
             var m = (IModule)module;
             var currentCount = instanceCounts.GetValueOrDefault(moduleId, 0);
-            var maxInstances = _moduleRegistry.GetMaxInstances(moduleId);
-            var isDisabled = maxInstances.HasValue && currentCount >= maxInstances.Value;
+            var policy = _moduleRegistry.GetModulePolicy(moduleId);
+            var isDisabled = policy != SingletonPolicy.Multiple && currentCount >= 1;
             modules.Add((m.Category, moduleId, m.DisplayName, isDisabled));
         }
 

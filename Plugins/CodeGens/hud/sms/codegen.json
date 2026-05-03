@@ -1,0 +1,17 @@
+{
+  "moduleId": "hud",
+  "targetId": "sms",
+  "displayName": "SMS HUD CodeGen (WindowPlane)",
+  "description": "Generates C code for SMS HUD using hardware window plane",
+  "version": "1.0.0",
+  "template": "hud.c.rtrx",
+  "variables": {
+    "instanceId": { "from": "instanceId" },
+    "windowStartLine": { "from": "module", "path": "windowStartLine", "default": 0 },
+    "windowEndLine": { "from": "module", "path": "windowEndLine", "default": 1 },
+    "bgAssetId": { "from": "module", "path": "bgAssetId", "default": "" },
+    "startTile": { "from": "module", "path": "startTile", "default": 0 },
+    "elements": { "from": "module", "path": "elements", "default": [] },
+    "hudStrategy": { "from": "target", "method": "GetHudStrategy" }
+  }
+}

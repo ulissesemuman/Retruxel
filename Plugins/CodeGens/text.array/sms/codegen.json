@@ -1,0 +1,20 @@
+{
+  "moduleId": "text.array",
+  "targetId": "sms",
+  "displayName": "SMS Text Array CodeGen",
+  "description": "Generates compact font and multilingual text arrays for SMS",
+  "version": "1.0.0",
+  "template": "text_array.c.rtrx",
+  "isBatchModule": true,
+  "variables": {
+    "arrays": { "from": "allInstances", "moduleId": "text.array" },
+    "fontStartTile": { "from": "global", "key": "fontStartTile" },
+    "fontTileCount": { "from": "global", "key": "fontTileCount" },
+    "fontTileData": { "from": "global", "key": "fontTileData" },
+    "fontTranslationTable": { "from": "global", "key": "fontTranslationTable" },
+    "hasMultiLanguage": {
+      "from": "computed",
+      "value": "arrays.Any(a => a.languages.Count > 1)"
+    }
+  }
+}

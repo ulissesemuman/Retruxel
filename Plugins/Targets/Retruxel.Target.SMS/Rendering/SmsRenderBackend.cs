@@ -94,10 +94,8 @@ public class SmsRenderBackend
 
         sb.AppendLine("typedef struct {");
         sb.AppendLine("    TilemapState tilemaps;");
-        sb.AppendLine("    TextLayerState ui;");
         sb.AppendLine("    SpriteLayerState sprites;");
         sb.AppendLine();
-        sb.AppendLine("    bool uiDirty;");
         sb.AppendLine("    bool spritesDirty;");
         sb.AppendLine();
         sb.AppendLine("    unsigned char scrollX;");
@@ -163,14 +161,6 @@ public class SmsRenderBackend
         sb.AppendLine("    }");
         sb.AppendLine();
 
-        // UI text
-        sb.AppendLine("    if (state->uiDirty) {");
-        sb.AppendLine("        if (state->ui.text[0] != '\\0') {");
-        sb.AppendLine("            SMS_printatXY(state->ui.x, state->ui.y, state->ui.text);");
-        sb.AppendLine("        }");
-        sb.AppendLine("    }");
-        sb.AppendLine();
-
         // Sprites - ONLY flush when dirty
         sb.AppendLine("    if (state->spritesDirty) {");
         sb.AppendLine("        SMS_initSprites();");
@@ -194,7 +184,6 @@ public class SmsRenderBackend
         // Engine_ClearDirtyFlags
         sb.AppendLine("void Engine_ClearDirtyFlags(GameState* state) {");
         sb.AppendLine("    state->tilemaps.dirty = false;");
-        sb.AppendLine("    state->uiDirty = false;");
         sb.AppendLine("    state->spritesDirty = false;");
         sb.AppendLine("    state->scrollDirty = false;");
         sb.AppendLine("}");

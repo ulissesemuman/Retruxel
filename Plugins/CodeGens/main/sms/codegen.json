@@ -22,7 +22,7 @@
     },
     "headers": {
       "from": "moduleFiles",
-      "path": "fileType == 'Header' && sourceModuleId != 'retruxel.core' && sourceModuleId != 'retruxel.splash' && sourceModuleId != 'retruxel.engine' && sourceModuleId != 'scene'",
+      "path": "fileType == 'Header' && sourceModuleId != 'retruxel.core' && sourceModuleId != 'retruxel.splash' && sourceModuleId != 'retruxel.engine' && sourceModuleId != 'scene' && sourceModuleId != 'tilemap' && sourceModuleId != 'palette' && sourceModuleId != 'text.display'",
       "transform": "#include \"{{fileName}}\""
     },
     "hasTextDisplay": {
@@ -42,17 +42,17 @@
     },
     "onStartModules": {
       "from": "projectModules",
-      "filter": "moduleId == 'input' || moduleId == 'physics' || moduleId == 'sprite' || moduleId == 'animation'",
+      "path": "moduleId == 'input' || moduleId == 'physics' || moduleId == 'sprite' || moduleId == 'animation'",
       "transform": "moduleId"
     },
     "onInputModules": {
       "from": "projectModules",
-      "filter": "moduleId == 'input'",
+      "path": "moduleId == 'input'",
       "transform": "moduleId"
     },
     "onVBlankModules": {
       "from": "projectModules",
-      "filter": "moduleId == 'entity' || moduleId == 'enemy' || moduleId == 'scroll'",
+      "path": "moduleId == 'entity' || moduleId == 'enemy' || moduleId == 'scroll'",
       "transform": "moduleId"
     },
     "splashEnabled": {

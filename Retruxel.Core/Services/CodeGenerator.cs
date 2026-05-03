@@ -1,5 +1,6 @@
 using Retruxel.Core.Interfaces;
 using Retruxel.Core.Models;
+using Retruxel.Core.Text;
 using System.Text.Json.Nodes;
 
 namespace Retruxel.Core.Services;
@@ -14,6 +15,7 @@ public class CodeGenerator
     private readonly ModuleRegistry _moduleRegistry;
     private readonly ModuleRenderer _moduleRenderer;
     private readonly ITarget _target;
+    private readonly TextAnalyzer _textAnalyzer = new();
 
     public CodeGenerator(ModuleRegistry moduleRegistry, ModuleRenderer moduleRenderer, ITarget target)
     {
@@ -44,6 +46,29 @@ public class CodeGenerator
 
         // Reset renderer state before generation
         _moduleRenderer.ResetState();
+
+        // Run TextAnalyzer before module rendering
+        var fontConverter = DiscoverFontConverter();
+        var graphicTilesEnd = CalculateGraphicTilesEnd(project);
+        var textResult = _textAnalyzer.Analyze(project, Enumerable.Empty<IModule>(), fontConverter, graphicTilesEnd);
+        
+        if (textResult.MissingChars.Count > 0)
+        {
+            progress?.Report($"WARN: {textResult.MissingChars.Count} character(s) not in default font: {string.Join(", ", textResult.MissingChars.Take(10))}");
+        }
+        
+        progress?.Report($"INFO: Compact font: {textResult.TileCount} glyphs, starting at tile {textResult.FontStartTile}");
+
+        // Inject text analysis results into global variables for CodeGen templates
+        var globalVariables = new Dictionary<string, object>
+        {
+            ["fontStartTile"] = textResult.FontStartTile,
+            ["fontTileCount"] = textResult.TileCount,
+            ["fontTileData"] = FormatByteArray(textResult.TileData),
+            ["fontTranslationTable"] = FormatByteArray(textResult.TranslationTable)
+        };
+        
+        _moduleRenderer.SetGlobalVariables(globalVariables);
 
         // Collect all module instances from scenes, grouped by trigger
         var instancesByModule = new Dictionary<string, List<IModule>>();
@@ -88,6 +113,20 @@ public class CodeGenerator
 
                 instancesByModule[elementData.ModuleId].Add(module);
                 
+                // Re-run TextAnalyzer with actual module instances for accurate character extraction
+                if (elementData.ModuleId == "text.array")
+                {
+                    var allModules = instancesByModule.Values.SelectMany(x => x).ToList();
+                    textResult = _textAnalyzer.Analyze(project, allModules, fontConverter, graphicTilesEnd);
+                    
+                    globalVariables["fontStartTile"] = textResult.FontStartTile;
+                    globalVariables["fontTileCount"] = textResult.TileCount;
+                    globalVariables["fontTileData"] = FormatByteArray(textResult.TileData);
+                    globalVariables["fontTranslationTable"] = FormatByteArray(textResult.TranslationTable);
+                    
+                    _moduleRenderer.SetGlobalVariables(globalVariables);
+                }
+                
                 // Track trigger for this instance (default to OnStart if not set)
                 var trigger = string.IsNullOrEmpty(elementData.Trigger) ? "OnStart" : elementData.Trigger;
                 triggersByElement[module] = trigger;
@@ -114,11 +153,16 @@ public class CodeGenerator
                 // Priority 1: Try ModuleRenderer (declarative CodeGens)
                 if (_moduleRenderer.CanRender(module.ModuleId, project.TargetId))
                 {
+                    // Get effective singleton policy from target override or module default
+                    var policy = _target.GetModulePolicyOverrides()
+                        .TryGetValue(module.ModuleId, out var p) ? p : module.SingletonPolicy;
+                    var isSingleton = policy != SingletonPolicy.Multiple;
+
                     generatedFiles = _moduleRenderer.Render(
                         module.ModuleId,
                         project.TargetId,
                         moduleJson,
-                        module.IsSingleton,
+                        isSingleton,
                         project.ProjectPath).ToList();
                     progress?.Report($"INFO: {module.ModuleId} generated via ModuleRenderer.");
                 }
@@ -173,7 +217,7 @@ public class CodeGenerator
         // Generate scene files
         foreach (var scene in project.Scenes)
         {
-            var sceneFiles = _moduleRenderer.RenderSceneFiles(project.TargetId, scene, progress);
+            var sceneFiles = _moduleRenderer.RenderSceneFiles(project.TargetId, scene, sourceFiles, progress);
             foreach (var file in sceneFiles)
             {
                 sourceFiles.Add(file);
@@ -431,6 +475,65 @@ public class CodeGenerator
     }
 
     /// <summary>
+    /// Discovers the IFontConverter implementation for the current target.
+    /// Returns a default converter if none found.
+    /// </summary>
+    private IFontConverter DiscoverFontConverter()
+    {
+        var targetAssembly = _target.GetType().Assembly;
+        var converterType = targetAssembly.GetTypes()
+            .FirstOrDefault(t => typeof(IFontConverter).IsAssignableFrom(t) && !t.IsInterface && !t.IsAbstract);
+        
+        if (converterType is not null)
+        {
+            return (IFontConverter)Activator.CreateInstance(converterType)!;
+        }
+        
+        // Fallback: return a simple pass-through converter
+        return new DefaultFontConverter();
+    }
+
+    /// <summary>
+    /// Calculates the first free tile slot after all graphic tiles.
+    /// Used as the starting point for the compact font.
+    /// </summary>
+    private static int CalculateGraphicTilesEnd(RetruxelProject project)
+    {
+        // Simple heuristic: reserve 256 tiles for graphics
+        // In production, this would scan tilemap/sprite modules for actual usage
+        return 256;
+    }
+
+    /// <summary>
+    /// Formats a byte array as a C array initializer string.
+    /// Example: "0x3C, 0x42, 0x42, 0x3C"
+    /// </summary>
+    private static string FormatByteArray(byte[] data)
+    {
+        if (data.Length == 0) return "";
+        
+        var chunks = data.Select((b, i) => new { Byte = b, Index = i })
+            .GroupBy(x => x.Index / 16)
+            .Select(g => string.Join(", ", g.Select(x => $"0x{x.Byte:X2}")));
+        
+        return string.Join(",\n    ", chunks);
+    }
+
+    /// <summary>
+    /// Default font converter that passes through raw bitmap data.
+    /// Used as fallback when target doesn't provide IFontConverter.
+    /// </summary>
+    private class DefaultFontConverter : IFontConverter
+    {
+        public string TargetId => "default";
+        
+        public byte[] ConvertGlyphs(IEnumerable<(char Character, byte[] Bitmap)> glyphs)
+        {
+            return glyphs.SelectMany(g => g.Bitmap).ToArray();
+        }
+    }
+
+    /// <summary>
     /// Wraps an IModule, overriding Serialize() to inject additional JSON properties.
     /// All other members delegate to the wrapped module.
     /// </summary>
@@ -441,7 +544,8 @@ public class CodeGenerator
         public string Category => inner.Category;
         public ModuleType Type => inner.Type;
         public string[] Compatibility => inner.Compatibility;
-        public bool IsSingleton => inner.IsSingleton;
+        public SingletonPolicy SingletonPolicy => inner.SingletonPolicy;
+        public ModuleScope DefaultScope => inner.DefaultScope;
         public string Serialize() => serializeTransform(inner.Serialize());
         public void Deserialize(string json) => inner.Deserialize(json);
         public string GetValidationSample() => inner.GetValidationSample();

@@ -30,12 +30,12 @@ namespace Retruxel.Core.Services;
 public class ModuleRenderer
 {
     private readonly string _pluginsPath;
-    private readonly Dictionary<string, ITool> _tools;        // keyed by ToolId
-    private readonly Dictionary<string, CodeGenManifest> _codeGens; // keyed by "targetId::moduleId"
+    private readonly Dictionary<string, ITool> _tools;
+    private readonly Dictionary<string, CodeGenManifest> _codeGens;
     private Assembly? _targetAssembly;
     private ModuleRegistry? _moduleRegistry;
+    private Dictionary<string, object> _globalVariables = new();
 
-    // Per-render instance counters for non-singleton modules
     private readonly Dictionary<string, int> _instanceCounters = new();
 
     public ModuleRenderer(string pluginsPath, Assembly? targetAssembly = null, IProgress<string>? progress = null)
@@ -50,6 +50,13 @@ public class ModuleRenderer
     /// Resets instance counters. Call before each full build.
     /// </summary>
     public void ResetState() => _instanceCounters.Clear();
+
+    /// <summary>
+    /// Sets global variables available to all CodeGen templates.
+    /// Used for injecting TextAnalyzer results (fontStartTile, fontTileData, etc.).
+    /// </summary>
+    public void SetGlobalVariables(Dictionary<string, object> variables)
+        => _globalVariables = variables;
 
     /// <summary>
     /// Sets the target assembly for discovering IToolExtension implementations.
@@ -194,6 +201,7 @@ public class ModuleRenderer
     public IEnumerable<GeneratedFile> RenderSceneFiles(
         string targetId,
         SceneData scene,
+        List<GeneratedFile> moduleFiles,
         IProgress<string>? progress = null)
     {
         var key = Key(targetId, "scene");
@@ -201,59 +209,51 @@ public class ModuleRenderer
         if (!_codeGens.TryGetValue(key, out var manifest))
             yield break;
 
+        var sceneNameLower = scene.SceneName.ToLowerInvariant();
         var variables = new Dictionary<string, object>
         {
-            ["sceneName"] = scene.SceneName,
+            ["sceneName"] = sceneNameLower,
             ["sceneNameUpper"] = scene.SceneName.ToUpperInvariant()
         };
 
-        var sceneModules = new List<IModule>();
-        foreach (var element in scene.Elements)
-        {
-            if (_moduleRegistry == null) continue;
-
-            IModule? moduleTemplate = null;
-            if (_moduleRegistry.GraphicModules.TryGetValue(element.ModuleId, out var gm))
-                moduleTemplate = gm;
-            else if (_moduleRegistry.LogicModules.TryGetValue(element.ModuleId, out var lm))
-                moduleTemplate = lm;
-            else if (_moduleRegistry.AudioModules.TryGetValue(element.ModuleId, out var am))
-                moduleTemplate = am;
-
-            if (moduleTemplate == null) continue;
-
-            var moduleType = moduleTemplate.GetType();
-            var module = (IModule)Activator.CreateInstance(moduleType)!;
-            
-            var moduleStateJson = element.ModuleState.ValueKind != System.Text.Json.JsonValueKind.Undefined &&
-                                  element.ModuleState.ValueKind != System.Text.Json.JsonValueKind.Null
-                ? element.ModuleState.GetRawText()
-                : "{}";
-            
-            module.Deserialize(moduleStateJson);
-            sceneModules.Add(module);
-        }
-
-        foreach (var (varName, varDef) in manifest.Variables)
-        {
-            if (varDef.From == "scene")
+        // Build init calls from generated files instead of module instances
+        var paletteInits = moduleFiles
+            .Where(f => f.FileType == GeneratedFileType.Header && f.SourceModuleId == "palette")
+            .Select(f => new Dictionary<string, object>
             {
-                if (varDef.Path == "name")
-                    variables[varName] = varDef.Transform == "upper" 
-                        ? scene.SceneName.ToUpperInvariant() 
-                        : scene.SceneName;
-            }
-            else if (varDef.From == "sceneModules")
+                ["header"] = f.FileName,
+                ["call"] = Path.GetFileNameWithoutExtension(f.FileName) + "_init"
+            })
+            .ToList();
+
+        var tilemapInits = moduleFiles
+            .Where(f => f.FileType == GeneratedFileType.Header && f.SourceModuleId == "tilemap")
+            .Select(f => new Dictionary<string, object>
             {
-                variables[varName] = ProcessSceneModules(sceneModules, varDef);
-            }
-        }
+                ["header"] = f.FileName,
+                ["call"] = Path.GetFileNameWithoutExtension(f.FileName) + "_init"
+            })
+            .ToList();
+
+        var textStaticInits = moduleFiles
+            .Where(f => f.FileType == GeneratedFileType.Header && f.SourceModuleId == "text.display")
+            .Select(f => new Dictionary<string, object>
+            {
+                ["header"] = f.FileName,
+                ["call"] = Path.GetFileNameWithoutExtension(f.FileName) + "_init"
+            })
+            .ToList();
+
+        variables["paletteInits"] = paletteInits;
+        variables["tilemapInits"] = tilemapInits;
+        variables["textStaticInits"] = textStaticInits;
+        variables["hasGraphicModules"] = paletteInits.Count > 0 || tilemapInits.Count > 0 || textStaticInits.Count > 0;
 
         var template = File.ReadAllText(manifest.TemplatePath);
 
         yield return new GeneratedFile
         {
-            FileName = $"scene_{scene.SceneName}.h",
+            FileName = $"scene_{sceneNameLower}.h",
             Content = TemplateEngine.RenderBlock(template, "header", variables),
             FileType = GeneratedFileType.Header,
             SourceModuleId = "scene"
@@ -261,7 +261,7 @@ public class ModuleRenderer
 
         yield return new GeneratedFile
         {
-            FileName = $"scene_{scene.SceneName}.c",
+            FileName = $"scene_{sceneNameLower}.c",
             Content = TemplateEngine.RenderBlock(template, "source", variables),
             FileType = GeneratedFileType.Source,
             SourceModuleId = "scene"
@@ -571,6 +571,12 @@ public class ModuleRenderer
         using var doc = JsonDocument.Parse(moduleJson);
         var root = doc.RootElement;
 
+        // Inject global variables first
+        foreach (var (key, value) in _globalVariables)
+        {
+            result[key] = value;
+        }
+
         foreach (var (varName, varDef) in manifest.Variables)
         {
             switch (varDef.From)
@@ -585,9 +591,14 @@ public class ModuleRenderer
 
                 case "tool":
                     var toolValues = InvokeTool(varDef, root, result);
-                    // Store tool output as nested object under the variable name
-                    // so template can access as {{varName.property}}
                     result[varName] = toolValues;
+                    break;
+
+                case "global":
+                    if (_globalVariables.TryGetValue(varDef.Path ?? varName, out var globalValue))
+                        result[varName] = globalValue;
+                    else
+                        result[varName] = varDef.Default ?? "";
                     break;
             }
         }

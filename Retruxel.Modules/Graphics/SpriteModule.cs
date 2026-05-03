@@ -36,9 +36,10 @@ public class SpriteModule : IGraphicModule
     public string DisplayName => "Sprite";
     public string Category => "Graphics";
     public ModuleType Type => ModuleType.Graphics;
-    public bool IsSingleton => false;
+    public SingletonPolicy SingletonPolicy => SingletonPolicy.Multiple;
     public string[] Compatibility { get; set; } = [];
     public string? VisualToolId => "sprite_editor";
+    public ModuleScope DefaultScope => ModuleScope.Project;
 
     private static readonly JsonSerializerOptions _jsonOptions = new()
     {

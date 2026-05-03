@@ -105,21 +105,21 @@ public partial class SceneEditorView : UserControl
 
     // ── Sidebar tab switching ─────────────────────────────────────────────────
 
-    private void BtnTabModules_Click(object sender, RoutedEventArgs e)
+    private void BtnTabStructure_Click(object sender, RoutedEventArgs e)
     {
-        PanelModules.Visibility = Visibility.Visible;
-        PanelAssets.Visibility = Visibility.Collapsed;
-        BtnTabModules.Tag = "active";
-        BtnTabAssets.Tag = null;
+        PanelStructure.Visibility = Visibility.Visible;
+        PanelModules.Visibility = Visibility.Collapsed;
+        BtnTabStructure.Tag = "active";
+        BtnTabModules.Tag = null;
+        RefreshStructurePanel();
     }
 
-    private void BtnTabAssets_Click(object sender, RoutedEventArgs e)
+    private void BtnTabModules_Click(object sender, RoutedEventArgs e)
     {
-        PanelModules.Visibility = Visibility.Collapsed;
-        PanelAssets.Visibility = Visibility.Visible;
-        BtnTabModules.Tag = null;
-        BtnTabAssets.Tag = "active";
-        RefreshAssetPanel();
+        PanelStructure.Visibility = Visibility.Collapsed;
+        PanelModules.Visibility = Visibility.Visible;
+        BtnTabStructure.Tag = null;
+        BtnTabModules.Tag = "active";
     }
 
     // ── Asset panel ───────────────────────────────────────────────────────────
@@ -238,8 +238,8 @@ public partial class SceneEditorView : UserControl
         RebuildSceneTabs();
         ApplyTargetSpecs(target);
         LoadModulePalette(target);
-        LoadEvents();
         LoadFromProject();
+        RefreshStructurePanel();
     }
 
     /// <summary>
@@ -395,6 +395,8 @@ public partial class SceneEditorView : UserControl
             SelectElement(_elements[0]);
             BuildPropertiesPanel(_elements[0]);
         }
+        
+        RefreshStructurePanel();
     }
 
 
@@ -420,6 +422,7 @@ public class SceneElement
     public string Trigger { get; set; } = "OnStart";
     public UIElement? CanvasVisual { get; set; }
     public UIElement? EventVisual { get; set; }
+    public SceneElementData Data { get; set; } = new();
 
     public string DisplayLabel
     {

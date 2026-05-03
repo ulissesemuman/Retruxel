@@ -1,3 +1,4 @@
+using Retruxel.Core.Interfaces;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
@@ -41,6 +42,16 @@ public class SceneElementData
     [JsonPropertyName("trigger")]
     public string Trigger { get; set; } = string.Empty;
 
+    [JsonPropertyName("scopeOverride")]
+    public ModuleScope? ScopeOverride { get; set; } = null;
+
     [JsonPropertyName("moduleState")]
     public JsonElement ModuleState { get; set; }
+
+    /// <summary>
+    /// Returns the effective scope for this element.
+    /// Uses ScopeOverride if set, otherwise falls back to module's DefaultScope.
+    /// </summary>
+    public ModuleScope GetEffectiveScope(IModule module)
+        => ScopeOverride ?? module.DefaultScope;
 }

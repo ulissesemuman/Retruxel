@@ -38,25 +38,20 @@ public partial class SceneEditorView
             ModuleId = moduleId,
             Module = module,
             TileX = tileX,
-            TileY = tileY
+            TileY = tileY,
+            Data = new SceneElementData
+            {
+                ElementId = Guid.NewGuid().ToString(),
+                ModuleId = moduleId,
+                TileX = tileX,
+                TileY = tileY
+            }
         };
     }
 
     private void RemoveElement(SceneElement element)
     {
         var displayName = element.Module is IModule m ? m.DisplayName : element.ModuleId;
-
-        Border? eventBlock = null;
-        foreach (Border block in EventsPanel.Children)
-        {
-            if (block.Child is not StackPanel outer) continue;
-            var actionsPanel = outer.Children.OfType<StackPanel>().FirstOrDefault();
-            if (actionsPanel?.Children.Contains(element.EventVisual) == true)
-            {
-                eventBlock = block;
-                break;
-            }
-        }
 
         var change = new StateChange
         {
@@ -66,6 +61,7 @@ public partial class SceneEditorView
             {
                 RemoveElementCore(element);
                 RefreshModulePalette();
+                RefreshStructurePanel();
             },
             IsUndoable = true,
             UndoCommand = new RemoveElementCommand(
@@ -74,6 +70,7 @@ public partial class SceneEditorView
                 {
                     RemoveElementCore(element);
                     RefreshModulePalette();
+                    RefreshStructurePanel();
                 },
                 restore: () =>
                 {
@@ -86,13 +83,8 @@ public partial class SceneEditorView
                         SceneCanvas.Children.Add(element.CanvasVisual);
                     }
 
-                    if (element.EventVisual is not null && eventBlock?.Child is StackPanel sp)
-                    {
-                        var ap = sp.Children.OfType<StackPanel>().FirstOrDefault();
-                        ap?.Children.Add(element.EventVisual);
-                    }
-
                     RefreshModulePalette();
+                    RefreshStructurePanel();
                 }
             )
         };
@@ -107,16 +99,10 @@ public partial class SceneEditorView
         if (element.CanvasVisual is not null)
             SceneCanvas.Children.Remove(element.CanvasVisual);
 
-        foreach (Border block in EventsPanel.Children)
-        {
-            if (block.Child is not StackPanel outer) continue;
-            var actionsPanel = outer.Children.OfType<StackPanel>().FirstOrDefault();
-            if (element.EventVisual is not null)
-                actionsPanel?.Children.Remove(element.EventVisual);
-        }
-
         if (_selectedElement == element)
             SelectElement(null);
+        
+        RefreshStructurePanel();
     }
 
     private void UpdateElementLabel(SceneElement element)
@@ -246,7 +232,8 @@ public partial class SceneEditorView
                 Module = module,
                 TileX = elementData.TileX,
                 TileY = elementData.TileY,
-                Trigger = elementData.Trigger
+                Trigger = elementData.Trigger,
+                Data = elementData
             };
 
             UpdateModulePosition(module, elementData.TileX, elementData.TileY);
@@ -254,26 +241,15 @@ public partial class SceneEditorView
 
             System.Diagnostics.Debug.WriteLine($"Added element: {elementData.ModuleId}, Trigger: {elementData.Trigger}, TileX: {elementData.TileX}, TileY: {elementData.TileY}");
 
-            // Create canvas visual for graphic modules
-            bool isGraphicModule = _moduleRegistry.GraphicModules.ContainsKey(elementData.ModuleId);
-            if (isGraphicModule)
+            // Create canvas visual only for canvas modules (entity, enemy, scroll)
+            var destination = GetModuleDestination(elementData.ModuleId);
+            if (destination == "CANVAS")
             {
                 var visual = BuildCanvasElement(element);
                 Canvas.SetLeft(visual, element.TileX * 8);
                 Canvas.SetTop(visual, element.TileY * 8);
                 SceneCanvas.Children.Add(visual);
                 element.CanvasVisual = visual;
-            }
-
-            // Add to event panel if trigger is specified
-            if (!string.IsNullOrEmpty(elementData.Trigger))
-            {
-                System.Diagnostics.Debug.WriteLine($"Adding module {elementData.ModuleId} to event {elementData.Trigger}");
-                AddModuleToEvent(elementData.Trigger, elementData.ModuleId, element);
-            }
-            else
-            {
-                System.Diagnostics.Debug.WriteLine($"WARNING: Module {elementData.ModuleId} has no trigger specified");
             }
 
             RefreshModulePalette();

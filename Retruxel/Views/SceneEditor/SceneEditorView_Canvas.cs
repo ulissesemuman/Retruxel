@@ -191,8 +191,44 @@ public partial class SceneEditorView
 
     private void AddModuleToCanvas(string moduleId, int tileX, int tileY)
     {
+        // Validate HUD module support
+        if (moduleId == "hud" && _target is not null)
+        {
+            var strategy = _target.GetHudStrategy();
+            if (strategy == HudStrategy.None)
+            {
+                MessageBox.Show(
+                    $"Target '{_target.DisplayName}' does not support HUD. " +
+                    "The module will not generate any code.",
+                    "HUD Not Supported",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Warning);
+            }
+            else if (strategy == HudStrategy.MidFrameScroll)
+            {
+                MessageBox.Show(
+                    "NES HUD uses mid-frame scroll reset. " +
+                    "Ensure your mapper supports scanline IRQ (MMC3 or similar).",
+                    "HUD Implementation Note",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Information);
+            }
+            else if (strategy == HudStrategy.SpriteOnly)
+            {
+                MessageBox.Show(
+                    "This target renders HUD using sprites. " +
+                    "HUD elements will share the sprite limit with gameplay objects.",
+                    "HUD Implementation Note",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Information);
+            }
+        }
+
         var element = CreateSceneElement(moduleId, tileX, tileY);
         var displayName = element.Module is Core.Interfaces.IModule m ? m.DisplayName : moduleId;
+        
+        // Determine destination based on module type
+        var destination = GetModuleDestination(moduleId);
 
         var change = new StateChange
         {
@@ -212,19 +248,29 @@ public partial class SceneEditorView
                 add: () =>
                 {
                     _elements.Add(element);
-                    var visual = BuildCanvasElement(element);
-                    Canvas.SetLeft(visual, tileX * 8);
-                    Canvas.SetTop(visual, tileY * 8);
-                    SceneCanvas.Children.Add(visual);
-                    element.CanvasVisual = visual;
-                    AddModuleToEvent("OnStart", moduleId, element);
+                    
+                    // Only add to canvas if it's a canvas module (entity, enemy, scroll)
+                    if (destination == "CANVAS")
+                    {
+                        var visual = BuildCanvasElement(element);
+                        Canvas.SetLeft(visual, tileX * 8);
+                        Canvas.SetTop(visual, tileY * 8);
+                        SceneCanvas.Children.Add(visual);
+                        element.CanvasVisual = visual;
+                    }
+                    
+                    // Set default trigger based on destination
+                    element.Trigger = destination == "PROJECT" ? "OnStart" : "OnVBlank";
+                    
                     SelectElement(element);
                     RefreshModulePalette();
+                    RefreshStructurePanel();
                 },
                 remove: () =>
                 {
                     RemoveElementCore(element);
                     RefreshModulePalette();
+                    RefreshStructurePanel();
                 }
             )
         };

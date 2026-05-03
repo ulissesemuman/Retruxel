@@ -16,8 +16,9 @@ public class GameVarModule : ILogicModule
     public string Description => "Global variable that persists across scenes (score, lives, flags)";
     public string Category => "Logic";
     public ModuleType Type => ModuleType.Logic;
-    public bool IsSingleton => false;
+    public SingletonPolicy SingletonPolicy => SingletonPolicy.Multiple;
     public string[] Compatibility { get; set; } = [];
+    public ModuleScope DefaultScope => ModuleScope.Project;
 
     private GameVarState _state = new();
 

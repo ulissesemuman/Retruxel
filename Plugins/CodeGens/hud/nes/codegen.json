@@ -1,0 +1,14 @@
+{
+  "moduleId": "hud",
+  "targetId": "nes",
+  "displayName": "NES HUD CodeGen (MidFrameScroll)",
+  "description": "Generates C code for NES HUD using scanline IRQ (stub)",
+  "version": "1.0.0",
+  "template": "hud.c.rtrx",
+  "variables": {
+    "instanceId": { "from": "instanceId" },
+    "windowStartLine": { "from": "module", "path": "windowStartLine", "default": 0 },
+    "windowEndLine": { "from": "module", "path": "windowEndLine", "default": 1 },
+    "elements": { "from": "module", "path": "elements", "default": [] }
+  }
+}

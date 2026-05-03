@@ -24,8 +24,9 @@ public class TextDisplayModule : IGraphicModule
     public string DisplayName => "Text Display";
     public string Category => "Output";
     public ModuleType Type => ModuleType.Graphics;
-    public bool IsSingleton => false;
+    public SingletonPolicy SingletonPolicy => SingletonPolicy.Multiple;
     public string[] Compatibility { get; set; } = [];
+    public ModuleScope DefaultScope => ModuleScope.Scene;
 
     public int X { get; set; } = 0;
     public int Y { get; set; } = 0;

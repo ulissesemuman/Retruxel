@@ -28,9 +28,10 @@ public class TilemapModule : IGraphicModule
     public string DisplayName => "Tilemap";
     public string Category => "Graphics";
     public ModuleType Type => ModuleType.Logic;
-    public bool IsSingleton => false;
+    public SingletonPolicy SingletonPolicy => SingletonPolicy.Multiple;
     public string[] Compatibility { get; set; } = [];
     public string? VisualToolId => "tilemap_editor";
+    public ModuleScope DefaultScope => ModuleScope.Scene;
 
     private static readonly JsonSerializerOptions _jsonOptions = new()
     {

@@ -11,7 +11,7 @@ public class ModuleRegistry
 {
     private readonly string _basePath;
     private readonly ModuleLoader _moduleLoader;
-    private readonly Dictionary<string, ModuleOverride> _overrides = new();
+    private readonly Dictionary<string, SingletonPolicy> _policyOverrides = new();
 
     public IReadOnlyDictionary<string, IGraphicModule> GraphicModules => _moduleLoader.GraphicModules;
     public IReadOnlyDictionary<string, ILogicModule> LogicModules => _moduleLoader.LogicModules;
@@ -26,43 +26,43 @@ public class ModuleRegistry
     /// <summary>
     /// Checks if a module is singleton for the current target.
     /// Respects target overrides if present, otherwise uses module's default.
+    /// Returns true if policy is Global or PerScene.
     /// </summary>
     public bool IsModuleSingleton(string moduleId)
     {
+        var policy = GetModulePolicy(moduleId);
+        return policy != SingletonPolicy.Multiple;
+    }
+
+    /// <summary>
+    /// Gets the effective singleton policy for a module.
+    /// Respects target overrides if present, otherwise uses module's default.
+    /// </summary>
+    public SingletonPolicy GetModulePolicy(string moduleId)
+    {
         // Check override first
-        if (_overrides.TryGetValue(moduleId, out var ovr) && ovr.IsSingleton.HasValue)
-            return ovr.IsSingleton.Value;
+        if (_policyOverrides.TryGetValue(moduleId, out var policy))
+            return policy;
 
         // Fallback to module's default
         if (GraphicModules.TryGetValue(moduleId, out var gm))
-            return gm.IsSingleton;
+            return gm.SingletonPolicy;
         if (LogicModules.TryGetValue(moduleId, out var lm))
-            return lm.IsSingleton;
+            return lm.SingletonPolicy;
         if (AudioModules.TryGetValue(moduleId, out var am))
-            return am.IsSingleton;
+            return am.SingletonPolicy;
 
-        return false;
+        return SingletonPolicy.Multiple;
     }
 
     /// <summary>
-    /// Gets the maximum number of instances allowed for a module.
-    /// Returns null if unlimited.
+    /// Applies target-specific policy overrides to modules.
     /// </summary>
-    public int? GetMaxInstances(string moduleId)
+    public void ApplyPolicyOverrides(Dictionary<string, SingletonPolicy> overrides)
     {
-        if (_overrides.TryGetValue(moduleId, out var ovr))
-            return ovr.MaxInstances;
-        return null;
-    }
-
-    /// <summary>
-    /// Applies target-specific overrides to modules.
-    /// </summary>
-    public void ApplyOverrides(IEnumerable<ModuleOverride> overrides)
-    {
-        _overrides.Clear();
-        foreach (var ovr in overrides)
-            _overrides[ovr.ModuleId] = ovr;
+        _policyOverrides.Clear();
+        foreach (var (moduleId, policy) in overrides)
+            _policyOverrides[moduleId] = policy;
     }
 
 
@@ -73,7 +73,7 @@ public class ModuleRegistry
     public void LoadForTarget(ITarget target, IProgress<string>? progress = null)
     {
         _moduleLoader.LoadCompatible(target.TargetId, progress);
-        ApplyOverrides(target.GetModuleOverrides());
+        ApplyPolicyOverrides(target.GetModulePolicyOverrides());
         progress?.Report($"REGISTRY_LOADED: {_moduleLoader.GraphicModules.Count + _moduleLoader.LogicModules.Count + _moduleLoader.AudioModules.Count} modules registered");
     }
 

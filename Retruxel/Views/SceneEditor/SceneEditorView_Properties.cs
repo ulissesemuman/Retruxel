@@ -55,6 +55,9 @@ public partial class SceneEditorView
         // User ID field (required)
         AddUserIdField(element);
 
+        // Module Scope and Singleton Policy
+        AddScopeAndPolicyFields(element, module);
+
         foreach (var param in manifest.Parameters)
         {
             AddParameterField(element, module, param);
@@ -434,5 +437,123 @@ public partial class SceneEditorView
         {
             // Ignore conversion errors
         }
+    }
+
+    /// <summary>
+    /// Adds Scope dropdown and Singleton Policy label to properties panel.
+    /// </summary>
+    private void AddScopeAndPolicyFields(SceneElement element, IModule module)
+    {
+        var policy = _moduleRegistry?.GetModulePolicy(module.ModuleId) ?? module.SingletonPolicy;
+
+        // Singleton Policy (read-only label)
+        PropertiesPanel.Children.Add(new TextBlock
+        {
+            Text = "SINGLETON POLICY",
+            Style = (Style)FindResource("TextLabel"),
+            Margin = new Thickness(0, 0, 0, 4)
+        });
+
+        var policyText = policy switch
+        {
+            SingletonPolicy.Global => "Global (one per project)",
+            SingletonPolicy.PerScene => "Per Scene (one per scene)",
+            SingletonPolicy.Multiple => "Multiple (unlimited)",
+            _ => "Unknown"
+        };
+
+        PropertiesPanel.Children.Add(new TextBlock
+        {
+            Text = policyText,
+            Style = (Style)FindResource("TextBody"),
+            Foreground = (Brush)FindResource("BrushOnSurface"),
+            Margin = new Thickness(0, 0, 0, 12)
+        });
+
+        // Module Scope (dropdown)
+        PropertiesPanel.Children.Add(new TextBlock
+        {
+            Text = "MODULE SCOPE",
+            Style = (Style)FindResource("TextLabel"),
+            Margin = new Thickness(0, 0, 0, 4)
+        });
+
+        var scopeCombo = new ComboBox
+        {
+            Height = 32,
+            Margin = new Thickness(0, 0, 0, 4),
+            Background = (Brush)FindResource("BrushSurfaceContainer"),
+            Foreground = (Brush)FindResource("BrushOnSurface"),
+            BorderBrush = (Brush)FindResource("BrushOutline"),
+            BorderThickness = new Thickness(1)
+        };
+
+        scopeCombo.Items.Add(new ComboBoxItem { Content = "Project (OnStart)", Tag = ModuleScope.Project });
+        scopeCombo.Items.Add(new ComboBoxItem { Content = "Scene (scene_init)", Tag = ModuleScope.Scene });
+
+        var currentScope = element.Data.ScopeOverride ?? module.DefaultScope;
+        scopeCombo.SelectedIndex = currentScope == ModuleScope.Project ? 0 : 1;
+
+        var scopeDescription = new TextBlock
+        {
+            FontSize = 9,
+            Foreground = (Brush)FindResource("BrushOnSurfaceVariant"),
+            Margin = new Thickness(0, 0, 0, 12),
+            TextWrapping = TextWrapping.Wrap,
+            Text = currentScope == ModuleScope.Project
+                ? "Initialized in main.c OnStart — persists across scenes"
+                : "Initialized in scene_X_init() — reloaded per scene"
+        };
+
+        scopeCombo.SelectionChanged += (s, e) =>
+        {
+            if (_isUpdatingUI || scopeCombo.SelectedItem is not ComboBoxItem item) return;
+
+            var newScope = (ModuleScope)item.Tag;
+            var previousScope = element.Data.ScopeOverride ?? module.DefaultScope;
+
+            if (newScope == previousScope) return;
+
+            scopeDescription.Text = newScope == ModuleScope.Project
+                ? "Initialized in main.c OnStart — persists across scenes"
+                : "Initialized in scene_X_init() — reloaded per scene";
+
+            var change = new StateChange
+            {
+                Description = $"Change Scope to {newScope}",
+                Type = ChangeType.Small,
+                Execute = () =>
+                {
+                    _isUpdatingUI = true;
+                    element.Data.ScopeOverride = newScope;
+                    scopeCombo.SelectedIndex = newScope == ModuleScope.Project ? 0 : 1;
+                    scopeDescription.Text = newScope == ModuleScope.Project
+                        ? "Initialized in main.c OnStart — persists across scenes"
+                        : "Initialized in scene_X_init() — reloaded per scene";
+                    _isUpdatingUI = false;
+                },
+                IsUndoable = true,
+                UndoCommand = new ChangePropertyCommand(
+                    description: $"Change Scope",
+                    apply: val =>
+                    {
+                        _isUpdatingUI = true;
+                        var scope = (ModuleScope)Enum.Parse(typeof(ModuleScope), val);
+                        element.Data.ScopeOverride = scope;
+                        scopeCombo.SelectedIndex = scope == ModuleScope.Project ? 0 : 1;
+                        scopeDescription.Text = scope == ModuleScope.Project
+                            ? "Initialized in main.c OnStart — persists across scenes"
+                            : "Initialized in scene_X_init() — reloaded per scene";
+                        _isUpdatingUI = false;
+                    },
+                    previousValue: previousScope.ToString(),
+                    newValue: newScope.ToString())
+            };
+
+            _stateManager?.ApplyChange(change);
+        };
+
+        PropertiesPanel.Children.Add(scopeCombo);
+        PropertiesPanel.Children.Add(scopeDescription);
     }
 }

@@ -21,9 +21,10 @@ public class PaletteModule : IGraphicModule
     public string DisplayName => "Palette";
     public string Category => "Graphics";
     public ModuleType Type => ModuleType.Logic;
-    public bool IsSingleton => false;
+    public SingletonPolicy SingletonPolicy => SingletonPolicy.PerScene;
     public string[] Compatibility { get; set; } = [];
     public string? VisualToolId => "palette_editor";
+    public ModuleScope DefaultScope => ModuleScope.Scene;
 
     private static readonly JsonSerializerOptions _jsonOptions = new()
     {

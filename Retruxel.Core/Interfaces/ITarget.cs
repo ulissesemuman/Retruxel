@@ -74,11 +74,12 @@ public interface ITarget
     IEnumerable<ParameterDefinition> GetSettingsDefinitions();
 
     /// <summary>
-    /// Returns target-specific overrides for universal modules.
-    /// Allows targets to modify module behavior (singleton, max instances, etc.)
-    /// without hardcoding target knowledge in the core.
+    /// Returns target-specific overrides for module singleton policies.
+    /// Allows targets to enforce stricter or looser policies than module defaults.
+    /// Example: SMS forces palette to PerScene (only one palette per scene).
+    /// Returns empty dictionary if no overrides needed.
     /// </summary>
-    IEnumerable<ModuleOverride> GetModuleOverrides();
+    Dictionary<string, SingletonPolicy> GetModulePolicyOverrides() => new();
 
     /// <summary>
     /// Returns generated files for a given module.
@@ -128,4 +129,17 @@ public interface ITarget
     /// Returns empty string if target doesn't require scene transition logic.
     /// </summary>
     string GenerateSceneTransitionPostamble() => string.Empty;
+
+    /// <summary>
+    /// Returns whether this target supports a hardware window plane
+    /// that renders independently of background scroll.
+    /// Used by HUD module to determine if WindowPlane strategy is available.
+    /// </summary>
+    bool SupportsWindowPlane => false;
+
+    /// <summary>
+    /// Returns the HUD rendering strategy for this target.
+    /// CodeGen uses this to generate the correct hud_init() and hud_update() implementations.
+    /// </summary>
+    HudStrategy GetHudStrategy() => HudStrategy.None;
 }

@@ -16,8 +16,9 @@ public class EnemyModule : ILogicModule
     public string DisplayName => "Enemy Entity";
     public string Category => "Entities";
     public ModuleType Type => ModuleType.Logic;
-    public bool IsSingleton => false;
+    public SingletonPolicy SingletonPolicy => SingletonPolicy.Multiple;
     public string[] Compatibility { get; set; } = [];
+    public ModuleScope DefaultScope => ModuleScope.Scene;
 
     private static readonly JsonSerializerOptions _jsonOptions = new()
     {

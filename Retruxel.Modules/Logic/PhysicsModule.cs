@@ -31,8 +31,9 @@ public class PhysicsModule : ILogicModule
     public string DisplayName => "Physics";
     public string Category => "Logic";
     public ModuleType Type => ModuleType.Logic;
-    public bool IsSingleton => true;
+    public SingletonPolicy SingletonPolicy => SingletonPolicy.Global;
     public string[] Compatibility { get; set; } = [];
+    public ModuleScope DefaultScope => ModuleScope.Project;
 
     private static readonly JsonSerializerOptions _jsonOptions = new()
     {

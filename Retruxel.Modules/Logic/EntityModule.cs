@@ -15,8 +15,9 @@ public class EntityModule : ILogicModule
     public string DisplayName => "Player Entity";
     public string Category => "Entities";
     public ModuleType Type => ModuleType.Logic;
-    public bool IsSingleton => true;
+    public SingletonPolicy SingletonPolicy => SingletonPolicy.Global;
     public string[] Compatibility { get; set; } = [];
+    public ModuleScope DefaultScope => ModuleScope.Project;
 
     private static readonly JsonSerializerOptions _jsonOptions = new()
     {

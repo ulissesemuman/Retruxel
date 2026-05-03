@@ -29,8 +29,9 @@ public class AnimationModule : ILogicModule
     public string DisplayName => "Animation";
     public string Category => "Logic";
     public ModuleType Type => ModuleType.Logic;
-    public bool IsSingleton => false;
+    public SingletonPolicy SingletonPolicy => SingletonPolicy.Global;
     public string[] Compatibility { get; set; } = [];
+    public ModuleScope DefaultScope => ModuleScope.Project;
 
     private static readonly JsonSerializerOptions _jsonOptions = new()
     {

@@ -9,13 +9,11 @@ public class GameState
     // Layer states
     public TilemapLayerState Background { get; set; } = new();
     public TilemapLayerState? Foreground { get; set; } // Future: SNES
-    public TextLayerState UI { get; set; } = new();
     public SpriteLayerState Sprites { get; set; } = new();
 
     // Dirty flags (optimization)
     public bool BackgroundDirty { get; set; }
     public bool ForegroundDirty { get; set; }
-    public bool UIDirty { get; set; }
     public bool SpritesDirty { get; set; }
 
     // Global state
@@ -30,7 +28,6 @@ public class GameState
     {
         BackgroundDirty = false;
         ForegroundDirty = false;
-        UIDirty = false;
         SpritesDirty = false;
         ScrollDirty = false;
     }
@@ -49,17 +46,6 @@ public class TilemapLayerState
     public byte PaletteIndex { get; set; }
     public int MapX { get; set; }
     public int MapY { get; set; }
-}
-
-/// <summary>
-/// Text/UI layer state.
-/// </summary>
-public class TextLayerState
-{
-    public string Text { get; set; } = string.Empty;
-    public byte X { get; set; }
-    public byte Y { get; set; }
-    public byte Color { get; set; }
 }
 
 /// <summary>
@@ -92,6 +78,5 @@ public enum LayerType
 {
     Background,   // Main tilemap
     Foreground,   // Future: SNES BG2
-    UI,           // Text, HUD
     Sprites       // Entities
 }

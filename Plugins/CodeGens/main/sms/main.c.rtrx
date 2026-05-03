@@ -30,8 +30,8 @@ void main(void) {
     Engine_Init();
 
 {{#if hasTextDisplay}}
-    // Setup text renderer (loads ASCII font into tiles 0-255)
-    SMS_autoSetUpTextRenderer();
+    // Initialize compact font for text rendering
+    retruxel_font_init();
 {{/if}}
 
     // OnStart: Project-level modules (persist across scenes)

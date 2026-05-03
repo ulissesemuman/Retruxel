@@ -22,7 +22,7 @@ public partial class SceneEditorView
 
         var index = _project.Scenes.Count + 1;
         var newName = $"Scene {index}";
-        while (_project.Scenes.Any(s => s.SceneName == newName))
+        while (_project.Scenes.Any(s => s.SceneName.Equals(newName, StringComparison.OrdinalIgnoreCase)))
         {
             index++;
             newName = $"Scene {index}";
@@ -183,7 +183,7 @@ public partial class SceneEditorView
         {
             var newName = textBox.Text.Trim();
             if (string.IsNullOrEmpty(newName)
-                || _project!.Scenes.Any(s => s.SceneId != scene.SceneId && s.SceneName == newName))
+                || _project!.Scenes.Any(s => s.SceneId != scene.SceneId && s.SceneName.Equals(newName, StringComparison.OrdinalIgnoreCase)))
             {
                 tab.Child = BuildLabelForTab(scene); // revert
                 return;

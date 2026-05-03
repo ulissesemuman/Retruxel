@@ -195,34 +195,8 @@ public class SmsTarget : ITarget
         }
     ];
 
-    public IEnumerable<ModuleOverride> GetModuleOverrides() =>
-    [
-        new ModuleOverride
-        {
-            ModuleId = "palette",
-            MaxInstances = 2  // BG palette + Sprite palette
-        },
-        new ModuleOverride
-        {
-            ModuleId = "entity",
-            IsSingleton = true
-        },
-        new ModuleOverride
-        {
-            ModuleId = "input",
-            IsSingleton = true
-        },
-        new ModuleOverride
-        {
-            ModuleId = "physics",
-            IsSingleton = true
-        },
-        new ModuleOverride
-        {
-            ModuleId = "scroll",
-            IsSingleton = true
-        }
-    ];
+    public Dictionary<string, SingletonPolicy> GetModulePolicyOverrides() =>
+        new() { ["palette"] = SingletonPolicy.PerScene };
 
     // Code generation
 
@@ -277,6 +251,10 @@ public class SmsTarget : ITarget
 
     public string GenerateSceneTransitionPostamble() =>
         "    SMS_displayOn();";
+
+    public bool SupportsWindowPlane => true;
+
+    public HudStrategy GetHudStrategy() => HudStrategy.WindowPlane;
 
     public GeneratedFile GenerateMainFile(RetruxelProject project, IEnumerable<GeneratedFile> moduleFiles)
     {

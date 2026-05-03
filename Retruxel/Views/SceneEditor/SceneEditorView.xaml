@@ -8,7 +8,6 @@
         <Grid.RowDefinitions>
             <RowDefinition Height="40"/>
             <RowDefinition Height="*"/>
-            <RowDefinition Height="200"/>
         </Grid.RowDefinitions>
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="200"/>
@@ -97,23 +96,31 @@
                         <ColumnDefinition Width="*"/>
                     </Grid.ColumnDefinitions>
 
-                    <Button x:Name="BtnTabModules"
+                    <Button x:Name="BtnTabStructure"
                             Grid.Column="0"
-                            Content="{loc:Tr Key='scene.modules'}"
-                            Click="BtnTabModules_Click"
+                            Content="STRUCTURE"
+                            Click="BtnTabStructure_Click"
                             Tag="active"
                             Style="{StaticResource SidebarTab}"/>
 
-                    <Button x:Name="BtnTabAssets"
+                    <Button x:Name="BtnTabModules"
                             Grid.Column="1"
-                            Content="ASSETS"
-                            Click="BtnTabAssets_Click"
+                            Content="{loc:Tr Key='scene.modules'}"
+                            Click="BtnTabModules_Click"
                             Style="{StaticResource SidebarTab}"/>
                 </Grid>
+
+                <!-- ── STRUCTURE panel ── -->
+                <ScrollViewer x:Name="PanelStructure"
+                              Grid.Row="1"
+                              VerticalScrollBarVisibility="Auto">
+                    <StackPanel x:Name="StructurePanel" Margin="0 8 0 0"/>
+                </ScrollViewer>
 
                 <!-- ── MODULES panel ── -->
                 <ScrollViewer x:Name="PanelModules"
                               Grid.Row="1"
+                              Visibility="Collapsed"
                               VerticalScrollBarVisibility="Auto">
                     <StackPanel Margin="0 8 0 0">
                         <TextBlock Text="{loc:Tr Key='scene.system_status'}"
@@ -130,77 +137,6 @@
                         <StackPanel x:Name="ModulePalettePanel"/>
                     </StackPanel>
                 </ScrollViewer>
-
-                <!-- ── ASSETS panel ── -->
-                <ScrollViewer x:Name="PanelAssets"
-                              Grid.Row="1"
-                              Visibility="Collapsed"
-                              VerticalScrollBarVisibility="Auto">
-                    <StackPanel Margin="0 8 0 0">
-
-                        <!-- Tiles section -->
-                        <TextBlock Text="TILES"
-                                   Style="{StaticResource TextLabel}"
-                                   Foreground="{StaticResource BrushPrimary}"
-                                   Margin="12 0 12 8"/>
-
-                        <StackPanel x:Name="AssetTilesPanel"
-                                    Margin="0 0 0 4"/>
-
-                        <Button Content="+ IMPORT TILES"
-                                Style="{StaticResource AssetImportButton}"
-                                Margin="12 4 12 16"
-                                Click="BtnImportTiles_Click"/>
-
-                        <!-- Sprites section -->
-                        <TextBlock Text="SPRITES"
-                                   Style="{StaticResource TextLabel}"
-                                   Foreground="{StaticResource BrushPrimary}"
-                                   Margin="12 0 12 8"/>
-
-                        <StackPanel x:Name="AssetSpritesPanel"
-                                    Margin="0 0 0 4"/>
-
-                        <Button Content="+ IMPORT SPRITES"
-                                Style="{StaticResource AssetImportButton}"
-                                Margin="12 4 12 16"
-                                Click="BtnImportSprites_Click"/>
-
-                    </StackPanel>
-                </ScrollViewer>
-
-                <!-- ── Bottom: New Scene button (always visible) ── -->
-                <StackPanel Grid.Row="2">
-                    <Separator Margin="0,0,0,16"/>
-                    <Button x:Name="BtnNewScene"
-                            Content="{loc:Tr Key='scene.new_scene'}"
-                            Style="{StaticResource ButtonSecondary}"
-                            Margin="12,0,12,0"
-                            HorizontalAlignment="Stretch"
-                            Padding="0,8"
-                            Click="BtnNewScene_Click"/>
-
-                    <Separator Margin="0,0,0,4"/>
-
-                    <Button Style="{StaticResource ButtonToolbar}"
-                            HorizontalAlignment="Left"
-                            Click="Documentation_Click"
-                            Margin="0,0,0,4">
-                        <Grid>
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="14"/>
-                                <ColumnDefinition Width="*"/>
-                            </Grid.ColumnDefinitions>
-                            <TextBlock Grid.Column="0" Text="?"
-                                       HorizontalAlignment="Center"
-                                       VerticalAlignment="Center"/>
-                            <TextBlock Grid.Column="1"
-                                       Text="{loc:Tr Key='scene.documentation'}"
-                                       HorizontalAlignment="Left"
-                                       VerticalAlignment="Center"/>
-                        </Grid>
-                    </Button>
-                </StackPanel>
 
             </Grid>
         </Border>
@@ -268,7 +204,7 @@
         </ScrollViewer>
 
         <!-- ===== RIGHT — PROPERTIES ===== -->
-        <Border Grid.Row="1" Grid.Column="2" Grid.RowSpan="2"
+        <Border Grid.Row="1" Grid.Column="2"
                 Background="{StaticResource BrushSurfaceContainerLow}"
                 Padding="16">
             <Grid>
@@ -298,30 +234,6 @@
                         <StackPanel x:Name="PropertiesPanel"
                                     Visibility="Collapsed"/>
                     </StackPanel>
-                </ScrollViewer>
-            </Grid>
-        </Border>
-
-        <!-- ===== BOTTOM — EVENTS PANEL ===== -->
-        <Border Grid.Row="2" Grid.Column="1"
-                Background="{StaticResource BrushSurfaceContainerHigh}"
-                Padding="16,12">
-            <Grid>
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="*"/>
-                </Grid.RowDefinitions>
-
-                <TextBlock Grid.Row="0"
-                           Text="{loc:Tr Key='scene.events'}"
-                           Style="{StaticResource TextLabel}"
-                           Foreground="{StaticResource BrushPrimary}"
-                           Margin="0,0,0,8"/>
-
-                <ScrollViewer Grid.Row="1"
-                              VerticalScrollBarVisibility="Auto"
-                              HorizontalScrollBarVisibility="Disabled">
-                    <StackPanel x:Name="EventsPanel"/>
                 </ScrollViewer>
             </Grid>
         </Border>

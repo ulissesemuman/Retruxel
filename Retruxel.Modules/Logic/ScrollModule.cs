@@ -15,8 +15,9 @@ public class ScrollModule : ILogicModule
     public string DisplayName => "Background Scroll";
     public string Category => "Background";
     public ModuleType Type => ModuleType.Logic;
-    public bool IsSingleton => true;
+    public SingletonPolicy SingletonPolicy => SingletonPolicy.PerScene;
     public string[] Compatibility { get; set; } = [];
+    public ModuleScope DefaultScope => ModuleScope.Scene;
 
     private static readonly JsonSerializerOptions _jsonOptions = new()
     {

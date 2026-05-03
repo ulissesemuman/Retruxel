@@ -1,4 +1,6 @@
-﻿namespace Retruxel.Core.Interfaces;
+﻿using Retruxel.Core.Models;
+
+namespace Retruxel.Core.Interfaces;
 
 /// <summary>
 /// Base contract for all Retruxel modules.
@@ -26,11 +28,13 @@ public interface IModule
     string[] Compatibility { get; }
 
     /// <summary>
-    /// Whether only one instance of this module can exist per project.
-    /// Singleton modules (entity, physics, input, scroll) are removed from the
-    /// sidebar palette when placed on the canvas and restored when deleted.
+    /// Defines how many instances of this module can exist.
+    /// Global: one per project (shared across scenes)
+    /// PerScene: one per scene (different scenes can have their own)
+    /// Multiple: unlimited instances
+    /// Targets can override this via GetModulePolicyOverrides().
     /// </summary>
-    bool IsSingleton { get; }
+    SingletonPolicy SingletonPolicy => SingletonPolicy.Multiple;
 
     /// <summary>
     /// Optional: ID of the visual tool associated with this module.
@@ -40,6 +44,14 @@ public interface IModule
     /// Returns null if the module has no visual editor.
     /// </summary>
     string? VisualToolId => null;
+
+    /// <summary>
+    /// Default scope for this module type.
+    /// Determines whether init() is called in main() OnStart (Project)
+    /// or inside scene_X_init() (Scene).
+    /// The user can override this per instance in the SceneEditor.
+    /// </summary>
+    ModuleScope DefaultScope => ModuleScope.Project;
 
     /// <summary>Serializes the current module state to the .rtrxproject file.</summary>
     string Serialize();

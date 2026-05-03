@@ -12,12 +12,20 @@ internal class VariableResolver
 {
     private readonly Dictionary<string, ITool> _tools;
     private readonly System.Reflection.Assembly? _targetAssembly;
+    private Dictionary<string, object> _globalVariables = new();
 
     public VariableResolver(Dictionary<string, ITool> tools, System.Reflection.Assembly? targetAssembly)
     {
         _tools = tools;
         _targetAssembly = targetAssembly;
     }
+
+    /// <summary>
+    /// Sets global variables available to all CodeGen templates.
+    /// Used for injecting TextAnalyzer results (fontStartTile, fontTileData, etc.).
+    /// </summary>
+    public void SetGlobalVariables(Dictionary<string, object> variables)
+        => _globalVariables = variables;
 
     public Dictionary<string, object> ResolveForModule(
         Dictionary<string, VariableDefinition> variables,
@@ -31,6 +39,12 @@ internal class VariableResolver
 
         using var doc = JsonDocument.Parse(moduleJson);
         var root = doc.RootElement;
+
+        // Inject global variables first
+        foreach (var (key, value) in _globalVariables)
+        {
+            result[key] = value;
+        }
 
         foreach (var (varName, varDef) in variables)
         {
@@ -47,6 +61,13 @@ internal class VariableResolver
                 case "tool":
                     var toolValues = InvokeTool(varDef, root, result);
                     result[varName] = toolValues;
+                    break;
+
+                case "global":
+                    if (_globalVariables.TryGetValue(varDef.Path ?? varName, out var globalValue))
+                        result[varName] = globalValue;
+                    else
+                        result[varName] = varDef.Default ?? "";
                     break;
             }
         }

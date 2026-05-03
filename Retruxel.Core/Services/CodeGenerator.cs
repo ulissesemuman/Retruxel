@@ -173,12 +173,12 @@ public class CodeGenerator
         // Generate scene files
         foreach (var scene in project.Scenes)
         {
-            var sceneFile = _moduleRenderer.RenderSceneFile(project.TargetId, scene, progress);
-            if (sceneFile is not null)
+            var sceneFiles = _moduleRenderer.RenderSceneFiles(project.TargetId, scene, progress);
+            foreach (var file in sceneFiles)
             {
-                sourceFiles.Add(sceneFile);
-                progress?.Report($"INFO: Scene '{scene.SceneName}' generated.");
+                sourceFiles.Add(file);
             }
+            progress?.Report($"INFO: Scene '{scene.SceneName}' generated.");
         }
 
         // Generate GameVars file if gamevar module is present

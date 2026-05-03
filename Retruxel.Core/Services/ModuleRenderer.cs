@@ -188,8 +188,90 @@ public class ModuleRenderer
     }
 
     /// <summary>
+    /// Renders scene initialization files using the declarative CodeGen for the target.
+    /// Returns header + source GeneratedFiles.
+    /// </summary>
+    public IEnumerable<GeneratedFile> RenderSceneFiles(
+        string targetId,
+        SceneData scene,
+        IProgress<string>? progress = null)
+    {
+        var key = Key(targetId, "scene");
+
+        if (!_codeGens.TryGetValue(key, out var manifest))
+            yield break;
+
+        var variables = new Dictionary<string, object>
+        {
+            ["sceneName"] = scene.SceneName,
+            ["sceneNameUpper"] = scene.SceneName.ToUpperInvariant()
+        };
+
+        var sceneModules = new List<IModule>();
+        foreach (var element in scene.Elements)
+        {
+            if (_moduleRegistry == null) continue;
+
+            IModule? moduleTemplate = null;
+            if (_moduleRegistry.GraphicModules.TryGetValue(element.ModuleId, out var gm))
+                moduleTemplate = gm;
+            else if (_moduleRegistry.LogicModules.TryGetValue(element.ModuleId, out var lm))
+                moduleTemplate = lm;
+            else if (_moduleRegistry.AudioModules.TryGetValue(element.ModuleId, out var am))
+                moduleTemplate = am;
+
+            if (moduleTemplate == null) continue;
+
+            var moduleType = moduleTemplate.GetType();
+            var module = (IModule)Activator.CreateInstance(moduleType)!;
+            
+            var moduleStateJson = element.ModuleState.ValueKind != System.Text.Json.JsonValueKind.Undefined &&
+                                  element.ModuleState.ValueKind != System.Text.Json.JsonValueKind.Null
+                ? element.ModuleState.GetRawText()
+                : "{}";
+            
+            module.Deserialize(moduleStateJson);
+            sceneModules.Add(module);
+        }
+
+        foreach (var (varName, varDef) in manifest.Variables)
+        {
+            if (varDef.From == "scene")
+            {
+                if (varDef.Path == "name")
+                    variables[varName] = varDef.Transform == "upper" 
+                        ? scene.SceneName.ToUpperInvariant() 
+                        : scene.SceneName;
+            }
+            else if (varDef.From == "sceneModules")
+            {
+                variables[varName] = ProcessSceneModules(sceneModules, varDef);
+            }
+        }
+
+        var template = File.ReadAllText(manifest.TemplatePath);
+
+        yield return new GeneratedFile
+        {
+            FileName = $"scene_{scene.SceneName}.h",
+            Content = TemplateEngine.RenderBlock(template, "header", variables),
+            FileType = GeneratedFileType.Header,
+            SourceModuleId = "scene"
+        };
+
+        yield return new GeneratedFile
+        {
+            FileName = $"scene_{scene.SceneName}.c",
+            Content = TemplateEngine.RenderBlock(template, "source", variables),
+            FileType = GeneratedFileType.Source,
+            SourceModuleId = "scene"
+        };
+    }
+
+    /// <summary>
     /// Renders a scene initialization file using the declarative CodeGen for the target.
     /// Returns a single GeneratedFile (scene_&lt;name&gt;.c with embedded header).
+    /// DEPRECATED: Use RenderSceneFiles() instead.
     /// </summary>
     public GeneratedFile? RenderSceneFile(
         string targetId,

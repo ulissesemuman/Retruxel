@@ -144,7 +144,7 @@ public class ModuleRendererRefactored
         };
     }
 
-    public GeneratedFile? RenderSceneFile(
+    public IEnumerable<GeneratedFile> RenderSceneFiles(
         string targetId,
         SceneData scene,
         IProgress<string>? progress = null)
@@ -152,7 +152,7 @@ public class ModuleRendererRefactored
         var key = Key(targetId, "scene");
 
         if (!_codeGens.TryGetValue(key, out var manifest))
-            return null;
+            yield break;
 
         var variables = new Dictionary<string, object>
         {
@@ -203,12 +203,19 @@ public class ModuleRendererRefactored
         }
 
         var template = File.ReadAllText(manifest.TemplatePath);
-        var content = TemplateEngine.Render(template, variables);
 
-        return new GeneratedFile
+        yield return new GeneratedFile
+        {
+            FileName = $"scene_{scene.SceneName}.h",
+            Content = TemplateEngine.RenderBlock(template, "header", variables),
+            FileType = GeneratedFileType.Header,
+            SourceModuleId = "scene"
+        };
+
+        yield return new GeneratedFile
         {
             FileName = $"scene_{scene.SceneName}.c",
-            Content = content,
+            Content = TemplateEngine.RenderBlock(template, "source", variables),
             FileType = GeneratedFileType.Source,
             SourceModuleId = "scene"
         };

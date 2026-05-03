@@ -114,4 +114,18 @@ public interface ITarget
     /// Returns null if this target does not support diagnostics.
     /// </summary>
     BuildDiagnosticsReport? GetBuildDiagnostics(BuildDiagnosticInput input) => null;
+
+    /// <summary>
+    /// Generates code to execute before transitioning to a new scene.
+    /// Typically includes display off and VRAM clear.
+    /// Returns empty string if target doesn't require scene transition logic.
+    /// </summary>
+    string GenerateSceneTransitionPreamble() => string.Empty;
+
+    /// <summary>
+    /// Generates code to execute after transitioning to a new scene.
+    /// Typically includes display on.
+    /// Returns empty string if target doesn't require scene transition logic.
+    /// </summary>
+    string GenerateSceneTransitionPostamble() => string.Empty;
 }

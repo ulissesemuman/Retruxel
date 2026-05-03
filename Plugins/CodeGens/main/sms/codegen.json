@@ -3,7 +3,7 @@
   "targetId": "sms",
   "displayName": "SMS Main File Generator",
   "description": "Generates main.c entry point for Sega Master System",
-  "version": "2.1.0",
+  "version": "3.0.0",
   "template": "main.c.rtrx",
   "isSystemModule": true,
   "variables": {
@@ -22,25 +22,38 @@
     },
     "headers": {
       "from": "moduleFiles",
-      "path": "fileType == 'Header' && sourceModuleId != 'retruxel.core' && sourceModuleId != 'retruxel.splash' && sourceModuleId != 'retruxel.engine'",
+      "path": "fileType == 'Header' && sourceModuleId != 'retruxel.core' && sourceModuleId != 'retruxel.splash' && sourceModuleId != 'retruxel.engine' && sourceModuleId != 'scene'",
       "transform": "#include \"{{fileName}}\""
     },
     "hasTextDisplay": {
       "from": "moduleFiles",
       "path": "sourceModuleId == 'text.display'",
-      "transform": "true"
+      "transform": "hasAny"
     },
-    "updateCalls": {
-      "from": "updateCalls"
+    "hasGameVars": {
+      "from": "moduleFiles",
+      "path": "sourceModuleId == 'gamevar'",
+      "transform": "hasAny"
     },
-    "inputCalls": {
-      "from": "inputCalls"
+    "initialScene": {
+      "from": "project",
+      "path": "initialSceneId",
+      "default": "main"
     },
-    "onStartCalls": {
-      "from": "onStartCalls"
+    "onStartModules": {
+      "from": "projectModules",
+      "filter": "moduleId == 'input' || moduleId == 'physics' || moduleId == 'sprite' || moduleId == 'animation'",
+      "transform": "moduleId"
     },
-    "onVBlankCalls": {
-      "from": "onVBlankCalls"
+    "onInputModules": {
+      "from": "projectModules",
+      "filter": "moduleId == 'input'",
+      "transform": "moduleId"
+    },
+    "onVBlankModules": {
+      "from": "projectModules",
+      "filter": "moduleId == 'entity' || moduleId == 'enemy' || moduleId == 'scroll'",
+      "transform": "moduleId"
     },
     "splashEnabled": {
       "from": "settings",

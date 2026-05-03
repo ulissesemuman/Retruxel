@@ -1,0 +1,21 @@
+{
+  "moduleId": "gamevar",
+  "targetId": "sms",
+  "displayName": "SMS GameVar CodeGen",
+  "description": "Generates global game variables with initial values",
+  "version": "1.0.0",
+  "template": "gamevars.c.rtrx",
+  "isBatchModule": true,
+  "variables": {
+    "vars": {
+      "from": "allInstances",
+      "moduleId": "gamevar"
+    },
+    "hasIntOrByte": {
+      "from": "allInstances",
+      "moduleId": "gamevar",
+      "filter": "type == 'int' || type == 'byte'",
+      "transform": "hasAny"
+    }
+  }
+}

@@ -43,6 +43,12 @@ public class RetruxelProject
     public List<SceneData> Scenes { get; set; } = [];
 
     /// <summary>
+    /// Initial scene ID loaded when the game starts.
+    /// Defaults to "main" if not specified.
+    /// </summary>
+    public string InitialSceneId { get; set; } = "main";
+
+    /// <summary>
     /// All imported assets in this project.
     /// Assets are identified by Id (filename without extension).
     /// Modules reference assets via their Id (tilesAssetId, spriteAssetId).

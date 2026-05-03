@@ -108,6 +108,8 @@ public class ModuleRenderer
                         variables[varName] = project.Name;
                     else if (varDef.Path == "targetId")
                         variables[varName] = project.TargetId;
+                    else if (varDef.Path == "initialSceneId")
+                        variables[varName] = project.InitialSceneId;
                     break;
 
                 case "system":
@@ -124,17 +126,26 @@ public class ModuleRenderer
                     break;
 
                 case "moduleFiles":
-                    // Special case: hasTextDisplay should resolve to a boolean, not a list
+                    // Special case: hasTextDisplay and hasGameVars should resolve to boolean
                     if (varName == "hasTextDisplay")
                     {
                         var hasText = filesList.Any(f => f.SourceModuleId == "text.display");
                         variables[varName] = hasText;
+                    }
+                    else if (varName == "hasGameVars")
+                    {
+                        var hasGameVars = filesList.Any(f => f.SourceModuleId == "gamevar");
+                        variables[varName] = hasGameVars;
                     }
                     else
                     {
                         var result = ProcessModuleFiles(filesList, varDef, variables);
                         variables[varName] = result;
                     }
+                    break;
+
+                case "projectModules":
+                    variables[varName] = ProcessProjectModules(project, varDef);
                     break;
 
                 case "updateCalls":
@@ -173,6 +184,85 @@ public class ModuleRenderer
             Content = content,
             FileType = GeneratedFileType.Source,
             SourceModuleId = "retruxel.core"
+        };
+    }
+
+    /// <summary>
+    /// Renders a scene initialization file using the declarative CodeGen for the target.
+    /// Returns a single GeneratedFile (scene_&lt;name&gt;.c with embedded header).
+    /// </summary>
+    public GeneratedFile? RenderSceneFile(
+        string targetId,
+        SceneData scene,
+        IProgress<string>? progress = null)
+    {
+        var key = Key(targetId, "scene");
+
+        if (!_codeGens.TryGetValue(key, out var manifest))
+            return null;
+
+        // Build variable dictionary
+        var variables = new Dictionary<string, object>
+        {
+            ["sceneName"] = scene.SceneName,
+            ["sceneNameUpper"] = scene.SceneName.ToUpperInvariant()
+        };
+
+        // Get modules from scene - need to instantiate from registry
+        var sceneModules = new List<IModule>();
+        foreach (var element in scene.Elements)
+        {
+            // Skip if no module registry available
+            if (_moduleRegistry == null) continue;
+
+            IModule? moduleTemplate = null;
+            if (_moduleRegistry.GraphicModules.TryGetValue(element.ModuleId, out var gm))
+                moduleTemplate = gm;
+            else if (_moduleRegistry.LogicModules.TryGetValue(element.ModuleId, out var lm))
+                moduleTemplate = lm;
+            else if (_moduleRegistry.AudioModules.TryGetValue(element.ModuleId, out var am))
+                moduleTemplate = am;
+
+            if (moduleTemplate == null) continue;
+
+            var moduleType = moduleTemplate.GetType();
+            var module = (IModule)Activator.CreateInstance(moduleType)!;
+            
+            var moduleStateJson = element.ModuleState.ValueKind != System.Text.Json.JsonValueKind.Undefined &&
+                                  element.ModuleState.ValueKind != System.Text.Json.JsonValueKind.Null
+                ? element.ModuleState.GetRawText()
+                : "{}";
+            
+            module.Deserialize(moduleStateJson);
+            sceneModules.Add(module);
+        }
+
+        // Resolve variables from manifest
+        foreach (var (varName, varDef) in manifest.Variables)
+        {
+            if (varDef.From == "scene")
+            {
+                if (varDef.Path == "name")
+                    variables[varName] = varDef.Transform == "upper" 
+                        ? scene.SceneName.ToUpperInvariant() 
+                        : scene.SceneName;
+            }
+            else if (varDef.From == "sceneModules")
+            {
+                variables[varName] = ProcessSceneModules(sceneModules, varDef);
+            }
+        }
+
+        // Load and render template
+        var template = File.ReadAllText(manifest.TemplatePath);
+        var content = TemplateEngine.Render(template, variables);
+
+        return new GeneratedFile
+        {
+            FileName = $"scene_{scene.SceneName}.c",
+            Content = content,
+            FileType = GeneratedFileType.Source,
+            SourceModuleId = "scene"
         };
     }
 
@@ -577,6 +667,103 @@ public class ModuleRenderer
         }
 
         return toolResult;
+    }
+
+    // ── Variable resolution ───────────────────────────────────────────────────
+
+    private static List<string> ProcessProjectModules(RetruxelProject project, VariableDefinition varDef)
+    {
+        // Get all module IDs from all scenes
+        var allModuleIds = project.Scenes
+            .SelectMany(s => s.Elements)
+            .Select(e => e.ModuleId)
+            .ToList();
+
+        // Apply filter if specified
+        if (!string.IsNullOrEmpty(varDef.Path))
+        {
+            allModuleIds = allModuleIds.Where(moduleId => EvaluateModuleIdFilter(moduleId, varDef.Path)).ToList();
+        }
+
+        // Apply transform
+        if (varDef.Transform == "moduleId")
+        {
+            return allModuleIds
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+        }
+
+        return allModuleIds;
+    }
+
+    private static bool EvaluateModuleIdFilter(string moduleId, string filter)
+    {
+        // Simple filter evaluation: "moduleId == 'input' || moduleId == 'physics'"
+        var parts = filter.Split(new[] { "||" }, StringSplitOptions.TrimEntries);
+        return parts.Any(part =>
+        {
+            if (part.Contains("=="))
+            {
+                var tokens = part.Split(new[] { "==" }, StringSplitOptions.TrimEntries);
+                if (tokens.Length == 2)
+                {
+                    var left = tokens[0].Trim();
+                    var right = tokens[1].Trim().Trim('\'', '"');
+                    
+                    if (left == "moduleId")
+                        return moduleId.Equals(right, StringComparison.OrdinalIgnoreCase);
+                }
+            }
+            return false;
+        });
+    }
+
+    private static object ProcessSceneModules(List<IModule> modules, VariableDefinition varDef)
+    {
+        // Apply filter if specified
+        var filtered = modules.AsEnumerable();
+        if (!string.IsNullOrEmpty(varDef.Path))
+        {
+            filtered = filtered.Where(m => EvaluateModuleFilter(m, varDef.Path));
+        }
+
+        // Apply transform
+        if (varDef.Transform == "initCall")
+        {
+            return filtered.Select(m => new Dictionary<string, object>
+            {
+                ["header"] = $"{m.ModuleId.Replace(".", "_")}.h",
+                ["call"] = $"{m.ModuleId.Replace(".", "_")}_init"
+            }).ToList();
+        }
+        else if (varDef.Transform == "hasAny")
+        {
+            return filtered.Any();
+        }
+
+        return filtered.Select(m => m.ModuleId).ToList();
+    }
+
+    private static bool EvaluateModuleFilter(IModule module, string filter)
+    {
+        // Simple filter evaluation: "moduleId == 'input' || moduleId == 'physics'"
+        var parts = filter.Split(new[] { "||" }, StringSplitOptions.TrimEntries);
+        return parts.Any(part =>
+        {
+            if (part.Contains("=="))
+            {
+                var tokens = part.Split(new[] { "==" }, StringSplitOptions.TrimEntries);
+                if (tokens.Length == 2)
+                {
+                    var left = tokens[0].Trim();
+                    var right = tokens[1].Trim().Trim('\'', '"');
+                    
+                    if (left == "moduleId")
+                        return module.ModuleId.Equals(right, StringComparison.OrdinalIgnoreCase);
+                }
+            }
+            return false;
+        });
     }
 
     // ── Discovery ─────────────────────────────────────────────────────────────

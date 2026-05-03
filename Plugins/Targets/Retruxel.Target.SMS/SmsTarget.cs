@@ -271,6 +271,13 @@ public class SmsTarget : ITarget
         return new SmsDiagnosticsProvider().Analyze(input);
     }
 
+    public string GenerateSceneTransitionPreamble() =>
+        "    SMS_displayOff();\n" +
+        "    SMS_VRAMmemsetW(0, 0x0000, 16384);";
+
+    public string GenerateSceneTransitionPostamble() =>
+        "    SMS_displayOn();";
+
     public GeneratedFile GenerateMainFile(RetruxelProject project, IEnumerable<GeneratedFile> moduleFiles)
     {
         var fileList = moduleFiles.ToList();

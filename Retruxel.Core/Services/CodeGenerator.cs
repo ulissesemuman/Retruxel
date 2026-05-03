@@ -170,6 +170,24 @@ public class CodeGenerator
         // Validate tile conflicts between tilemap and text.display
         ValidateTileConflicts(instancesByModule, progress);
 
+        // Generate scene files
+        foreach (var scene in project.Scenes)
+        {
+            var sceneFile = _moduleRenderer.RenderSceneFile(project.TargetId, scene, progress);
+            if (sceneFile is not null)
+            {
+                sourceFiles.Add(sceneFile);
+                progress?.Report($"INFO: Scene '{scene.SceneName}' generated.");
+            }
+        }
+
+        // Generate GameVars file if gamevar module is present
+        if (instancesByModule.ContainsKey("gamevar"))
+        {
+            var gameVarFiles = GenerateGameVarsFile(project, instancesByModule["gamevar"], progress);
+            sourceFiles.AddRange(gameVarFiles);
+        }
+
         // Generate target-specific main entry point
         // First, generate engine runtime files (engine.h, engine.c) if target provides them
         var engineFiles = _target.GenerateEngineRuntime();
@@ -227,6 +245,75 @@ public class CodeGenerator
         }
 
         return buildContext;
+    }
+
+    /// <summary>
+    /// Generates gamevars.h and gamevars.c files for all GameVar module instances.
+    /// Uses batch processing to generate a single file containing all variables.
+    /// </summary>
+    private List<GeneratedFile> GenerateGameVarsFile(
+        RetruxelProject project,
+        List<IModule> gameVarInstances,
+        IProgress<string>? progress)
+    {
+        var files = new List<GeneratedFile>();
+
+        // Collect all GameVar data
+        var vars = gameVarInstances.Select(m =>
+        {
+            var json = m.Serialize();
+            var node = JsonNode.Parse(json) as JsonObject;
+            return new Dictionary<string, object>
+            {
+                ["name"] = node?["name"]?.GetValue<string>() ?? "myVar",
+                ["type"] = node?["type"]?.GetValue<string>() ?? "int",
+                ["initialValue"] = node?["initialValue"]?.GetValue<string>() ?? "0",
+                ["showInHud"] = node?["showInHud"]?.GetValue<bool>() ?? false
+            };
+        }).ToList();
+
+        // Check if any var is int or byte
+        var hasIntOrByte = vars.Any(v =>
+        {
+            var type = v["type"].ToString();
+            return type == "int" || type == "byte";
+        });
+
+        // Build variables for template
+        var variables = new Dictionary<string, object>
+        {
+            ["vars"] = vars,
+            ["hasIntOrByte"] = hasIntOrByte
+        };
+
+        // Try to render via ModuleRenderer
+        if (_moduleRenderer.CanRender("gamevar", project.TargetId))
+        {
+            // For batch modules, we need a special render path
+            // For now, manually construct the template rendering
+            var key = $"{project.TargetId}::gamevar".ToLowerInvariant();
+            var templatePath = Path.Combine(
+                Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location) ?? "",
+                "Plugins", "CodeGens", "gamevar", project.TargetId, "gamevars.c.rtrx");
+
+            if (File.Exists(templatePath))
+            {
+                var template = File.ReadAllText(templatePath);
+                var content = TemplateEngine.Render(template, variables);
+
+                files.Add(new GeneratedFile
+                {
+                    FileName = "gamevars.c",
+                    Content = content,
+                    FileType = GeneratedFileType.Source,
+                    SourceModuleId = "gamevar"
+                });
+
+                progress?.Report($"INFO: gamevars.c generated with {vars.Count} variable(s).");
+            }
+        }
+
+        return files;
     }
 
     /// <summary>

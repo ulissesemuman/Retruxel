@@ -3,6 +3,7 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using Retruxel.Core.Interfaces;
+using Retruxel.Core.Models;
 
 namespace Retruxel.Views;
 

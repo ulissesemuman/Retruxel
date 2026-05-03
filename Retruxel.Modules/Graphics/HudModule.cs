@@ -13,7 +13,7 @@ public class HudModule : IGraphicModule
     public string ModuleId => "hud";
     public string DisplayName => "HUD";
     public string Category => "Graphics";
-    public ModuleType Type => ModuleType.Graphic;
+    public ModuleType Type => ModuleType.Logic;
     public bool IsSingleton => false;
 
     public ModuleScope DefaultScope => ModuleScope.Project;
@@ -64,7 +64,7 @@ public class HudModule : IGraphicModule
                 Name = "bgAssetId",
                 DisplayName = "Background Asset",
                 Description = "Tile asset for HUD frame/border (optional)",
-                Type = ParameterType.AssetReference,
+                Type = ParameterType.String,
                 Required = false
             },
             new ParameterDefinition
@@ -82,6 +82,7 @@ public class HudModule : IGraphicModule
 
     public IEnumerable<GeneratedFile> GenerateCode() => [];
     public IEnumerable<GeneratedAsset> GenerateAssets() => [];
+    public object? CreateEditorViewModel() => null;
 
     private class HudState
     {

@@ -13,7 +13,7 @@ public class TextArrayModule : IGraphicModule
     public string ModuleId => "text.array";
     public string DisplayName => "Text Array";
     public string Category => "Graphics";
-    public ModuleType Type => ModuleType.Graphic;
+    public ModuleType Type => ModuleType.Logic;
     public bool IsSingleton => false;
 
     public ModuleScope DefaultScope => ModuleScope.Project;
@@ -53,7 +53,7 @@ public class TextArrayModule : IGraphicModule
                 Name = "fontAssetId",
                 DisplayName = "Font Asset",
                 Description = "Custom font asset (optional, uses default if empty)",
-                Type = ParameterType.AssetReference,
+                Type = ParameterType.String,
                 Required = false
             }
         ]
@@ -61,6 +61,7 @@ public class TextArrayModule : IGraphicModule
 
     public IEnumerable<GeneratedFile> GenerateCode() => [];
     public IEnumerable<GeneratedAsset> GenerateAssets() => [];
+    public object? CreateEditorViewModel() => null;
 
     private class TextArrayState
     {

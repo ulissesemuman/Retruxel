@@ -25,20 +25,7 @@ public partial class SceneEditorView
     {
         if (_project is null) return;
 
-        AssetTilesPanel.Children.Clear();
-        AssetSpritesPanel.Children.Clear();
-
-        foreach (var asset in _project.Assets)
-        {
-            // Determine panel based on VramRegionId
-            var panel = asset.VramRegionId.Contains("background", StringComparison.OrdinalIgnoreCase) ||
-                        asset.VramRegionId.Contains("bg", StringComparison.OrdinalIgnoreCase) ||
-                        asset.VramRegionId.Contains("tiles", StringComparison.OrdinalIgnoreCase)
-                ? AssetTilesPanel
-                : AssetSpritesPanel;
-
-            panel.Children.Add(BuildAssetRow(asset));
-        }
+        // Assets panel removed - functionality moved to structure panel
     }
 
     /// <summary>

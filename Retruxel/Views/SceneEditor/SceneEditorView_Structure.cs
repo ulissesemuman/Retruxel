@@ -1,5 +1,6 @@
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
 using System.Windows.Media;
 
 namespace Retruxel.Views;
@@ -140,7 +141,7 @@ public partial class SceneEditorView
     {
         var item = new Border
         {
-            Background = (Brush)FindResource("BrushSurfaceContainer"),
+            Background = (Brush)FindResource("BrushSurfaceContainerHigh"),
             Padding = new Thickness(8, 4, 8, 4),
             Margin = new Thickness(28, 0, 12, 4),
             Cursor = Cursors.Hand
@@ -173,7 +174,7 @@ public partial class SceneEditorView
             Style = (Style)FindResource("ButtonSecondary"),
             Margin = new Thickness(28, 4, 12, 8),
             HorizontalAlignment = HorizontalAlignment.Stretch,
-            Padding = new Thickness(0, 4),
+            Padding = new Thickness(0, 4, 0, 4),
             FontSize = 9
         };
 

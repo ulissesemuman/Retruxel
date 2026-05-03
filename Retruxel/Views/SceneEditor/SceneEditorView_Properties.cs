@@ -481,11 +481,7 @@ public partial class SceneEditorView
         var scopeCombo = new ComboBox
         {
             Height = 32,
-            Margin = new Thickness(0, 0, 0, 4),
-            Background = (Brush)FindResource("BrushSurfaceContainer"),
-            Foreground = (Brush)FindResource("BrushOnSurface"),
-            BorderBrush = (Brush)FindResource("BrushOutline"),
-            BorderThickness = new Thickness(1)
+            Margin = new Thickness(0, 0, 0, 4)
         };
 
         scopeCombo.Items.Add(new ComboBoxItem { Content = "Project (OnStart)", Tag = ModuleScope.Project });

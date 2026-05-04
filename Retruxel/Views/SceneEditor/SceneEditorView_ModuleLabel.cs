@@ -19,7 +19,7 @@ public partial class SceneEditorView
 
         // Top row: icon + type
         var topRow = new StackPanel { Orientation = Orientation.Horizontal };
-        
+
         var icon = new TextBlock
         {
             Text = "⬛",

@@ -2,13 +2,10 @@ using Retruxel.Core.Interfaces;
 using Retruxel.Core.Models;
 using Retruxel.Core.Services;
 using Retruxel.Services;
-using Retruxel.Tool.AssetImporter;
 using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
 
 namespace Retruxel.Views;
 
@@ -24,6 +21,7 @@ public partial class SceneEditorView : UserControl
     private SceneElement? _draggedElement;
     private ProjectManager? _projectManager;
     private ModuleRegistry? _moduleRegistry;
+    private ModuleRenderer? _moduleRenderer;
     private StateManager? _stateManager;
     private bool _isUpdatingUI;
     private bool _isLoadingProject;
@@ -51,7 +49,7 @@ public partial class SceneEditorView : UserControl
     public void SetProjectManager(ProjectManager manager)
     {
         _projectManager = manager;
-        
+
         // Initialize StateManager when ProjectManager is set
         if (_stateManager == null)
         {
@@ -109,8 +107,10 @@ public partial class SceneEditorView : UserControl
     {
         PanelStructure.Visibility = Visibility.Visible;
         PanelModules.Visibility = Visibility.Collapsed;
+        PanelAssets.Visibility = Visibility.Collapsed;
         BtnTabStructure.Tag = "active";
         BtnTabModules.Tag = null;
+        BtnTabAssets.Tag = null;
         RefreshStructurePanel();
     }
 
@@ -118,8 +118,21 @@ public partial class SceneEditorView : UserControl
     {
         PanelStructure.Visibility = Visibility.Collapsed;
         PanelModules.Visibility = Visibility.Visible;
+        PanelAssets.Visibility = Visibility.Collapsed;
         BtnTabStructure.Tag = null;
         BtnTabModules.Tag = "active";
+        BtnTabAssets.Tag = null;
+    }
+
+    private void BtnTabAssets_Click(object sender, RoutedEventArgs e)
+    {
+        PanelStructure.Visibility = Visibility.Collapsed;
+        PanelModules.Visibility = Visibility.Collapsed;
+        PanelAssets.Visibility = Visibility.Visible;
+        BtnTabStructure.Tag = null;
+        BtnTabModules.Tag = null;
+        BtnTabAssets.Tag = "active";
+        RefreshAssetPanel();
     }
 
     // ── Asset panel ───────────────────────────────────────────────────────────
@@ -131,7 +144,7 @@ public partial class SceneEditorView : UserControl
 
 
 
-    
+
 
 
 
@@ -211,6 +224,12 @@ public partial class SceneEditorView : UserControl
         _project = project;
         _target = target;
 
+        // Initialize ModuleRenderer for user module discovery
+        var pluginsPath = Path.Combine(
+            Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location) ?? "",
+            "plugins");
+        _moduleRenderer = new ModuleRenderer(pluginsPath, target.GetType().Assembly);
+
         // Clear previous session data
         _elements.Clear();
         SceneCanvas.Children.Clear();
@@ -232,7 +251,34 @@ public partial class SceneEditorView : UserControl
                 SceneName = "Main",
                 Elements = []
             };
+
+            // Initialize palette slots for the first scene
+            for (int i = 0; i < target.GetPaletteSlotCount(); i++)
+            {
+                var slot = new PaletteSlotData
+                {
+                    SlotIndex = i,
+                    Label = target.GetPaletteSlotType(i).ToString(),
+                    Colors = Enumerable.Repeat("#000000", target.GetColorsPerSlot()).ToList()
+                };
+                _currentScene.PaletteSlots.Add(slot);
+            }
+
             project.Scenes.Add(_currentScene);
+        }
+        else if (_currentScene.PaletteSlots.Count == 0)
+        {
+            // Migrate old projects: add palette slots if missing
+            for (int i = 0; i < target.GetPaletteSlotCount(); i++)
+            {
+                var slot = new PaletteSlotData
+                {
+                    SlotIndex = i,
+                    Label = target.GetPaletteSlotType(i).ToString(),
+                    Colors = Enumerable.Repeat("#000000", target.GetColorsPerSlot()).ToList()
+                };
+                _currentScene.PaletteSlots.Add(slot);
+            }
         }
 
         RebuildSceneTabs();
@@ -324,7 +370,7 @@ public partial class SceneEditorView : UserControl
                 : "{}";
 
             var existingData = _currentScene.Elements.FirstOrDefault(e => e.ElementId == element.ElementId);
-            
+
             if (existingData is not null)
             {
                 // Update existing element
@@ -367,7 +413,7 @@ public partial class SceneEditorView : UserControl
     {
         // Save before building ROM
         await (_stateManager?.SaveNowAsync() ?? Task.CompletedTask);
-        
+
         if (_project is not null)
             OnGenerateRomRequested?.Invoke(_project);
     }
@@ -395,7 +441,7 @@ public partial class SceneEditorView : UserControl
             SelectElement(_elements[0]);
             BuildPropertiesPanel(_elements[0]);
         }
-        
+
         RefreshStructurePanel();
     }
 

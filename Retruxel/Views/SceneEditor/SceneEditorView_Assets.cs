@@ -1,13 +1,10 @@
 using Retruxel.Core.Interfaces;
 using Retruxel.Core.Models;
-using Retruxel.Core.Services;
 using Retruxel.Services;
 using Retruxel.Tool.AssetImporter;
-using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
-using System.Windows.Media;
 
 namespace Retruxel.Views;
 
@@ -25,7 +22,12 @@ public partial class SceneEditorView
     {
         if (_project is null) return;
 
-        // Assets panel removed - functionality moved to structure panel
+        AssetPanel.Children.Clear();
+
+        foreach (var asset in _project.Assets)
+        {
+            AssetPanel.Children.Add(BuildAssetRow(asset));
+        }
     }
 
     /// <summary>
@@ -84,7 +86,7 @@ public partial class SceneEditorView
         };
         count.SetResourceReference(TextBlock.ForegroundProperty, "BrushOnSurfaceVariant");
         Grid.SetColumn(count, 2);
-        
+
         // Delete button
         var deleteBtn = new TextBlock
         {
@@ -123,6 +125,9 @@ public partial class SceneEditorView
         return border;
     }
 
+    private void BtnImportAsset_Click(object sender, RoutedEventArgs e)
+        => OpenAssetImporter("background");
+
     /// <summary>
     /// Opens asset importer for tiles (background region).
     /// </summary>
@@ -143,7 +148,7 @@ public partial class SceneEditorView
     {
         if (_project is null || _target is null) return;
 
-        var window = new AssetImporterWindow(_target, _project.ProjectPath)
+        var window = new AssetImporterWindow(_target, _project.ProjectPath, _currentScene)
         {
             Owner = Window.GetWindow(this)
         };
@@ -180,7 +185,7 @@ public partial class SceneEditorView
             _stateManager?.ApplyChange(change);
         }
     }
-    
+
     /// <summary>
     /// Deletes an asset from the project after confirmation.
     /// Checks if the asset is in use by any modules before deletion.
@@ -188,7 +193,7 @@ public partial class SceneEditorView
     private void DeleteAsset(AssetEntry asset)
     {
         if (_project is null) return;
-        
+
         // Check if asset is in use
         var usedBy = new List<string>();
         foreach (var scene in _project.Scenes)
@@ -198,7 +203,7 @@ public partial class SceneEditorView
                 if (element.ModuleState.ValueKind == System.Text.Json.JsonValueKind.Undefined ||
                     element.ModuleState.ValueKind == System.Text.Json.JsonValueKind.Null)
                     continue;
-                    
+
                 if (element.ModuleState.TryGetProperty("tilesAssetId", out var assetId))
                 {
                     if (assetId.GetString() == asset.Id)
@@ -209,7 +214,7 @@ public partial class SceneEditorView
                 }
             }
         }
-        
+
         if (usedBy.Count > 0)
         {
             var modules = string.Join("\n  • ", usedBy);
@@ -218,7 +223,7 @@ public partial class SceneEditorView
                 "Asset In Use",
                 MessageBoxButton.YesNo,
                 MessageBoxImage.Warning);
-            
+
             if (result != MessageBoxResult.Yes)
                 return;
         }
@@ -229,11 +234,11 @@ public partial class SceneEditorView
                 "Delete Asset",
                 MessageBoxButton.YesNo,
                 MessageBoxImage.Question);
-            
+
             if (result != MessageBoxResult.Yes)
                 return;
         }
-        
+
         // Create state change for deleting asset (Large change — auto-saves)
         var change = new StateChange
         {

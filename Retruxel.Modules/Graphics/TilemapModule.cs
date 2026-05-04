@@ -132,6 +132,16 @@ public class TilemapModule : IGraphicModule
             },
             new ParameterDefinition
             {
+                Name         = "paletteSlot",
+                DisplayName  = "Palette Slot",
+                Description  = "Scene palette slot to use (0 = Background, 1 = Sprite).",
+                Type         = ParameterType.Int,
+                DefaultValue = 0,
+                MinValue     = 0,
+                MaxValue     = 1
+            },
+            new ParameterDefinition
+            {
                 Name         = "paletteRef",
                 DisplayName  = "Palette",
                 Description  = "Palette module to use for this tilemap.",
@@ -171,6 +181,7 @@ public class TilemapModule : IGraphicModule
         public int MapHeight { get; set; } = 24;
         public int[] MapData { get; set; } = [];
         public int[] SolidTiles { get; set; } = [];
+        public int PaletteSlot { get; set; } = 0;
 
         /// <summary>Palette reference — elementId of a PaletteModule in the same scene.</summary>
         public string PaletteRef { get; set; } = string.Empty;

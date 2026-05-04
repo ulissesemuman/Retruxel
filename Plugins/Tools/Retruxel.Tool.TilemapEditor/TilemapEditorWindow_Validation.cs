@@ -1,4 +1,3 @@
-using Retruxel.Core.Models;
 using SkiaSharp;
 using System.IO;
 using System.Windows;
@@ -19,25 +18,25 @@ public partial class TilemapEditorWindow
 
         var assetId = CmbTilesetAsset.SelectedItem.ToString()!;
         var asset = _project.Assets.FirstOrDefault(a => a.Id == assetId);
-        
+
         if (asset == null)
             return true;
 
         var assetPath = Path.Combine(_projectPath, asset.RelativePath);
-        
+
         if (!File.Exists(assetPath))
             return true;
 
         // Load image
         using var stream = File.OpenRead(assetPath);
         using var bitmap = SKBitmap.Decode(stream);
-        
+
         if (bitmap == null)
             return true;
 
         // Get hardware palette
         var hardwarePalette = _target.GetHardwarePalette();
-        
+
         if (hardwarePalette == null || hardwarePalette.Count == 0)
             return true; // No hardware restrictions
 
@@ -46,22 +45,22 @@ public partial class TilemapEditorWindow
 
         // Extract unique colors from image
         var imageColors = new HashSet<(byte R, byte G, byte B)>();
-        
+
         for (int y = 0; y < bitmap.Height; y++)
         {
             for (int x = 0; x < bitmap.Width; x++)
             {
                 var pixel = bitmap.GetPixel(x, y);
-                
+
                 // Skip transparent pixels
                 if (pixel.Alpha == 0)
                     continue;
 
                 var rgb = (pixel.Red, pixel.Green, pixel.Blue);
-                
+
                 if (!hardwareRgb.Contains(rgb))
                     invalidColors.Add(rgb);
-                
+
                 imageColors.Add(rgb);
             }
         }
@@ -76,7 +75,7 @@ public partial class TilemapEditorWindow
     {
         var uniqueInvalid = invalidColors.Distinct().Take(10).ToList();
         var colorList = string.Join("\n", uniqueInvalid.Select(c => $"  RGB({c.R}, {c.G}, {c.B})"));
-        
+
         if (invalidColors.Count > 10)
             colorList += $"\n  ... and {invalidColors.Count - 10} more";
 
@@ -133,7 +132,7 @@ public partial class TilemapEditorWindow
             // Load image as BitmapSource for WPF
             using var stream = File.OpenRead(assetPath);
             using var skBitmap = SKBitmap.Decode(stream);
-            
+
             if (skBitmap == null)
                 return false;
 
@@ -143,7 +142,7 @@ public partial class TilemapEditorWindow
             // Reduce to hardware palette first (like AssetImporter does)
             var hardwarePalette = _target.GetHardwarePalette();
             var rgbPalette = hardwarePalette.Select(c => (c.R, c.G, c.B)).ToList();
-            
+
             using var reducedBitmap = ReduceColorsToHardware(skBitmap, rgbPalette);
             var reducedBitmapSource = ConvertSkBitmapToBitmapSource(reducedBitmap);
 
@@ -156,7 +155,7 @@ public partial class TilemapEditorWindow
                 reducedBitmapSource,
                 targetColorCount: targetColorCount,
                 useLab: true,
-                targetConsole: _target.TargetId)
+                target: _target)
             {
                 Owner = this
             };
@@ -222,7 +221,7 @@ public partial class TilemapEditorWindow
     {
         using var image = SKImage.FromBitmap(skBitmap);
         using var data = image.Encode(SKEncodedImageFormat.Png, 100);
-        
+
         var memoryStream = new MemoryStream();
         data.SaveTo(memoryStream);
         memoryStream.Seek(0, SeekOrigin.Begin);

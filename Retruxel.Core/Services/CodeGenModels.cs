@@ -10,6 +10,11 @@ internal class CodeGenManifest
     public string Version { get; init; } = "1.0.0";
     public string TemplatePath { get; init; } = "";
     public bool IsSystemModule { get; init; } = false;
+    public bool IsUserModule { get; init; } = false;
+    public bool IsBatchModule { get; init; } = false;
+    public string? DisplayName { get; init; }
+    public string? Category { get; init; }
+    public string? Description { get; init; }
     public Dictionary<string, VariableDefinition> Variables { get; init; } = new();
 }
 
@@ -27,4 +32,6 @@ internal class VariableDefinition
     public Dictionary<string, string>? ToolInput { get; set; }
     public string? GroupBy { get; set; }
     public string? Transform { get; set; }
+    public int? SlotIndex { get; set; }
+    public string? Value { get; set; }
 }

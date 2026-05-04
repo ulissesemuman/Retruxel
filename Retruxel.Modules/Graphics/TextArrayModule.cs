@@ -1,6 +1,6 @@
-using System.Text.Json;
 using Retruxel.Core.Interfaces;
 using Retruxel.Core.Models;
+using System.Text.Json;
 
 namespace Retruxel.Modules.Graphics;
 
@@ -15,6 +15,7 @@ public class TextArrayModule : IGraphicModule
     public string Category => "Graphics";
     public ModuleType Type => ModuleType.Logic;
     public bool IsSingleton => false;
+    public string VisualToolId => "TextArrayEditor";
 
     public ModuleScope DefaultScope => ModuleScope.Project;
     public SingletonPolicy SingletonPolicy => SingletonPolicy.Multiple;

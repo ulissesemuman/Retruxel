@@ -1,6 +1,6 @@
 
-using Retruxel.Core.Interfaces;
 using Retruxel.Core.Helpers;
+using Retruxel.Core.Interfaces;
 
 namespace Retruxel.Tool.TilemapPreprocessor;
 
@@ -47,7 +47,7 @@ public class TilemapPreprocessorTool : ITool
         // Extract parameters
         var solidTiles = GetIntArray(input, "solidTiles");
         var mapData = GetIntArray(input, "mapData");
-        
+
         // DEBUG: Log mapData info
         System.Diagnostics.Debug.WriteLine($"[TilemapPreprocessor] mapData received: Length={mapData.Length}");
         if (mapData.Length > 0)
@@ -70,7 +70,7 @@ public class TilemapPreprocessorTool : ITool
                 }
             }
         }
-        
+
         var startTile = GetInt(input, "startTile", 0);
         var mapWidth = GetInt(input, "mapWidth", 32);
         var mapHeight = GetInt(input, "mapHeight", 24);
@@ -80,7 +80,7 @@ public class TilemapPreprocessorTool : ITool
 
         // Only apply clipping if mapX < 0 or mapY < 0 (tilemap starts off-screen)
         bool needsClipping = mapX < 0 || mapY < 0;
-        
+
         int[] processedMapData;
         int finalWidth;
         int finalHeight;
@@ -134,7 +134,7 @@ public class TilemapPreprocessorTool : ITool
             ["processedMapHex"] = processedMapHex,
             ["processedMapFlat"] = processedMapFlat,
             ["mapEntryCount"] = processedMap.Length,
-            
+
             // Clipping info
             ["clippedWidth"] = finalWidth,
             ["clippedHeight"] = finalHeight,
@@ -144,7 +144,7 @@ public class TilemapPreprocessorTool : ITool
             ["originalHeight"] = mapHeight,
             ["wasClipped"] = needsClipping
         };
-        
+
         return result;
     }
 
@@ -186,7 +186,7 @@ public class TilemapPreprocessorTool : ITool
             {
                 int sourceX = sourceOffsetX + x;
                 int sourceY = sourceOffsetY + y;
-                
+
                 if (sourceX >= mapWidth || sourceY >= mapHeight)
                 {
                     clippedData[y * drawWidth + x] = -1; // Empty tile

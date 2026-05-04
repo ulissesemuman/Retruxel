@@ -21,162 +21,199 @@
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
         
+        <!-- ── Three-column content area ──────────────────────────────────── -->
         <Grid Grid.Row="0">
-        <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="280"/>
-            <ColumnDefinition Width="*"/>
-            <ColumnDefinition Width="280"/>
-        </Grid.ColumnDefinitions>
-        
-        <!-- LEFT PANEL: Palette List + Management -->
-        <Border Grid.Column="0" Background="{StaticResource BrushSurface}" Padding="16">
-            <Grid>
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="*"/>
-                    <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="Auto"/>
-                </Grid.RowDefinitions>
-                
-                <!-- Header -->
-                <TextBlock x:Name="TxtPalettes" Grid.Row="0" Style="{StaticResource TextLabelCaps}" 
-                           Foreground="{StaticResource BrushOnSurfaceVariant}" Margin="0,0,0,8"/>
-                
-                <!-- Palette Name Input -->
-                <TextBox x:Name="TxtPaletteName" Grid.Row="1" Margin="0,0,0,16" Height="32"/>
-                
-                <!-- Palette List -->
-                <ListBox x:Name="PaletteListBox" Grid.Row="2" 
-                         Background="{StaticResource BrushSurfaceContainerLow}"
-                         BorderThickness="0"
-                         Margin="0,0,0,16"/>
-                
-                <!-- Management Buttons -->
-                <StackPanel Grid.Row="3" Margin="0,0,0,16">
-                    <Button x:Name="BtnNewPalette" Style="{StaticResource ButtonPrimary}" Margin="0,0,0,8"/>
-                    <Button x:Name="BtnDuplicate" Style="{StaticResource ButtonSecondary}" Margin="0,0,0,8"/>
-                    <Button x:Name="BtnDelete" Style="{StaticResource ButtonDanger}"/>
-                </StackPanel>
-                
-                <!-- 16 Slots Grid (8×2) -->
-                <Border Grid.Row="4" Background="{StaticResource BrushSurfaceContainerLow}" Padding="8">
-                    <Grid>
-                        <Grid.RowDefinitions>
-                            <RowDefinition Height="Auto"/>
-                            <RowDefinition Height="Auto"/>
-                        </Grid.RowDefinitions>
-                        
-                        <TextBlock x:Name="TxtSlots" Grid.Row="0" Style="{StaticResource TextLabelCaps}" 
-                                   Foreground="{StaticResource BrushOnSurfaceVariant}" Margin="0,0,0,8"/>
-                        
-                        <UniformGrid x:Name="SlotsGrid" Grid.Row="1" Rows="2" Columns="8"/>
-                    </Grid>
-                </Border>
-            </Grid>
-        </Border>
-        
-        <!-- CENTER PANEL: Hardware Color Picker -->
-        <Border Grid.Column="1" Background="{StaticResource BrushSurface}" Padding="24">
-            <Grid>
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="*"/>
-                </Grid.RowDefinitions>
-                
-                <!-- Header -->
-                <TextBlock x:Name="TxtHardwareColors" Grid.Row="0" Style="{StaticResource TextLabelCaps}" 
-                           Foreground="{StaticResource BrushOnSurfaceVariant}" Margin="0,0,0,16"/>
-                
-                <!-- 64 Color Grid (8×8) -->
-                <Viewbox Grid.Row="1" Stretch="Uniform">
-                    <UniformGrid x:Name="HardwareColorGrid" Rows="8" Columns="8" Width="400" Height="400"/>
-                </Viewbox>
-            </Grid>
-        </Border>
-        
-        <!-- RIGHT PANEL: Slot Detail + Preview + Usage -->
-        <Border Grid.Column="2" Background="{StaticResource BrushSurface}" Padding="16">
-            <Grid>
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="*"/>
-                </Grid.RowDefinitions>
-                
-                <!-- Slot Detail -->
-                <Border Grid.Row="0" Background="{StaticResource BrushSurfaceContainerLow}" Padding="12" Margin="0,0,0,16">
-                    <Grid>
-                        <Grid.RowDefinitions>
-                            <RowDefinition Height="Auto"/>
-                            <RowDefinition Height="Auto"/>
-                            <RowDefinition Height="Auto"/>
-                        </Grid.RowDefinitions>
-                        
-                        <TextBlock x:Name="TxtSlotDetail" Grid.Row="0" Style="{StaticResource TextLabelCaps}" 
-                                   Foreground="{StaticResource BrushOnSurfaceVariant}" Margin="0,0,0,8"/>
-                        
-                        <StackPanel Grid.Row="1">
-                            <TextBlock x:Name="TxtSlotIndex" Style="{StaticResource TextBody}" Margin="0,0,0,4"/>
-                            <TextBlock x:Name="TxtSlotHex" Style="{StaticResource TextCode}" Margin="0,0,0,4"/>
-                            <TextBlock x:Name="TxtSlotRgb" Style="{StaticResource TextCode}"/>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="280"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="280"/>
+            </Grid.ColumnDefinitions>
+
+            <!-- LEFT PANEL: Palette list + slot grid ───────────────────────── -->
+            <Border Grid.Column="0"
+                    Background="{StaticResource BrushSurface}"
+                    Padding="16">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+
+                    <!-- Section label -->
+                    <TextBlock x:Name="TxtPalettes"
+                               Grid.Row="0"
+                               Style="{StaticResource TextLabelCaps}"
+                               Foreground="{StaticResource BrushOnSurfaceVariant}"
+                               Margin="0,0,0,8"/>
+
+                    <!-- Palette / slot description (set from code-behind) -->
+                    <TextBlock x:Name="TxtPaletteDescription"
+                               Grid.Row="1"
+                               Style="{StaticResource TextBody}"
+                               Foreground="{StaticResource BrushOnSurface}"
+                               TextWrapping="Wrap"
+                               Margin="0,0,0,16"/>
+
+                    <!-- Palette list -->
+                    <ListBox x:Name="PaletteListBox"
+                             Grid.Row="2"
+                             Background="{StaticResource BrushSurfaceContainerLow}"
+                             BorderThickness="0"
+                             Margin="0,0,0,16"/>
+
+                    <!-- Management buttons -->
+                    <StackPanel Grid.Row="3" Margin="0,0,0,16">
+                        <Button x:Name="BtnNewPalette"
+                                Style="{StaticResource ButtonPrimary}"
+                                Margin="0,0,0,8"/>
+                        <Button x:Name="BtnDuplicate"
+                                Style="{StaticResource ButtonSecondary}"
+                                Margin="0,0,0,8"/>
+                        <Button x:Name="BtnDelete"
+                                Style="{StaticResource ButtonDanger}"/>
+                    </StackPanel>
+
+                    <!-- Color slots grid (8×2) -->
+                    <Border Grid.Row="4"
+                            Background="{StaticResource BrushSurfaceContainerLow}"
+                            Padding="8">
+                        <StackPanel>
+                            <TextBlock x:Name="TxtSlots"
+                                       Style="{StaticResource TextLabelCaps}"
+                                       Foreground="{StaticResource BrushOnSurfaceVariant}"
+                                       Margin="0,0,0,8"/>
+                            <UniformGrid x:Name="SlotsGrid"
+                                         Rows="2"
+                                         Columns="8"/>
                         </StackPanel>
-                        
-                        <!-- Color Preview -->
-                        <Border x:Name="ColorPreview" Grid.Row="2" Height="48" Margin="0,12,0,0"
-                                Background="{StaticResource BrushSurfaceContainerLow}"/>
-                    </Grid>
-                </Border>
-                
-                <!-- Quick Set Buttons -->
-                <Border Grid.Row="1" Background="{StaticResource BrushSurfaceContainerLow}" Padding="12" Margin="0,0,0,16">
-                    <Grid>
-                        <Grid.RowDefinitions>
-                            <RowDefinition Height="Auto"/>
-                            <RowDefinition Height="Auto"/>
-                        </Grid.RowDefinitions>
-                        
-                        <TextBlock x:Name="TxtQuickSet" Grid.Row="0" Style="{StaticResource TextLabelCaps}" 
-                                   Foreground="{StaticResource BrushOnSurfaceVariant}" Margin="0,0,0,8"/>
-                        
-                        <StackPanel Grid.Row="1">
-                            <Button x:Name="BtnSetBlack" Style="{StaticResource ButtonSecondary}" Margin="0,0,0,4"/>
-                            <Button x:Name="BtnSetWhite" Style="{StaticResource ButtonSecondary}" Margin="0,0,0,4"/>
-                            <Button x:Name="BtnSetTransparent" Style="{StaticResource ButtonSecondary}"/>
+                    </Border>
+                </Grid>
+            </Border>
+
+            <!-- CENTER PANEL: Hardware color picker ────────────────────────── -->
+            <Border Grid.Column="1"
+                    Background="{StaticResource BrushSurface}"
+                    Padding="24">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+
+                    <TextBlock x:Name="TxtHardwareColors"
+                               Grid.Row="0"
+                               Style="{StaticResource TextLabelCaps}"
+                               Foreground="{StaticResource BrushOnSurfaceVariant}"
+                               Margin="0,0,0,16"/>
+
+                    <Viewbox Grid.Row="1" Stretch="Uniform">
+                        <UniformGrid x:Name="HardwareColorGrid"
+                                     Rows="8"
+                                     Columns="8"
+                                     Width="400"
+                                     Height="400"/>
+                    </Viewbox>
+                </Grid>
+            </Border>
+
+            <!-- RIGHT PANEL: Slot detail + quick set + usage ───────────────── -->
+            <Border Grid.Column="2"
+                    Background="{StaticResource BrushSurface}"
+                    Padding="16">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+
+                    <!-- Slot detail -->
+                    <Border Grid.Row="0"
+                            Background="{StaticResource BrushSurfaceContainerLow}"
+                            Padding="12"
+                            Margin="0,0,0,16">
+                        <StackPanel>
+                            <TextBlock x:Name="TxtSlotDetail"
+                                       Style="{StaticResource TextLabelCaps}"
+                                       Foreground="{StaticResource BrushOnSurfaceVariant}"
+                                       Margin="0,0,0,8"/>
+                            <TextBlock x:Name="TxtSlotIndex"
+                                       Style="{StaticResource TextBody}"
+                                       Margin="0,0,0,4"/>
+                            <TextBlock x:Name="TxtSlotHex"
+                                       Style="{StaticResource TextCode}"
+                                       Margin="0,0,0,4"/>
+                            <TextBlock x:Name="TxtSlotRgb"
+                                       Style="{StaticResource TextCode}"
+                                       Margin="0,0,0,12"/>
+                            <Border x:Name="ColorPreview"
+                                    Height="48"
+                                    Background="{StaticResource BrushSurfaceContainerLow}"/>
                         </StackPanel>
-                    </Grid>
-                </Border>
-                
-                 <!-- Usage Report -->
-                 <Border Grid.Row="2" Background="{StaticResource BrushSurfaceContainerLow}" Padding="12">
-                    <Grid>
-                        <Grid.RowDefinitions>
-                            <RowDefinition Height="Auto"/>
-                            <RowDefinition Height="Auto"/>
-                        </Grid.RowDefinitions>
-                        
-                        <TextBlock x:Name="TxtUsage" Grid.Row="0" Style="{StaticResource TextLabelCaps}" 
-                                   Foreground="{StaticResource BrushOnSurfaceVariant}" Margin="0,0,0,8"/>
-                        
-                        <StackPanel x:Name="UsagePanel" Grid.Row="1"/>
-                    </Grid>
-                </Border>
-            </Grid>
-        </Border>
+                    </Border>
+
+                    <!-- Quick set -->
+                    <Border Grid.Row="1"
+                            Background="{StaticResource BrushSurfaceContainerLow}"
+                            Padding="12"
+                            Margin="0,0,0,16">
+                        <StackPanel>
+                            <TextBlock x:Name="TxtQuickSet"
+                                       Style="{StaticResource TextLabelCaps}"
+                                       Foreground="{StaticResource BrushOnSurfaceVariant}"
+                                       Margin="0,0,0,8"/>
+                            <Button x:Name="BtnSetBlack"
+                                    Style="{StaticResource ButtonSecondary}"
+                                    Margin="0,0,0,4"/>
+                            <Button x:Name="BtnSetWhite"
+                                    Style="{StaticResource ButtonSecondary}"
+                                    Margin="0,0,0,4"/>
+                            <Button x:Name="BtnSetTransparent"
+                                    Style="{StaticResource ButtonSecondary}"/>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Usage report -->
+                    <Border Grid.Row="2"
+                            Background="{StaticResource BrushSurfaceContainerLow}"
+                            Padding="12">
+                        <StackPanel>
+                            <TextBlock x:Name="TxtUsage"
+                                       Style="{StaticResource TextLabelCaps}"
+                                       Foreground="{StaticResource BrushOnSurfaceVariant}"
+                                       Margin="0,0,0,8"/>
+                            <StackPanel x:Name="UsagePanel"/>
+                        </StackPanel>
+                    </Border>
+                </Grid>
+            </Border>
         </Grid>
-        
-        <!-- Bottom Action Bar -->
-        <Border Grid.Row="1" Background="{StaticResource BrushSurfaceContainerHigh}" Padding="16" BorderThickness="0,1,0,0" BorderBrush="{StaticResource BrushOnSurfaceVariant}">
+
+        <!-- ── Action bar ─────────────────────────────────────────────────── -->
+        <Border Grid.Row="1"
+                Background="{StaticResource BrushSurfaceContainerHigh}"
+                Padding="16"
+                BorderThickness="0,1,0,0"
+                BorderBrush="{StaticResource BrushSurfaceContainerHighest}">
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
-                
-                <Button x:Name="BtnCancel" Grid.Column="0" Content="CANCEL" Style="{StaticResource ButtonGhost}" HorizontalAlignment="Left" Width="120" Margin="0,0,8,0"/>
-                <Button x:Name="BtnApply" Grid.Column="1" Content="APPLY" Style="{StaticResource ButtonPrimary}" Width="120"/>
+
+                <Button x:Name="BtnCancel"
+                        Grid.Column="0"
+                        Style="{StaticResource ButtonGhost}"
+                        HorizontalAlignment="Left"
+                        Width="120"/>
+                <Button x:Name="BtnApply"
+                        Grid.Column="1"
+                        Style="{StaticResource ButtonPrimary}"
+                        Width="120"/>
             </Grid>
         </Border>
     </Grid>

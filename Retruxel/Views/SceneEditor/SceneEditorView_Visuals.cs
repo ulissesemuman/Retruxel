@@ -84,7 +84,7 @@ public partial class SceneEditorView
             if (!root.TryGetProperty("tilesAssetId", out var assetIdProp)) return null;
             var assetId = assetIdProp.GetString();
             if (string.IsNullOrEmpty(assetId)) return null;
-            
+
             int width, height;
             if (root.TryGetProperty("mapWidth", out var mapWidthProp))
                 width = mapWidthProp.GetInt32();
@@ -102,7 +102,7 @@ public partial class SceneEditorView
 
             string? dataBase64 = null;
             int[]? mapDataArray = null;
-            
+
             if (root.TryGetProperty("mapData", out var mapDataProp))
             {
                 if (mapDataProp.ValueKind == System.Text.Json.JsonValueKind.Array)
@@ -120,7 +120,7 @@ public partial class SceneEditorView
             {
                 dataBase64 = dataProp.GetString();
             }
-            
+
             byte[] tileData;
             if (mapDataArray != null)
             {

@@ -1,7 +1,6 @@
 using System;
 using System.IO;
 using System.Runtime.InteropServices;
-using System.Text;
 
 namespace Retruxel.Emulation.LibRetro;
 
@@ -9,7 +8,7 @@ public class LibRetroCore : IDisposable
 {
     private IntPtr _coreHandle;
     private string? _corePath;
-    
+
     private RetroVideoRefreshCallback? _videoCallback;
     private RetroAudioSampleCallback? _audioCallback;
     private RetroAudioSampleBatchCallback? _audioBatchCallback;
@@ -20,7 +19,7 @@ public class LibRetroCore : IDisposable
     public event Action<IntPtr, uint, uint, UIntPtr>? OnVideoRefresh;
     public event Action<short, short>? OnAudioSample;
     public event Action? OnInputPoll;
-    
+
     public RetroSystemInfo SystemInfo { get; private set; }
     public RetroSystemAvInfo AvInfo { get; private set; }
     public bool IsLoaded => _coreHandle != IntPtr.Zero;
@@ -79,7 +78,7 @@ public class LibRetroCore : IDisposable
 
         _corePath = corePath;
         _coreHandle = LoadLibrary(corePath);
-        
+
         if (_coreHandle == IntPtr.Zero)
             return false;
 
@@ -199,13 +198,13 @@ public class LibRetroCore : IDisposable
     private bool EnvironmentCallback(uint cmd, IntPtr data)
     {
         var command = (RetroEnvironment)cmd;
-        
+
         if (command == RetroEnvironment.RETRO_ENVIRONMENT_SET_PIXEL_FORMAT)
         {
             var format = (RetroPixelFormat)Marshal.ReadInt32(data);
             return format == RetroPixelFormat.RETRO_PIXEL_FORMAT_XRGB8888;
         }
-        
+
         return false;
     }
 

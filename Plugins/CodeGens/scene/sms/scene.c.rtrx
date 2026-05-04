@@ -16,9 +16,6 @@ void scene_{{sceneName}}_init(void);
 #include "SMSlib.h"
 #include "engine.h"
 #include "scene_{{sceneName}}.h"
-{{#each paletteInits}}
-#include "{{this.header}}"
-{{/each}}
 {{#each tilemapInits}}
 #include "{{this.header}}"
 {{/each}}
@@ -26,16 +23,23 @@ void scene_{{sceneName}}_init(void);
 #include "{{this.header}}"
 {{/each}}
 
+// Palette slot 0 (Background) - 16 colors (RGB222 format for SMS)
+static const unsigned char scene_{{sceneName}}_palette_0[16] = {
+    {{palette0Hex}}
+};
+
+// Palette slot 1 (Sprite) - 16 colors
+static const unsigned char scene_{{sceneName}}_palette_1[16] = {
+    {{palette1Hex}}
+};
+
 extern GameState g_gameState;
 
 void scene_{{sceneName}}_init(void) {
 {{#if hasGraphicModules}}
-    // Palette modules
-{{#each paletteInits}}
-    {{this.call}}();
-    Engine_Render(&g_gameState);
-    Engine_ClearDirtyFlags(&g_gameState);
-{{/each}}
+    // Load palette slots into CRAM
+    SMS_loadBGPalette(scene_{{sceneName}}_palette_0);
+    SMS_loadSpritePalette(scene_{{sceneName}}_palette_1);
 
     // Tilemap layers
 {{#each tilemapInits}}

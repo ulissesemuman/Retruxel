@@ -53,7 +53,7 @@ public class PaletteEditorTool : IVisualTool
         }
 
         var paletteProvider = (IPaletteProvider)extensionResult["paletteProvider"];
-        
+
         // Extract existing palette data if editing
         byte[]? initialColors = null;
         string? paletteName = null;
@@ -62,7 +62,7 @@ public class PaletteEditorTool : IVisualTool
         {
             var moduleData = (Dictionary<string, object>)input["moduleData"];
             System.Diagnostics.Debug.WriteLine($"[PaletteEditorTool] moduleData keys: {string.Join(", ", moduleData.Keys)}");
-            
+
             // Try to extract colors from different possible formats
             // Format 1: Editor format with "colors" key
             if (moduleData.ContainsKey("colors"))
@@ -84,7 +84,7 @@ public class PaletteEditorTool : IVisualTool
             {
                 System.Diagnostics.Debug.WriteLine("[PaletteEditorTool] No color data found in moduleData");
             }
-            
+
             if (moduleData.ContainsKey("name"))
             {
                 paletteName = moduleData["name"]?.ToString();
@@ -95,17 +95,17 @@ public class PaletteEditorTool : IVisualTool
         {
             System.Diagnostics.Debug.WriteLine("[PaletteEditorTool] No moduleData in input");
         }
-        
+
         // Get palette element ID if editing existing module
         if (input.ContainsKey("elementId"))
         {
             paletteElementId = input["elementId"]?.ToString();
         }
-        
+
         var window = new PaletteEditorWindow(paletteProvider, null, initialColors, paletteName, project, paletteElementId);
         return window;
     }
-    
+
     private static byte[]? ExtractByteArray(object colorsObj)
     {
         if (colorsObj is byte[] byteArray)

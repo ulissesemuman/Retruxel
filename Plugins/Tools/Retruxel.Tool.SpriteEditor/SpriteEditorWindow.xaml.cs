@@ -1,7 +1,6 @@
 using Retruxel.Core.Interfaces;
 using Retruxel.Core.Models;
 using Retruxel.Core.Services;
-using Retruxel.Tool.SpriteEditor.Helpers;
 using Retruxel.Tool.SpriteEditor.Models;
 using System.Windows;
 using System.Windows.Input;
@@ -40,7 +39,7 @@ public partial class SpriteEditorWindow : Window
         _sceneEditor = sceneEditor;
 
         InitializeUI();
-        
+
         _state.Frames.Add(new SpriteFrame { Name = "Frame 1" });
     }
 

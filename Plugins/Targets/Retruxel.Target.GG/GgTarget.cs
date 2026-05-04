@@ -102,6 +102,9 @@ public class GgTarget : ITarget
         return new Retruxel.Toolchain.ToolchainAdapter(builder);
     }
 
+    public IFontConverter GetFontConverter()
+        => new Retruxel.Target.SMS.Text.SmsFontConverter();
+
     public IEnumerable<string> GetRequiredToolchainBinaries() =>
     [
         Path.Combine("compilers", "sdcc", "bin", "sdcc.exe"),

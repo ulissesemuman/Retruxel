@@ -5,25 +5,29 @@ using System.Text.Json;
 namespace Retruxel.Modules.Graphics;
 
 /// <summary>
-/// Palette module — loads color palettes for background and sprites.
-/// Target-specific implementations handle the actual palette format and size.
-///
-/// JSON format:
-/// {
-///   "module": "palette",
-///   "bgColors":     [0,0,0,21,42,63, ...],   // Color values for BG
-///   "spriteColors": [0,0,0,21,42,63, ...]    // Color values for sprites
-/// }
+/// OBSOLETE: Palette module is deprecated in favor of scene-level palette slots.
+/// 
+/// In the new architecture:
+/// - Palettes are scene-level properties (SceneData.PaletteSlots)
+/// - Each scene has fixed slots defined by target (e.g., SMS: 2 slots of 16 colors)
+/// - Palette data is generated directly in scene_X.c by scene/sms/codegen.json
+/// - No separate palette_0.c/h files are generated
+/// 
+/// This module is kept for backward compatibility with old projects only.
+/// New projects should not use this module.
+/// 
+/// For runtime palette effects (flash, fade, cycle), use PaletteEffectModule instead.
 /// </summary>
+[Obsolete("Use scene-level palette slots instead. This module is kept for backward compatibility only.")]
 public class PaletteModule : IGraphicModule
 {
     public string ModuleId => "palette";
-    public string DisplayName => "Palette";
+    public string DisplayName => "Palette (Obsolete)";
     public string Category => "Graphics";
     public ModuleType Type => ModuleType.Logic;
-    public SingletonPolicy SingletonPolicy => SingletonPolicy.PerScene;
+    public SingletonPolicy SingletonPolicy => SingletonPolicy.Multiple;
     public string[] Compatibility { get; set; } = [];
-    public string? VisualToolId => "palette_editor";
+    public string? VisualToolId => null; // Disabled - use scene palette slots
     public ModuleScope DefaultScope => ModuleScope.Scene;
 
     private static readonly JsonSerializerOptions _jsonOptions = new()
@@ -39,38 +43,11 @@ public class PaletteModule : IGraphicModule
         ModuleId = ModuleId,
         Version = "1.0.0",
         Type = ModuleType.Logic,
-        Parameters =
-        [
-            new ParameterDefinition
-            {
-                Name         = "bgColors",
-                DisplayName  = "BG Palette",
-                Description  = "Color values for background tiles. Format and size depend on target platform.",
-                Type         = ParameterType.String,
-                DefaultValue = "0,63,0,0,0,0,0,0,0,0,0,0,0,0,0,0"
-            },
-            new ParameterDefinition
-            {
-                Name         = "spriteColors",
-                DisplayName  = "Sprite Palette",
-                Description  = "Color values for sprites. Format and size depend on target platform.",
-                Type         = ParameterType.String,
-                DefaultValue = "0,63,0,0,0,0,0,0,0,0,0,0,0,0,0,0"
-            }
-        ]
+        Parameters = []
     };
 
-    /// <summary>
-    /// Creates the ViewModel for the property editor.
-    /// Returns null as this module uses auto-generated UI from manifest.
-    /// </summary>
-    public object CreateEditorViewModel() => null!;
-
-    /// <summary>
-    /// Generates palette data as assets.
-    /// </summary>
+    public object? CreateEditorViewModel() => null;
     public IEnumerable<GeneratedAsset> GenerateAssets() => [];
-
     public IEnumerable<GeneratedFile> GenerateCode() => [];
 
     public string Serialize() => JsonSerializer.Serialize(_state, _jsonOptions);

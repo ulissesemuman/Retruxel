@@ -94,6 +94,7 @@
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="*"/>
                     </Grid.ColumnDefinitions>
 
                     <Button x:Name="BtnTabStructure"
@@ -107,6 +108,12 @@
                             Grid.Column="1"
                             Content="{loc:Tr Key='scene.modules'}"
                             Click="BtnTabModules_Click"
+                            Style="{StaticResource SidebarTab}"/>
+
+                    <Button x:Name="BtnTabAssets"
+                            Grid.Column="2"
+                            Content="{loc:Tr Key='scene.assets'}"
+                            Click="BtnTabAssets_Click"
                             Style="{StaticResource SidebarTab}"/>
                 </Grid>
 
@@ -135,6 +142,20 @@
                                    Margin="12,0,12,8"/>
 
                         <StackPanel x:Name="ModulePalettePanel"/>
+                    </StackPanel>
+                </ScrollViewer>
+
+                <!-- ── ASSETS panel ── -->
+                <ScrollViewer x:Name="PanelAssets"
+                              Grid.Row="1"
+                              Visibility="Collapsed"
+                              VerticalScrollBarVisibility="Auto">
+                    <StackPanel Margin="0 8 0 0">
+                        <Button Content="{loc:Tr Key='scene.import_asset'}"
+                                Style="{StaticResource ButtonSecondary}"
+                                Margin="12,4,12,8"
+                                Click="BtnImportAsset_Click"/>
+                        <StackPanel x:Name="AssetPanel"/>
                     </StackPanel>
                 </ScrollViewer>
 

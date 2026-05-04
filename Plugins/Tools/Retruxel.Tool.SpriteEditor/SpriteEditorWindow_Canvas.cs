@@ -1,10 +1,9 @@
+using Retruxel.Tool.SpriteEditor.Helpers;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
-using System.Windows.Media.Imaging;
 using System.Windows.Shapes;
-using Retruxel.Tool.SpriteEditor.Helpers;
 
 namespace Retruxel.Tool.SpriteEditor;
 
@@ -42,7 +41,7 @@ public partial class SpriteEditorWindow
             return;
 
         var currentFrame = _state.Frames[_state.CurrentFrameIndex];
-        
+
         var newTile = new SpriteTile
         {
             TileIndex = tileIndex,
@@ -66,7 +65,7 @@ public partial class SpriteEditorWindow
         foreach (var tile in currentFrame.Tiles)
         {
             var tileImage = ExtractTile(tile.TileIndex);
-            
+
             var image = new Image
             {
                 Source = tileImage,
@@ -155,7 +154,7 @@ public partial class SpriteEditorWindow
         if (_draggingTile != null && e.LeftButton == MouseButtonState.Pressed)
         {
             Point position = e.GetPosition(CompositionCanvas);
-            
+
             int snappedX = (int)(position.X / 8) * 8;
             int snappedY = (int)(position.Y / 8) * 8;
 
@@ -172,7 +171,7 @@ public partial class SpriteEditorWindow
         {
             _draggingTile = null;
             _draggingImage = null;
-            
+
             if (sender is Border border)
             {
                 border.ReleaseMouseCapture();

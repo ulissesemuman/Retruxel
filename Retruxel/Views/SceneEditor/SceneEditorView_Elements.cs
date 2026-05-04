@@ -1,10 +1,10 @@
-using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Media;
 using Retruxel.Core.Interfaces;
 using Retruxel.Core.Models;
 using Retruxel.Core.Services;
 using Retruxel.Services;
+using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Media;
 
 namespace Retruxel.Views;
 
@@ -101,7 +101,7 @@ public partial class SceneEditorView
 
         if (_selectedElement == element)
             SelectElement(null);
-        
+
         RefreshStructurePanel();
     }
 
@@ -241,12 +241,16 @@ public partial class SceneEditorView
 
             System.Diagnostics.Debug.WriteLine($"Added element: {elementData.ModuleId}, Trigger: {elementData.Trigger}, TileX: {elementData.TileX}, TileY: {elementData.TileY}");
 
-            // Create canvas visual for all modules
-            var visual = BuildCanvasElement(element);
-            Canvas.SetLeft(visual, element.TileX * 8);
-            Canvas.SetTop(visual, element.TileY * 8);
-            SceneCanvas.Children.Add(visual);
-            element.CanvasVisual = visual;
+            // Only add to canvas if it's a canvas module (entity, enemy, scroll)
+            var scope = GetModuleScope(elementData.ModuleId);
+            if (elementData.ModuleId == "entity" || elementData.ModuleId == "enemy" || elementData.ModuleId == "scroll")
+            {
+                var visual = BuildCanvasElement(element);
+                Canvas.SetLeft(visual, element.TileX * 8);
+                Canvas.SetTop(visual, element.TileY * 8);
+                SceneCanvas.Children.Add(visual);
+                element.CanvasVisual = visual;
+            }
 
             RefreshModulePalette();
         }
@@ -305,7 +309,7 @@ public partial class SceneEditorView
                 await (_stateManager?.SaveNowAsync() ?? Task.CompletedTask);
             },
             this);
-        
+
         if (toolResult)
         {
             var displayName = module.DisplayName;

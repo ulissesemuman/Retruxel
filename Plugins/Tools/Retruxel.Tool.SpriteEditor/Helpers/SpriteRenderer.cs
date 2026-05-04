@@ -1,7 +1,7 @@
+using Retruxel.Tool.SpriteEditor.Models;
 using System.Windows;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
-using Retruxel.Tool.SpriteEditor.Models;
 
 namespace Retruxel.Tool.SpriteEditor.Helpers;
 
@@ -43,15 +43,15 @@ public static class SpriteRenderer
         int row = tileIndex / tilesetColumns;
 
         var croppedBitmap = new CroppedBitmap(tilesetImage, new Int32Rect(col * 8, row * 8, 8, 8));
-        
+
         var renderTarget = new RenderTargetBitmap(8, 8, 96, 96, PixelFormats.Pbgra32);
         var visual = new DrawingVisual();
-        
+
         using (var context = visual.RenderOpen())
         {
             context.DrawImage(croppedBitmap, new Rect(0, 0, 8, 8));
         }
-        
+
         renderTarget.Render(visual);
         return renderTarget;
     }

@@ -1,4 +1,3 @@
-using Retruxel.Core.Connectors;
 using Retruxel.Core.Interfaces;
 using Retruxel.Core.Models;
 using Retruxel.Core.Services;
@@ -79,7 +78,7 @@ public static class VisualToolInvoker
         {
             input["existingElement"] = existingElement;
             input["elementId"] = existingElement.ElementId;
-            
+
             // Extract module data from existing element
             if (existingElement.ModuleState.ValueKind != System.Text.Json.JsonValueKind.Undefined &&
                 existingElement.ModuleState.ValueKind != System.Text.Json.JsonValueKind.Null)
@@ -87,7 +86,7 @@ public static class VisualToolInvoker
                 var rawJson = existingElement.ModuleState.GetRawText();
                 System.Diagnostics.Debug.WriteLine($"[VisualToolInvoker] Loading existing element '{existingElement.ElementId}'");
                 System.Diagnostics.Debug.WriteLine($"[VisualToolInvoker] Raw JSON: {rawJson}");
-                
+
                 var existingModuleData = System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, object>>(
                     rawJson);
                 if (existingModuleData != null)
@@ -143,7 +142,7 @@ public static class VisualToolInvoker
         }
 
         System.Diagnostics.Debug.WriteLine($"[VisualToolInvoker] Received module data, keys: {string.Join(", ", moduleData.Keys)}");
-        
+
         // Log mapData size if present
         if (moduleData.ContainsKey("mapData") && moduleData["mapData"] is int[] mapData)
         {
@@ -151,12 +150,12 @@ public static class VisualToolInvoker
             int nonEmpty = mapData.Count(t => t >= 0);
             System.Diagnostics.Debug.WriteLine($"[VisualToolInvoker] Non-empty tiles: {nonEmpty}");
         }
-        
+
         // Update the module instance in memory directly
         var moduleJson = System.Text.Json.JsonSerializer.Serialize(moduleData);
         module.Deserialize(moduleJson);
         System.Diagnostics.Debug.WriteLine($"[VisualToolInvoker] Updated module instance in memory");
-        
+
         // Update the SceneElementData.ModuleState with the new module state
         if (existingElement is not null)
         {
@@ -164,7 +163,7 @@ public static class VisualToolInvoker
             existingElement.ModuleState = System.Text.Json.JsonDocument.Parse(updatedModuleJson).RootElement.Clone();
             System.Diagnostics.Debug.WriteLine($"[VisualToolInvoker] Updated SceneElementData.ModuleState");
         }
-        
+
         // Trigger save callback to persist memory state to disk
         if (saveProjectCallback != null)
         {
@@ -175,7 +174,7 @@ public static class VisualToolInvoker
         {
             System.Diagnostics.Debug.WriteLine($"[VisualToolInvoker] No saveProjectCallback provided");
         }
-        
+
         return true;
     }
 }

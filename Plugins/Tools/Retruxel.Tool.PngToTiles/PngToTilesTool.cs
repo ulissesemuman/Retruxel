@@ -1,5 +1,4 @@
 using Retruxel.Core.Interfaces;
-using Retruxel.Core.Models;
 using Retruxel.Lib.ImageProcessing;
 using System.Text.Json;
 
@@ -34,18 +33,38 @@ public class PngToTilesTool : ITool
 
     public Dictionary<string, object> Execute(Dictionary<string, object> input)
     {
+        System.Diagnostics.Debug.WriteLine("=== PngToTilesTool.Execute START ===");
+        System.Diagnostics.Debug.WriteLine($"Input keys: {string.Join(", ", input.Keys)}");
+
         // Extract parameters - support both imagePath and assetId
         var imagePath = GetString(input, "imagePath");
         var assetId = GetString(input, "assetId");
+
+        System.Diagnostics.Debug.WriteLine($"imagePath from input: '{imagePath}'");
+        System.Diagnostics.Debug.WriteLine($"assetId from input: '{assetId}'");
 
         // If assetId is provided, resolve it to imagePath via project
         if (string.IsNullOrEmpty(imagePath) && !string.IsNullOrEmpty(assetId))
         {
             imagePath = ResolveAssetPath(assetId, input);
+            System.Diagnostics.Debug.WriteLine($"Resolved imagePath: '{imagePath}'");
         }
 
         if (string.IsNullOrEmpty(imagePath))
-            throw new ArgumentException("Either imagePath or assetId is required");
+        {
+            var error = "Either imagePath or assetId is required";
+            System.Diagnostics.Debug.WriteLine($"ERROR: {error}");
+            throw new ArgumentException(error);
+        }
+
+        if (!File.Exists(imagePath))
+        {
+            var error = $"Image file not found: {imagePath}";
+            System.Diagnostics.Debug.WriteLine($"ERROR: {error}");
+            throw new FileNotFoundException(error);
+        }
+
+        System.Diagnostics.Debug.WriteLine($"Loading PNG: {imagePath}");
 
         var tileWidth = GetInt(input, "tileWidth", 8);
         var tileHeight = GetInt(input, "tileHeight", 8);
@@ -78,7 +97,7 @@ public class PngToTilesTool : ITool
         // Target-specific extension will add/override keys like:
         // - "paletteHardware" (converted to target format)
         // - "tilesArrayFormatted" (with target-specific formatting)
-        return new Dictionary<string, object>
+        var result = new Dictionary<string, object>
         {
             ["tilesArray"] = tileData,
             ["tileCount"] = tileCount,
@@ -92,14 +111,26 @@ public class PngToTilesTool : ITool
             ["tileWidth"] = tileWidth,
             ["tileHeight"] = tileHeight
         };
+
+        System.Diagnostics.Debug.WriteLine($"PngToTilesTool: Generated {tileCount} tiles ({tilesX}x{tilesY})");
+        System.Diagnostics.Debug.WriteLine("=== PngToTilesTool.Execute END ===");
+
+        return result;
     }
 
     private string? ResolveAssetPath(string assetId, Dictionary<string, object> input)
     {
+        System.Diagnostics.Debug.WriteLine($"ResolveAssetPath: assetId = '{assetId}'");
+
         // Try to get projectPath from input
         var projectPath = GetString(input, "projectPath");
+        System.Diagnostics.Debug.WriteLine($"ResolveAssetPath: projectPath = '{projectPath}'");
+
         if (string.IsNullOrEmpty(projectPath))
+        {
+            System.Diagnostics.Debug.WriteLine("ERROR: projectPath is null or empty!");
             return null;
+        }
 
         // Load project file
         var projectFile = Path.Combine(projectPath, Path.GetFileName(projectPath) + ".rtrxproject");

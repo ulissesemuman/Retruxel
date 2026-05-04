@@ -15,6 +15,14 @@ public class SceneData
     [JsonPropertyName("sceneName")]
     public string SceneName { get; set; } = string.Empty;
 
+    /// <summary>
+    /// Palette slots for this scene. Count is fixed by the target (ITarget.GetPaletteSlotCount()).
+    /// Each slot contains ColorsPerSlot hardware colors.
+    /// Initialized with default colors when scene is created.
+    /// </summary>
+    [JsonPropertyName("paletteSlots")]
+    public List<PaletteSlotData> PaletteSlots { get; set; } = new();
+
     [JsonPropertyName("elements")]
     public List<SceneElementData> Elements { get; set; } = [];
 }

@@ -1,5 +1,4 @@
 using Retruxel.Core.Interfaces;
-using Retruxel.Core.Models;
 using System.Text.Json;
 
 namespace Retruxel.Core.Services;
@@ -11,8 +10,9 @@ namespace Retruxel.Core.Services;
 internal class VariableResolver
 {
     private readonly Dictionary<string, ITool> _tools;
-    private readonly System.Reflection.Assembly? _targetAssembly;
+    private System.Reflection.Assembly? _targetAssembly;
     private Dictionary<string, object> _globalVariables = new();
+    private Models.SceneData? _currentScene;
 
     public VariableResolver(Dictionary<string, ITool> tools, System.Reflection.Assembly? targetAssembly)
     {
@@ -21,11 +21,23 @@ internal class VariableResolver
     }
 
     /// <summary>
+    /// Sets the current scene for palette slot resolution.
+    /// </summary>
+    public void SetCurrentScene(Models.SceneData? scene)
+        => _currentScene = scene;
+
+    /// <summary>
     /// Sets global variables available to all CodeGen templates.
     /// Used for injecting TextAnalyzer results (fontStartTile, fontTileData, etc.).
     /// </summary>
     public void SetGlobalVariables(Dictionary<string, object> variables)
         => _globalVariables = variables;
+
+    /// <summary>
+    /// Updates the target assembly for tool extension discovery.
+    /// </summary>
+    public void SetTargetAssembly(System.Reflection.Assembly? targetAssembly)
+        => _targetAssembly = targetAssembly;
 
     public Dictionary<string, object> ResolveForModule(
         Dictionary<string, VariableDefinition> variables,
@@ -35,7 +47,14 @@ internal class VariableResolver
         var result = new Dictionary<string, object>();
 
         if (!string.IsNullOrEmpty(projectPath))
+        {
             result["projectPath"] = projectPath;
+            System.Diagnostics.Debug.WriteLine($"VariableResolver: projectPath = {projectPath}");
+        }
+        else
+        {
+            System.Diagnostics.Debug.WriteLine("WARNING: projectPath is null or empty!");
+        }
 
         using var doc = JsonDocument.Parse(moduleJson);
         var root = doc.RootElement;
@@ -46,12 +65,23 @@ internal class VariableResolver
             result[key] = value;
         }
 
+        // FIRST PASS: Resolve all "module" variables before invoking tools
+        // This ensures tool inputs can reference module properties
+        foreach (var (varName, varDef) in variables)
+        {
+            if (varDef.From == "module")
+            {
+                result[varName] = ReadModuleValue(root, varDef);
+            }
+        }
+
+        // SECOND PASS: Resolve tools and other sources
         foreach (var (varName, varDef) in variables)
         {
             switch (varDef.From)
             {
                 case "module":
-                    result[varName] = ReadModuleValue(root, varDef);
+                    // Already resolved in first pass
                     break;
 
                 case "asset":
@@ -68,6 +98,10 @@ internal class VariableResolver
                         result[varName] = globalValue;
                     else
                         result[varName] = varDef.Default ?? "";
+                    break;
+
+                case "computed":
+                    result[varName] = EvaluateComputedExpression(varDef, result);
                     break;
             }
         }
@@ -172,30 +206,56 @@ internal class VariableResolver
         var input = tool.GetDefaultParameters();
 
         if (resolvedVariables.TryGetValue("projectPath", out var projectPathObj))
+        {
             input["projectPath"] = projectPathObj;
+            System.Diagnostics.Debug.WriteLine($"Tool '{varDef.ToolId}': projectPath = {projectPathObj}");
+        }
+        else
+        {
+            System.Diagnostics.Debug.WriteLine($"WARNING: Tool '{varDef.ToolId}' invoked without projectPath!");
+        }
 
         IToolExtension? extension = null;
         if (tool.TargetExtensionId is not null && _targetAssembly is not null)
         {
+            System.Diagnostics.Debug.WriteLine($"Tool '{varDef.ToolId}': Looking for extension '{tool.TargetExtensionId}' in assembly '{_targetAssembly.GetName().Name}'");
             extension = FindToolExtension(_targetAssembly, tool.TargetExtensionId);
             if (extension is not null)
             {
+                System.Diagnostics.Debug.WriteLine($"Tool '{varDef.ToolId}': Extension found! Type = {extension.GetType().Name}");
                 foreach (var (k, v) in extension.GetDefaultParameters())
                     input[k] = v;
             }
+            else
+            {
+                System.Diagnostics.Debug.WriteLine($"Tool '{varDef.ToolId}': Extension NOT found");
+            }
+        }
+        else
+        {
+            if (tool.TargetExtensionId is null)
+                System.Diagnostics.Debug.WriteLine($"Tool '{varDef.ToolId}': No TargetExtensionId specified");
+            if (_targetAssembly is null)
+                System.Diagnostics.Debug.WriteLine($"Tool '{varDef.ToolId}': No target assembly available");
         }
 
         if (varDef.ToolInput is not null)
         {
+            System.Diagnostics.Debug.WriteLine($"Tool '{varDef.ToolId}': Processing toolInput with {varDef.ToolInput.Count} parameters");
+
             foreach (var (inputKey, valueSource) in varDef.ToolInput)
             {
+                System.Diagnostics.Debug.WriteLine($"  - {inputKey} = '{valueSource}'");
+
                 if (resolvedVariables.ContainsKey(valueSource))
                 {
-                    input[inputKey] = resolvedVariables[valueSource];
+                    var value = resolvedVariables[valueSource];
+                    input[inputKey] = value;
+                    System.Diagnostics.Debug.WriteLine($"    → Resolved from variables: '{value}'");
                 }
                 else if (moduleRoot.TryGetProperty(valueSource, out var v))
                 {
-                    input[inputKey] = v.ValueKind switch
+                    var value = v.ValueKind switch
                     {
                         JsonValueKind.Number => v.TryGetInt32(out var i) ? (object)i : v.GetDouble(),
                         JsonValueKind.True => true,
@@ -203,10 +263,13 @@ internal class VariableResolver
                         JsonValueKind.Array => Helpers.ArrayConversionHelper.ToIntArray(v),
                         _ => v.GetString() ?? ""
                     };
+                    input[inputKey] = value;
+                    System.Diagnostics.Debug.WriteLine($"    → Resolved from moduleRoot: '{value}'");
                 }
                 else
                 {
                     input[inputKey] = valueSource;
+                    System.Diagnostics.Debug.WriteLine($"    → Using literal value: '{valueSource}'");
                 }
             }
         }
@@ -214,23 +277,52 @@ internal class VariableResolver
         Dictionary<string, object> toolResult;
         try
         {
+            // Inject palette colors from scene if tool is PngToTiles or TilePacker
+            if ((varDef.ToolId == "PngToTiles" || varDef.ToolId == "TilePacker") && _currentScene != null)
+            {
+                var paletteSlot = 0;
+                if (moduleRoot.TryGetProperty("paletteSlot", out var slotProp) && slotProp.TryGetInt32(out var slot))
+                    paletteSlot = slot;
+
+                if (paletteSlot < _currentScene.PaletteSlots.Count)
+                {
+                    input["paletteColors"] = _currentScene.PaletteSlots[paletteSlot].Colors;
+                    System.Diagnostics.Debug.WriteLine($"Tool '{varDef.ToolId}': Injected paletteColors from scene slot {paletteSlot}");
+                }
+            }
+
             toolResult = tool.Execute(input);
+
+            // Log tool execution for debugging
+            System.Diagnostics.Debug.WriteLine($"Tool '{varDef.ToolId}' executed successfully");
         }
         catch (Exception ex)
         {
-            return new() { ["error"] = ex.Message };
+            var errorMsg = $"Tool '{varDef.ToolId}' failed: {ex.Message}";
+            System.Diagnostics.Debug.WriteLine($"ERROR: {errorMsg}");
+            Console.WriteLine($"ERROR: {errorMsg}");
+            return new() { ["error"] = errorMsg, ["tilesHex"] = "/* " + errorMsg + " */" };
         }
 
         if (extension is not null)
         {
+            System.Diagnostics.Debug.WriteLine($"Tool '{varDef.ToolId}': Invoking extension with {toolResult.Count} result keys");
             var extensionInput = new Dictionary<string, object>(input);
             foreach (var (k, v) in toolResult)
                 extensionInput[k] = v;
 
             var extensionResult = extension.Execute(extensionInput);
+            System.Diagnostics.Debug.WriteLine($"Tool '{varDef.ToolId}': Extension returned {extensionResult.Count} keys");
 
             foreach (var (k, v) in extensionResult)
+            {
                 toolResult[k] = v;
+                System.Diagnostics.Debug.WriteLine($"  - {k} = {v?.ToString()?.Substring(0, Math.Min(50, v?.ToString()?.Length ?? 0))}...");
+            }
+        }
+        else
+        {
+            System.Diagnostics.Debug.WriteLine($"Tool '{varDef.ToolId}': No extension to invoke");
         }
 
         return toolResult;
@@ -253,5 +345,43 @@ internal class VariableResolver
         }
 
         return null;
+    }
+
+    /// <summary>
+    /// Evaluates computed expressions for variables.
+    /// Currently supports: arrays.Any(a => a.languages.Count > 1)
+    /// </summary>
+    public object EvaluateComputedExpression(VariableDefinition varDef, Dictionary<string, object> resolvedVariables)
+    {
+        if (string.IsNullOrEmpty(varDef.Value))
+            return varDef.Default ?? false;
+
+        // Check for multi-language detection pattern
+        if (varDef.Value.Contains("languages.Count > 1", StringComparison.OrdinalIgnoreCase))
+        {
+            if (!resolvedVariables.TryGetValue("arrays", out var arraysObj))
+                return false;
+
+            if (arraysObj is not IEnumerable<object> arrays)
+                return false;
+
+            foreach (var arrayObj in arrays)
+            {
+                if (arrayObj is JsonElement jsonElement)
+                {
+                    if (jsonElement.TryGetProperty("languages", out var languagesProp) &&
+                        languagesProp.ValueKind == JsonValueKind.Array)
+                    {
+                        var count = languagesProp.GetArrayLength();
+                        if (count > 1)
+                            return true;
+                    }
+                }
+            }
+
+            return false;
+        }
+
+        return varDef.Default ?? false;
     }
 }

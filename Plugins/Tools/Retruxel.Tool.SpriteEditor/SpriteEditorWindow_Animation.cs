@@ -1,7 +1,6 @@
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
-using System.Windows.Media.Imaging;
 using System.Windows.Threading;
 
 namespace Retruxel.Tool.SpriteEditor;
@@ -90,7 +89,7 @@ public partial class SpriteEditorWindow
             return;
 
         int frameIndex = _state.IsAnimating ? _animationFrameIndex : _state.CurrentFrameIndex;
-        
+
         if (frameIndex >= _state.Frames.Count)
             return;
 
@@ -100,7 +99,7 @@ public partial class SpriteEditorWindow
         foreach (var tile in frame.Tiles)
         {
             var tileImage = ExtractTile(tile.TileIndex);
-            
+
             var image = new Image
             {
                 Source = tileImage,

@@ -1,6 +1,6 @@
+using Retruxel.Tool.SpriteEditor.Models;
 using System.Windows;
 using System.Windows.Controls;
-using Retruxel.Tool.SpriteEditor.Models;
 
 namespace Retruxel.Tool.SpriteEditor;
 

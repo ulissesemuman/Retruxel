@@ -30,6 +30,11 @@
       "path": "sourceModuleId == 'text.display'",
       "transform": "hasAny"
     },
+    "hasTextArray": {
+      "from": "moduleFiles",
+      "path": "sourceModuleId == 'text.array'",
+      "transform": "hasAny"
+    },
     "hasGameVars": {
       "from": "moduleFiles",
       "path": "sourceModuleId == 'gamevar'",

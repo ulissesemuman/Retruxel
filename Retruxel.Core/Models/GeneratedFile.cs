@@ -27,6 +27,18 @@ public class GeneratedFile
     public string SourceModuleId { get; set; } = string.Empty;
 
     /// <summary>
+    /// The element ID that generated this file (for scene-specific modules).
+    /// Used to track which scene a file belongs to.
+    /// </summary>
+    public string? SourceElementId { get; set; }
+
+    /// <summary>
+    /// The scene ID that this file belongs to (for scene-specific modules).
+    /// Used to filter files when generating scene init functions.
+    /// </summary>
+    public string? SourceSceneId { get; set; }
+
+    /// <summary>
     /// The ROM bank this file belongs to. Matches a RomBank.Id from TargetSpecs.Banks.
     /// Used by the Build Console to estimate per-bank usage before compilation.
     /// Ex: "rom" (SMS/GG/SG-1000/ColecoVision), "prg" (NES code), "chr" (NES graphics).

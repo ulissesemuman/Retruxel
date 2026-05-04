@@ -4,6 +4,7 @@ using Retruxel.Core.Interfaces;
 using Retruxel.Core.Models;
 using Retruxel.Core.Services;
 using Retruxel.Target.SMS.Modules.Splash;
+using Retruxel.Target.SMS.Text;
 
 namespace Retruxel.Target.SMS;
 
@@ -11,7 +12,7 @@ namespace Retruxel.Target.SMS;
 /// Sega Master System target definition.
 /// Registers the SMS toolchain, built-in modules and project templates.
 /// </summary>
-public class SmsTarget : ITarget
+public class SmsTarget : ITarget, IPaletteConverter
 {
     public string TargetId => "sms";
     public string DisplayName => "Sega Master System";
@@ -195,10 +196,7 @@ public class SmsTarget : ITarget
         }
     ];
 
-    public Dictionary<string, SingletonPolicy> GetModulePolicyOverrides() =>
-        new() { ["palette"] = SingletonPolicy.PerScene };
 
-    // Code generation
 
     private static Dictionary<string, Type>? _codeGenCache;
 
@@ -255,6 +253,29 @@ public class SmsTarget : ITarget
     public bool SupportsWindowPlane => true;
 
     public HudStrategy GetHudStrategy() => HudStrategy.WindowPlane;
+
+    public int GetMaxPalettesPerTilemap() => 2;
+
+    public int GetPaletteSlotCount() => 2;
+
+    public int GetColorsPerSlot() => 16;
+
+    public PaletteSlotType GetPaletteSlotType(int slotIndex) => slotIndex switch
+    {
+        0 => PaletteSlotType.Background,
+        1 => PaletteSlotType.Sprite,
+        _ => PaletteSlotType.Shared
+    };
+
+    // IPaletteConverter implementation
+    byte[] IPaletteConverter.ConvertColors(IEnumerable<string> hexColors)
+    {
+        var converter = new Palette.SmsPaletteConverter();
+        return converter.ConvertColors(hexColors);
+    }
+
+    // IFontConverter implementation
+    public IFontConverter GetFontConverter() => new SmsFontConverter();
 
     public GeneratedFile GenerateMainFile(RetruxelProject project, IEnumerable<GeneratedFile> moduleFiles)
     {

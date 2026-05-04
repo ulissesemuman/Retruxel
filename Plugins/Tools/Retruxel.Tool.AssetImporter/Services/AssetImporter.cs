@@ -31,13 +31,15 @@ public static class AssetImporter
     /// <param name="projectPath">Absolute path to the project root folder.</param>
     /// <param name="vramRegionId">VRAM region ID from target.Specs.VramRegions.</param>
     /// <param name="target">Active target — provides the hardware palette for color reduction.</param>
+    /// <param name="reducedPalette">Reduced color palette from optimization window.</param>
     /// <returns>AssetEntry ready to add to RetruxelProject.Assets.</returns>
     /// <exception cref="AssetImportException">Thrown when the import fails for a known reason.</exception>
     public static AssetEntry Import(
         string sourcePngPath,
         string projectPath,
         string vramRegionId,
-        ITarget target)
+        ITarget target,
+        List<SKColor>? reducedPalette = null)
     {
         // 1. Validate source file
         if (!File.Exists(sourcePngPath))
@@ -56,7 +58,14 @@ public static class AssetImporter
             throw new AssetImportException($"Target '{target.TargetId}' returned an empty hardware palette.");
 
         // 4. Reduce colors to hardware palette
-        using var reducedBitmap = ReduceColors(sourceBitmap, hardwarePalette);
+        using var reducedBitmap = reducedPalette != null
+            ? ConvertToReducedBitmap(sourceBitmap, reducedPalette)
+            : ReduceColors(sourceBitmap, hardwarePalette);
+
+        // 4.5. Convert to indexed PNG
+        var indexedPngService = new Retruxel.Lib.ImageProcessing.IndexedPngService();
+        var palette = reducedPalette ?? hardwarePalette.Select(c => new SKColor(c.R, c.G, c.B)).ToList();
+        var indexedData = indexedPngService.ConvertToIndexed(reducedBitmap, palette);
 
         // 5. Determine output path
         var region = target.Specs.VramRegions.FirstOrDefault(r => r.Id == vramRegionId)
@@ -73,8 +82,8 @@ public static class AssetImporter
         // 6. Ensure folder exists
         Directory.CreateDirectory(assetFolder);
 
-        // 7. Save reduced PNG
-        SavePng(reducedBitmap, assetFullPath);
+        // 7. Save indexed PNG
+        indexedPngService.Write(indexedData, assetFullPath);
 
         // 8. Calculate tile count
         var tileCount = (reducedBitmap.Width / TileSize) * (reducedBitmap.Height / TileSize);
@@ -88,7 +97,10 @@ public static class AssetImporter
             TileCount = tileCount,
             SourceWidth = reducedBitmap.Width,
             SourceHeight = reducedBitmap.Height,
-            ImportedAt = DateTime.Now
+            ImportedAt = DateTime.Now,
+            IsIndexed = true,
+            ColorCount = indexedData.Colors.Count,
+            SuggestedColors = indexedData.Colors
         };
     }
 
@@ -165,6 +177,36 @@ public static class AssetImporter
         using var data = image.Encode(SKEncodedImageFormat.Png, 100);
         using var stream = File.OpenWrite(outputPath);
         data.SaveTo(stream);
+    }
+
+    /// <summary>
+    /// Converts source bitmap to reduced palette without hardware palette matching.
+    /// Used when a pre-optimized palette is provided.
+    /// </summary>
+    private static SKBitmap ConvertToReducedBitmap(SKBitmap source, List<SKColor> palette)
+    {
+        var result = new SKBitmap(source.Width, source.Height, SKColorType.Rgba8888, SKAlphaType.Premul);
+        var rgbPalette = palette.Select(c => (c.Red, c.Green, c.Blue)).ToList();
+
+        for (int y = 0; y < source.Height; y++)
+        {
+            for (int x = 0; x < source.Width; x++)
+            {
+                var pixel = source.GetPixel(x, y);
+
+                if (pixel.Alpha == 0)
+                {
+                    result.SetPixel(x, y, SKColors.Transparent);
+                    continue;
+                }
+
+                var nearest = Retruxel.Lib.ImageProcessing.ColorMatching.FindNearestRgb(
+                    (pixel.Red, pixel.Green, pixel.Blue), rgbPalette);
+                result.SetPixel(x, y, new SKColor(nearest.R, nearest.G, nearest.B, pixel.Alpha));
+            }
+        }
+
+        return result;
     }
 }
 

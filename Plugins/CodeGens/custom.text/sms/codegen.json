@@ -1,0 +1,16 @@
+{
+  "moduleId": "custom.text",
+  "targetId": "sms",
+  "displayName": "Custom Text",
+  "category": "User Modules",
+  "description": "User-defined custom text module example",
+  "version": "1.0.0",
+  "template": "custom_text.c.rtrx",
+  "isUserModule": true,
+  "variables": {
+    "text": { "from": "module", "path": "text", "default": "Hello World" },
+    "x": { "from": "module", "path": "x", "default": 0 },
+    "y": { "from": "module", "path": "y", "default": 0 },
+    "instanceId": { "from": "instance" }
+  }
+}

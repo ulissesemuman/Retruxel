@@ -1,5 +1,4 @@
 using Retruxel.Core.Interfaces;
-using Retruxel.Core.Models;
 using Retruxel.Core.Services;
 using System.Windows.Threading;
 
@@ -35,7 +34,7 @@ public class StateManager
             Interval = _autoSaveInterval
         };
         _autoSaveTimer.Tick += AutoSaveTimer_Tick;
-        
+
         if (_autoSaveEnabled)
             _autoSaveTimer.Start();
     }
@@ -46,7 +45,7 @@ public class StateManager
     public void SetAutoSaveEnabled(bool enabled)
     {
         _autoSaveEnabled = enabled;
-        
+
         if (enabled)
             _autoSaveTimer.Start();
         else

@@ -1,0 +1,70 @@
+<Window x:Class="Retruxel.Views.PaletteImportDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="PALETTE IMPORT"
+        Width="480" Height="400"
+        WindowStartupLocation="CenterOwner"
+        Background="{StaticResource BrushSurface}"
+        ResizeMode="NoResize">
+    <Grid Margin="24">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Title -->
+        <TextBlock Grid.Row="0"
+                   x:Name="TxtTitle"
+                   Text="PALETTE IMPORT"
+                   Style="{StaticResource TextHeading}"
+                   Margin="0,0,0,16"/>
+
+        <!-- Description -->
+        <TextBlock Grid.Row="1"
+                   x:Name="TxtDescription"
+                   Text="This asset uses 16 colors. What would you like to do?"
+                   Style="{StaticResource TextBody}"
+                   Foreground="{StaticResource BrushOnSurfaceVariant}"
+                   TextWrapping="Wrap"
+                   Margin="0,0,0,16"/>
+
+        <!-- Options -->
+        <StackPanel Grid.Row="2">
+            <!-- Slot options -->
+            <StackPanel x:Name="SlotOptionsPanel" Margin="0,0,0,16"/>
+
+            <!-- Keep current option -->
+            <RadioButton x:Name="RbKeepCurrent"
+                        Content="Keep current palette"
+                        Style="{StaticResource RadioButtonDefault}"
+                        Margin="0,8,0,0"/>
+
+            <!-- Asset colors preview -->
+            <TextBlock Text="Asset colors preview:"
+                      Style="{StaticResource TextLabelCaps}"
+                      Margin="0,24,0,8"/>
+            <WrapPanel x:Name="ColorPreviewPanel" Margin="0,0,0,0"/>
+        </StackPanel>
+
+        <!-- Buttons -->
+        <StackPanel Grid.Row="4"
+                   Orientation="Horizontal"
+                   HorizontalAlignment="Right"
+                   Margin="0,16,0,0">
+            <Button x:Name="BtnOk"
+                   Content="OK"
+                   Style="{StaticResource ButtonPrimary}"
+                   Width="80"
+                   Click="BtnOk_Click"
+                   Margin="0,0,8,0"/>
+            <Button x:Name="BtnCancel"
+                   Content="CANCEL"
+                   Style="{StaticResource ButtonGhost}"
+                   Width="80"
+                   Click="BtnCancel_Click"/>
+        </StackPanel>
+    </Grid>
+</Window>

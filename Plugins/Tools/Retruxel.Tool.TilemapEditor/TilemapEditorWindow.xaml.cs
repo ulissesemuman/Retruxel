@@ -2,6 +2,7 @@ using Retruxel.Core.Interfaces;
 using Retruxel.Core.Models;
 using Retruxel.Core.Services;
 using Retruxel.Tool.TilemapEditor.Helpers;
+using Retruxel.Lib.ImageProcessing;
 using System.Windows;
 
 namespace Retruxel.Tool.TilemapEditor;
@@ -21,6 +22,7 @@ public partial class TilemapEditorWindow : Window
 
     private readonly TilemapData _tilemapData = new();
     private readonly TilesetRenderer _tilesetRenderer = new();
+    private readonly IndexedPngService _indexedPngService = new();
 
     private int _selectedTileId = 0;
     private int _currentLayerIndex = 0;
@@ -30,6 +32,9 @@ public partial class TilemapEditorWindow : Window
     private bool _isInitializing = true;
     private int _mapOffsetX = 0;
     private int _mapOffsetY = 0;
+
+    private IndexedPngData? _indexedData;
+    private SceneData? _currentScene;
 
     public Dictionary<string, object>? ModuleData { get; private set; }
 
@@ -43,6 +48,14 @@ public partial class TilemapEditorWindow : Window
         _toolRegistry = toolRegistry;
         _saveProjectCallback = saveProjectCallback;
         _sceneEditor = sceneEditor;
+
+        // Try to get current scene from sceneEditor
+        if (sceneEditor != null)
+        {
+            var sceneField = sceneEditor.GetType().GetField("_currentScene", 
+                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+            _currentScene = sceneField?.GetValue(sceneEditor) as SceneData;
+        }
 
         TxtTargetLabel.Text = target.DisplayName.ToUpper();
 

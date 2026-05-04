@@ -44,6 +44,9 @@
     <ProjectReference Include="..\Plugins\Tools\Retruxel.Tool.TilePacker\Retruxel.Tool.TilePacker.csproj">
       <Private>false</Private>
     </ProjectReference>
+    <ProjectReference Include="..\Plugins\Tools\Retruxel.Tool.TextArrayEditor\Retruxel.Tool.TextArrayEditor.csproj">
+      <Private>false</Private>
+    </ProjectReference>
     
     <!-- Target references - only for build order, not copied to output -->
     <ProjectReference Include="..\Plugins\Targets\Retruxel.Target.SMS\Retruxel.Target.SMS.csproj">

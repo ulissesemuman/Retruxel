@@ -3,7 +3,6 @@ using Retruxel.Services;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
-using System.Windows.Media;
 
 namespace Retruxel.Views;
 
@@ -29,6 +28,21 @@ public partial class SceneEditorView
         }
 
         var scene = new SceneData { SceneId = Guid.NewGuid().ToString(), SceneName = newName };
+
+        // Initialize palette slots based on target
+        if (_target is not null)
+        {
+            for (int i = 0; i < _target.GetPaletteSlotCount(); i++)
+            {
+                var slot = new PaletteSlotData
+                {
+                    SlotIndex = i,
+                    Label = _target.GetPaletteSlotType(i).ToString(),
+                    Colors = Enumerable.Repeat("#000000", _target.GetColorsPerSlot()).ToList()
+                };
+                scene.PaletteSlots.Add(slot);
+            }
+        }
 
         // Create state change for new scene (Large change — auto-saves)
         var change = new StateChange
@@ -91,19 +105,26 @@ public partial class SceneEditorView
                 ActivateScene(scene);
         };
 
-        // Right-click context menu: Rename / Delete
+        // Right-click context menu: Rename / Set as Initial / Delete
         var menu = new ContextMenu();
         var menuRename = new MenuItem { Header = "Rename" };
+        var menuSetInitial = new MenuItem { Header = "Set as Initial Scene" };
         var menuDelete = new MenuItem { Header = "Delete" };
 
         menuRename.Click += (_, _) => StartInlineRename(border, scene);
+        menuSetInitial.Click += (_, _) => SetInitialScene(scene);
         menuDelete.Click += (_, _) => DeleteScene(scene);
+
+        // Disable "Set as Initial" if already initial
+        if (_project!.InitialSceneId == scene.SceneId)
+            menuSetInitial.IsEnabled = false;
 
         // Disable Delete when only one scene remains
         if (_project!.Scenes.Count <= 1)
             menuDelete.IsEnabled = false;
 
         menu.Items.Add(menuRename);
+        menu.Items.Add(menuSetInitial);
         menu.Items.Add(menuDelete);
         border.ContextMenu = menu;
 
@@ -155,6 +176,9 @@ public partial class SceneEditorView
 
         // Refresh palette — singletons already on canvas must be hidden
         RefreshModulePalette();
+
+        // Refresh structure panel to show new scene's palettes
+        RefreshStructurePanel();
 
         // Rebuild tabs to reflect active state
         RebuildSceneTabs();
@@ -213,6 +237,28 @@ public partial class SceneEditorView
             if (e.Key == Key.Escape) { tab.Child = BuildLabelForTab(scene); e.Handled = true; }
         };
         textBox.LostFocus += (_, _) => Confirm();
+    }
+
+    /// <summary>
+    /// Sets a scene as the initial scene (entry point for the game).
+    /// </summary>
+    private void SetInitialScene(SceneData scene)
+    {
+        if (_project is null || _project.InitialSceneId == scene.SceneId) return;
+
+        var change = new StateChange
+        {
+            Description = $"Set '{scene.SceneName}' as initial scene",
+            Type = ChangeType.Small,
+            Execute = () =>
+            {
+                _project.InitialSceneId = scene.SceneId;
+                RebuildSceneTabs(); // Refresh to update menu state
+            },
+            IsUndoable = false
+        };
+
+        _stateManager?.ApplyChange(change);
     }
 
     /// <summary>

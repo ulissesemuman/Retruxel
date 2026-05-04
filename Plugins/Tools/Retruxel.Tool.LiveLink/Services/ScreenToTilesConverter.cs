@@ -1,7 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-
 namespace Retruxel.Tool.LiveLink.Services;
 
 /// <summary>
@@ -45,7 +41,7 @@ public class ScreenToTilesConverter
             for (int tx = 0; tx < tilesX; tx++)
             {
                 var (tile, colors) = ExtractTile(screenBuffer, screenWidth, screenHeight, tx, ty, tileWidth, tileHeight);
-                
+
                 int tileIndex = tiles.Count;
                 tiles.Add(tile);
                 tileColors.Add(colors);
@@ -55,12 +51,12 @@ public class ScreenToTilesConverter
 
         // Build color palette from all unique colors
         var allColors = tileColors.SelectMany(c => c).Distinct().ToArray();
-        
+
         System.Diagnostics.Debug.WriteLine($"[ScreenToTilesConverter] Found {allColors.Length} unique colors in screen");
-        
+
         // Optimize palette based on target console
         PaletteOptimizer.OptimizedPalette optimized;
-        
+
         if (targetConsole == "sms" || targetConsole == "gg")
         {
             optimized = PaletteOptimizer.OptimizeForSms(tiles.ToArray(), allColors);
@@ -101,7 +97,7 @@ public class ScreenToTilesConverter
         var tile = new byte[tileWidth * tileHeight];
         var colorMap = new Dictionary<uint, byte>();
         var colorList = new List<uint>();
-        
+
         // Debug: Log tiles around line 8 (ty=7)
         if (tileY >= 7 && tileY <= 8 && tileX == 0)
         {
@@ -122,13 +118,13 @@ public class ScreenToTilesConverter
                 }
 
                 int bufferIdx = (screenY * screenWidth + screenX) * 4;
-                
+
                 // Debug: Log first pixel of tiles around line 8
                 if (tileY >= 7 && tileY <= 8 && tileX == 0 && px == 0 && py == 0)
                 {
                     System.Diagnostics.Debug.WriteLine($"[ExtractTile] Tile ({tileX},{tileY}): first pixel at screenX={screenX}, screenY={screenY}, bufferIdx={bufferIdx}");
                 }
-                
+
                 if (bufferIdx + 3 >= screenBuffer.Length)
                 {
                     tile[py * tileWidth + px] = 0;
@@ -207,15 +203,15 @@ public class ScreenToTilesConverter
         int r1 = (int)((c1 >> 16) & 0xFF);
         int g1 = (int)((c1 >> 8) & 0xFF);
         int b1 = (int)(c1 & 0xFF);
-        
+
         int r2 = (int)((c2 >> 16) & 0xFF);
         int g2 = (int)((c2 >> 8) & 0xFF);
         int b2 = (int)(c2 & 0xFF);
-        
+
         int dr = r1 - r2;
         int dg = g1 - g2;
         int db = b1 - b2;
-        
+
         return Math.Sqrt(dr * dr + dg * dg + db * db);
     }
 }

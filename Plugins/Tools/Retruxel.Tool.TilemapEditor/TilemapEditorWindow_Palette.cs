@@ -237,9 +237,9 @@ public partial class TilemapEditorWindow
                     {
                         try
                         {
-                            var addMethod = _sceneEditor.GetType().GetMethod("AddElementFromData", 
+                            var addMethod = _sceneEditor.GetType().GetMethod("AddElementFromData",
                                 System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance);
-                            
+
                             if (addMethod != null)
                             {
                                 addMethod.Invoke(_sceneEditor, new object[] { paletteElement });

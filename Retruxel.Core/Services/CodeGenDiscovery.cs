@@ -61,6 +61,11 @@ internal static class CodeGenDiscovery
                 Version = raw.Version ?? "1.0.0",
                 TemplatePath = templatePath,
                 IsSystemModule = raw.IsSystemModule,
+                IsUserModule = raw.IsUserModule,
+                IsBatchModule = raw.IsBatchModule,
+                DisplayName = raw.DisplayName,
+                Category = raw.Category,
+                Description = raw.Description,
                 Variables = ParseVariables(raw.Variables)
             };
         }
@@ -99,6 +104,12 @@ internal static class CodeGenDiscovery
             if (element.TryGetProperty("transform", out var transform))
                 def.Transform = transform.GetString();
 
+            if (element.TryGetProperty("slotIndex", out var slotIndex))
+                def.SlotIndex = slotIndex.GetInt32();
+
+            if (element.TryGetProperty("value", out var value))
+                def.Value = value.GetString();
+
             if (element.TryGetProperty("default", out var defVal))
             {
                 def.Default = defVal.ValueKind switch
@@ -135,6 +146,11 @@ internal static class CodeGenDiscovery
         public string? Version { get; set; }
         public string? Template { get; set; }
         public bool IsSystemModule { get; set; } = false;
+        public bool IsUserModule { get; set; } = false;
+        public bool IsBatchModule { get; set; } = false;
+        public string? DisplayName { get; set; }
+        public string? Category { get; set; }
+        public string? Description { get; set; }
         public Dictionary<string, JsonElement>? Variables { get; set; }
     }
 }

@@ -1,7 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-
 namespace Retruxel.Tool.LiveLink.Services;
 
 /// <summary>
@@ -29,7 +25,7 @@ public class PaletteOptimizer
         const int totalSlots = paletteCount * filledColors; // 8 slots
 
         var uniqueColors = ExtractUniqueColors(tiles, sourceColors);
-        
+
         // Hierarchical clustering: start with fewer clusters, then refine
         var clusters = HierarchicalClustering(uniqueColors, totalSlots, maxIterations);
 
@@ -64,7 +60,7 @@ public class PaletteOptimizer
         const int totalSlots = paletteCount * colorsPerPalette; // 16 slots
 
         var uniqueColors = ExtractUniqueColors(tiles, sourceColors);
-        
+
         // Hierarchical clustering
         var clusters = HierarchicalClustering(uniqueColors, totalSlots, maxIterations);
 
@@ -108,10 +104,10 @@ public class PaletteOptimizer
             return colors.ToArray();
 
         var colorList = colors.ToList();
-        
+
         // Use K-means++ initialization for better centroid selection
         var centroids = KMeansPlusPlusInit(colorList, k);
-        
+
         System.Diagnostics.Debug.WriteLine($"[PaletteOptimizer] K-means clustering: {colorList.Count} colors → {k} clusters");
         System.Diagnostics.Debug.WriteLine($"[PaletteOptimizer] Initial centroids: {string.Join(", ", centroids.Select(c => $"#{c:X6}"))}");
 
@@ -126,7 +122,7 @@ public class PaletteOptimizer
             {
                 int nearest = 0;
                 double minDist = ColorDistance(color, centroids[0]);
-                
+
                 for (int i = 1; i < k; i++)
                 {
                     double dist = ColorDistance(color, centroids[i]);
@@ -136,7 +132,7 @@ public class PaletteOptimizer
                         nearest = i;
                     }
                 }
-                
+
                 clusters[nearest].Add(color);
             }
 
@@ -161,12 +157,12 @@ public class PaletteOptimizer
                 break;
             }
         }
-        
+
         System.Diagnostics.Debug.WriteLine($"[PaletteOptimizer] Final centroids: {string.Join(", ", centroids.Select(c => $"#{c:X6}"))}");
 
         return centroids;
     }
-    
+
     /// <summary>
     /// K-means++ initialization: selects initial centroids that are far apart.
     /// This ensures diverse color selection (e.g., both green AND red).
@@ -175,16 +171,16 @@ public class PaletteOptimizer
     {
         var random = new Random();
         var centroids = new List<uint>();
-        
+
         // 1. Choose first centroid randomly
         centroids.Add(colors[random.Next(colors.Count)]);
-        
+
         // 2. Choose remaining centroids based on distance from existing ones
         for (int i = 1; i < k; i++)
         {
             var distances = new double[colors.Count];
             double totalDistance = 0;
-            
+
             // Calculate distance from each color to nearest existing centroid
             for (int j = 0; j < colors.Count; j++)
             {
@@ -198,11 +194,11 @@ public class PaletteOptimizer
                 distances[j] = minDist * minDist; // Square for weighted probability
                 totalDistance += distances[j];
             }
-            
+
             // Choose next centroid with probability proportional to distance
             double threshold = random.NextDouble() * totalDistance;
             double sum = 0;
-            
+
             for (int j = 0; j < colors.Count; j++)
             {
                 sum += distances[j];
@@ -212,7 +208,7 @@ public class PaletteOptimizer
                     break;
                 }
             }
-            
+
             // Fallback: if loop didn't add a centroid, add the farthest color
             if (centroids.Count == i)
             {
@@ -229,15 +225,15 @@ public class PaletteOptimizer
                 centroids.Add(colors[farthestIdx]);
             }
         }
-        
+
         return centroids.ToArray();
     }
-    
+
     // Diversity parameter from Dithertron algorithm
     // Range: 0.75 (low diversity) to 1.25 (high diversity)
     // Default: 1.25 (maximum diversity)
     private const double DEFAULT_DIVERSITY = 1.25;
-    
+
     /// <summary>
     /// Public method for palette optimization with custom diversity.
     /// Used by PaletteOptimizationWindow for real-time preview.
@@ -250,21 +246,21 @@ public class PaletteOptimizer
             uint color = 0xFF000000u | ((uint)r << 16) | ((uint)g << 8) | b;
             colorSet.Add(color);
         }
-        
+
         System.Diagnostics.Debug.WriteLine($"[OptimizePalette] Input: {pixels.Count} pixels, {colorSet.Count} unique colors");
         System.Diagnostics.Debug.WriteLine($"[OptimizePalette] Target: {targetColorCount} colors, diversity: {diversity}");
-        
+
         var optimized = HierarchicalClustering(colorSet, targetColorCount, 20, diversity);
-        
+
         System.Diagnostics.Debug.WriteLine($"[OptimizePalette] Output: {optimized.Length} colors");
-        
+
         return optimized.Select(c => (
             R: (byte)((c >> 16) & 0xFF),
             G: (byte)((c >> 8) & 0xFF),
             B: (byte)(c & 0xFF)
         )).ToList();
     }
-    
+
     /// <summary>
     /// Dithertron-style diversity-based palette optimization.
     /// Uses bias and decay factors derived from diversity parameter.
@@ -273,27 +269,27 @@ public class PaletteOptimizer
     {
         if (colors.Count <= targetSlots)
             return colors.ToArray();
-        
+
         var colorList = colors.ToList();
         System.Diagnostics.Debug.WriteLine($"[HierarchicalClustering] {colorList.Count} colors → {targetSlots} slots (diversity={diversity})");
-        
+
         // Use diversity-weighted K-means++ initialization
         var centroids = DiversityWeightedInit(colorList, targetSlots, diversity);
         System.Diagnostics.Debug.WriteLine($"[HierarchicalClustering] Initial centroids: {string.Join(", ", centroids.Select(c => $"#{c:X6}"))}");
-        
+
         // Run K-means to convergence
         for (int iter = 0; iter < maxIterations; iter++)
         {
             var clusters = new List<uint>[targetSlots];
             for (int i = 0; i < targetSlots; i++)
                 clusters[i] = new List<uint>();
-            
+
             foreach (var color in colorList)
             {
                 int nearest = FindNearestCentroid(color, centroids);
                 clusters[nearest].Add(color);
             }
-            
+
             bool changed = false;
             for (int i = 0; i < targetSlots; i++)
             {
@@ -307,14 +303,14 @@ public class PaletteOptimizer
                     }
                 }
             }
-            
+
             if (!changed)
             {
                 System.Diagnostics.Debug.WriteLine($"[HierarchicalClustering] Converged at iteration {iter}");
                 break;
             }
         }
-        
+
         var finalCentroids = new List<uint>();
         for (int i = 0; i < targetSlots; i++)
         {
@@ -324,13 +320,13 @@ public class PaletteOptimizer
                 finalCentroids.Add(centroids[i]);
             }
         }
-        
+
         System.Diagnostics.Debug.WriteLine($"[HierarchicalClustering] Final: {finalCentroids.Count}/{targetSlots} colors");
         System.Diagnostics.Debug.WriteLine($"[HierarchicalClustering] Colors: {string.Join(", ", finalCentroids.Select(c => $"#{c:X6}"))}");
-        
+
         return finalCentroids.ToArray();
     }
-    
+
     /// <summary>
     /// Dithertron-style diversity initialization using bias and decay factors.
     /// bias = diversity * 0.5 + 0.5 (weights centroid selection)
@@ -342,13 +338,13 @@ public class PaletteOptimizer
         int seed = (int)(diversity * 10000);
         var random = new Random(seed);
         var centroids = new List<uint>();
-        
+
         // Dithertron bias and decay calculations
         double bias = diversity * 0.5 + 0.5;      // 1.125 at diversity=1.25
         double decay = diversity * 0.25 + 0.65;   // 0.9625 at diversity=1.25
-        
+
         System.Diagnostics.Debug.WriteLine($"[DiversityWeightedInit] bias={bias:F3}, decay={decay:F3}");
-        
+
         // Count color frequencies
         var colorCounts = new Dictionary<uint, int>();
         foreach (var color in colors)
@@ -357,32 +353,32 @@ public class PaletteOptimizer
                 colorCounts[color] = 0;
             colorCounts[color]++;
         }
-        
+
         var uniqueColors = colorCounts.Keys.ToList();
         System.Diagnostics.Debug.WriteLine($"[DiversityWeightedInit] {uniqueColors.Count} unique colors from {colors.Count} pixels");
-        
+
         // 1. Choose first centroid: most frequent color (weighted by bias)
         var firstColor = uniqueColors.OrderByDescending(c => colorCounts[c] * bias).First();
         centroids.Add(firstColor);
         System.Diagnostics.Debug.WriteLine($"[DiversityWeightedInit] Centroid 0: #{firstColor:X6} (count={colorCounts[firstColor]})");
-        
+
         // 2. Choose remaining centroids with diversity + frequency weighting
         for (int i = 1; i < k; i++)
         {
             var weights = new double[uniqueColors.Count];
             double totalWeight = 0;
-            
+
             for (int j = 0; j < uniqueColors.Count; j++)
             {
                 var color = uniqueColors[j];
-                
+
                 // Skip if already selected
                 if (centroids.Contains(color))
                 {
                     weights[j] = 0;
                     continue;
                 }
-                
+
                 // Calculate minimum distance to existing centroids
                 double minDist = double.MaxValue;
                 foreach (var centroid in centroids)
@@ -391,22 +387,22 @@ public class PaletteOptimizer
                     if (dist < minDist)
                         minDist = dist;
                 }
-                
+
                 // Frequency weight (biased)
                 double freqWeight = colorCounts[color] * bias;
-                
+
                 // Diversity weight (distance with decay)
                 double divWeight = minDist * minDist * decay;
-                
+
                 // Combined weight: diversity dominates but frequency matters
                 weights[j] = divWeight + freqWeight * 0.1; // 10% frequency influence
                 totalWeight += weights[j];
             }
-            
+
             // Weighted random selection
             double threshold = random.NextDouble() * totalWeight;
             double sum = 0;
-            
+
             for (int j = 0; j < uniqueColors.Count; j++)
             {
                 sum += weights[j];
@@ -417,7 +413,7 @@ public class PaletteOptimizer
                     break;
                 }
             }
-            
+
             // Fallback: if no color was added, pick the one with highest weight
             if (centroids.Count == i)
             {
@@ -435,15 +431,15 @@ public class PaletteOptimizer
                 System.Diagnostics.Debug.WriteLine($"[DiversityWeightedInit] Centroid {i} (fallback): #{uniqueColors[maxIdx]:X6}");
             }
         }
-        
+
         return centroids.ToArray();
     }
-    
+
     private static int FindNearestCentroid(uint color, uint[] centroids)
     {
         int nearest = 0;
         double minDist = ColorDistance(color, centroids[0]);
-        
+
         for (int i = 1; i < centroids.Length; i++)
         {
             double dist = ColorDistance(color, centroids[i]);
@@ -453,7 +449,7 @@ public class PaletteOptimizer
                 nearest = i;
             }
         }
-        
+
         return nearest;
     }
 
@@ -462,41 +458,41 @@ public class PaletteOptimizer
         int r1 = (int)((c1 >> 16) & 0xFF);
         int g1 = (int)((c1 >> 8) & 0xFF);
         int b1 = (int)(c1 & 0xFF);
-        
+
         int r2 = (int)((c2 >> 16) & 0xFF);
         int g2 = (int)((c2 >> 8) & 0xFF);
         int b2 = (int)(c2 & 0xFF);
-        
+
         int dr = r1 - r2;
         int dg = g1 - g2;
         int db = b1 - b2;
-        
+
         return Math.Sqrt(dr * dr + dg * dg + db * db);
     }
 
     private static uint CalculateCentroid(List<uint> colors)
     {
         long r = 0, g = 0, b = 0;
-        
+
         foreach (var color in colors)
         {
             r += (color >> 16) & 0xFF;
             g += (color >> 8) & 0xFF;
             b += color & 0xFF;
         }
-        
+
         int count = colors.Count;
         byte avgR = (byte)(r / count);
         byte avgG = (byte)(g / count);
         byte avgB = (byte)(b / count);
-        
+
         return 0xFF000000u | ((uint)avgR << 16) | ((uint)avgG << 8) | avgB;
     }
 
     private static byte[] AssignTilesToPalettes(byte[][] tiles, uint[] sourceColors, uint[][] palettes, int colorsPerPalette)
     {
         var assignments = new byte[tiles.Length];
-        
+
         for (int tileIdx = 0; tileIdx < tiles.Length; tileIdx++)
         {
             var tile = tiles[tileIdx];
@@ -527,7 +523,7 @@ public class PaletteOptimizer
     private static double CalculatePaletteError(uint[] tileColors, uint[] palette, int maxColors)
     {
         double totalError = 0;
-        
+
         foreach (var color in tileColors)
         {
             double minDist = double.MaxValue;
@@ -539,7 +535,7 @@ public class PaletteOptimizer
             }
             totalError += minDist;
         }
-        
+
         return totalError;
     }
 }

@@ -61,7 +61,7 @@ public class CaptureToImportedAssetPipeline : AssetPipelineBase<CaptureResult, I
     {
         // Convert ushort nametable entries to int tilemap data
         var tilemapData = new int[nametable.Length];
-        
+
         for (int i = 0; i < nametable.Length; i++)
         {
             // Use full ushort value (0-65535) to support large tile counts

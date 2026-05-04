@@ -48,38 +48,44 @@ public class CodeGenerator
         _moduleRenderer.ResetState();
 
         // Run TextAnalyzer before module rendering
-        var fontConverter = DiscoverFontConverter();
+        var fontConverter = _target.GetFontConverter();
         var graphicTilesEnd = CalculateGraphicTilesEnd(project);
-        var textResult = _textAnalyzer.Analyze(project, Enumerable.Empty<IModule>(), fontConverter, graphicTilesEnd);
         
-        if (textResult.MissingChars.Count > 0)
+        // Initial analysis with empty module list
+        var textModuleJsons = new List<string>();
+        var textResult = _textAnalyzer.Analyze(textModuleJsons, fontConverter, graphicTilesEnd);
+
+        if (((List<char>)textResult["missingChars"]).Count > 0)
         {
-            progress?.Report($"WARN: {textResult.MissingChars.Count} character(s) not in default font: {string.Join(", ", textResult.MissingChars.Take(10))}");
+            var missingChars = (List<char>)textResult["missingChars"];
+            progress?.Report($"WARN: {missingChars.Count} character(s) not in default font: {string.Join(", ", missingChars.Take(10))}");
         }
-        
-        progress?.Report($"INFO: Compact font: {textResult.TileCount} glyphs, starting at tile {textResult.FontStartTile}");
+
+        progress?.Report($"INFO: Compact font: {textResult["fontTileCount"]} glyphs, starting at tile {textResult["fontStartTile"]}");
 
         // Inject text analysis results into global variables for CodeGen templates
         var globalVariables = new Dictionary<string, object>
         {
-            ["fontStartTile"] = textResult.FontStartTile,
-            ["fontTileCount"] = textResult.TileCount,
-            ["fontTileData"] = FormatByteArray(textResult.TileData),
-            ["fontTranslationTable"] = FormatByteArray(textResult.TranslationTable)
+            ["fontStartTile"] = textResult["fontStartTile"],
+            ["fontTileCount"] = textResult["fontTileCount"],
+            ["fontTileData"] = FormatByteArray((byte[])textResult["fontTileData"]),
+            ["fontTranslationTable"] = FormatByteArray((byte[])textResult["fontTranslationTable"])
         };
-        
+
         _moduleRenderer.SetGlobalVariables(globalVariables);
 
         // Collect all module instances from scenes, grouped by trigger
         var instancesByModule = new Dictionary<string, List<IModule>>();
         var triggersByElement = new Dictionary<IModule, string>(); // Track trigger for each instance
+        var elementToScene = new Dictionary<IModule, string>(); // Track which scene each module belongs to
+        var elementIds = new Dictionary<IModule, string>(); // Track element IDs
 
         foreach (var scene in project.Scenes)
         {
             foreach (var elementData in scene.Elements)
             {
-                var elementIdShort = elementData.ElementId.Length > 8 
-                    ? elementData.ElementId.Substring(0, 8) 
+                var elementIdShort = elementData.ElementId.Length > 8
+                    ? elementData.ElementId.Substring(0, 8)
                     : elementData.ElementId;
                 progress?.Report($"PROC: Loading element {elementIdShort}...");
 
@@ -112,21 +118,29 @@ public class CodeGenerator
                     instancesByModule[elementData.ModuleId] = new List<IModule>();
 
                 instancesByModule[elementData.ModuleId].Add(module);
-                
+
+                // Track which scene this module belongs to
+                elementToScene[module] = scene.SceneId;
+                elementIds[module] = elementData.ElementId;
+
                 // Re-run TextAnalyzer with actual module instances for accurate character extraction
                 if (elementData.ModuleId == "text.array")
                 {
-                    var allModules = instancesByModule.Values.SelectMany(x => x).ToList();
-                    textResult = _textAnalyzer.Analyze(project, allModules, fontConverter, graphicTilesEnd);
+                    var allTextModules = instancesByModule.ContainsKey("text.array")
+                        ? instancesByModule["text.array"]
+                        : new List<IModule>();
                     
-                    globalVariables["fontStartTile"] = textResult.FontStartTile;
-                    globalVariables["fontTileCount"] = textResult.TileCount;
-                    globalVariables["fontTileData"] = FormatByteArray(textResult.TileData);
-                    globalVariables["fontTranslationTable"] = FormatByteArray(textResult.TranslationTable);
-                    
+                    textModuleJsons = allTextModules.Select(m => m.Serialize()).ToList();
+                    textResult = _textAnalyzer.Analyze(textModuleJsons, fontConverter, graphicTilesEnd);
+
+                    globalVariables["fontStartTile"] = textResult["fontStartTile"];
+                    globalVariables["fontTileCount"] = textResult["fontTileCount"];
+                    globalVariables["fontTileData"] = FormatByteArray((byte[])textResult["fontTileData"]);
+                    globalVariables["fontTranslationTable"] = FormatByteArray((byte[])textResult["fontTranslationTable"]);
+
                     _moduleRenderer.SetGlobalVariables(globalVariables);
                 }
-                
+
                 // Track trigger for this instance (default to OnStart if not set)
                 var trigger = string.IsNullOrEmpty(elementData.Trigger) ? "OnStart" : elementData.Trigger;
                 triggersByElement[module] = trigger;
@@ -140,6 +154,10 @@ public class CodeGenerator
         // Generate code for each module type (passing all instances)
         foreach (var (moduleId, instances) in instancesByModule)
         {
+            // Skip batch modules — they are processed separately
+            if (moduleId == "gamevar" || moduleId == "text.array")
+                continue;
+
             progress?.Report($"PROC: Generating code for {instances.Count} {moduleId} instance(s)...");
 
             foreach (var module in instances)
@@ -158,12 +176,18 @@ public class CodeGenerator
                         .TryGetValue(module.ModuleId, out var p) ? p : module.SingletonPolicy;
                     var isSingleton = policy != SingletonPolicy.Multiple;
 
+                    // Get the scene this module belongs to
+                    var moduleScene = elementToScene.TryGetValue(module, out var sceneId)
+                        ? project.Scenes.FirstOrDefault(s => s.SceneId == sceneId)
+                        : null;
+
                     generatedFiles = _moduleRenderer.Render(
                         module.ModuleId,
                         project.TargetId,
                         moduleJson,
                         isSingleton,
-                        project.ProjectPath).ToList();
+                        project.ProjectPath,
+                        moduleScene).ToList();
                     progress?.Report($"INFO: {module.ModuleId} generated via ModuleRenderer.");
                 }
                 // Priority 2: Ask target to translate (legacy fallback)
@@ -199,6 +223,14 @@ public class CodeGenerator
                         progress?.Report($"INFO: Skipping duplicate file '{file.FileName}' for {moduleId}.");
                         continue;
                     }
+
+                    // Tag file with scene ID if module belongs to a scene
+                    if (elementToScene.TryGetValue(module, out var sceneId))
+                    {
+                        file.SourceSceneId = sceneId;
+                        file.SourceElementId = elementIds[module];
+                    }
+
                     sourceFiles.Add(file);
                 }
 
@@ -214,10 +246,15 @@ public class CodeGenerator
         // Validate tile conflicts between tilemap and text.display
         ValidateTileConflicts(instancesByModule, progress);
 
-        // Generate scene files
+        // Generate scene files with only the modules that belong to each scene
         foreach (var scene in project.Scenes)
         {
-            var sceneFiles = _moduleRenderer.RenderSceneFiles(project.TargetId, scene, sourceFiles, progress);
+            // Filter sourceFiles to only include files from this specific scene
+            var sceneSpecificFiles = sourceFiles
+                .Where(f => f.SourceSceneId == scene.SceneId)
+                .ToList();
+
+            var sceneFiles = _moduleRenderer.RenderSceneFiles(project.TargetId, scene, sceneSpecificFiles, _target, progress);
             foreach (var file in sceneFiles)
             {
                 sourceFiles.Add(file);
@@ -232,13 +269,25 @@ public class CodeGenerator
             sourceFiles.AddRange(gameVarFiles);
         }
 
+        // Generate TextArray file if text.array module is present
+        if (instancesByModule.ContainsKey("text.array"))
+        {
+            var textArrayFiles = GenerateTextArrayFile(project, instancesByModule["text.array"], progress);
+            sourceFiles.AddRange(textArrayFiles);
+        }
+        else
+        {
+            // No text.array modules - skip text system generation
+            progress?.Report("INFO: No text.array modules found - skipping text system generation.");
+        }
+
         // Generate target-specific main entry point
         // First, generate engine runtime files (engine.h, engine.c) if target provides them
         var engineFiles = _target.GenerateEngineRuntime();
         sourceFiles.AddRange(engineFiles);
         if (engineFiles.Any())
             progress?.Report($"INFO: {engineFiles.Count()} engine runtime files generated.");
-        
+
         // Check if target wants to inject additional files (like splash screens)
         var systemFiles = _target.GenerateSystemFiles();
         sourceFiles.AddRange(systemFiles);
@@ -361,6 +410,51 @@ public class CodeGenerator
     }
 
     /// <summary>
+    /// Generates retruxel_text.h and retruxel_text.c files for all TextArray module instances.
+    /// Uses batch processing to generate a single file containing all text arrays.
+    /// </summary>
+    private List<GeneratedFile> GenerateTextArrayFile(
+        RetruxelProject project,
+        List<IModule> textArrayInstances,
+        IProgress<string>? progress)
+    {
+        var files = new List<GeneratedFile>();
+
+        // Check if there are any strings defined
+        var hasStrings = textArrayInstances.Any(m =>
+        {
+            var json = m.Serialize();
+            var node = JsonNode.Parse(json) as JsonObject;
+            var languagesNode = node?["languages"] as JsonArray;
+            return languagesNode?.Any(langNode =>
+            {
+                var langObj = langNode as JsonObject;
+                var stringsNode = langObj?["strings"] as JsonArray;
+                return stringsNode?.Any(s => !string.IsNullOrEmpty(s?.GetValue<string>())) ?? false;
+            }) ?? false;
+        });
+
+        if (!hasStrings)
+        {
+            progress?.Report("INFO: text.array modules exist but contain no strings - skipping text system generation.");
+            return files;
+        }
+
+        // Use ModuleRenderer.RenderBatch for batch module processing
+        var allInstancesJson = textArrayInstances.Select(m => m.Serialize()).ToList();
+        var batchFiles = _moduleRenderer.RenderBatch(
+            "text.array",
+            project.TargetId,
+            allInstancesJson,
+            project.ProjectPath);
+
+        files.AddRange(batchFiles);
+        progress?.Report($"INFO: retruxel_text.c generated with {textArrayInstances.Count} text array(s).");
+
+        return files;
+    }
+
+    /// <summary>
     /// Validates tile conflicts between tilemap and text.display modules.
     /// SMS_autoSetUpTextRenderer() loads ASCII font into tiles 0-255.
     /// If tilemap startTile < 256, it will overwrite the font.
@@ -475,25 +569,6 @@ public class CodeGenerator
     }
 
     /// <summary>
-    /// Discovers the IFontConverter implementation for the current target.
-    /// Returns a default converter if none found.
-    /// </summary>
-    private IFontConverter DiscoverFontConverter()
-    {
-        var targetAssembly = _target.GetType().Assembly;
-        var converterType = targetAssembly.GetTypes()
-            .FirstOrDefault(t => typeof(IFontConverter).IsAssignableFrom(t) && !t.IsInterface && !t.IsAbstract);
-        
-        if (converterType is not null)
-        {
-            return (IFontConverter)Activator.CreateInstance(converterType)!;
-        }
-        
-        // Fallback: return a simple pass-through converter
-        return new DefaultFontConverter();
-    }
-
-    /// <summary>
     /// Calculates the first free tile slot after all graphic tiles.
     /// Used as the starting point for the compact font.
     /// </summary>
@@ -507,30 +582,17 @@ public class CodeGenerator
     /// <summary>
     /// Formats a byte array as a C array initializer string.
     /// Example: "0x3C, 0x42, 0x42, 0x3C"
+    /// Returns "0x00" for empty arrays to prevent C compilation errors.
     /// </summary>
     private static string FormatByteArray(byte[] data)
     {
-        if (data.Length == 0) return "";
-        
+        if (data.Length == 0) return "0x00";
+
         var chunks = data.Select((b, i) => new { Byte = b, Index = i })
             .GroupBy(x => x.Index / 16)
             .Select(g => string.Join(", ", g.Select(x => $"0x{x.Byte:X2}")));
-        
-        return string.Join(",\n    ", chunks);
-    }
 
-    /// <summary>
-    /// Default font converter that passes through raw bitmap data.
-    /// Used as fallback when target doesn't provide IFontConverter.
-    /// </summary>
-    private class DefaultFontConverter : IFontConverter
-    {
-        public string TargetId => "default";
-        
-        public byte[] ConvertGlyphs(IEnumerable<(char Character, byte[] Bitmap)> glyphs)
-        {
-            return glyphs.SelectMany(g => g.Bitmap).ToArray();
-        }
+        return string.Join(",\n    ", chunks);
     }
 
     /// <summary>

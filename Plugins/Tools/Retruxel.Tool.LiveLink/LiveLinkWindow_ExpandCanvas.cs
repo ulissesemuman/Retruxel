@@ -36,11 +36,11 @@ public partial class LiveLinkWindow
             }
 
             LogInfo($"Nametable: {_lastCapture.Nametable.Length} tiles = {nametableBytes.Length} bytes");
-            
+
             // Debug: Log first 32 bytes of nametable
             var nametablePreview = string.Join(" ", nametableBytes.Take(32).Select(b => $"{b:X2}"));
             LogInfo($"Nametable preview: {nametablePreview}");
-            
+
             // Debug: Count unique tiles in nametable
             var uniqueTiles = _lastCapture.Nametable.Distinct().Count();
             LogInfo($"Unique tiles in nametable: {uniqueTiles}/{_lastCapture.Nametable.Length}");
@@ -50,18 +50,20 @@ public partial class LiveLinkWindow
             if (!string.IsNullOrEmpty(_lastRomPath) && File.Exists(_lastRomPath))
             {
                 LogInfo($"Reading ROM file: {Path.GetFileName(_lastRomPath)}");
-                
+
                 try
                 {
                     // Read and immediately release the file
                     using (var fileStream = new FileStream(_lastRomPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
                     {
                         romData = new byte[fileStream.Length];
-                        await fileStream.ReadAsync(romData, 0, (int)fileStream.Length);
+                        int bytesRead = await fileStream.ReadAsync(romData.AsMemory(0, (int)fileStream.Length));
+                        if (bytesRead != romData.Length)
+                            LogWarning($"Expected {romData.Length} bytes, read {bytesRead} bytes");
                     }
-                    
+
                     LogSuccess($"✓ Read {romData.Length} bytes from ROM file");
-                    
+
                     // Debug: Log first 32 bytes of ROM
                     var romPreview = string.Join(" ", romData.Take(32).Select(b => $"{b:X2}"));
                     LogInfo($"ROM preview: {romPreview}");

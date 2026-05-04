@@ -1,9 +1,9 @@
 using Retruxel.Core.Interfaces;
 using Retruxel.Core.Models;
 using Retruxel.Core.Services;
+using Retruxel.Lib.ImageProcessing;
 using Retruxel.Tool.LiveLink.Emulators;
 using Retruxel.Tool.LiveLink.Pipelines;
-using Retruxel.Lib.ImageProcessing;
 using Retruxel.Tool.LiveLink.Services;
 using System.Diagnostics;
 using System.IO;
@@ -413,7 +413,7 @@ public partial class LiveLinkWindow : Window
             TxtStatus.Foreground = Brushes.Orange;
 
             // Try to reconnect
-            bool reconnected = await _connection.ConnectAsync(_lastHost, _lastPort);
+            bool reconnected = await _connection.ConnectAsync(_lastHost ?? "127.0.0.1", _lastPort);
 
             if (reconnected)
             {
@@ -1079,10 +1079,11 @@ public partial class LiveLinkWindow : Window
             }
 
             // Determine target color count based on destination target
+            string? targetId = null;
             int targetColorCount = 16; // Default
             if (_input?.TryGetValue("targetId", out var targetObj) == true)
             {
-                var targetId = targetObj?.ToString();
+                targetId = targetObj?.ToString();
                 targetColorCount = targetId switch
                 {
                     "sms" => 32,  // 2 palettes × 16 colors (hardware max)
@@ -1096,11 +1097,13 @@ public partial class LiveLinkWindow : Window
             }
 
             // Open preview window - it will handle optimization internally
+            var targetForPreview = TargetRegistry.GetTargetById(targetId ?? "sms");
+            
             var previewWindow = new Windows.PaletteOptimizationWindow(
                 previewBitmap,
                 targetColorCount,
                 ChkUseLab.IsChecked == true,
-                _input?.TryGetValue("targetId", out var targetIdForPreview) == true ? targetIdForPreview?.ToString() ?? "sms" : "sms");
+                targetForPreview);
 
             previewWindow.Owner = this;
 

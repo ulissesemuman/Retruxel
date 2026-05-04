@@ -13,9 +13,9 @@ internal static class EventCallGenerator
     {
         var modulesWithUpdate = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
         {
-            "animation", 
-            "entity", 
-            "enemy", 
+            "animation",
+            "entity",
+            "enemy",
             "scroll"
         };
 
@@ -66,7 +66,7 @@ internal static class EventCallGenerator
 
         return inputCalls;
     }
-    
+
     public static List<object> GenerateEventCalls(
         List<GeneratedFile> files,
         Dictionary<IModule, string> triggersByElement,
@@ -75,7 +75,7 @@ internal static class EventCallGenerator
     {
         var calls = new List<object>();
         var processedFiles = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        
+
         var graphicModuleIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
         {
             "tilemap", "sprite", "text.display", "palette", "background", "animation"
@@ -91,14 +91,14 @@ internal static class EventCallGenerator
             var moduleId = file.SourceModuleId;
             if (string.IsNullOrEmpty(moduleId))
                 continue;
-                
+
             if (moduleId.Equals("retruxel.core", StringComparison.OrdinalIgnoreCase) ||
                 moduleId.Equals("retruxel.splash", StringComparison.OrdinalIgnoreCase) ||
                 moduleId.Equals("retruxel.engine", StringComparison.OrdinalIgnoreCase))
                 continue;
 
-            var hasTargetTrigger = triggersByElement.Any(kvp => 
-                kvp.Key.ModuleId == moduleId && 
+            var hasTargetTrigger = triggersByElement.Any(kvp =>
+                kvp.Key.ModuleId == moduleId &&
                 kvp.Value.Equals(targetTrigger, StringComparison.OrdinalIgnoreCase));
 
             if (!hasTargetTrigger)
@@ -111,7 +111,7 @@ internal static class EventCallGenerator
             var isGraphic = graphicModuleIds.Contains(moduleId);
             var isTextDisplay = moduleId.Equals("text.display", StringComparison.OrdinalIgnoreCase);
             var isPalette = moduleId.Equals("palette", StringComparison.OrdinalIgnoreCase);
-            
+
             allCalls.Add((file.FileName, moduleId, baseName, isGraphic, isTextDisplay, isPalette));
             processedFiles.Add(file.FileName);
         }

@@ -95,14 +95,14 @@ public partial class CanvasExpansionWindow : Window
             System.Diagnostics.Debug.WriteLine($"[CanvasExpansion] Nametable size: {_currentNametable.Length} bytes");
             System.Diagnostics.Debug.WriteLine($"[CanvasExpansion] ROM data: {(_romData != null ? $"{_romData.Length} bytes" : "null")}");
             System.Diagnostics.Debug.WriteLine($"[CanvasExpansion] RAM data: {(_ramData != null ? $"{_ramData.Length} bytes" : "null")}");
-            
+
             // Log first 64 bytes of nametable
             var nametablePreview = string.Join(" ", _currentNametable.Take(64).Select(b => $"{b:X2}"));
             System.Diagnostics.Debug.WriteLine($"[CanvasExpansion] Nametable preview: {nametablePreview}");
-            
+
             // Try ROM first, then RAM
             Result = null;
-            
+
             if (_romData != null)
             {
                 System.Diagnostics.Debug.WriteLine($"[CanvasExpansion] Trying ROM search...");
@@ -117,7 +117,7 @@ public partial class CanvasExpansionWindow : Window
                     false);
                 System.Diagnostics.Debug.WriteLine($"[CanvasExpansion] ROM search result: {(Result.Success ? "SUCCESS" : "FAILED")} (confidence: {Result.Confidence:P1})");
             }
-            
+
             if ((Result == null || !Result.Success) && _ramData != null)
             {
                 System.Diagnostics.Debug.WriteLine($"[CanvasExpansion] Trying RAM search...");

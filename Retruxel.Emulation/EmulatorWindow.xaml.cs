@@ -1,3 +1,5 @@
+using Microsoft.Win32;
+using Retruxel.Emulation.LibRetro;
 using System;
 using System.IO;
 using System.Linq;
@@ -7,8 +9,6 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
-using Microsoft.Win32;
-using Retruxel.Emulation.LibRetro;
 
 namespace Retruxel.Emulation;
 
@@ -25,7 +25,7 @@ public partial class EmulatorWindow : Window
     public EmulatorWindow()
     {
         InitializeComponent();
-        
+
         BtnLoadCore.Click += BtnLoadCore_Click;
         BtnLoadRom.Click += BtnLoadRom_Click;
         BtnRun.Click += BtnRun_Click;
@@ -61,7 +61,7 @@ public partial class EmulatorWindow : Window
 
             string coreName = Marshal.PtrToStringAnsi(_core.SystemInfo.library_name) ?? "Unknown";
             string coreVersion = Marshal.PtrToStringAnsi(_core.SystemInfo.library_version) ?? "Unknown";
-            
+
             TxtStatus.Text = $"Loaded: {coreName} v{coreVersion}";
             BtnLoadRom.IsEnabled = true;
         }
@@ -102,7 +102,7 @@ public partial class EmulatorWindow : Window
             _screenBitmap = new WriteableBitmap(
                 (int)width, (int)height, 96, 96,
                 PixelFormats.Bgra32, null);
-            
+
             ImgScreen.Source = _screenBitmap;
 
             TxtStatus.Text = $"ROM loaded: {Path.GetFileName(dialog.FileName)} | {width}x{height} @ {fps:F2} FPS";
@@ -125,7 +125,7 @@ public partial class EmulatorWindow : Window
         _isRunning = true;
         BtnRun.IsEnabled = false;
         BtnPause.IsEnabled = true;
-        
+
         _runCts = new CancellationTokenSource();
         Task.Run(() => EmulationLoop(_runCts.Token));
     }
@@ -200,16 +200,16 @@ public partial class EmulatorWindow : Window
     private void EmulationLoop(CancellationToken ct)
     {
         double targetFrameTime = 1000.0 / _core!.AvInfo.timing.fps;
-        
+
         while (_isRunning && !ct.IsCancellationRequested)
         {
             var startTime = DateTime.Now;
-            
+
             _core.Run();
-            
+
             var elapsed = (DateTime.Now - startTime).TotalMilliseconds;
             var sleepTime = (int)(targetFrameTime - elapsed);
-            
+
             if (sleepTime > 0)
                 Thread.Sleep(sleepTime);
         }

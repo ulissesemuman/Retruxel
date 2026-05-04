@@ -17,15 +17,15 @@ public class TextAnalyzer
         int graphicTilesEnd)
     {
         var allStrings = new List<string>();
-        
+
         foreach (var module in modules)
         {
             if (module.ModuleId != "text.array") continue;
-            
+
             var json = module.Serialize();
             var doc = System.Text.Json.JsonDocument.Parse(json);
             var root = doc.RootElement;
-            
+
             if (root.TryGetProperty("languages", out var languages))
             {
                 foreach (var lang in languages.EnumerateArray())
@@ -51,10 +51,10 @@ public class TextAnalyzer
         }
 
         var sortedChars = uniqueChars.OrderBy(c => (int)c).ToList();
-        
+
         var missingChars = new List<char>();
         var glyphsToConvert = new List<(char, byte[])>();
-        
+
         foreach (var c in sortedChars)
         {
             var glyph = DefaultFont.GetGlyph(c);
@@ -69,11 +69,11 @@ public class TextAnalyzer
         }
 
         var tileData = fontConverter.ConvertGlyphs(glyphsToConvert);
-        
+
         var translationTable = new byte[256];
         for (int i = 0; i < 256; i++)
             translationTable[i] = 255;
-        
+
         for (int i = 0; i < sortedChars.Count; i++)
         {
             var c = sortedChars[i];

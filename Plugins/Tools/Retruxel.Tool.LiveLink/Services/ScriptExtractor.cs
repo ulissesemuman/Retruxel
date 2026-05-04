@@ -27,9 +27,9 @@ public static class ScriptExtractor
     private static string ExtractScript(string scriptName)
     {
         Directory.CreateDirectory(ScriptsPath);
-        
+
         var outputPath = Path.Combine(ScriptsPath, scriptName);
-        
+
         // Always extract to ensure latest version
         var assembly = Assembly.GetExecutingAssembly();
         var resourceName = $"Retruxel.Tool.LiveLink.Resources.{scriptName}";

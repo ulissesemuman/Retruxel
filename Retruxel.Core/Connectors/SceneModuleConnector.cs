@@ -34,7 +34,7 @@ public class SceneModuleConnector : IToolConnector
         {
             PropertyNamingPolicy = JsonNamingPolicy.CamelCase
         });
-        
+
         System.Diagnostics.Debug.WriteLine($"[SceneModuleConnector] Serialized JSON: {moduleJson}");
 
         var moduleState = JsonDocument.Parse(moduleJson).RootElement.Clone();

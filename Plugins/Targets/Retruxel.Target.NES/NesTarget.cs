@@ -118,6 +118,9 @@ public class NesTarget : ITarget
         return new Retruxel.Toolchain.ToolchainAdapter(builder);
     }
 
+    public IFontConverter GetFontConverter()
+        => null!; // TODO: Implement NES font converter
+
     public IEnumerable<string> GetRequiredToolchainBinaries() =>
     [
         Path.Combine("compilers", "cc65", "bin", "cc65.exe"),

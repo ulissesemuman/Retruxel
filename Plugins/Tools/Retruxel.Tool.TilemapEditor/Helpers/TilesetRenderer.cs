@@ -34,6 +34,14 @@ public class TilesetRenderer
         _rows = bitmap.PixelHeight / tileSize;
     }
 
+    public void LoadFromBitmap(BitmapSource bitmap, int tileSize)
+    {
+        _tileSize = tileSize;
+        _tilesetImage = bitmap;
+        _columns = bitmap.PixelWidth / tileSize;
+        _rows = bitmap.PixelHeight / tileSize;
+    }
+
     public BitmapSource ExtractTile(int tileId)
     {
         if (_tilesetImage == null) return null!;

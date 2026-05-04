@@ -7,6 +7,9 @@
 {{#if hasGameVars}}
 #include "gamevars.h"
 {{/if}}
+{{#if hasTextArray}}
+#include "retruxel_text.h"
+{{/if}}
 {{#each headers}}
 {{this}}
 {{/each}}
@@ -29,9 +32,13 @@ void main(void) {
     // Initialize engine
     Engine_Init();
 
-{{#if hasTextDisplay}}
-    // Initialize compact font for text rendering
+{{#if hasTextArray}}
+    // Initialize compact font for text rendering (font8x8-based)
     retruxel_font_init();
+{{/if}}
+{{#if hasTextDisplay}}
+    // Initialize legacy text display (SMS_autoSetUpTextRenderer)
+    SMS_autoSetUpTextRenderer();
 {{/if}}
 
     // OnStart: Project-level modules (persist across scenes)

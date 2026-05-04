@@ -39,7 +39,7 @@ public partial class TilemapEditorWindow
             Background = Brushes.Transparent,
             IsHitTestVisible = false
         };
-        
+
         // Add to tilemap canvas (will be positioned in RenderCanvas)
         if (TilemapCanvas.Parent is ScrollViewer sv)
         {
@@ -132,12 +132,12 @@ public partial class TilemapEditorWindow
             for (int x = minX; x <= maxX; x++)
             {
                 int tileId = y * TILESET_COLUMNS + x;
-                
+
                 // Get actual tile count from asset
                 string? assetId = CmbTilesetAsset.SelectedItem?.ToString();
                 var asset = _project.Assets.FirstOrDefault(a => a.Id == assetId);
                 int maxTiles = asset?.TileCount ?? _tilesetRenderer.TotalTiles;
-                
+
                 if (tileId < maxTiles)
                     _selectedTileIds.Add(tileId);
             }

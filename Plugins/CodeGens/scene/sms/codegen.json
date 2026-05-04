@@ -17,10 +17,13 @@
       "transform": "upper",
       "default": "MAIN"
     },
-    "paletteInits": {
-      "from": "sceneModules",
-      "filter": "moduleId == 'palette'",
-      "transform": "initCall"
+    "palette0Hex": {
+      "from": "scenePaletteSlot",
+      "slotIndex": 0
+    },
+    "palette1Hex": {
+      "from": "scenePaletteSlot",
+      "slotIndex": 1
     },
     "tilemapInits": {
       "from": "sceneModules",
@@ -34,7 +37,7 @@
     },
     "hasGraphicModules": {
       "from": "sceneModules",
-      "filter": "moduleId == 'palette' || moduleId == 'tilemap' || (moduleId == 'text.display' && !dynamic)",
+      "filter": "moduleId == 'tilemap' || (moduleId == 'text.display' && !dynamic)",
       "transform": "hasAny"
     }
   }

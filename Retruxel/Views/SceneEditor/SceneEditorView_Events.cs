@@ -1,11 +1,4 @@
-using Retruxel.Core.Interfaces;
-using Retruxel.Core.Models;
-using Retruxel.Core.Services;
-using Retruxel.Services;
-using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Input;
-using System.Windows.Media;
 
 namespace Retruxel.Views;
 

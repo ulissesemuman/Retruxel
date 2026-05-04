@@ -4,7 +4,6 @@ using Retruxel.Core.Services;
 using Retruxel.Services;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Input;
 using System.Windows.Media;
 
 namespace Retruxel.Views;
@@ -307,7 +306,7 @@ public partial class SceneEditorView
             if (previousValue == newValue) return;
 
             var displayName = module.DisplayName;
-            
+
             // Create state change for parameter change (Small change — marks dirty only)
             var change = new StateChange
             {
@@ -384,7 +383,7 @@ public partial class SceneEditorView
                     UpdateElementPosition(element);
                 }
                 RefreshElementVisual(element);
-                
+
                 // Mark dirty on text change (real-time feedback)
                 _projectManager?.MarkDirty();
             }

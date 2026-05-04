@@ -1,10 +1,10 @@
+using Retruxel.Core.Models;
+using Retruxel.Core.Services;
+using Retruxel.Services;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
-using Retruxel.Core.Models;
-using Retruxel.Core.Services;
-using Retruxel.Services;
 
 namespace Retruxel.Views;
 
@@ -100,7 +100,7 @@ public partial class SceneEditorView
                 var adjustedY = canvasPos.Y - _dragOffset.Y;
 
                 bool isLogicModule = _moduleRegistry?.LogicModules.ContainsKey(element.ModuleId) ?? false;
-                
+
                 int tileX, tileY;
                 if (isLogicModule)
                 {
@@ -191,6 +191,22 @@ public partial class SceneEditorView
 
     private void AddModuleToCanvas(string moduleId, int tileX, int tileY)
     {
+        // Skip obsolete palette module - palettes are now scene-level properties
+        if (moduleId == "palette")
+        {
+            MessageBox.Show(
+                "Palettes are now scene-level properties, not draggable modules.\n\n" +
+                "To edit palette colors:\n" +
+                "1. Go to Structure panel (left sidebar)\n" +
+                "2. Find 'SCENE: [name]' section\n" +
+                "3. Click EDIT button next to palette slot\n\n" +
+                "Each scene has fixed palette slots defined by the target.",
+                "Palette System Changed",
+                MessageBoxButton.OK,
+                MessageBoxImage.Information);
+            return;
+        }
+
         // Validate HUD module support
         if (moduleId == "hud" && _target is not null)
         {
@@ -226,9 +242,11 @@ public partial class SceneEditorView
 
         var element = CreateSceneElement(moduleId, tileX, tileY);
         var displayName = element.Module is Core.Interfaces.IModule m ? m.DisplayName : moduleId;
-        
-        // Determine destination based on module type
-        var destination = GetModuleDestination(moduleId);
+
+        // Determine destination based on module scope
+        var scope = GetModuleScope(moduleId);
+        var destination = scope == ModuleScope.Project ? "PROJECT" :
+                         (moduleId == "entity" || moduleId == "enemy" || moduleId == "scroll") ? "CANVAS" : "SCENE";
 
         var change = new StateChange
         {
@@ -238,7 +256,7 @@ public partial class SceneEditorView
             {
                 if (element.Module is Core.Interfaces.IModule mod && !string.IsNullOrEmpty(mod.VisualToolId))
                 {
-                    Dispatcher.InvokeAsync(() => OpenVisualToolForElement(element), 
+                    Dispatcher.InvokeAsync(() => OpenVisualToolForElement(element),
                         System.Windows.Threading.DispatcherPriority.Background);
                 }
             },
@@ -248,20 +266,17 @@ public partial class SceneEditorView
                 add: () =>
                 {
                     _elements.Add(element);
-                    
+
                     // Only add to canvas if it's a canvas module (entity, enemy, scroll)
-                    if (destination == "CANVAS")
-                    {
-                        var visual = BuildCanvasElement(element);
-                        Canvas.SetLeft(visual, tileX * 8);
-                        Canvas.SetTop(visual, tileY * 8);
-                        SceneCanvas.Children.Add(visual);
-                        element.CanvasVisual = visual;
-                    }
-                    
+                    var visual = BuildCanvasElement(element);
+                    Canvas.SetLeft(visual, tileX * 8);
+                    Canvas.SetTop(visual, tileY * 8);
+                    SceneCanvas.Children.Add(visual);
+                    element.CanvasVisual = visual;
+
                     // Set default trigger based on destination
                     element.Trigger = destination == "PROJECT" ? "OnStart" : "OnVBlank";
-                    
+
                     SelectElement(element);
                     RefreshModulePalette();
                     RefreshStructurePanel();
@@ -276,5 +291,19 @@ public partial class SceneEditorView
         };
 
         _stateManager?.ApplyChange(change);
+    }
+
+    private ModuleScope GetModuleScope(string moduleId)
+    {
+        if (_moduleRegistry is null) return ModuleScope.Scene;
+
+        if (_moduleRegistry.GraphicModules.TryGetValue(moduleId, out var gm))
+            return gm.DefaultScope;
+        if (_moduleRegistry.LogicModules.TryGetValue(moduleId, out var lm))
+            return lm.DefaultScope;
+        if (_moduleRegistry.AudioModules.TryGetValue(moduleId, out var am))
+            return am.DefaultScope;
+
+        return ModuleScope.Scene;
     }
 }

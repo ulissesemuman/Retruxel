@@ -10,7 +10,7 @@ public class SceneCanvasTransform
     public double PanOffsetX { get; set; }
     public double PanOffsetY { get; set; }
     public double ZoomLevel { get; set; } = 1.0;
-    
+
     public const double MinZoom = 0.25;
     public const double MaxZoom = 4.0;
     public const double ZoomStep = 0.1;
@@ -22,7 +22,7 @@ public class SceneCanvasTransform
     {
         var oldZoom = ZoomLevel;
         ZoomLevel = Math.Clamp(ZoomLevel + delta, MinZoom, MaxZoom);
-        
+
         // Adjust pan to keep zoom centered on cursor
         var zoomRatio = ZoomLevel / oldZoom;
         PanOffsetX = center.X - (center.X - PanOffsetX) * zoomRatio;

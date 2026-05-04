@@ -142,4 +142,35 @@ public interface ITarget
     /// CodeGen uses this to generate the correct hud_init() and hud_update() implementations.
     /// </summary>
     HudStrategy GetHudStrategy() => HudStrategy.None;
+
+    /// <summary>
+    /// Returns the maximum number of palettes that can be assigned to a single tilemap.
+    /// Used by SceneEditor to validate palette assignments.
+    /// Example: SMS returns 2 (one for each half of the screen).
+    /// </summary>
+    int GetMaxPalettesPerTilemap() => int.MaxValue;
+
+    /// <summary>
+    /// Number of palette slots available per scene on this hardware.
+    /// SMS = 2, GG = 2, NES = 8 (4 BG + 4 sprite), SNES = 8
+    /// </summary>
+    int GetPaletteSlotCount() => 2;
+
+    /// <summary>
+    /// Number of colors per palette slot.
+    /// SMS = 16, NES = 4, SNES = 16
+    /// </summary>
+    int GetColorsPerSlot() => 16;
+
+    /// <summary>
+    /// Returns the type of a specific palette slot.
+    /// Used by the editor to label slots correctly.
+    /// </summary>
+    PaletteSlotType GetPaletteSlotType(int slotIndex) => PaletteSlotType.Shared;
+
+    /// <summary>
+    /// Returns the font converter for this target.
+    /// Converts font8x8 1bpp glyphs to target-specific tile format.
+    /// </summary>
+    IFontConverter GetFontConverter();
 }

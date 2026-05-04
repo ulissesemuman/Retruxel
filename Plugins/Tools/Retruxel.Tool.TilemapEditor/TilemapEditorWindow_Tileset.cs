@@ -1,4 +1,5 @@
 using Retruxel.Core.Models;
+using SkiaSharp;
 using System.IO;
 using System.Windows;
 using System.Windows.Controls;
@@ -42,14 +43,31 @@ public partial class TilemapEditorWindow
                 return;
             }
 
-            _tilesetRenderer.LoadTileset(absPath, _target.Specs.TileWidth);
-            
+            // Load indexed PNG if available
+            if (asset.IsIndexed)
+            {
+                _indexedData = _indexedPngService.Read(absPath);
+                if (_indexedData != null)
+                {
+                    RefreshTilesetPreview();
+                }
+                else
+                {
+                    // Fallback to regular loading if indexed read fails
+                    _tilesetRenderer.LoadTileset(absPath, _target.Specs.TileWidth);
+                }
+            }
+            else
+            {
+                _tilesetRenderer.LoadTileset(absPath, _target.Specs.TileWidth);
+            }
+
             // Auto-calculate columns for import
             int imageWidth = asset.SourceWidth;
             int tileSize = _target.Specs.TileWidth;
             int calculatedColumns = imageWidth / tileSize;
             TxtImportColumns.Text = calculatedColumns.ToString();
-            
+
             PopulateTilesetGrid();
             RenderCanvas();
         }
@@ -66,12 +84,12 @@ public partial class TilemapEditorWindow
         TilesetGrid.Items.Clear();
 
         int tileSize = _target.Specs.TileWidth;
-        
+
         // Use asset.TileCount instead of _tilesetRenderer.TotalTiles to avoid showing padding tiles
         string? assetId = CmbTilesetAsset.SelectedItem?.ToString();
         var asset = _project.Assets.FirstOrDefault(a => a.Id == assetId);
         int totalTiles = asset?.TileCount ?? _tilesetRenderer.TotalTiles;
-        
+
         int scaledSize = (int)(tileSize * _tileZoomLevel);
 
         for (int tileId = 0; tileId < totalTiles; tileId++)
@@ -174,5 +192,26 @@ public partial class TilemapEditorWindow
     {
         _tileZoomLevel = 2.0;
         PopulateTilesetGrid();
+    }
+
+    private void RefreshTilesetPreview()
+    {
+        if (_indexedData == null || _currentScene == null) return;
+
+        // Validate palette slot index
+        if (_selectedPaletteSlot >= _currentScene.PaletteSlots.Count)
+        {
+            System.Diagnostics.Debug.WriteLine($"WARNING: Selected palette slot {_selectedPaletteSlot} is out of range (scene has {_currentScene.PaletteSlots.Count} slots)");
+            _selectedPaletteSlot = 0;
+        }
+
+        var slot = _currentScene.PaletteSlots[_selectedPaletteSlot];
+        var preview = _indexedPngService.RenderPreview(_indexedData, slot.Colors, scale: 1);
+        
+        // Convert SKBitmap to BitmapSource
+        var bitmapSource = ConvertSkBitmapToBitmapSource(preview);
+        
+        // Load preview into tileset renderer
+        _tilesetRenderer.LoadFromBitmap(bitmapSource, _target.Specs.TileWidth);
     }
 }

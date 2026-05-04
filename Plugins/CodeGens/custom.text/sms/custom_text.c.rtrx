@@ -1,0 +1,20 @@
+// @retruxel:block header
+// Custom Text Module — User Defined
+#ifndef CUSTOM_TEXT_{{instanceId}}_H
+#define CUSTOM_TEXT_{{instanceId}}_H
+
+void custom_text_{{instanceId}}_init(void);
+
+#endif
+// @retruxel:end
+
+// @retruxel:block source
+// Custom Text Module — User Defined
+#include "SMSlib.h"
+#include "custom_text_{{instanceId}}.h"
+
+void custom_text_{{instanceId}}_init(void) {
+    SMS_setNextTileatXY({{x}}, {{y}});
+    SMS_print("{{text}}");
+}
+// @retruxel:end

@@ -67,7 +67,7 @@ internal static class ModuleFilterProcessor
                 {
                     var left = tokens[0].Trim();
                     var right = tokens[1].Trim().Trim('\'', '"');
-                    
+
                     if (left == "moduleId")
                         return moduleId.Equals(right, StringComparison.OrdinalIgnoreCase);
                 }
@@ -88,7 +88,7 @@ internal static class ModuleFilterProcessor
                 {
                     var left = tokens[0].Trim();
                     var right = tokens[1].Trim().Trim('\'', '"');
-                    
+
                     if (left == "moduleId")
                         return module.ModuleId.Equals(right, StringComparison.OrdinalIgnoreCase);
                 }

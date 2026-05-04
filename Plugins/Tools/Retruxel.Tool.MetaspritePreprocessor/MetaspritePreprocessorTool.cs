@@ -26,25 +26,25 @@ namespace Retruxel.Tool.MetaspritePreprocessor;
 /// </summary>
 public class MetaspritePreprocessorTool : ITool
 {
-    public string ToolId      => "metasprite_preprocessor";
+    public string ToolId => "metasprite_preprocessor";
     public string DisplayName => "Metasprite Preprocessor";
     public string Description => "Processes multi-tile sprite frames and generates flat C arrays with per-frame offsets";
-    public string Category    => "Graphics";
-    public string? TargetId   => null;
-    public object? Icon       => null;
-    public string? Shortcut   => null;
-    public bool IsStandalone  => false;
+    public string Category => "Graphics";
+    public string? TargetId => null;
+    public object? Icon => null;
+    public string? Shortcut => null;
+    public bool IsStandalone => false;
     public bool RequiresProject => false;
 
     public Dictionary<string, object> Execute(Dictionary<string, object> input)
     {
         var frames = GetFrames(input);
 
-        var frameOffsetsList    = new List<int>();
+        var frameOffsetsList = new List<int>();
         var frameTileCountsList = new List<int>();
-        var tileIndicesList     = new List<int>();
-        var offsetsXList        = new List<int>();
-        var offsetsYList        = new List<int>();
+        var tileIndicesList = new List<int>();
+        var offsetsXList = new List<int>();
+        var offsetsYList = new List<int>();
 
         int cursor = 0;
         int maxTilesPerFrame = 0;
@@ -68,16 +68,16 @@ public class MetaspritePreprocessorTool : ITool
 
         return new Dictionary<string, object>
         {
-            ["frameCount"]       = frames.Count,
-            ["tileEntryCount"]   = cursor,
+            ["frameCount"] = frames.Count,
+            ["tileEntryCount"] = cursor,
             ["maxTilesPerFrame"] = maxTilesPerFrame,
 
             // C array strings — ready to drop into .rtrx templates
-            ["frameOffsets"]    = FormatIntArray(frameOffsetsList),
+            ["frameOffsets"] = FormatIntArray(frameOffsetsList),
             ["frameTileCounts"] = FormatIntArray(frameTileCountsList),
-            ["tileIndices"]     = FormatIntArray(tileIndicesList),
-            ["offsetsX"]        = FormatIntArray(offsetsXList),
-            ["offsetsY"]        = FormatIntArray(offsetsYList)
+            ["tileIndices"] = FormatIntArray(tileIndicesList),
+            ["offsetsX"] = FormatIntArray(offsetsXList),
+            ["offsetsY"] = FormatIntArray(offsetsYList)
         };
     }
 
@@ -114,8 +114,8 @@ public class MetaspritePreprocessorTool : ITool
                 frameEntries.Add(new TileEntry
                 {
                     TileIndex = GetInt(dict, "tileIndex"),
-                    OffsetX   = GetInt(dict, "offsetX"),
-                    OffsetY   = GetInt(dict, "offsetY")
+                    OffsetX = GetInt(dict, "offsetX"),
+                    OffsetY = GetInt(dict, "offsetY")
                 });
             }
 
@@ -133,17 +133,17 @@ public class MetaspritePreprocessorTool : ITool
         if (!dict.TryGetValue(key, out var v)) return def;
         return v switch
         {
-            int i    => i,
-            long l   => (int)l,
+            int i => i,
+            long l => (int)l,
             double d => (int)d,
-            _        => def
+            _ => def
         };
     }
 
     private class TileEntry
     {
         public int TileIndex { get; set; }
-        public int OffsetX   { get; set; }
-        public int OffsetY   { get; set; }
+        public int OffsetX { get; set; }
+        public int OffsetY { get; set; }
     }
 }

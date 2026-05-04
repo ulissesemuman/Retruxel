@@ -28,19 +28,19 @@ public class ToolRegistry
 
         var toolsDir = Path.Combine(pluginsPath, "Tools");
         var targetsDir = Path.Combine(pluginsPath, "Targets");
-        
+
         var dllFiles = new List<string>();
-        
+
         if (Directory.Exists(toolsDir))
         {
             dllFiles.AddRange(Directory.GetFiles(toolsDir, "*.dll", SearchOption.AllDirectories));
         }
-        
+
         if (Directory.Exists(targetsDir))
         {
             dllFiles.AddRange(Directory.GetFiles(targetsDir, "*.dll", SearchOption.AllDirectories));
         }
-        
+
         progress?.Report($"TOOLS_DISCOVERY: Found {dllFiles.Count} DLL files in Tools and Targets directories");
 
         // Pre-load Retruxel.SDK.dll if present (dependency for most tools)

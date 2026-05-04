@@ -2,7 +2,6 @@ using Retruxel.Core.Interfaces;
 using System.IO;
 using System.Net.Sockets;
 using System.Text;
-using System.Text.Json;
 
 namespace Retruxel.Tool.LiveLink.Emulators;
 
@@ -22,12 +21,12 @@ public class MesenConnection : IEmulatorConnection
     public string DisplayName => "Mesen 2";
     public string[] SupportedTargets => new[] { "sms", "gg", "sg1000", "nes", "snes" };
     public bool IsConnected => _client?.Connected == true;
-    
+
     public void SetLogCallback(Action<string> callback)
     {
         _logCallback = callback;
     }
-    
+
     private void Log(string message)
     {
         System.Diagnostics.Debug.WriteLine($"[MesenConnection] {message}");
@@ -51,7 +50,7 @@ public class MesenConnection : IEmulatorConnection
             Log("Message sent, waiting for response...");
 
             var cts = new CancellationTokenSource(5000);
-            
+
             try
             {
                 var response = await _reader.ReadLineAsync(cts.Token);
@@ -83,10 +82,10 @@ public class MesenConnection : IEmulatorConnection
     {
         _reader?.Dispose();
         _reader = null;
-        
+
         _writer?.Dispose();
         _writer = null;
-        
+
         if (_stream != null)
         {
             await _stream.DisposeAsync();
@@ -106,7 +105,7 @@ public class MesenConnection : IEmulatorConnection
         var response = await _reader.ReadLineAsync();
         return Convert.FromBase64String(response ?? "");
     }
-    
+
     public async Task<byte[]> ReadCramAsync(int length)
     {
         if (_writer == null || _reader == null)
@@ -115,15 +114,15 @@ public class MesenConnection : IEmulatorConnection
         Log($"Sending: READ_CRAM:{length}");
         await _writer.WriteLineAsync($"READ_CRAM:{length}");
         Log("Waiting for CRAM data...");
-        
+
         var response = await _reader.ReadLineAsync();
         if (response == null)
             throw new IOException("No response received");
-        
+
         Log($"Received {response.Length} chars (base64)");
         var decoded = Convert.FromBase64String(response);
         Log($"Decoded to {decoded.Length} bytes");
-        
+
         return decoded;
     }
 
@@ -139,7 +138,7 @@ public class MesenConnection : IEmulatorConnection
         var response = await _reader.ReadLineAsync();
         if (response == null)
             throw new IOException("No response received");
-        
+
         Log($"Received {response.Length} chars (base64)");
         var decoded = Convert.FromBase64String(response);
         Log($"Decoded to {decoded.Length} bytes");
@@ -157,7 +156,7 @@ public class MesenConnection : IEmulatorConnection
             LoadedRom = "Unknown"
         };
     }
-    
+
     /// <summary>
     /// Lightweight ping to check if connection is alive.
     /// Returns true if connection is responsive, false otherwise.
@@ -166,14 +165,14 @@ public class MesenConnection : IEmulatorConnection
     {
         if (_writer == null || _reader == null)
             return false;
-        
+
         try
         {
             await _writer.WriteLineAsync("PING");
-            
+
             var cts = new CancellationTokenSource(2000); // 2s timeout
             var response = await _reader.ReadLineAsync(cts.Token);
-            
+
             return response?.Contains("PONG") == true;
         }
         catch
@@ -196,12 +195,12 @@ public class MesenConnection : IEmulatorConnection
         var sizeLine = await _reader.ReadLineAsync();
         if (sizeLine == null || sizeLine == "ERROR")
             throw new IOException("Failed to get screen buffer");
-        
+
         if (!int.TryParse(sizeLine, out int dataSize))
             throw new IOException($"Invalid size received: {sizeLine}");
-        
+
         Log($"Expecting {dataSize} bytes of base64 data");
-        
+
         // Read data in chunks to avoid blocking
         List<byte> dataBuffer = new List<byte>(dataSize + 1);
         byte[] readBuffer = new byte[8192];
@@ -211,27 +210,27 @@ public class MesenConnection : IEmulatorConnection
         {
             int toRead = Math.Min(readBuffer.Length, targetSize - totalRead);
             int bytesRead = await _stream.ReadAsync(readBuffer, 0, toRead);
-            
+
             if (bytesRead == 0)
                 throw new IOException("Connection closed while reading screen buffer");
-            
+
             dataBuffer.AddRange(readBuffer.Take(bytesRead));
             totalRead += bytesRead;
-            
+
             if (totalRead % 65536 == 0) // Log every 64KB
                 Log($"Read {totalRead}/{targetSize} bytes...");
         }
-        
+
         Log($"Read complete: {totalRead} bytes from stream");
-        
+
         // Convert to string (excluding the \n at the end)
         byte[] allData = dataBuffer.ToArray();
         string base64Data = System.Text.Encoding.ASCII.GetString(allData, 0, dataSize);
         Log($"Decoding {base64Data.Length} chars of base64...");
-        
+
         var decoded = Convert.FromBase64String(base64Data);
         Log($"Decoded to {decoded.Length} bytes");
-        
+
         // Debug: Log first pixel of lines 7 and 8
         // Line 7 starts at pixel (0, 56) = offset 57344 (256 * 56 * 4)
         // Line 8 starts at pixel (0, 64) = offset 65536 (256 * 64 * 4)

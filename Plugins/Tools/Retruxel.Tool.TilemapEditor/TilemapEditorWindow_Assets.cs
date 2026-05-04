@@ -7,7 +7,7 @@ public partial class TilemapEditorWindow
 {
     private void BtnImportAsset_Click(object sender, RoutedEventArgs e)
     {
-        var assetImporter = new Tool.AssetImporter.AssetImporterWindow(_target, _projectPath)
+        var assetImporter = new Tool.AssetImporter.AssetImporterWindow(_target, _projectPath, _currentScene)
         {
             Owner = this
         };
@@ -25,15 +25,6 @@ public partial class TilemapEditorWindow
             }
 
             _project.Assets.Add(asset);
-
-            var result = MessageBox.Show(
-                $"Asset '{asset.Id}' imported successfully.\n\nDo you want to create a palette from this asset's colors?",
-                "Create Palette",
-                MessageBoxButton.YesNo,
-                MessageBoxImage.Question);
-
-            if (result == MessageBoxResult.Yes)
-                OpenPaletteEditorForAsset(asset);
 
             LoadAssets();
 

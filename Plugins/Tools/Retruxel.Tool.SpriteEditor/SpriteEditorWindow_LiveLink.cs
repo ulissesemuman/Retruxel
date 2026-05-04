@@ -11,7 +11,7 @@ public partial class SpriteEditorWindow
 
         var sceneEditorType = _sceneEditor.GetType();
         var updateMethod = sceneEditorType.GetMethod("RefreshModulePreview");
-        
+
         if (updateMethod != null)
         {
             Application.Current.Dispatcher.Invoke(() =>

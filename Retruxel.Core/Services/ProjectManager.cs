@@ -11,6 +11,7 @@ namespace Retruxel.Core.Services;
 public class ProjectManager
 {
     private const string ProjectFileExtension = ".rtrxproject";
+    private static readonly SemaphoreSlim _saveLock = new(1, 1);
 
     /// <summary>The currently loaded project. Null if no project is open.</summary>
     public RetruxelProject? CurrentProject { get; set; }
@@ -67,42 +68,46 @@ public class ProjectManager
 
     /// <summary>
     /// Saves the current project to its .rtrxproject file.
+    /// Uses SemaphoreSlim to prevent concurrent writes.
     /// </summary>
     public async Task SaveAsync()
     {
         if (CurrentProject is null)
             throw new InvalidOperationException("No project is currently open.");
 
-        CurrentProject.ModifiedAt = DateTime.Now;
-
-        var json = JsonSerializer.Serialize(CurrentProject, new JsonSerializerOptions
+        await _saveLock.WaitAsync();
+        try
         {
-            WriteIndented = true
-        });
+            CurrentProject.ModifiedAt = DateTime.Now;
 
-        var filePath = Path.Combine(
-            CurrentProject.ProjectPath,
-            CurrentProject.Name + ProjectFileExtension);
+            var json = JsonSerializer.Serialize(CurrentProject, new JsonSerializerOptions
+            {
+                WriteIndented = true
+            });
 
-        await File.WriteAllTextAsync(filePath, json);
+            var filePath = Path.Combine(
+                CurrentProject.ProjectPath,
+                CurrentProject.Name + ProjectFileExtension);
 
-        // Garantir que o arquivo tenha o nome correto (case-sensitive)
-        var actualFileName = Path.GetFileName(filePath);
-        var expectedFileName = CurrentProject.Name + ProjectFileExtension;
-        if (actualFileName != expectedFileName)
-        {
+            // Write to temp file first, then atomic rename
             var tempPath = filePath + ".tmp";
-            File.Move(filePath, tempPath);
-            File.Move(tempPath, Path.Combine(CurrentProject.ProjectPath, expectedFileName));
-        }
+            await File.WriteAllTextAsync(tempPath, json);
+            
+            // Atomic replace
+            File.Move(tempPath, filePath, overwrite: true);
 
-        HasUnsavedChanges = false;
+            HasUnsavedChanges = false;
+        }
+        finally
+        {
+            _saveLock.Release();
+        }
     }
 
     /// <summary>
     /// Loads a project from a .rtrxproject file.
     /// </summary>
-    public async Task<RetruxelProject> LoadAsync(string filePath)
+    public async Task<RetruxelProject> LoadAsync(string filePath, ITarget? target = null)
     {
         if (!File.Exists(filePath))
             throw new FileNotFoundException("Project file not found.", filePath);

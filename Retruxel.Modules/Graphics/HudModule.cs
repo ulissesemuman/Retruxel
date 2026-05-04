@@ -1,6 +1,6 @@
-using System.Text.Json;
 using Retruxel.Core.Interfaces;
 using Retruxel.Core.Models;
+using System.Text.Json;
 
 namespace Retruxel.Modules.Graphics;
 

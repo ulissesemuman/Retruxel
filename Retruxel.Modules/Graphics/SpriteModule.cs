@@ -116,6 +116,7 @@ public class SpriteModule : IGraphicModule
         public string TilesAssetId { get; set; } = string.Empty;
         public int StartTile { get; set; } = 256;
         public bool DoubleHeight { get; set; } = false;
+        public int PaletteSlot { get; set; } = 1;
 
         /// <summary>Palette reference — elementId of a PaletteModule in the same scene.</summary>
         public string PaletteRef { get; set; } = string.Empty;

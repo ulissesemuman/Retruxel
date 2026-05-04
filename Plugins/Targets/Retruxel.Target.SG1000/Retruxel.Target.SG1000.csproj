@@ -10,6 +10,7 @@
     <ProjectReference Include="..\..\..\Retruxel.SDK\Retruxel.SDK.csproj" />
     <ProjectReference Include="..\..\..\Retruxel.Modules\Retruxel.Modules.csproj" />
     <ProjectReference Include="..\..\..\Retruxel.Toolchain\Retruxel.Toolchain.csproj" />
+    <ProjectReference Include="..\Retruxel.Target.SMS\Retruxel.Target.SMS.csproj" />
   </ItemGroup>
 
 </Project>

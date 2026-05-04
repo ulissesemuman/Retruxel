@@ -28,6 +28,7 @@ public partial class AssetImporterWindow : Window
 {
     private readonly ITarget _target;
     private readonly string _projectPath;
+    private readonly SceneData? _currentScene;
     private readonly List<RadioButton> _regionRadioButtons = new();
 
     private string? _sourcePngPath;
@@ -39,17 +40,18 @@ public partial class AssetImporterWindow : Window
     /// </summary>
     public AssetEntry? ImportedAsset { get; private set; }
 
-    public AssetImporterWindow(ITarget target, string projectPath)
+    public AssetImporterWindow(ITarget target, string projectPath, SceneData? currentScene = null)
     {
         InitializeComponent();
 
         _target = target;
         _projectPath = projectPath;
+        _currentScene = currentScene;
 
         TxtTargetLabel.Text = target.DisplayName.ToUpper();
         GenerateRegionControls();
         ApplyLocalization();
-        
+
         _isInitialized = true;
     }
 
@@ -346,7 +348,7 @@ public partial class AssetImporterWindow : Window
         {
             // Convert SKBitmap to WPF BitmapSource for optimization window
             var previewBitmap = SkiaBitmapToWpf(_reducedPreview);
-            
+
             // Determine target color count
             int targetColorCount = _target.TargetId switch
             {
@@ -358,29 +360,40 @@ public partial class AssetImporterWindow : Window
                 "gbc" => 64,  // 8 palettes × 4 colors (BG) + 8 palettes × 4 colors (sprites)
                 _ => 16
             };
-            
+
             // Open palette optimization preview window
             var optimizationWindow = new PaletteOptimizationWindow(
                 previewBitmap,
                 targetColorCount,
                 useLab: true, // Use LAB color space for better perceptual matching
-                _target.TargetId);
-            
+                _target);
+
             optimizationWindow.Owner = this;
-            
+
             if (optimizationWindow.ShowDialog() != true)
             {
                 // User cancelled optimization
                 return;
             }
-            
+
             // Get optimized bitmap and palette
             var optimizedBitmap = optimizationWindow.OptimizedBitmap;
             var optimizedPalette = optimizationWindow.OptimizedPalette;
-            
+
             // Convert optimized WPF bitmap back to SKBitmap for import
             var optimizedSkBitmap = WpfBitmapToSkia(optimizedBitmap);
-            
+
+            // Convert to indexed PNG
+            var indexedPngService = new Retruxel.Lib.ImageProcessing.IndexedPngService();
+            var skPalette = optimizedPalette.Select(c => new SKColor(c.R, c.G, c.B)).ToList();
+            var indexedData = indexedPngService.ConvertToIndexed(optimizedSkBitmap, skPalette);
+
+            // Show palette import dialog if scene is available
+            if (_currentScene != null)
+            {
+                ShowPaletteImportDialog(indexedData, _currentScene, _target);
+            }
+
             // Save optimized bitmap to temp file
             var tempPath = Path.Combine(Path.GetTempPath(), assetName + ".png");
             using (var stream = File.OpenWrite(tempPath))
@@ -389,12 +402,17 @@ public partial class AssetImporterWindow : Window
                 using var data = image.Encode(SKEncodedImageFormat.Png, 100);
                 data.SaveTo(stream);
             }
-            
+
             optimizedSkBitmap.Dispose();
 
             try
             {
-                ImportedAsset = Services.AssetImporter.Import(tempPath, _projectPath, regionId, _target);
+                ImportedAsset = Services.AssetImporter.Import(
+                    tempPath, 
+                    _projectPath, 
+                    regionId, 
+                    _target,
+                    skPalette);
                 DialogResult = true;
                 Close();
             }
@@ -448,26 +466,26 @@ public partial class AssetImporterWindow : Window
         bmp.Freeze();
         return bmp;
     }
-    
+
     private static SKBitmap WpfBitmapToSkia(BitmapSource wpfBitmap)
     {
         // Convert WPF bitmap to byte array
         int width = wpfBitmap.PixelWidth;
         int height = wpfBitmap.PixelHeight;
-        
+
         var convertedBitmap = wpfBitmap;
         if (wpfBitmap.Format != System.Windows.Media.PixelFormats.Bgra32)
         {
             convertedBitmap = new FormatConvertedBitmap(wpfBitmap, System.Windows.Media.PixelFormats.Bgra32, null, 0);
         }
-        
+
         int stride = width * 4;
         byte[] pixels = new byte[height * stride];
         convertedBitmap.CopyPixels(pixels, stride, 0);
-        
+
         // Create SKBitmap and copy pixels
         var skBitmap = new SKBitmap(width, height, SKColorType.Bgra8888, SKAlphaType.Premul);
-        
+
         unsafe
         {
             var ptr = (byte*)skBitmap.GetPixels();
@@ -476,7 +494,7 @@ public partial class AssetImporterWindow : Window
                 ptr[i] = pixels[i];
             }
         }
-        
+
         return skBitmap;
     }
 
@@ -497,5 +515,34 @@ public partial class AssetImporterWindow : Window
     {
         _reducedPreview?.Dispose();
         base.OnClosed(e);
+    }
+
+    private void ShowPaletteImportDialog(
+        Retruxel.Lib.ImageProcessing.IndexedPngData indexedData,
+        SceneData currentScene,
+        ITarget target)
+    {
+        var dialog = new PaletteImportDialog(
+            indexedData.Colors,
+            currentScene,
+            target)
+        {
+            Owner = this
+        };
+
+        if (dialog.ShowDialog() != true) return;
+
+        switch (dialog.Result)
+        {
+            case PaletteImportResult.ReplaceSlot:
+                var slot = currentScene.PaletteSlots[dialog.ChosenSlot];
+                slot.Colors.Clear();
+                for (int i = 0; i < Math.Min(indexedData.Colors.Count, target.GetColorsPerSlot()); i++)
+                    slot.Colors.Add(indexedData.Colors[i]);
+                break;
+
+            case PaletteImportResult.KeepCurrent:
+                break;
+        }
     }
 }

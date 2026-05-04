@@ -436,6 +436,7 @@
 
                             <CheckBox x:Name="ChkShowCollision"
                                       Content="Show Collision"
+                                      Style="{StaticResource ToggleSwitch}"
                                       Margin="0,0,0,16"
                                       Checked="ChkShowCollision_CheckedChanged"
                                       Unchecked="ChkShowCollision_CheckedChanged"/>

@@ -1,5 +1,3 @@
-using System.Windows;
-
 namespace Retruxel.Tool.LiveLink.Capture;
 
 /// <summary>
@@ -75,17 +73,17 @@ public class CanvasExpansionCapture
             "gbc" => 1,      // Game Boy Color: 1 byte per tile
             _ => 2           // Default to 2 bytes
         };
-        
+
         System.Diagnostics.Debug.WriteLine($"[CanvasExpansion] Source console: {sourceConsole.ToUpper()}, bytesPerTile={bytesPerTile}");
-        
+
         // Input nametable is always in 2-byte format (ushort[] converted to byte[])
         // We need to extract actual tile indices based on source format
         int totalTiles = currentNametable.Length / 2;
-        
+
         // Try common nametable sizes
         int vramWidth = 32;
         int vramHeight = 28;
-        
+
         if (totalTiles == 32 * 30) // NES
         {
             vramWidth = 32;
@@ -138,14 +136,14 @@ public class CanvasExpansionCapture
         {
             string source = isRamSearch ? "RAM" : "ROM";
             string compressionHint = "";
-            
+
             // If we found something but confidence is too low, it's likely compressed
             if (searchResult.Confidence > 0.0f && searchResult.Confidence < 0.5f)
             {
                 compressionHint = $"\n\nDetected pattern mismatch (confidence: {searchResult.Confidence:P1}).\n" +
                                  $"This suggests the map data is compressed or encoded.\n";
             }
-            
+
             return new ExpansionResult
             {
                 Success = false,
@@ -154,7 +152,7 @@ public class CanvasExpansionCapture
                          $"• Map is compressed (RLE, LZ77, etc.)\n" +
                          $"• Map uses procedural generation\n" +
                          $"• Pattern is too uniform (all same tiles)\n\n" +
-                         (isRamSearch ? 
+                         (isRamSearch ?
                           $"Try:\n" +
                           $"• Scroll to a different part of the map\n" +
                           $"• Capture when more unique tiles are visible\n" :
@@ -264,15 +262,15 @@ public class CanvasExpansionCapture
         var uniqueTiles = pattern.Distinct().Count();
         System.Diagnostics.Debug.WriteLine($"[CanvasExpansion] Pattern size: {patternWidth}x{patternHeight} = {pattern.Length} tiles");
         System.Diagnostics.Debug.WriteLine($"[CanvasExpansion] Unique tiles in pattern: {uniqueTiles}/{pattern.Length}");
-        
+
         // Log pattern tiles
         var patternPreview = string.Join(" ", pattern.Take(32).Select(t => $"{t:X2}"));
         System.Diagnostics.Debug.WriteLine($"[CanvasExpansion] Pattern preview: {patternPreview}");
-        
+
         if (uniqueTiles < 20)
         {
             System.Diagnostics.Debug.WriteLine($"[CanvasExpansion] WARNING: Pattern has low variety ({uniqueTiles} unique tiles) - trying full nametable search");
-            
+
             // If pattern is too uniform, try searching for the entire nametable
             return SearchFullNametableInRom(tileIndices, searchData, vramWidth, vramHeight, bytesPerTile);
         }
@@ -283,14 +281,14 @@ public class CanvasExpansionCapture
         int bestMapHeight = vramHeight;
 
         int[] commonWidths = { 32, 64, 128, 256, 40, 48, 56, 72, 80, 96, 112 };
-        
+
         string source = isRamSearch ? "RAM" : "ROM";
         System.Diagnostics.Debug.WriteLine($"[CanvasExpansion] Searching {source} ({searchData.Length} bytes) for pattern...");
 
         foreach (int mapWidth in commonWidths)
         {
             int matchesFound = 0;
-            
+
             for (int addr = 0; addr < searchData.Length - pattern.Length * 2; addr += 2)
             {
                 int matches = 0;
@@ -323,12 +321,12 @@ public class CanvasExpansionCapture
                         bestMapWidth = mapWidth;
                         bestMapHeight = EstimateMapHeight(searchData, bestAddress, mapWidth, bytesPerTile);
                         matchesFound++;
-                        
+
                         // Debug: Log when we find a better match
                         if (confidence > 0.05f)
                         {
                             System.Diagnostics.Debug.WriteLine($"[CanvasExpansion] Match at 0x{addr:X6} (width={mapWidth}): {matches}/{total} = {confidence:P1}");
-                            
+
                             // Show what ROM has vs what we're looking for
                             var romSample = new List<string>();
                             for (int i = 0; i < Math.Min(16, pattern.Length); i++)
@@ -348,13 +346,13 @@ public class CanvasExpansionCapture
                     }
                 }
             }
-            
+
             if (matchesFound > 0)
             {
                 System.Diagnostics.Debug.WriteLine($"[CanvasExpansion] Width {mapWidth}: {matchesFound} potential matches found");
             }
         }
-        
+
         System.Diagnostics.Debug.WriteLine($"[CanvasExpansion] Best match: confidence={bestConfidence:P1}, address=0x{bestAddress:X6}, size={bestMapWidth}x{bestMapHeight}");
 
         return new SearchResult
@@ -366,7 +364,7 @@ public class CanvasExpansionCapture
             Confidence = bestConfidence
         };
     }
-    
+
     /// <summary>
     /// Fallback: Search for full nametable when pattern is too uniform.
     /// </summary>
@@ -376,66 +374,66 @@ public class CanvasExpansionCapture
         System.Diagnostics.Debug.WriteLine($"[CanvasExpansion] Searching for full nametable ({vramWidth}x{vramHeight} = {tileIndices.Length} tiles)...");
         System.Diagnostics.Debug.WriteLine($"[CanvasExpansion] Search data size: {searchData.Length} bytes");
         System.Diagnostics.Debug.WriteLine($"[CanvasExpansion] Bytes per tile: {bytesPerTile}");
-        
+
         // Show first 32 tiles of nametable we're searching for
         var nametablePreview = string.Join(" ", tileIndices.Take(32).Select(t => $"{t:X2}"));
         System.Diagnostics.Debug.WriteLine($"[CanvasExpansion] Nametable preview (first 32 tiles): {nametablePreview}");
-        
+
         float bestConfidence = 0.0f;
         int bestAddress = -1;
         int bestMapWidth = vramWidth;
         int totalAddressesChecked = 0;
-        
+
         int[] commonWidths = { 32, 64, 128, 256, 40, 48, 56, 72, 80, 96, 112 };
-        
+
         foreach (int mapWidth in commonWidths)
         {
             System.Diagnostics.Debug.WriteLine($"[CanvasExpansion] Trying width={mapWidth}...");
             int addressesForThisWidth = 0;
             int bestMatchForWidth = 0;
-            
+
             // Search for exact nametable match with this width
             for (int addr = 0; addr < searchData.Length - tileIndices.Length * bytesPerTile; addr += bytesPerTile)
             {
                 int matches = 0;
                 int total = 0;
-                
+
                 for (int i = 0; i < tileIndices.Length; i++)
                 {
                     int x = i % vramWidth;
                     int y = i / vramWidth;
                     int romIdx = addr + (y * mapWidth + x) * bytesPerTile;
-                    
+
                     if (romIdx + bytesPerTile - 1 >= searchData.Length)
                         break;
-                    
+
                     ushort romTile = bytesPerTile == 1 ? searchData[romIdx] : (ushort)(searchData[romIdx] | (searchData[romIdx + 1] << 8));
                     if (romTile == tileIndices[i])
                         matches++;
-                    
+
                     total++;
                 }
-                
+
                 if (total > 0)
                 {
                     addressesForThisWidth++;
                     totalAddressesChecked++;
-                    
+
                     if (matches > bestMatchForWidth)
                         bestMatchForWidth = matches;
-                    
+
                     float confidence = (float)matches / total;
-                    
+
                     if (confidence > bestConfidence)
                     {
                         bestConfidence = confidence;
                         bestAddress = addr;
                         bestMapWidth = mapWidth;
-                        
+
                         if (confidence >= 0.1f) // Log anything above 10%
                         {
                             System.Diagnostics.Debug.WriteLine($"[CanvasExpansion] Match at 0x{addr:X6} (width={mapWidth}): {matches}/{total} = {confidence:P1}");
-                            
+
                             // Show what ROM has vs what we're looking for (first 16 tiles)
                             var romSample = new List<string>();
                             for (int i = 0; i < Math.Min(16, tileIndices.Length); i++)
@@ -455,14 +453,14 @@ public class CanvasExpansionCapture
                     }
                 }
             }
-            
+
             System.Diagnostics.Debug.WriteLine($"[CanvasExpansion] Width {mapWidth}: checked {addressesForThisWidth} addresses, best match={bestMatchForWidth}/{tileIndices.Length} tiles");
         }
-        
+
         System.Diagnostics.Debug.WriteLine($"[CanvasExpansion] === FULL NAMETABLE SEARCH COMPLETE ===");
         System.Diagnostics.Debug.WriteLine($"[CanvasExpansion] Total addresses checked: {totalAddressesChecked}");
         System.Diagnostics.Debug.WriteLine($"[CanvasExpansion] Best confidence: {bestConfidence:P1} at 0x{bestAddress:X6}, width={bestMapWidth}");
-        
+
         return new SearchResult
         {
             Found = bestConfidence >= 0.5f,

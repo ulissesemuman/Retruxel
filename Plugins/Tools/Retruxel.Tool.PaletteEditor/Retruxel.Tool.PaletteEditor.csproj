@@ -17,6 +17,10 @@
     </ProjectReference>
   </ItemGroup>
 
+  <ItemGroup>
+    <PackageReference Include="SkiaSharp" Version="3.116.1" />
+  </ItemGroup>
+
   <Target Name="CopyToRetruxelOutput" AfterTargets="Build">
     <Copy SourceFiles="$(TargetPath)" DestinationFolder="$(SolutionDir)Retruxel\bin\$(Configuration)\$(TargetFramework)\Plugins\Tools\" SkipUnchangedFiles="false" />
   </Target>

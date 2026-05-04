@@ -44,7 +44,7 @@ public partial class SpriteEditorWindow
     private Border CreateTileButton(int tileIndex)
     {
         var tileImage = ExtractTile(tileIndex);
-        
+
         var image = new Image
         {
             Source = tileImage,
@@ -80,7 +80,7 @@ public partial class SpriteEditorWindow
         int row = tileIndex / _tilesetColumns;
 
         var croppedBitmap = new CroppedBitmap(_tilesetImage, new Int32Rect(col * 8, row * 8, 8, 8));
-        
+
         var renderTarget = new RenderTargetBitmap(8, 8, 96, 96, PixelFormats.Pbgra32);
         var visual = new DrawingVisual();
         using (var context = visual.RenderOpen())
@@ -88,7 +88,7 @@ public partial class SpriteEditorWindow
             context.DrawImage(croppedBitmap, new Rect(0, 0, 8, 8));
         }
         renderTarget.Render(visual);
-        
+
         return renderTarget;
     }
 

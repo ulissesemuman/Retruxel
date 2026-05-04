@@ -48,16 +48,16 @@ public partial class SettingsWindow : Window
             ("Emulicious", new[] { "SMS", "Game Gear", "SG-1000", "ColecoVision", "Game Boy", "MSX" }),
             ("mGBA", new[] { "Game Boy", "Game Boy Color", "Game Boy Advance" })
         };
-        
+
         foreach (var emulator in emulators)
         {
             var targetSettings = GetOrCreateEmulatorSettings(emulator.Name);
-            
+
             var border = new Border
             {
                 Style = (Style)FindResource("SettingRow")
             };
-            
+
             var grid = new Grid();
             grid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
             grid.RowDefinitions.Add(new RowDefinition { Height = new GridLength(4) });
@@ -66,7 +66,7 @@ public partial class SettingsWindow : Window
             grid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
             grid.RowDefinitions.Add(new RowDefinition { Height = new GridLength(8) });
             grid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
-            
+
             // Emulator name and supported systems
             var headerStack = new StackPanel();
             var emulatorLabel = new TextBlock
@@ -77,7 +77,7 @@ public partial class SettingsWindow : Window
                 FontWeight = FontWeights.Bold
             };
             headerStack.Children.Add(emulatorLabel);
-            
+
             var systemsLabel = new TextBlock
             {
                 Text = string.Join(", ", emulator.SupportedSystems),
@@ -85,10 +85,10 @@ public partial class SettingsWindow : Window
                 Foreground = (Brush)FindResource("BrushOnSurfaceVariant")
             };
             headerStack.Children.Add(systemsLabel);
-            
+
             Grid.SetRow(headerStack, 0);
             grid.Children.Add(headerStack);
-            
+
             // Emulator path label
             var pathLabel = new TextBlock
             {
@@ -98,13 +98,13 @@ public partial class SettingsWindow : Window
             };
             Grid.SetRow(pathLabel, 2);
             grid.Children.Add(pathLabel);
-            
+
             // Emulator path
             var pathGrid = new Grid();
             pathGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
             pathGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(8) });
             pathGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-            
+
             var pathTextBox = new TextBox
             {
                 Text = targetSettings.LiveLinkEmulatorPath,
@@ -120,7 +120,7 @@ public partial class SettingsWindow : Window
             };
             Grid.SetColumn(pathTextBox, 0);
             pathGrid.Children.Add(pathTextBox);
-            
+
             var browseButton = new Button
             {
                 Content = "BROWSE",
@@ -135,7 +135,7 @@ public partial class SettingsWindow : Window
                     Filter = "Executable Files (*.exe)|*.exe|All Files (*.*)|*.*",
                     Title = $"Select {emulator.Name} Emulator"
                 };
-                
+
                 if (dialog.ShowDialog() == true)
                 {
                     pathTextBox.Text = dialog.FileName;
@@ -143,10 +143,10 @@ public partial class SettingsWindow : Window
             };
             Grid.SetColumn(browseButton, 2);
             pathGrid.Children.Add(browseButton);
-            
+
             Grid.SetRow(pathGrid, 4);
             grid.Children.Add(pathGrid);
-            
+
             // Arguments label
             var argsLabel = new TextBlock
             {
@@ -156,7 +156,7 @@ public partial class SettingsWindow : Window
             };
             Grid.SetRow(argsLabel, 6);
             grid.Children.Add(argsLabel);
-            
+
             // Arguments
             var argsTextBox = new TextBox
             {
@@ -173,22 +173,22 @@ public partial class SettingsWindow : Window
             };
             Grid.SetRow(argsTextBox, 6);
             grid.Children.Add(argsTextBox);
-            
+
             border.Child = grid;
             EmulatorsStack.Children.Add(border);
         }
     }
-    
+
     private TargetSettings GetOrCreateEmulatorSettings(string emulatorName)
     {
         // Use emulator name as key (lowercase for consistency)
         var key = emulatorName.ToLowerInvariant();
-        
+
         if (!_settings.Targets.ContainsKey(key))
         {
             _settings.Targets[key] = new TargetSettings();
         }
-        
+
         return _settings.Targets[key];
     }
 

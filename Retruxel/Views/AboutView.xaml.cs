@@ -132,6 +132,13 @@ public partial class AboutView : UserControl
                 License = "MIT",
                 Description = "Cross-platform 2D graphics API for .NET. Used for font rasterization and glyph rendering in the Tile Editor.",
                 Url = "github.com/mono/SkiaSharp"
+            },
+            new CreditEntry
+            {
+                Name = "font8x8",
+                License = "Public Domain",
+                Description = "8x8 monochrome bitmap fonts by Daniel Hepper. Derived from IBM VGA fonts by Marcel Sondaar. Used as Retruxel's default text rendering font.",
+                Url = "github.com/dhepper/font8x8"
             }
         };
     }
@@ -218,6 +225,16 @@ public partial class AboutView : UserControl
             2. Altered source versions must be plainly marked as such, and must not be
                misrepresented as being the original software.
             3. This notice may not be removed or altered from any source distribution.
+            
+            === font8x8 ===
+            Author: Daniel Hepper <daniel@hepper.net>
+            Original data: Marcel Sondaar / International Business Machines (IBM VGA fonts)
+            
+            This font data is in the Public Domain.
+            
+            Original source: github.com/dhepper/font8x8
+            Derived from IBM VGA fonts fetched from:
+            dimensionalrift.homelinux.net/combuster/mos3/?p=viewsource&file=/modules/gfx/font8_8.asm
             """;
     }
 }

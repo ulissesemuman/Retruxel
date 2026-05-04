@@ -51,6 +51,25 @@ public class AssetEntry
     /// Timestamp when this asset was imported.
     /// </summary>
     public DateTime ImportedAt { get; set; }
+
+    /// <summary>
+    /// True when this asset is stored as indexed PNG (palette mode).
+    /// All tile/sprite assets must be indexed — enforced by AssetImporter.
+    /// </summary>
+    public bool IsIndexed { get; set; } = false;
+
+    /// <summary>
+    /// Number of color indices in this asset (typically 16 for SMS).
+    /// Matches the palette size of the target.
+    /// </summary>
+    public int ColorCount { get; set; } = 16;
+
+    /// <summary>
+    /// Suggested colors from the original image, as hex strings.
+    /// Stored as reference only — not used in compilation.
+    /// Used to pre-populate PaletteSlot when user chooses "replace slot".
+    /// </summary>
+    public List<string> SuggestedColors { get; set; } = new();
 }
 
 

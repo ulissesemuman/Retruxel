@@ -37,6 +37,8 @@ public partial class TilemapEditorWindow
                 return; // User chose to stay in editor or cancelled
         }
 
+        SavePaletteSlotSelection();
+
         var base64Data = TilemapSerializer.ToBase64(_tilemapData.GetLayer(_currentLayerIndex));
         var bytes = Convert.FromBase64String(base64Data);
         var mapDataArray = new int[bytes.Length / 2];
@@ -53,7 +55,7 @@ public partial class TilemapEditorWindow
             ["mapWidth"] = int.Parse(TxtWidth.Text),
             ["mapHeight"] = int.Parse(TxtHeight.Text),
             ["tilesAssetId"] = CmbTilesetAsset.SelectedItem.ToString()!,
-            ["paletteRef"] = CmbPalette.SelectedItem?.ToString() ?? "",
+            ["paletteSlot"] = _selectedPaletteSlot,
             ["mapData"] = mapDataArray,
             ["mapAssetId"] = "",
             ["startTile"] = 0,
@@ -150,6 +152,27 @@ public partial class TilemapEditorWindow
         else if (moduleData.ContainsKey("height"))
             TxtHeight.Text = moduleData["height"].ToString()!;
 
+        // Load palette slot
+        if (moduleData.ContainsKey("paletteSlot"))
+        {
+            var slotObj = moduleData["paletteSlot"];
+            if (slotObj is System.Text.Json.JsonElement jsonSlot)
+                _selectedPaletteSlot = jsonSlot.GetInt32();
+            else
+                _selectedPaletteSlot = Convert.ToInt32(slotObj);
+            
+            // Validate slot index
+            if (_currentScene != null && _selectedPaletteSlot >= _currentScene.PaletteSlots.Count)
+            {
+                System.Diagnostics.Debug.WriteLine($"WARNING: Loaded palette slot {_selectedPaletteSlot} is out of range, resetting to 0");
+                _selectedPaletteSlot = 0;
+            }
+            
+            // Update ComboBox selection
+            if (_selectedPaletteSlot < CmbPalette.Items.Count)
+                CmbPalette.SelectedIndex = _selectedPaletteSlot;
+        }
+
         // Load map offset
         if (moduleData.ContainsKey("mapX"))
         {
@@ -159,7 +182,7 @@ public partial class TilemapEditorWindow
             else
                 _mapOffsetX = Convert.ToInt32(mapXObj);
         }
-        
+
         if (moduleData.ContainsKey("mapY"))
         {
             var mapYObj = moduleData["mapY"];
@@ -168,7 +191,7 @@ public partial class TilemapEditorWindow
             else
                 _mapOffsetY = Convert.ToInt32(mapYObj);
         }
-        
+
         UpdateMapOffset();
 
         int width = int.Parse(TxtWidth.Text);
@@ -189,20 +212,7 @@ public partial class TilemapEditorWindow
             }
         }
 
-        if (moduleData.ContainsKey("paletteRef"))
-        {
-            string paletteRef = moduleData["paletteRef"].ToString()!;
-            for (int i = 0; i < CmbPalette.Items.Count; i++)
-            {
-                if (CmbPalette.Items[i].ToString() == paletteRef)
-                {
-                    CmbPalette.SelectedIndex = i;
-                    break;
-                }
-            }
-        }
-
-        if (moduleData.ContainsKey("mapData"))
+if (moduleData.ContainsKey("mapData"))
         {
             var mapDataObj = moduleData["mapData"];
 

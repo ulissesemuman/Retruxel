@@ -16,6 +16,7 @@
     "mapData": { "from": "module", "path": "mapData", "default": [] },
     "solidTiles": { "from": "module", "path": "solidTiles", "default": [] },
     "maxTileSlots": { "from": "module", "path": "maxTileSlots", "default": 448 },
+    "paletteSlot": { "from": "module", "path": "paletteSlot", "default": 0 },
     "tilesData": {
       "from": "tool",
       "tool": "png_to_tiles",
@@ -34,7 +35,8 @@
         "mapY": "mapY",
         "mapWidth": "mapWidth",
         "mapHeight": "mapHeight",
-        "maxTileSlots": "maxTileSlots"
+        "maxTileSlots": "maxTileSlots",
+        "paletteSlot": "paletteSlot"
       }
     }
   }

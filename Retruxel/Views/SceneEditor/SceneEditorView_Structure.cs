@@ -409,7 +409,7 @@ public partial class SceneEditorView
         }
     }
 
-    private void OpenOnStartModuleEditor(SceneElementData element)
+    private void OpenOnStartModuleEditor(SceneElement element)
     {
         if (element.ModuleId == "text.array")
         {

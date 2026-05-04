@@ -1098,7 +1098,7 @@ public partial class LiveLinkWindow : Window
 
             // Open preview window - it will handle optimization internally
             var targetForPreview = TargetRegistry.GetTargetById(targetId ?? "sms");
-            
+
             var previewWindow = new Windows.PaletteOptimizationWindow(
                 previewBitmap,
                 targetColorCount,

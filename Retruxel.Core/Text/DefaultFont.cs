@@ -35,7 +35,7 @@ public static class DefaultFont
 
         int width = text.Length * 8;
         var bitmap = new SKBitmap(width, 8, SKColorType.Rgba8888, SKAlphaType.Premul);
-        
+
         using var canvas = new SKCanvas(bitmap);
         canvas.Clear(background);
 

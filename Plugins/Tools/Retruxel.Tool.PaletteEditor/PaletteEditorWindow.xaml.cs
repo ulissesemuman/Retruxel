@@ -104,20 +104,20 @@ public partial class PaletteEditorWindow : Window
     private void ApplyLocalization()
     {
         Title = $"RETRUXEL · {_loc.Get("paletteeditor.title")}";
-        TxtPalettes.Text           = _loc.Get("paletteeditor.palettes");
-        BtnNewPalette.Content      = _loc.Get("paletteeditor.new_palette");
-        BtnDuplicate.Content       = _loc.Get("paletteeditor.duplicate");
-        BtnDelete.Content          = _loc.Get("paletteeditor.delete");
-        TxtSlots.Text              = _loc.Get("paletteeditor.slots");
-        TxtHardwareColors.Text     = _loc.Get("paletteeditor.hardware_colors");
-        TxtSlotDetail.Text         = _loc.Get("paletteeditor.slot_detail");
-        TxtQuickSet.Text           = _loc.Get("paletteeditor.quick_set");
-        BtnSetBlack.Content        = _loc.Get("paletteeditor.black");
-        BtnSetWhite.Content        = _loc.Get("paletteeditor.white");
-        BtnSetTransparent.Content  = _loc.Get("paletteeditor.transparent");
-        TxtUsage.Text              = _loc.Get("paletteeditor.usage");
-        BtnApply.Content           = _loc.Get("common.apply");
-        BtnCancel.Content          = _loc.Get("common.cancel");
+        TxtPalettes.Text = _loc.Get("paletteeditor.palettes");
+        BtnNewPalette.Content = _loc.Get("paletteeditor.new_palette");
+        BtnDuplicate.Content = _loc.Get("paletteeditor.duplicate");
+        BtnDelete.Content = _loc.Get("paletteeditor.delete");
+        TxtSlots.Text = _loc.Get("paletteeditor.slots");
+        TxtHardwareColors.Text = _loc.Get("paletteeditor.hardware_colors");
+        TxtSlotDetail.Text = _loc.Get("paletteeditor.slot_detail");
+        TxtQuickSet.Text = _loc.Get("paletteeditor.quick_set");
+        BtnSetBlack.Content = _loc.Get("paletteeditor.black");
+        BtnSetWhite.Content = _loc.Get("paletteeditor.white");
+        BtnSetTransparent.Content = _loc.Get("paletteeditor.transparent");
+        TxtUsage.Text = _loc.Get("paletteeditor.usage");
+        BtnApply.Content = _loc.Get("common.apply");
+        BtnCancel.Content = _loc.Get("common.cancel");
 
         if (_selectedSlotIndex >= 0)
             SelectSlot(_selectedSlotIndex);
@@ -130,15 +130,15 @@ public partial class PaletteEditorWindow : Window
         BuildSlotsGrid();
         BuildHardwareColorGrid();
 
-        BtnNewPalette.Click  += (_, _) => CreateNewPalette();
-        BtnDuplicate.Click   += (_, _) => DuplicatePalette();
-        BtnDelete.Click      += (_, _) => DeletePalette();
+        BtnNewPalette.Click += (_, _) => CreateNewPalette();
+        BtnDuplicate.Click += (_, _) => DuplicatePalette();
+        BtnDelete.Click += (_, _) => DeletePalette();
 
-        BtnSetBlack.Click       += (_, _) => SetSlotColor(0);
-        BtnSetWhite.Click       += (_, _) => SetSlotColor(_hardwareColors.Length - 1);
+        BtnSetBlack.Click += (_, _) => SetSlotColor(0);
+        BtnSetWhite.Click += (_, _) => SetSlotColor(_hardwareColors.Length - 1);
         BtnSetTransparent.Click += (_, _) => SetSlotColor(0);
 
-        BtnApply.Click  += (_, _) => Apply();
+        BtnApply.Click += (_, _) => Apply();
         BtnCancel.Click += (_, _) => { DialogResult = false; Close(); };
     }
 
@@ -226,8 +226,8 @@ public partial class PaletteEditorWindow : Window
         var color = _hardwareColors[colorIndex];
 
         TxtSlotIndex.Text = string.Format(_loc.Get("paletteeditor.slot_format"), index.ToString("D2"));
-        TxtSlotHex.Text   = _paletteProvider.GetColorFormat(colorIndex);
-        TxtSlotRgb.Text   = string.Format(_loc.Get("paletteeditor.rgb_format"), color.R, color.G, color.B);
+        TxtSlotHex.Text = _paletteProvider.GetColorFormat(colorIndex);
+        TxtSlotRgb.Text = string.Format(_loc.Get("paletteeditor.rgb_format"), color.R, color.G, color.B);
         ColorPreview.Background = new SolidColorBrush(color);
 
         UpdateUsageReport(index);
@@ -264,7 +264,7 @@ public partial class PaletteEditorWindow : Window
         // Path B: opened from scene module context — serialize to module format
         ModuleData = new Dictionary<string, object>
         {
-            ["bgColors"]     = _currentPalette.ToArray(),
+            ["bgColors"] = _currentPalette.ToArray(),
             ["spriteColors"] = _currentPalette.ToArray()
         };
 
@@ -397,11 +397,11 @@ public partial class PaletteEditorWindow : Window
 
         public TargetPaletteProvider(ITarget target) => _target = target;
 
-        public string TargetId    => _target.TargetId;
+        public string TargetId => _target.TargetId;
         public string DisplayName => _target.DisplayName;
-        public int SlotCount      => _target.GetColorsPerSlot();
-        public int GridRows       => 8;
-        public int GridColumns    => 8;
+        public int SlotCount => _target.GetColorsPerSlot();
+        public int GridRows => 8;
+        public int GridColumns => 8;
 
         public object[] HardwareColors
             => _target.GetHardwarePalette().Cast<object>().ToArray();

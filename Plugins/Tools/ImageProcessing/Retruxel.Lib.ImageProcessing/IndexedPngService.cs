@@ -29,10 +29,10 @@ public class IndexedPngService
         if (bitmap == null)
             return null;
 
-        var width   = bitmap.Width;
-        var height  = bitmap.Height;
+        var width = bitmap.Width;
+        var height = bitmap.Height;
         var indices = new byte[width * height];
-        var colors  = new List<string>();
+        var colors = new List<string>();
 
         // Extract pixels and build unique color palette
         var colorMap = new Dictionary<SKColor, byte>();
@@ -43,23 +43,23 @@ public class IndexedPngService
             for (int x = 0; x < width; x++)
             {
                 var pixel = bitmap.GetPixel(x, y);
-                
+
                 if (!colorMap.ContainsKey(pixel))
                 {
                     colorMap[pixel] = nextIndex++;
                     colors.Add($"#{pixel.Red:X2}{pixel.Green:X2}{pixel.Blue:X2}");
                 }
-                
+
                 indices[y * width + x] = colorMap[pixel];
             }
         }
 
         return new IndexedPngData
         {
-            Width   = width,
-            Height  = height,
+            Width = width,
+            Height = height,
             Indices = indices,
-            Colors  = colors
+            Colors = colors
         };
     }
 
@@ -69,8 +69,8 @@ public class IndexedPngService
     /// </summary>
     public IndexedPngData ConvertToIndexed(SKBitmap source, List<SKColor> palette)
     {
-        var width   = source.Width;
-        var height  = source.Height;
+        var width = source.Width;
+        var height = source.Height;
         var indices = new byte[width * height];
 
         for (int y = 0; y < height; y++)
@@ -84,10 +84,10 @@ public class IndexedPngService
 
         return new IndexedPngData
         {
-            Width   = width,
-            Height  = height,
+            Width = width,
+            Height = height,
             Indices = indices,
-            Colors  = palette.Select(c => $"#{c.Red:X2}{c.Green:X2}{c.Blue:X2}").ToList()
+            Colors = palette.Select(c => $"#{c.Red:X2}{c.Green:X2}{c.Blue:X2}").ToList()
         };
     }
 
@@ -114,7 +114,7 @@ public class IndexedPngService
             }
         }
 
-        using var image  = SKImage.FromBitmap(bitmap);
+        using var image = SKImage.FromBitmap(bitmap);
         using var encData = image.Encode(SKEncodedImageFormat.Png, 100);
         using var stream = File.OpenWrite(outputPath);
         encData.SaveTo(stream);
@@ -130,9 +130,9 @@ public class IndexedPngService
         IReadOnlyList<string> paletteColors,
         int scale = 1)
     {
-        var w = indexedData.Width  * scale;
+        var w = indexedData.Width * scale;
         var h = indexedData.Height * scale;
-        
+
         var imageInfo = new SKImageInfo(w, h, SKColorType.Bgra8888);
         var bitmap = new SKBitmap(imageInfo);
 
@@ -140,8 +140,8 @@ public class IndexedPngService
         {
             for (int x = 0; x < indexedData.Width; x++)
             {
-                var idx   = indexedData.Indices[y * indexedData.Width + x];
-                var hex   = idx < paletteColors.Count ? paletteColors[idx] : "#000000";
+                var idx = indexedData.Indices[y * indexedData.Width + x];
+                var hex = idx < paletteColors.Count ? paletteColors[idx] : "#000000";
                 var color = SKColor.Parse(hex);
 
                 for (int sy = 0; sy < scale; sy++)
@@ -159,14 +159,14 @@ public class IndexedPngService
 
     private static int FindNearestIndex(SKColor pixel, List<SKColor> palette)
     {
-        int   best     = 0;
+        int best = 0;
         float bestDist = float.MaxValue;
         for (int i = 0; i < palette.Count; i++)
         {
-            var dr = pixel.Red   - palette[i].Red;
+            var dr = pixel.Red - palette[i].Red;
             var dg = pixel.Green - palette[i].Green;
-            var db = pixel.Blue  - palette[i].Blue;
-            var d  = dr * dr + dg * dg + db * db;
+            var db = pixel.Blue - palette[i].Blue;
+            var d = dr * dr + dg * dg + db * db;
             if (d < bestDist) { bestDist = d; best = i; }
         }
         return best;
@@ -178,8 +178,8 @@ public class IndexedPngService
 /// </summary>
 public class IndexedPngData
 {
-    public int         Width   { get; init; }
-    public int         Height  { get; init; }
-    public byte[]      Indices { get; init; } = [];
-    public List<string> Colors  { get; init; } = new(); // suggested/original colors
+    public int Width { get; init; }
+    public int Height { get; init; }
+    public byte[] Indices { get; init; } = [];
+    public List<string> Colors { get; init; } = new(); // suggested/original colors
 }

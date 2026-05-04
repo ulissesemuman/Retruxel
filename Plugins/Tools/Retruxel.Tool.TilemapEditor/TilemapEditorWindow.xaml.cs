@@ -1,8 +1,8 @@
 using Retruxel.Core.Interfaces;
 using Retruxel.Core.Models;
 using Retruxel.Core.Services;
-using Retruxel.Tool.TilemapEditor.Helpers;
 using Retruxel.Lib.ImageProcessing;
+using Retruxel.Tool.TilemapEditor.Helpers;
 using System.Windows;
 
 namespace Retruxel.Tool.TilemapEditor;
@@ -52,7 +52,7 @@ public partial class TilemapEditorWindow : Window
         // Try to get current scene from sceneEditor
         if (sceneEditor != null)
         {
-            var sceneField = sceneEditor.GetType().GetField("_currentScene", 
+            var sceneField = sceneEditor.GetType().GetField("_currentScene",
                 System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
             _currentScene = sceneField?.GetValue(sceneEditor) as SceneData;
         }

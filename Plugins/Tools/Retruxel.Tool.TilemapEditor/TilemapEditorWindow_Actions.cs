@@ -160,14 +160,14 @@ public partial class TilemapEditorWindow
                 _selectedPaletteSlot = jsonSlot.GetInt32();
             else
                 _selectedPaletteSlot = Convert.ToInt32(slotObj);
-            
+
             // Validate slot index
             if (_currentScene != null && _selectedPaletteSlot >= _currentScene.PaletteSlots.Count)
             {
                 System.Diagnostics.Debug.WriteLine($"WARNING: Loaded palette slot {_selectedPaletteSlot} is out of range, resetting to 0");
                 _selectedPaletteSlot = 0;
             }
-            
+
             // Update ComboBox selection
             if (_selectedPaletteSlot < CmbPalette.Items.Count)
                 CmbPalette.SelectedIndex = _selectedPaletteSlot;
@@ -212,7 +212,7 @@ public partial class TilemapEditorWindow
             }
         }
 
-if (moduleData.ContainsKey("mapData"))
+        if (moduleData.ContainsKey("mapData"))
         {
             var mapDataObj = moduleData["mapData"];
 

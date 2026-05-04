@@ -408,9 +408,9 @@ public partial class AssetImporterWindow : Window
             try
             {
                 ImportedAsset = Services.AssetImporter.Import(
-                    tempPath, 
-                    _projectPath, 
-                    regionId, 
+                    tempPath,
+                    _projectPath,
+                    regionId,
                     _target,
                     skPalette);
                 DialogResult = true;

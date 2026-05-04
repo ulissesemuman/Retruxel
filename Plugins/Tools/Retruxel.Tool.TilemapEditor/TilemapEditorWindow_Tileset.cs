@@ -1,11 +1,9 @@
 using Retruxel.Core.Models;
-using SkiaSharp;
 using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
-using System.Windows.Media.Imaging;
 
 namespace Retruxel.Tool.TilemapEditor;
 
@@ -207,10 +205,10 @@ public partial class TilemapEditorWindow
 
         var slot = _currentScene.PaletteSlots[_selectedPaletteSlot];
         var preview = _indexedPngService.RenderPreview(_indexedData, slot.Colors, scale: 1);
-        
+
         // Convert SKBitmap to BitmapSource
         var bitmapSource = ConvertSkBitmapToBitmapSource(preview);
-        
+
         // Load preview into tileset renderer
         _tilesetRenderer.LoadFromBitmap(bitmapSource, _target.Specs.TileWidth);
     }

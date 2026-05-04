@@ -1,7 +1,6 @@
 using Retruxel.Core.Text;
 using Retruxel.Modules.Graphics;
 using SkiaSharp;
-using System.IO;
 using System.Text.RegularExpressions;
 using System.Windows;
 using System.Windows.Controls;
@@ -44,11 +43,11 @@ public partial class TextArrayEditorWindow : Window
         // Initialize UI
         TxtArrayNameInput.Text = _state.Name;
         TxtArrayName.Text = $"— {_state.Name}";
-        
+
         RefreshLanguageTabs();
         RefreshStringsList();
         PopulateAsciiMap();
-        
+
         // Set initial tab
         ActivateTab(TabStrings, BtnTabStrings);
     }
@@ -154,7 +153,7 @@ public partial class TextArrayEditorWindow : Window
     private void TxtArrayNameInput_TextChanged(object sender, TextChangedEventArgs e)
     {
         var newName = TxtArrayNameInput.Text;
-        
+
         // Validate identifier
         if (IsValidIdentifier(newName))
         {
@@ -420,7 +419,7 @@ public partial class TextArrayEditorWindow : Window
 
         // Convert SKBitmap to WPF BitmapSource
         var bitmapSource = ConvertSkBitmapToBitmapSource(scaledBitmap);
-        
+
         var img = new System.Windows.Controls.Image
         {
             Source = bitmapSource,
@@ -428,7 +427,7 @@ public partial class TextArrayEditorWindow : Window
         };
 
         PreviewCanvas.Children.Add(img);
-        
+
         skBitmap.Dispose();
         scaledBitmap.Dispose();
     }
@@ -437,23 +436,23 @@ public partial class TextArrayEditorWindow : Window
     {
         var info = skBitmap.Info;
         var pixels = skBitmap.GetPixels();
-        
+
         var bitmap = new WriteableBitmap(info.Width, info.Height, 96, 96, PixelFormats.Bgra32, null);
         bitmap.Lock();
-        
+
         unsafe
         {
             var src = (byte*)pixels.ToPointer();
             var dst = (byte*)bitmap.BackBuffer.ToPointer();
             var stride = bitmap.BackBufferStride;
-            
+
             for (int y = 0; y < info.Height; y++)
             {
                 for (int x = 0; x < info.Width; x++)
                 {
                     var srcOffset = (y * info.Width + x) * 4;
                     var dstOffset = y * stride + x * 4;
-                    
+
                     // RGBA → BGRA
                     dst[dstOffset + 0] = src[srcOffset + 2]; // B
                     dst[dstOffset + 1] = src[srcOffset + 1]; // G
@@ -462,10 +461,10 @@ public partial class TextArrayEditorWindow : Window
                 }
             }
         }
-        
+
         bitmap.AddDirtyRect(new Int32Rect(0, 0, info.Width, info.Height));
         bitmap.Unlock();
-        
+
         return bitmap;
     }
 

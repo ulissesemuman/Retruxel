@@ -37,7 +37,7 @@ public class SmsFontConverter : IFontConverter
             // SMS bitplane: MSB = pixel 0 (leftmost)
             // → need to reverse bit order
             byte sourceByte = bitmap[row];
-            byte reversed   = ReverseBits(sourceByte);
+            byte reversed = ReverseBits(sourceByte);
 
             tile[row * 4 + 0] = reversed; // bitplane 0 — color index bit 0
             tile[row * 4 + 1] = 0;        // bitplane 1

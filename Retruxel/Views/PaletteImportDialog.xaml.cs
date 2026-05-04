@@ -11,8 +11,8 @@ public enum PaletteImportResult { ReplaceSlot, KeepCurrent }
 
 public partial class PaletteImportDialog : Window
 {
-    public PaletteImportResult Result     { get; private set; }
-    public int                 ChosenSlot { get; private set; }
+    public PaletteImportResult Result { get; private set; }
+    public int ChosenSlot { get; private set; }
 
     private readonly List<RadioButton> _slotRadioButtons = new();
 

@@ -1,6 +1,5 @@
 using System.Windows;
 using System.Windows.Controls;
-using Retruxel.Tool.PaletteEditor;
 
 namespace Retruxel.Tool.TilemapEditor;
 

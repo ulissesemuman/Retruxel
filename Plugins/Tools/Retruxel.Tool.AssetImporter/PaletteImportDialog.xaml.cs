@@ -43,7 +43,7 @@ public partial class PaletteImportDialog : Window
     {
         for (int i = 0; i < _scene.PaletteSlots.Count; i++)
         {
-            var slot     = _scene.PaletteSlots[i];
+            var slot = _scene.PaletteSlots[i];
             var slotType = _target.GetPaletteSlotType(i);
             var slotIndex = i;
 

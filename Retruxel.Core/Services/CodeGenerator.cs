@@ -1,6 +1,5 @@
 using Retruxel.Core.Interfaces;
 using Retruxel.Core.Models;
-using Retruxel.Core.Text;
 using System.Text.Json.Nodes;
 
 namespace Retruxel.Core.Services;
@@ -50,7 +49,7 @@ public class CodeGenerator
         // Run TextAnalyzer before module rendering
         var fontConverter = _target.GetFontConverter();
         var graphicTilesEnd = CalculateGraphicTilesEnd(project);
-        
+
         // Initial analysis with empty module list
         var textModuleJsons = new List<string>();
         var textResult = _textAnalyzer.Analyze(textModuleJsons, fontConverter, graphicTilesEnd);
@@ -129,7 +128,7 @@ public class CodeGenerator
                     var allTextModules = instancesByModule.ContainsKey("text.array")
                         ? instancesByModule["text.array"]
                         : new List<IModule>();
-                    
+
                     textModuleJsons = allTextModules.Select(m => m.Serialize()).ToList();
                     textResult = _textAnalyzer.Analyze(textModuleJsons, fontConverter, graphicTilesEnd);
 

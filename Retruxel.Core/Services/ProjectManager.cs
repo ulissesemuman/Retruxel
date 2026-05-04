@@ -92,7 +92,7 @@ public class ProjectManager
             // Write to temp file first, then atomic rename
             var tempPath = filePath + ".tmp";
             await File.WriteAllTextAsync(tempPath, json);
-            
+
             // Atomic replace
             File.Move(tempPath, filePath, overwrite: true);
 

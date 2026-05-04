@@ -153,7 +153,7 @@ public partial class PaletteOptimizationWindow : Window
         if (palette.Count == 0) return original;
 
         var converted = EnsureBgra32(original);
-        int width  = converted.PixelWidth;
+        int width = converted.PixelWidth;
         int height = converted.PixelHeight;
         int stride = width * 4;
         byte[] pixels = new byte[height * stride];
@@ -166,7 +166,7 @@ public partial class PaletteOptimizationWindow : Window
 
             pixels[i + 2] = closest.R;
             pixels[i + 1] = closest.G;
-            pixels[i]     = closest.B;
+            pixels[i] = closest.B;
         }
 
         return BitmapSource.Create(
@@ -188,10 +188,10 @@ public partial class PaletteOptimizationWindow : Window
 
         var brushes = OptimizedPalette
             .Distinct()
-            .OrderBy(c  => RgbToHue(c.R, c.G, c.B))
-            .ThenBy(c   => RgbToLightness(c.R, c.G, c.B))
-            .ThenBy(c   => RgbToSaturation(c.R, c.G, c.B))
-            .Select(c   => new SolidColorBrush(Color.FromRgb(c.R, c.G, c.B)))
+            .OrderBy(c => RgbToHue(c.R, c.G, c.B))
+            .ThenBy(c => RgbToLightness(c.R, c.G, c.B))
+            .ThenBy(c => RgbToSaturation(c.R, c.G, c.B))
+            .Select(c => new SolidColorBrush(Color.FromRgb(c.R, c.G, c.B)))
             .ToList();
 
         PalettePreview.ItemsSource = brushes;
@@ -202,16 +202,16 @@ public partial class PaletteOptimizationWindow : Window
     private static double RgbToHue(byte r, byte g, byte b)
     {
         double rd = r / 255.0, gd = g / 255.0, bd = b / 255.0;
-        double max   = Math.Max(rd, Math.Max(gd, bd));
-        double min   = Math.Min(rd, Math.Min(gd, bd));
+        double max = Math.Max(rd, Math.Max(gd, bd));
+        double min = Math.Min(rd, Math.Min(gd, bd));
         double delta = max - min;
 
         if (delta == 0) return 0;
 
         double hue;
-        if      (max == rd) hue = ((gd - bd) / delta) % 6;
+        if (max == rd) hue = ((gd - bd) / delta) % 6;
         else if (max == gd) hue = (bd - rd) / delta + 2;
-        else                hue = (rd - gd) / delta + 4;
+        else hue = (rd - gd) / delta + 4;
 
         hue *= 60;
         return hue < 0 ? hue + 360 : hue;
@@ -228,8 +228,8 @@ public partial class PaletteOptimizationWindow : Window
     private static double RgbToSaturation(byte r, byte g, byte b)
     {
         double rd = r / 255.0, gd = g / 255.0, bd = b / 255.0;
-        double max   = Math.Max(rd, Math.Max(gd, bd));
-        double min   = Math.Min(rd, Math.Min(gd, bd));
+        double max = Math.Max(rd, Math.Max(gd, bd));
+        double min = Math.Min(rd, Math.Min(gd, bd));
         double delta = max - min;
 
         if (delta == 0) return 0;

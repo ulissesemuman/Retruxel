@@ -34,32 +34,32 @@ public class SmsPngToTilesExtension : IToolExtension
         var result = new Dictionary<string, object>();
 
         // Check if we have an indexed PNG path
-        if (input.TryGetValue("imagePath", out var imagePathObj) && 
-            imagePathObj is string imagePath && 
+        if (input.TryGetValue("imagePath", out var imagePathObj) &&
+            imagePathObj is string imagePath &&
             !string.IsNullOrWhiteSpace(imagePath) &&
             File.Exists(imagePath))
         {
             System.Diagnostics.Debug.WriteLine($"Processing indexed PNG: {imagePath}");
-            
+
             try
             {
                 var indexedPngService = new IndexedPngService();
                 var indexedData = indexedPngService.Read(imagePath);
-                
+
                 if (indexedData == null)
                 {
                     System.Diagnostics.Debug.WriteLine($"ERROR: Failed to load indexed PNG from {imagePath}");
                     return result;
                 }
-                
+
                 System.Diagnostics.Debug.WriteLine($"Loaded indexed PNG: {indexedData.Width}x{indexedData.Height}, {indexedData.Colors.Count} colors");
-                
+
                 // Convert indexed PNG to SMS 4bpp planar tiles
                 var tiles = ConvertIndexedToSmsTiles(indexedData);
                 result["tilesArray"] = tiles;
                 result["totalBytes"] = tiles.Length;
                 result["tileCount"] = (indexedData.Width / 8) * (indexedData.Height / 8);
-                
+
                 // Format tiles as hex string
                 var hexLines = new List<string>();
                 for (int i = 0; i < tiles.Length; i += 16)
@@ -68,7 +68,7 @@ public class SmsPngToTilesExtension : IToolExtension
                     hexLines.Add("    " + string.Join(", ", chunk.Select(b => $"0x{b:X2}")));
                 }
                 result["tilesHex"] = string.Join(",\n", hexLines);
-                
+
                 System.Diagnostics.Debug.WriteLine($"Generated {result["tileCount"]} tiles, {tiles.Length} bytes");
             }
             catch (Exception ex)
@@ -81,7 +81,7 @@ public class SmsPngToTilesExtension : IToolExtension
         {
             // Fallback: Legacy path with palette processing
             System.Diagnostics.Debug.WriteLine("Using legacy palette processing");
-            
+
             // 1. Process Palette
             if (input.TryGetValue("palette", out var paletteObj) && paletteObj is uint[] palette)
             {

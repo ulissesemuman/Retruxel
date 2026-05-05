@@ -1,4 +1,6 @@
 using Retruxel.Core.Interfaces;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace Retruxel.Target.SMS.Tools;
 

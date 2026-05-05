@@ -1,4 +1,8 @@
-﻿namespace Retruxel.Core.Models;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+
+namespace Retruxel.Core.Models;
 
 /// <summary>
 /// Represents the outcome of a toolchain build operation.

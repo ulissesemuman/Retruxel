@@ -1,3 +1,5 @@
+using System;
+using System.Collections.Generic;
 using System.Windows.Media.Imaging;
 
 namespace Retruxel.Tool.FontImporter.Services;

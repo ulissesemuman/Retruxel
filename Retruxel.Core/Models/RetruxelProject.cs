@@ -1,4 +1,7 @@
-﻿namespace Retruxel.Core.Models;
+﻿using System;
+using System.Collections.Generic;
+
+namespace Retruxel.Core.Models;
 
 /// <summary>
 /// Represents a Retruxel project.

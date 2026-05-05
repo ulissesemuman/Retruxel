@@ -1,4 +1,6 @@
 using Retruxel.Tool.SpriteEditor.Helpers;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace Retruxel.Tool.SpriteEditor.Models;
 

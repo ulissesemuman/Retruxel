@@ -1,0 +1,50 @@
+<UserControl x:Class="Retruxel.Controls.TilesetComposerControl"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <Border Background="{StaticResource BrushSurfaceContainerHigh}"
+            AllowDrop="True"
+            Drop="Border_Drop"
+            DragOver="Border_DragOver">
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+
+            <Border Grid.Row="0" Background="{StaticResource BrushSurfaceContainerLow}" Padding="12,8">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <TextBlock x:Name="TxtComposerTitle"
+                               Text="COMPOSED TILESET"
+                               Style="{StaticResource TextLabelCaps}"
+                               VerticalAlignment="Center"/>
+                    <TextBlock x:Name="TxtTileCount" Grid.Column="1"
+                               Text="0 tiles — 0 bytes"
+                               Style="{StaticResource TextLabel}"
+                               Foreground="{StaticResource BrushTertiary}"
+                               VerticalAlignment="Center"/>
+                </Grid>
+            </Border>
+
+            <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                <Image x:Name="ComposerImage"
+                       Stretch="None"
+                       HorizontalAlignment="Left"
+                       VerticalAlignment="Top"
+                       MouseDown="ComposerImage_MouseDown"
+                       RenderOptions.BitmapScalingMode="NearestNeighbor"/>
+            </ScrollViewer>
+
+            <Border Grid.Row="2" Background="{StaticResource BrushSurfaceContainerLow}" Padding="12,8">
+                <TextBlock Text="Drag glyphs from any source above to add. Right-click to remove."
+                           Style="{StaticResource TextLabel}"
+                           Foreground="{StaticResource BrushOnSurfaceVariant}"
+                           TextWrapping="Wrap"/>
+            </Border>
+        </Grid>
+    </Border>
+</UserControl>

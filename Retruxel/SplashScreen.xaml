@@ -3,7 +3,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:loc="clr-namespace:Retruxel.Localization"
         Title="Retruxel"
-        Height="600" Width="900"
+        Height="500" Width="500"
         WindowStartupLocation="CenterScreen"
         Background="Transparent"
         AllowsTransparency="True"

@@ -1,5 +1,7 @@
 using Retruxel.Tool.SpriteEditor.Helpers;
 using Retruxel.Tool.SpriteEditor.Models;
+using System;
+using System.Collections.Generic;
 using System.Windows;
 
 namespace Retruxel.Tool.SpriteEditor;

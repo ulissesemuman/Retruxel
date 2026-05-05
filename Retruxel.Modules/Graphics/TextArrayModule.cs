@@ -1,5 +1,6 @@
 using Retruxel.Core.Interfaces;
 using Retruxel.Core.Models;
+using System.Collections.Generic;
 using System.Text.Json;
 
 namespace Retruxel.Modules.Graphics;
@@ -72,11 +73,19 @@ public class TextArrayModule : IGraphicModule
             new TextLanguage { Code = "default", Strings = [""] }
         };
         public string? FontAssetId { get; set; } = null;
+        public List<ComposedTileEntry> CustomTileset { get; set; } = new();
     }
 
     private class TextLanguage
     {
         public string Code { get; set; } = "default";
         public List<string> Strings { get; set; } = [];
+    }
+
+    private class ComposedTileEntry
+    {
+        public char? Character { get; set; }
+        public byte[] Bitmap { get; set; } = new byte[8];
+        public string SourceLabel { get; set; } = "";
     }
 }

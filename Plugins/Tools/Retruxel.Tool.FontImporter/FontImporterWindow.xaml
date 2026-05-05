@@ -153,6 +153,102 @@
                                     Padding="12,6"/>
                         </StackPanel>
 
+                        <!-- Antialiasing toggle -->
+                        <Grid Margin="0,0,0,12">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="ANTIALIASING (GRAYSCALE)"
+                                       Style="{StaticResource TextLabel}"
+                                       VerticalAlignment="Center"/>
+                            <CheckBox x:Name="ToggleAntialiasing"
+                                          Grid.Column="1"
+                                          IsChecked="True"
+                                          Checked="Antialiasing_Changed"
+                                          Unchecked="Antialiasing_Changed"
+                                          Style="{StaticResource ToggleSwitch}"
+                                          VerticalAlignment="Center"/>
+                        </Grid>
+
+                        <!-- Font size slider -->
+                        <TextBlock Text="FONT SIZE"
+                                   Style="{StaticResource TextLabelCaps}"
+                                   Foreground="{StaticResource BrushOnSurfaceVariant}"
+                                   Margin="0,0,0,6"/>
+                        <Grid Margin="0,0,0,4">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <Slider x:Name="SliderFontSize"
+                                    Minimum="0.5" Maximum="1.5" Value="1.0"
+                                    TickFrequency="0.1" IsSnapToTickEnabled="True"
+                                    ValueChanged="FontSize_Changed"/>
+                            <TextBlock x:Name="LblFontSize" Grid.Column="1"
+                                       Text="1.0×"
+                                       Style="{StaticResource TextLabel}"
+                                       Foreground="{StaticResource BrushPrimary}"
+                                       Width="40" TextAlignment="Right"
+                                       Margin="8,0,0,0"/>
+                        </Grid>
+
+                        <!-- Offset controls -->
+                        <TextBlock Text="OFFSET (PIXELS)"
+                                   Style="{StaticResource TextLabelCaps}"
+                                   Foreground="{StaticResource BrushOnSurfaceVariant}"
+                                   Margin="0,12,0,6"/>
+                        <Grid Margin="0,0,0,12">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="8"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="4"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
+                            
+                            <TextBlock Grid.Row="0" Grid.Column="0"
+                                       Text="X" Style="{StaticResource TextLabel}"
+                                       Margin="0,0,0,4"/>
+                            <Grid Grid.Row="2" Grid.Column="0">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <Slider x:Name="SliderOffsetX"
+                                        Minimum="-4" Maximum="4" Value="0"
+                                        TickFrequency="1" IsSnapToTickEnabled="True"
+                                        ValueChanged="Offset_Changed"/>
+                                <TextBlock x:Name="LblOffsetX" Grid.Column="1"
+                                           Text="0"
+                                           Style="{StaticResource TextLabel}"
+                                           Width="24" TextAlignment="Right"
+                                           Margin="8,0,0,0"/>
+                            </Grid>
+                            
+                            <TextBlock Grid.Row="0" Grid.Column="2"
+                                       Text="Y" Style="{StaticResource TextLabel}"
+                                       Margin="0,0,0,4"/>
+                            <Grid Grid.Row="2" Grid.Column="2">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <Slider x:Name="SliderOffsetY"
+                                        Minimum="-4" Maximum="4" Value="0"
+                                        TickFrequency="1" IsSnapToTickEnabled="True"
+                                        ValueChanged="Offset_Changed"/>
+                                <TextBlock x:Name="LblOffsetY" Grid.Column="1"
+                                           Text="0"
+                                           Style="{StaticResource TextLabel}"
+                                           Width="24" TextAlignment="Right"
+                                           Margin="8,0,0,0"/>
+                            </Grid>
+                        </Grid>
+
                         <!-- Custom size -->
                         <TextBlock x:Name="LblCustomSize"
                                    Text="CUSTOM SIZE"

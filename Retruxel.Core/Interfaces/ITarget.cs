@@ -1,4 +1,6 @@
 ﻿using Retruxel.Core.Models;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace Retruxel.Core.Interfaces;
 

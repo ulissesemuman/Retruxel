@@ -1,3 +1,6 @@
+using System;
+using System.Collections.Generic;
+
 namespace Retruxel.Tool.LiveLink.Services;
 
 public class CaptureResult

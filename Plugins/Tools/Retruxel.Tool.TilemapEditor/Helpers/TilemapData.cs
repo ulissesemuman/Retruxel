@@ -1,3 +1,6 @@
+using System;
+using System.Collections.Generic;
+
 namespace Retruxel.Tool.TilemapEditor.Helpers;
 
 /// <summary>

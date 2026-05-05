@@ -1,5 +1,7 @@
 using Retruxel.Core.Models;
+using System;
 using System.IO;
+using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;

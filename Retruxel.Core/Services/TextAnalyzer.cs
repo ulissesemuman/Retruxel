@@ -1,5 +1,7 @@
 using Retruxel.Core.Interfaces;
 using Retruxel.Core.Text;
+using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 using System.Text.Json;
 
@@ -23,7 +25,7 @@ public class TextAnalyzer
     /// 
     /// Process:
     /// 1. Collects all unique characters used across all string arrays
-    /// 2. Extracts glyphs from DefaultFont (font8x8-based)
+    /// 2. Checks CustomTileset first, then falls back to DefaultFont
     /// 3. Converts glyphs to target-specific format via IFontConverter
     /// 4. Generates compact translation table (256 bytes, 0xFF for unused chars)
     /// 
@@ -41,6 +43,8 @@ public class TextAnalyzer
     {
         // Collect all unique characters used in all strings
         var usedChars = new HashSet<char>();
+        var customTilesets = new List<List<ComposedTileEntry>>();
+
         foreach (var json in moduleJsons)
         {
             var state = JsonSerializer.Deserialize<TextArrayState>(json, _jsonOptions);
@@ -55,6 +59,11 @@ public class TextAnalyzer
                         usedChars.Add(ch);
                     }
                 }
+            }
+
+            if (state.CustomTileset != null && state.CustomTileset.Count > 0)
+            {
+                customTilesets.Add(state.CustomTileset);
             }
         }
 
@@ -71,13 +80,36 @@ public class TextAnalyzer
             };
         }
 
-        // Separate supported and missing characters
-        var supportedChars = usedChars.Where(DefaultFont.Supports).OrderBy(c => (int)c).ToList();
-        var missingChars = usedChars.Where(c => !DefaultFont.Supports(c)).OrderBy(c => (int)c).ToList();
+        // Merge custom tilesets (first one wins for duplicates)
+        var customTileMap = new Dictionary<char, byte[]>();
+        foreach (var tileset in customTilesets)
+        {
+            foreach (var tile in tileset)
+            {
+                if (tile.Character.HasValue && !customTileMap.ContainsKey(tile.Character.Value))
+                {
+                    customTileMap[tile.Character.Value] = tile.Bitmap;
+                }
+            }
+        }
 
-        // Build glyph list for conversion
+        // Separate supported and missing characters
+        var supportedChars = new List<char>();
+        var missingChars = new List<char>();
+
+        foreach (var ch in usedChars.OrderBy(c => (int)c))
+        {
+            if (customTileMap.ContainsKey(ch) || DefaultFont.Supports(ch))
+                supportedChars.Add(ch);
+            else
+                missingChars.Add(ch);
+        }
+
+        // Build glyph list for conversion (custom tileset takes priority)
         var glyphs = supportedChars
-            .Select(c => (c, DefaultFont.GetGlyph(c)!))
+            .Select(c => (c, GetGlyphForChar(c, customTileMap)))
+            .Where(g => g.Item2 != null)
+            .Select(g => (g.c, g.Item2!))
             .ToList();
 
         // Convert glyphs to target format
@@ -115,6 +147,19 @@ public class TextAnalyzer
     }
 
     /// <summary>
+    /// Gets glyph for character, checking custom tileset first, then DefaultFont.
+    /// </summary>
+    private byte[]? GetGlyphForChar(char c, Dictionary<char, byte[]> customTileMap)
+    {
+        // 1. Check custom tileset first
+        if (customTileMap.TryGetValue(c, out var customGlyph))
+            return customGlyph;
+
+        // 2. Fallback to DefaultFont
+        return DefaultFont.GetGlyph(c);
+    }
+
+    /// <summary>
     /// Formats byte array as C hex array string.
     /// Example: "0x00, 0x01, 0xFF"
     /// </summary>
@@ -146,11 +191,19 @@ public class TextAnalyzer
     {
         public string Name { get; set; } = "";
         public List<TextLanguage> Languages { get; set; } = [];
+        public List<ComposedTileEntry> CustomTileset { get; set; } = [];
     }
 
     private class TextLanguage
     {
         public string Code { get; set; } = "";
         public List<string> Strings { get; set; } = [];
+    }
+
+    private class ComposedTileEntry
+    {
+        public char? Character { get; set; }
+        public byte[] Bitmap { get; set; } = new byte[8];
+        public string SourceLabel { get; set; } = "";
     }
 }

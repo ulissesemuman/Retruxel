@@ -1,4 +1,6 @@
 ﻿using Retruxel.Core.Models;
+using System;
+using System.Threading.Tasks;
 
 namespace Retruxel.Core.Interfaces;
 

@@ -1,3 +1,6 @@
+using System;
+using System.Collections.Generic;
+using System.IO;
 using System.Text.Json.Serialization;
 
 namespace Retruxel.Core.Models;
@@ -122,6 +125,11 @@ public class TargetSettingsMap : Dictionary<string, TargetSettings>
 {
     public TargetSettingsMap() : base(StringComparer.OrdinalIgnoreCase)
     {
+    }
+
+    public bool ContainsKey(string key)
+    {
+        throw new NotImplementedException();
     }
 }
 

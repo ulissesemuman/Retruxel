@@ -31,9 +31,8 @@
       "transform": "hasAny"
     },
     "hasTextArray": {
-      "from": "moduleFiles",
-      "path": "sourceModuleId == 'text.array'",
-      "transform": "hasAny"
+      "from": "computed",
+      "expression": "fontTileCount > 0"
     },
     "hasGameVars": {
       "from": "moduleFiles",

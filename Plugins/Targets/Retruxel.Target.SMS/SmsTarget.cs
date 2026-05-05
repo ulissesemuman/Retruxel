@@ -5,6 +5,10 @@ using Retruxel.Core.Models;
 using Retruxel.Core.Services;
 using Retruxel.Target.SMS.Modules.Splash;
 using Retruxel.Target.SMS.Text;
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
 
 namespace Retruxel.Target.SMS;
 

@@ -1,4 +1,6 @@
 using SkiaSharp;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace Retruxel.Core.Text;
 
@@ -25,29 +27,61 @@ public static class DefaultFont
     public static IReadOnlyCollection<char> SupportedCharacters
         => _glyphs.Keys;
 
+    public static IEnumerable<char> GetBasicLatinCharacters()
+        => BasicLatin.Glyphs.Select(g => g.Item1);
+
+    public static IEnumerable<char> GetExtendedLatinCharacters()
+        => ExtendedLatin.Glyphs.Select(g => g.Item1);
+
+    public static IEnumerable<char> GetBoxDrawingCharacters()
+        => BoxDrawing.Glyphs.Select(g => g.Item1);
+
+    public static IEnumerable<char> GetBlockElementsCharacters()
+        => BlockElements.Glyphs.Select(g => g.Item1);
+
+    public static IEnumerable<char> GetGreekCharacters()
+        => Greek.Glyphs.Select(g => g.Item1);
+
+    public static IEnumerable<char> GetHiraganaCharacters()
+        => Hiragana.Glyphs.Select(g => g.Item1);
+
+    public static IEnumerable<char> GetMiscellaneousCharacters()
+        => Miscellaneous.Glyphs.Select(g => g.Item1);
+
+    public static IEnumerable<char> GetSGACharacters()
+        => SGA.Glyphs.Select(g => g.Item1);
+
     /// <summary>
     /// Renders a string to an SKBitmap for preview.
+    /// Supports newline characters (\n) for multi-line rendering.
     /// Returns null if text is empty.
     /// </summary>
     public static SKBitmap? RenderString(string text, SKColor foreground, SKColor background)
     {
         if (string.IsNullOrEmpty(text)) return null;
 
-        int width = text.Length * 8;
-        var bitmap = new SKBitmap(width, 8, SKColorType.Rgba8888, SKAlphaType.Premul);
+        var lines = text.Split('\n');
+        var maxWidth = lines.Max(line => line.Length);
+        var height = lines.Length;
+
+        var bitmap = new SKBitmap(maxWidth * 8, height * 8, SKColorType.Rgba8888, SKAlphaType.Premul);
 
         using var canvas = new SKCanvas(bitmap);
         canvas.Clear(background);
 
-        for (int i = 0; i < text.Length; i++)
+        for (int lineIdx = 0; lineIdx < lines.Length; lineIdx++)
         {
-            var glyph = GetGlyph(text[i]);
-            if (glyph is null) continue;
+            var line = lines[lineIdx];
+            for (int charIdx = 0; charIdx < line.Length; charIdx++)
+            {
+                var glyph = GetGlyph(line[charIdx]);
+                if (glyph is null) continue;
 
-            for (int row = 0; row < 8; row++)
-                for (int col = 0; col < 8; col++)
-                    if (((glyph[row] >> col) & 1) == 1)
-                        bitmap.SetPixel(i * 8 + col, row, foreground);
+                for (int row = 0; row < 8; row++)
+                    for (int col = 0; col < 8; col++)
+                        if (((glyph[row] >> col) & 1) == 1)
+                            bitmap.SetPixel(charIdx * 8 + col, lineIdx * 8 + row, foreground);
+            }
         }
 
         return bitmap;

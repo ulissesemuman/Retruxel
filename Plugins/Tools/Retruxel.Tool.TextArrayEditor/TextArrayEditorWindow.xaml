@@ -220,65 +220,90 @@
                 <Grid x:Name="TabFont" Visibility="Collapsed">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
                         <RowDefinition Height="*"/>
                     </Grid.RowDefinitions>
 
-                    <!-- Font Asset Path -->
+                    <!-- Font Category Selector -->
                     <Border Grid.Row="0"
                             Background="{StaticResource BrushSurfaceContainerLow}"
                             Padding="24,16">
                         <Grid>
-                            <Grid.RowDefinitions>
-                                <RowDefinition Height="Auto"/>
-                                <RowDefinition Height="Auto"/>
-                            </Grid.RowDefinitions>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="16"/>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="8"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
 
-                            <TextBlock Grid.Row="0"
-                                       Text="FONT ASSET"
-                                       Style="{StaticResource TextLabelCaps}"
+                            <StackPanel Grid.Column="0">
+                                <TextBlock Text="FONT CATEGORY"
+                                           Style="{StaticResource TextLabelCaps}"
+                                           Foreground="{StaticResource BrushOnSurfaceVariant}"
+                                           Margin="0,0,0,6"/>
+                                <ComboBox x:Name="CmbFontCategory"
+                                          SelectionChanged="CmbFontCategory_SelectionChanged"
+                                          Height="32">
+                                    <ComboBox.ItemTemplate>
+                                        <DataTemplate>
+                                            <TextBlock Text="{Binding Name}"/>
+                                        </DataTemplate>
+                                    </ComboBox.ItemTemplate>
+                                </ComboBox>
+                            </StackPanel>
+
+                            <Button Grid.Column="2"
+                                    x:Name="BtnImportFromTtf"
+                                    Content="IMPORT FROM TTF"
+                                    Click="BtnImportFromTtf_Click"
+                                    Style="{StaticResource ButtonSecondary}"
+                                    Padding="16,0"
+                                    Height="32"
+                                    VerticalAlignment="Bottom"/>
+
+                            <Button Grid.Column="4"
+                                    x:Name="BtnBrowseFont"
+                                    Content="BROWSE PNG"
+                                    Click="BtnBrowseFont_Click"
+                                    Style="{StaticResource ButtonSecondary}"
+                                    Padding="16,0"
+                                    Height="32"
+                                    VerticalAlignment="Bottom"/>
+                        </Grid>
+                    </Border>
+
+                    <!-- LiveLink Section -->
+                    <Border Grid.Row="1"
+                            Background="{StaticResource BrushSurfaceContainerLow}"
+                            Padding="24,8,24,16"
+                            Margin="0,0,0,0">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="8"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+
+                            <Button Grid.Column="0"
+                                    x:Name="BtnLiveLink"
+                                    Content="⚡ CAPTURE FROM LIVELINK"
+                                    Click="BtnLiveLink_Click"
+                                    Style="{StaticResource ButtonSecondary}"
+                                    Padding="16,0"
+                                    Height="32"/>
+
+                            <TextBlock Grid.Column="2"
+                                       x:Name="TxtLiveLinkStatus"
+                                       Text="LiveLink: not connected"
+                                       Style="{StaticResource TextLabel}"
                                        Foreground="{StaticResource BrushOnSurfaceVariant}"
-                                       Margin="0,0,0,6"/>
-
-                            <Grid Grid.Row="1">
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="*"/>
-                                    <ColumnDefinition Width="8"/>
-                                    <ColumnDefinition Width="Auto"/>
-                                    <ColumnDefinition Width="8"/>
-                                    <ColumnDefinition Width="Auto"/>
-                                </Grid.ColumnDefinitions>
-
-                                <Border Grid.Column="0"
-                                        Background="{StaticResource BrushSurfaceContainerHigh}"
-                                        Padding="12,8">
-                                    <TextBlock x:Name="TxtFontPath"
-                                               Text="Built-in font8x8 (Public Domain)"
-                                               Style="{StaticResource TextCode}"
-                                               Foreground="{StaticResource BrushPrimary}"
-                                               VerticalAlignment="Center"/>
-                                </Border>
-
-                                <Button Grid.Column="2"
-                                        x:Name="BtnImportFromTtf"
-                                        Content="IMPORT FROM TTF"
-                                        Click="BtnImportFromTtf_Click"
-                                        Style="{StaticResource ButtonSecondary}"
-                                        Padding="16,0"
-                                        Height="32"/>
-
-                                <Button Grid.Column="4"
-                                        x:Name="BtnBrowseFont"
-                                        Content="BROWSE"
-                                        Click="BtnBrowseFont_Click"
-                                        Style="{StaticResource ButtonSecondary}"
-                                        Padding="16,0"
-                                        Height="32"/>
-                            </Grid>
+                                       VerticalAlignment="Center"/>
                         </Grid>
                     </Border>
 
                     <!-- Tileset Preview + ASCII Map -->
-                    <Grid Grid.Row="1" Margin="24,16">
+                    <Grid Grid.Row="2" Margin="24,16">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*"/>
                             <ColumnDefinition Width="16"/>
@@ -293,19 +318,28 @@
                             </Grid.RowDefinitions>
 
                             <TextBlock Grid.Row="0"
-                                       Text="FONT PREVIEW (220 GLYPHS)"
+                                       x:Name="TxtFontPreviewTitle"
+                                       Text="FONT PREVIEW"
                                        Style="{StaticResource TextLabelCaps}"
                                        Foreground="{StaticResource BrushOnSurfaceVariant}"
                                        Margin="0,0,0,8"/>
 
-                            <Border Grid.Row="1"
-                                    Background="{StaticResource BrushSurfaceContainerHigh}"
-                                    Padding="16">
-                                <TextBlock Text="Built-in font8x8 includes:\n• Basic Latin (ASCII 32-127)\n• Extended Latin (accents for PT/ES/FR/DE)\n• Box Drawing (HUD frames)\n\nTotal: 220 characters\nFormat: 8x8 monochrome\nLicense: Public Domain"
-                                           Style="{StaticResource TextBody}"
-                                           Foreground="{StaticResource BrushOnSurface}"
-                                           TextWrapping="Wrap"/>
-                            </Border>
+                            <ScrollViewer Grid.Row="1"
+                                          VerticalScrollBarVisibility="Auto"
+                                          Background="{StaticResource BrushSurfaceContainerHigh}">
+                                <Border Padding="16">
+                                    <Grid>
+                                        <Image x:Name="ImgFontPreview"
+                                               Stretch="None"
+                                               HorizontalAlignment="Left"
+                                               VerticalAlignment="Top"/>
+                                        <Canvas x:Name="GridOverlay"
+                                                HorizontalAlignment="Left"
+                                                VerticalAlignment="Top"
+                                                IsHitTestVisible="False"/>
+                                    </Grid>
+                                </Border>
+                            </ScrollViewer>
                         </Grid>
 
                         <!-- ASCII Map -->

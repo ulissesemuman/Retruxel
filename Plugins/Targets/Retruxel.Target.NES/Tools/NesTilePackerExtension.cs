@@ -1,4 +1,6 @@
 using Retruxel.Core.Interfaces;
+using System;
+using System.Collections.Generic;
 
 namespace Retruxel.Target.NES.Tools;
 

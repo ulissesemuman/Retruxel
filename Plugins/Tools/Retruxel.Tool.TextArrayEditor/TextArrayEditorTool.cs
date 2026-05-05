@@ -1,5 +1,6 @@
 using Retruxel.Core.Interfaces;
 using Retruxel.Modules.Graphics;
+using System.Collections.Generic;
 
 namespace Retruxel.Tool.TextArrayEditor;
 

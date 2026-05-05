@@ -1,4 +1,6 @@
-﻿namespace Retruxel.Core.Models;
+﻿using System.Linq;
+
+namespace Retruxel.Core.Models;
 
 /// <summary>
 /// Hardware specifications of a target console.

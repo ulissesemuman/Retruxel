@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+
 namespace Retruxel.Tool.SpriteEditor.Models;
 
 public class SpriteState

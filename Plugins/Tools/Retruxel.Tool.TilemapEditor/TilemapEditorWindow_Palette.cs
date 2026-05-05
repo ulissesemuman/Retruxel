@@ -1,6 +1,9 @@
 using Retruxel.Core.Interfaces;
 using Retruxel.Core.Models;
+using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media.Imaging;
@@ -39,107 +42,61 @@ public partial class TilemapEditorWindow
 
     private async void BtnEditPalette_Click(object sender, RoutedEventArgs e)
     {
-        if (CmbPalette.SelectedItem == null || CmbPalette.SelectedItem.ToString() == "<New Palette>")
+        if (CmbPalette.SelectedItem == null)
         {
-            MessageBox.Show("Please select a palette to edit.", "No Palette Selected", MessageBoxButton.OK, MessageBoxImage.Information);
+            MessageBox.Show("Please select a palette slot to edit.", "No Palette Selected", MessageBoxButton.OK, MessageBoxImage.Information);
             return;
         }
 
-        string paletteId = CmbPalette.SelectedItem.ToString()!;
-
-        var paletteElement = _project.Scenes
-            .SelectMany(s => s.Elements)
-            .FirstOrDefault(e => e.ModuleId == "palette" && e.ElementId == paletteId);
-
-        if (paletteElement == null)
+        // Parse slot index from "Slot 0 — Background" format
+        string selectedText = CmbPalette.SelectedItem.ToString()!;
+        if (!selectedText.StartsWith("Slot "))
         {
-            MessageBox.Show($"Palette '{paletteId}' not found in project.", "Palette Not Found", MessageBoxButton.OK, MessageBoxImage.Warning);
+            MessageBox.Show("Invalid palette slot format.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            return;
+        }
+
+        string slotNumberStr = selectedText.Substring(5, selectedText.IndexOf(' ', 5) - 5);
+        if (!int.TryParse(slotNumberStr, out int slotIndex))
+        {
+            MessageBox.Show("Could not parse slot index.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            return;
+        }
+
+        // Get current scene
+        if (_currentScene == null)
+        {
+            MessageBox.Show("No scene is currently loaded.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            return;
+        }
+
+        // Check if slot exists
+        if (slotIndex >= _currentScene.PaletteSlots.Count)
+        {
+            MessageBox.Show($"Palette slot {slotIndex} does not exist in the current scene.", "Slot Not Found", MessageBoxButton.OK, MessageBoxImage.Warning);
             return;
         }
 
         try
         {
-            if (_toolRegistry == null)
+            // Get current palette slot
+            var currentSlot = _currentScene.PaletteSlots[slotIndex];
+
+            // Use ITarget constructor for scene palette slot editing
+            var paletteEditor = new Tool.PaletteEditor.PaletteEditorWindow(_target, currentSlot)
             {
-                MessageBox.Show("Tool registry not available.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                return;
-            }
-
-            var paletteEditorTool = _toolRegistry.GetVisualTool("palette_editor");
-            if (paletteEditorTool == null)
-            {
-                MessageBox.Show("Palette Editor tool not found.", "Tool Not Found", MessageBoxButton.OK, MessageBoxImage.Warning);
-                return;
-            }
-
-            var extension = _toolRegistry.GetTool($"palette_editor_ext_{_target.TargetId}");
-            if (extension == null)
-            {
-                MessageBox.Show($"Target '{_target.DisplayName}' does not support Palette Editor yet.", "Not Supported", MessageBoxButton.OK, MessageBoxImage.Warning);
-                return;
-            }
-
-            var extensionResult = extension.Execute(new Dictionary<string, object>());
-            if (!extensionResult.ContainsKey("paletteProvider"))
-            {
-                MessageBox.Show($"Target '{_target.DisplayName}' palette extension is invalid.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                return;
-            }
-
-            var paletteProvider = (IPaletteProvider)extensionResult["paletteProvider"];
-
-            var moduleState = paletteElement.ModuleState;
-            Dictionary<string, object>? existingModuleData = null;
-
-            if (moduleState.ValueKind != System.Text.Json.JsonValueKind.Undefined &&
-                moduleState.ValueKind != System.Text.Json.JsonValueKind.Null)
-            {
-                var rawJson = moduleState.GetRawText();
-                existingModuleData = System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, object>>(rawJson);
-            }
-
-            var input = new Dictionary<string, object>
-            {
-                ["target"] = _target,
-                ["project"] = _project,
-                ["toolRegistry"] = _toolRegistry,
-                ["elementId"] = paletteId
+                Owner = this
             };
 
-            if (existingModuleData != null)
-                input["moduleData"] = existingModuleData;
-
-            var paletteEditorWindow = paletteEditorTool.CreateWindow(input);
-            if (paletteEditorWindow is not Window wpfWindow)
+            if (paletteEditor.ShowDialog() == true)
             {
-                MessageBox.Show("Palette Editor did not return a valid window.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                return;
-            }
+                // PaletteSlotData was updated directly by the editor
+                if (_saveProjectCallback != null)
+                    await _saveProjectCallback.Invoke();
 
-            wpfWindow.Owner = this;
-
-            if (wpfWindow.ShowDialog() == true)
-            {
-                var moduleDataProp = wpfWindow.GetType().GetProperty("ModuleData");
-                var updatedModuleData = moduleDataProp?.GetValue(wpfWindow) as Dictionary<string, object>;
-
-                if (updatedModuleData != null)
-                {
-                    paletteElement.ModuleState = System.Text.Json.JsonDocument.Parse(
-                        System.Text.Json.JsonSerializer.Serialize(updatedModuleData)
-                    ).RootElement.Clone();
-
-                    if (_saveProjectCallback != null)
-                        await _saveProjectCallback.Invoke();
-
-                    if (CmbTilesetAsset.SelectedItem != null)
-                    {
-                        string assetId = CmbTilesetAsset.SelectedItem.ToString()!;
-                        var asset = _project.Assets.FirstOrDefault(a => a.Id == assetId);
-                        if (asset != null)
-                            LoadTilesetImage(asset);
-                    }
-                }
+                // Refresh tileset preview with new palette
+                RefreshTilesetPreview();
+                RenderCanvas();
             }
         }
         catch (Exception ex)

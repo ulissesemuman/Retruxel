@@ -1,4 +1,5 @@
 ﻿using Retruxel.Core.Models;
+using System.Collections.Generic;
 
 namespace Retruxel.Core.Interfaces;
 

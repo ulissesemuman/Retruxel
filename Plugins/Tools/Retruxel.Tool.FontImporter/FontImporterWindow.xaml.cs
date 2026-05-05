@@ -1,6 +1,9 @@
 using Microsoft.Win32;
 using Retruxel.Core.Services;
 using Retruxel.Tool.FontImporter.Services;
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -15,6 +18,10 @@ public partial class FontImporterWindow : Window
     private string? _ttfPath;
     private int _tileWidth = 8;
     private int _tileHeight = 8;
+    private bool _useAntialiasing = true;
+    private float _fontSizeMultiplier = 1.0f;
+    private int _offsetX = 0;
+    private int _offsetY = 0;
 
     private readonly HashSet<int> _selectedCodepoints = [];
     private readonly Dictionary<int, Border> _cellMap = [];
@@ -93,6 +100,7 @@ public partial class FontImporterWindow : Window
 
     private void TileSize_Changed(object sender, TextChangedEventArgs e)
     {
+        if (TxtWidth is null || TxtHeight is null) return;
         if (!int.TryParse(TxtWidth.Text, out var w) || w < 4 || w > 64) return;
         if (!int.TryParse(TxtHeight.Text, out var h) || h < 4 || h > 64) return;
 
@@ -101,6 +109,31 @@ public partial class FontImporterWindow : Window
 
         RegenerateAllGlyphs();
         UpdateStats();
+    }
+
+    private void Antialiasing_Changed(object sender, RoutedEventArgs e)
+    {
+        if (ToggleAntialiasing is null || _ttfPath is null) return;
+        _useAntialiasing = ToggleAntialiasing.IsChecked == true;
+        RegenerateAllGlyphs();
+    }
+
+    private void FontSize_Changed(object sender, RoutedPropertyChangedEventArgs<double> e)
+    {
+        if (SliderFontSize is null || LblFontSize is null || _ttfPath is null) return;
+        _fontSizeMultiplier = (float)SliderFontSize.Value;
+        LblFontSize.Text = $"{_fontSizeMultiplier:F1}×";
+        RegenerateAllGlyphs();
+    }
+
+    private void Offset_Changed(object sender, RoutedPropertyChangedEventArgs<double> e)
+    {
+        if (SliderOffsetX is null || SliderOffsetY is null || LblOffsetX is null || LblOffsetY is null || _ttfPath is null) return;
+        _offsetX = (int)SliderOffsetX.Value;
+        _offsetY = (int)SliderOffsetY.Value;
+        LblOffsetX.Text = _offsetX.ToString();
+        LblOffsetY.Text = _offsetY.ToString();
+        RegenerateAllGlyphs();
     }
 
     // Character grid
@@ -258,6 +291,9 @@ public partial class FontImporterWindow : Window
 
     private void UpdateStats()
     {
+        if (LblSelectedCount is null || LblSpritesheetSize is null || LblRows is null || LblOutputSize is null)
+            return;
+
         var count = _selectedCodepoints.Count;
         var rows = (int)Math.Ceiling(count / 16.0);
 
@@ -283,7 +319,7 @@ public partial class FontImporterWindow : Window
 
         if (_ttfPath is null) return;
 
-        var bmp = FontRasterizer.RenderGlyph(_ttfPath, codepoint, _tileWidth, _tileHeight);
+        var bmp = FontRasterizer.RenderGlyph(_ttfPath, codepoint, _tileWidth, _tileHeight, _useAntialiasing, _fontSizeMultiplier, _offsetX, _offsetY);
         if (bmp is not null)
             GlyphPreview.Source = bmp;
     }
@@ -298,7 +334,7 @@ public partial class FontImporterWindow : Window
 
         var ordered = _selectedCodepoints.OrderBy(cp => cp).ToList();
         var sheet = FontRasterizer.RenderSpritesheet(
-            _ttfPath, ordered, _tileWidth, _tileHeight, columnsPerRow: 16);
+            _ttfPath, ordered, _tileWidth, _tileHeight, columnsPerRow: 16, _useAntialiasing, _fontSizeMultiplier, _offsetX, _offsetY);
         SheetPreview.Source = sheet;
     }
 
@@ -311,7 +347,7 @@ public partial class FontImporterWindow : Window
             if (cell.Child is not StackPanel panel) continue;
             if (panel.Children[0] is not Image img) continue;
 
-            var bmp = FontRasterizer.RenderGlyph(_ttfPath, cp, _tileWidth, _tileHeight);
+            var bmp = FontRasterizer.RenderGlyph(_ttfPath, cp, _tileWidth, _tileHeight, _useAntialiasing, _fontSizeMultiplier, _offsetX, _offsetY);
             if (bmp is not null)
                 img.Source = bmp;
         }
@@ -333,7 +369,7 @@ public partial class FontImporterWindow : Window
 
             var ordered = _selectedCodepoints.OrderBy(cp => cp).ToList();
             var sheet = FontRasterizer.RenderSpritesheet(
-                _ttfPath, ordered, _tileWidth, _tileHeight, columnsPerRow: 16);
+                _ttfPath, ordered, _tileWidth, _tileHeight, columnsPerRow: 16, _useAntialiasing, _fontSizeMultiplier, _offsetX, _offsetY);
 
             Result = new FontImportResult
             {

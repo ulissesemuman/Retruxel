@@ -1,0 +1,18 @@
+<UserControl x:Class="Retruxel.Controls.TilePickerControl"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <Border Background="{StaticResource BrushSurfaceContainerHighest}">
+        <ScrollViewer VerticalScrollBarVisibility="Auto"
+                      HorizontalScrollBarVisibility="Disabled">
+            <Image x:Name="TileGridImage"
+                   Stretch="None"
+                   HorizontalAlignment="Left"
+                   VerticalAlignment="Top"
+                   MouseDown="TileGridImage_MouseDown"
+                   MouseMove="TileGridImage_MouseMove"
+                   MouseUp="TileGridImage_MouseUp"
+                   Cursor="Hand"
+                   RenderOptions.BitmapScalingMode="NearestNeighbor"/>
+        </ScrollViewer>
+    </Border>
+</UserControl>

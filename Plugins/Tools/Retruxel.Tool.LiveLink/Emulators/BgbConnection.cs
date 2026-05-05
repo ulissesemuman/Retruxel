@@ -1,6 +1,8 @@
 using Retruxel.Core.Interfaces;
+using System;
 using System.Net.Sockets;
 using System.Text;
+using System.Threading.Tasks;
 
 namespace Retruxel.Tool.LiveLink.Emulators;
 

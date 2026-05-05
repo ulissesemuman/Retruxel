@@ -1,6 +1,11 @@
 using Retruxel.Core.Interfaces;
 using Retruxel.Core.Models;
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
 using System.Text.Json.Nodes;
+using System.Threading.Tasks;
 
 namespace Retruxel.Core.Services;
 
@@ -67,8 +72,8 @@ public class CodeGenerator
         {
             ["fontStartTile"] = textResult["fontStartTile"],
             ["fontTileCount"] = textResult["fontTileCount"],
-            ["fontTileData"] = FormatByteArray((byte[])textResult["fontTileData"]),
-            ["fontTranslationTable"] = FormatByteArray((byte[])textResult["fontTranslationTable"])
+            ["fontTileData"] = textResult["fontTileData"],
+            ["fontTranslationTable"] = textResult["fontTranslationTable"]
         };
 
         _moduleRenderer.SetGlobalVariables(globalVariables);
@@ -134,8 +139,8 @@ public class CodeGenerator
 
                     globalVariables["fontStartTile"] = textResult["fontStartTile"];
                     globalVariables["fontTileCount"] = textResult["fontTileCount"];
-                    globalVariables["fontTileData"] = FormatByteArray((byte[])textResult["fontTileData"]);
-                    globalVariables["fontTranslationTable"] = FormatByteArray((byte[])textResult["fontTranslationTable"]);
+                    globalVariables["fontTileData"] = textResult["fontTileData"];
+                    globalVariables["fontTranslationTable"] = textResult["fontTranslationTable"];
 
                     _moduleRenderer.SetGlobalVariables(globalVariables);
                 }

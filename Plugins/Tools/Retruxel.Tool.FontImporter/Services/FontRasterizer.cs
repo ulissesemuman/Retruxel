@@ -1,4 +1,6 @@
 using SkiaSharp;
+using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Windows.Media.Imaging;
 
@@ -21,13 +23,17 @@ public static class FontRasterizer
         string ttfPath,
         int codepoint,
         int tileWidth,
-        int tileHeight)
+        int tileHeight,
+        bool useAntialiasing = true,
+        float fontSizeMultiplier = 1.0f,
+        int offsetX = 0,
+        int offsetY = 0)
     {
         using var typeface = LoadTypeface(ttfPath);
         if (typeface is null) return null;
 
-        using var font = BuildFont(typeface, tileHeight);
-        using var paint = BuildPaint();
+        using var font = BuildFont(typeface, tileHeight, fontSizeMultiplier);
+        using var paint = BuildPaint(useAntialiasing);
 
         // Check if the font actually has a glyph for this codepoint
         var glyphId = typeface.GetGlyph(codepoint);
@@ -37,7 +43,7 @@ public static class FontRasterizer
         using var canvas = new SKCanvas(bitmap);
         canvas.Clear(SKColors.Transparent);
 
-        DrawGlyph(canvas, font, paint, codepoint, tileWidth, tileHeight);
+        DrawGlyph(canvas, font, paint, codepoint, tileWidth, tileHeight, offsetX, offsetY);
 
         return ToBitmapSource(bitmap);
     }
@@ -54,13 +60,17 @@ public static class FontRasterizer
         List<int> codepoints,
         int tileWidth,
         int tileHeight,
-        int columnsPerRow = 16)
+        int columnsPerRow = 16,
+        bool useAntialiasing = true,
+        float fontSizeMultiplier = 1.0f,
+        int offsetX = 0,
+        int offsetY = 0)
     {
         using var typeface = LoadTypeface(ttfPath)
             ?? throw new InvalidOperationException("Failed to load font.");
 
-        using var font = BuildFont(typeface, tileHeight);
-        using var paint = BuildPaint();
+        using var font = BuildFont(typeface, tileHeight, fontSizeMultiplier);
+        using var paint = BuildPaint(useAntialiasing);
 
         var rows = (int)Math.Ceiling(codepoints.Count / (double)columnsPerRow);
         var sheetWidth = tileWidth * columnsPerRow;
@@ -79,7 +89,7 @@ public static class FontRasterizer
 
             canvas.Save();
             canvas.Translate(destX, destY);
-            DrawGlyph(canvas, font, paint, codepoints[i], tileWidth, tileHeight);
+            DrawGlyph(canvas, font, paint, codepoints[i], tileWidth, tileHeight, offsetX, offsetY);
             canvas.Restore();
         }
 
@@ -104,10 +114,10 @@ public static class FontRasterizer
     private static SKTypeface? LoadTypeface(string path)
         => SKTypeface.FromFile(path);
 
-    private static SKFont BuildFont(SKTypeface typeface, int tileHeight)
+    private static SKFont BuildFont(SKTypeface typeface, int tileHeight, float fontSizeMultiplier = 1.0f)
     {
-        // Font size = 80% of tile height to leave a small margin
-        var fontSize = tileHeight * 0.80f;
+        // Font size = tile height * multiplier
+        var fontSize = tileHeight * fontSizeMultiplier;
 
         return new SKFont(typeface, fontSize)
         {
@@ -115,11 +125,11 @@ public static class FontRasterizer
         };
     }
 
-    private static SKPaint BuildPaint()
+    private static SKPaint BuildPaint(bool useAntialiasing = true)
     {
         return new SKPaint
         {
-            IsAntialias = false,   // pixel-perfect for retro targets
+            IsAntialias = useAntialiasing,
             Color = SKColors.White
         };
     }
@@ -130,7 +140,9 @@ public static class FontRasterizer
         SKPaint paint,
         int codepoint,
         int tileWidth,
-        int tileHeight)
+        int tileHeight,
+        int offsetX = 0,
+        int offsetY = 0)
     {
         var text = char.ConvertFromUtf32(codepoint);
 
@@ -138,8 +150,8 @@ public static class FontRasterizer
         var bounds = new SKRect();
         font.MeasureText(text, out bounds);
 
-        var x = tileWidth / 2f - bounds.MidX;  // center horizontally
-        var y = tileHeight / 2f - bounds.MidY;  // center vertically
+        var x = tileWidth / 2f - bounds.MidX + offsetX;  // center horizontally + offset
+        var y = tileHeight / 2f - bounds.MidY + offsetY;  // center vertically + offset
 
         canvas.DrawText(text, x, y, font, paint);
     }

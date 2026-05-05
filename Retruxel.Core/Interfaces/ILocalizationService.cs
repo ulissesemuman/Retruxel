@@ -1,3 +1,5 @@
+using System;
+
 namespace Retruxel.Core.Interfaces;
 
 /// <summary>

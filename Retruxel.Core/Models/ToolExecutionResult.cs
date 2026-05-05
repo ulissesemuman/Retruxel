@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+
 namespace Retruxel.Core.Models;
 
 /// <summary>

@@ -1,5 +1,6 @@
 using Retruxel.Core.Interfaces;
 using Retruxel.Core.Models;
+using System.Collections.Generic;
 
 namespace Retruxel.Core.Connectors;
 

@@ -90,26 +90,22 @@ public class TilesetRenderer
     }
 
     /// <summary>
-    /// Extracts a tile with flip flags decoded from encoded tilemap entry.
+    /// Extracts a tile with transformations applied.
     /// </summary>
-    public BitmapSource ExtractTileEncoded(int encodedValue)
+    public BitmapSource ExtractTile(TileEntry entry)
     {
-        int tileId = TilemapEntryEncoding.DecodeTileIndex(encodedValue);
-        bool flipH = TilemapEntryEncoding.DecodeFlipH(encodedValue);
-        bool flipV = TilemapEntryEncoding.DecodeFlipV(encodedValue);
-
-        var baseTile = ExtractTile(tileId);
+        var baseTile = ExtractTile(entry.TileIndex);
         
-        if (!flipH && !flipV)
+        if (!entry.FlipH && !entry.FlipV && entry.Rotation == 0)
             return baseTile;
 
-        return ApplyTransform(baseTile, flipH, flipV);
+        return ApplyTransform(baseTile, entry.FlipH, entry.FlipV, entry.Rotation);
     }
 
     /// <summary>
-    /// Applies horizontal and/or vertical flip to a tile bitmap.
+    /// Applies horizontal/vertical flip and rotation to a tile bitmap.
     /// </summary>
-    private BitmapSource ApplyTransform(BitmapSource source, bool flipH, bool flipV)
+    private BitmapSource ApplyTransform(BitmapSource source, bool flipH, bool flipV, int rotation)
     {
         var transform = new TransformGroup();
         
@@ -118,6 +114,9 @@ public class TilesetRenderer
         
         if (flipV)
             transform.Children.Add(new ScaleTransform(1, -1, _tileSize / 2.0, _tileSize / 2.0));
+        
+        if (rotation != 0)
+            transform.Children.Add(new RotateTransform(rotation, _tileSize / 2.0, _tileSize / 2.0));
 
         var transformed = new TransformedBitmap(source, transform);
         transformed.Freeze();

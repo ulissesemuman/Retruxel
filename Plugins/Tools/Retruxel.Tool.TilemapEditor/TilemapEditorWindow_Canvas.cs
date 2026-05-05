@@ -42,14 +42,13 @@ public partial class TilemapEditorWindow
                     int index = y * width + x;
                     if (index < currentLayer.Length)
                     {
-                        int encodedValue = currentLayer[index];
-                        if (encodedValue >= 0)
+                        var entry = currentLayer[index];
+                        if (!entry.IsEmpty)
                         {
-                            int tileId = Retruxel.Core.Helpers.TilemapEntryEncoding.DecodeTileIndex(encodedValue);
-                            if (tileId > maxTileId)
+                            if (entry.TileIndex > maxTileId)
                                 outOfRangeCount++;
 
-                            RenderTileAt(x, y, encodedValue, scaledTileSize);
+                            RenderTileAt(x, y, entry, scaledTileSize);
                         }
                     }
                 }
@@ -136,11 +135,11 @@ public partial class TilemapEditorWindow
         TxtViewportInfo.Text = $"VIEWPORT: {viewportWidth}×{viewportHeight} | Offset: {_mapOffsetX},{_mapOffsetY}";
     }
 
-    private void RenderTileAt(int x, int y, int encodedValue, double scaledTileSize)
+    private void RenderTileAt(int x, int y, TileEntry entry, double scaledTileSize)
     {
-        if (_tilesetRenderer.Image == null || encodedValue < 0) return;
+        if (_tilesetRenderer.Image == null || entry.IsEmpty) return;
 
-        var tileImage = _tilesetRenderer.ExtractTileEncoded(encodedValue);
+        var tileImage = _tilesetRenderer.ExtractTile(entry);
         if (tileImage == null) return;
 
         var image = new Image
@@ -229,11 +228,15 @@ public partial class TilemapEditorWindow
         if (tileX < 0 || tileX >= width || tileY < 0 || tileY >= height)
             return;
 
-        // Encode tile with flip flags
-        int encodedValue = Retruxel.Core.Helpers.TilemapEntryEncoding.Encode(
-            _selectedTileId, _selectedFlipH, _selectedFlipV);
+        // Create TileEntry with current flip flags
+        var entry = new TileEntry
+        {
+            TileIndex = _selectedTileId,
+            FlipH = _selectedFlipH,
+            FlipV = _selectedFlipV
+        };
 
-        _tilemapData.SetTile(_currentLayerIndex, tileX, tileY, encodedValue);
+        _tilemapData.SetTile(_currentLayerIndex, tileX, tileY, entry);
         RenderCanvas();
     }
 

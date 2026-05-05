@@ -195,9 +195,13 @@ public partial class TilemapEditorWindow
         if (_selectedTileIds.Count == 1)
         {
             // Single tile with flip preview
-            int encodedValue = Retruxel.Core.Helpers.TilemapEntryEncoding.Encode(
-                _selectedTileIds[0], _selectedFlipH, _selectedFlipV);
-            var tileImage = _tilesetRenderer.ExtractTileEncoded(encodedValue);
+            var entry = new TileEntry
+            {
+                TileIndex = _selectedTileIds[0],
+                FlipH = _selectedFlipH,
+                FlipV = _selectedFlipV
+            };
+            var tileImage = _tilesetRenderer.ExtractTile(entry);
             if (tileImage != null)
             {
                 ImgSelectedTile.Source = tileImage;
@@ -323,10 +327,8 @@ public partial class TilemapEditorWindow
                 var currentLayer = _tilemapData.GetLayer(_currentLayerIndex);
                 if (index >= 0 && index < currentLayer.Length)
                 {
-                    // Encode tile with flip flags (always false for block selection)
-                    int encodedValue = Retruxel.Core.Helpers.TilemapEntryEncoding.Encode(
-                        _selectedTileIds[i], false, false);
-                    currentLayer[index] = encodedValue;
+                    // Block selection always without flip
+                    currentLayer[index] = new TileEntry { TileIndex = _selectedTileIds[i] };
                 }
             }
         }

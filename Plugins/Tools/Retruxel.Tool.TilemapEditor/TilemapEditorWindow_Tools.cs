@@ -125,21 +125,13 @@ public partial class TilemapEditorWindow
 
             for (int i = 0; i < currentLayer.Length; i++)
             {
-                int encodedValue = currentLayer[i];
-                if (encodedValue >= 0)
+                var entry = currentLayer[i];
+                if (!entry.IsEmpty && indexMapping.ContainsKey(entry.TileIndex))
                 {
-                    // Decode tile index and flip flags
-                    int oldTileId = Retruxel.Core.Helpers.TilemapEntryEncoding.DecodeTileIndex(encodedValue);
-                    bool flipH = Retruxel.Core.Helpers.TilemapEntryEncoding.DecodeFlipH(encodedValue);
-                    bool flipV = Retruxel.Core.Helpers.TilemapEntryEncoding.DecodeFlipV(encodedValue);
-                    
-                    if (indexMapping.ContainsKey(oldTileId))
-                    {
-                        // Remap tile index but preserve flip flags
-                        int newTileId = indexMapping[oldTileId];
-                        currentLayer[i] = Retruxel.Core.Helpers.TilemapEntryEncoding.Encode(newTileId, flipH, flipV);
-                        remappedCount++;
-                    }
+                    // Remap tile index but preserve flip flags
+                    entry.TileIndex = indexMapping[entry.TileIndex];
+                    currentLayer[i] = entry;
+                    remappedCount++;
                 }
             }
 
@@ -321,10 +313,10 @@ public partial class TilemapEditorWindow
                             int index = y * width + x;
                             if (index < currentLayer.Length)
                             {
-                                int encodedValue = currentLayer[index];
-                                if (encodedValue >= 0)
+                                var entry = currentLayer[index];
+                                if (!entry.IsEmpty)
                                 {
-                                    var tileImage = _tilesetRenderer.ExtractTileEncoded(encodedValue);
+                                    var tileImage = _tilesetRenderer.ExtractTile(entry);
                                     if (tileImage != null)
                                         context.DrawImage(tileImage, new Rect(x * tileSize, y * tileSize, tileSize, tileSize));
                                 }

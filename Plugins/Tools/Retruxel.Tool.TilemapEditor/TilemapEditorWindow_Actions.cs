@@ -44,13 +44,16 @@ public partial class TilemapEditorWindow
 
         var base64Data = TilemapSerializer.ToBase64(_tilemapData.GetLayer(_currentLayerIndex));
         var bytes = Convert.FromBase64String(base64Data);
-        var mapDataArray = new int[bytes.Length / 2];
-
-        for (int i = 0; i < mapDataArray.Length; i++)
+        var entries = TilemapSerializer.FromBase64(base64Data, bytes.Length / 4);
+        
+        // Convert TileEntry[] to array of objects for JSON serialization
+        var mapDataArray = entries.Select(e => new
         {
-            ushort value = (ushort)(bytes[i * 2] | (bytes[i * 2 + 1] << 8));
-            mapDataArray[i] = value == 0xFFFF ? -1 : value;
-        }
+            tileIndex = e.TileIndex,
+            flipH = e.FlipH,
+            flipV = e.FlipV,
+            rotation = e.Rotation
+        }).ToArray();
 
         ModuleData = new Dictionary<string, object>
         {
@@ -88,11 +91,15 @@ public partial class TilemapEditorWindow
 
     private void BtnFill_Click(object sender, RoutedEventArgs e)
     {
-        // Encode tile with current flip flags
-        int encodedValue = Retruxel.Core.Helpers.TilemapEntryEncoding.Encode(
-            _selectedTileId, _selectedFlipH, _selectedFlipV);
+        // Create entry with current flip flags
+        var entry = new TileEntry
+        {
+            TileIndex = _selectedTileId,
+            FlipH = _selectedFlipH,
+            FlipV = _selectedFlipV
+        };
         
-        _tilemapData.FillLayer(_currentLayerIndex, encodedValue);
+        _tilemapData.FillLayer(_currentLayerIndex, entry);
         RenderCanvas();
     }
 
@@ -128,8 +135,7 @@ public partial class TilemapEditorWindow
             var currentLayer = _tilemapData.GetLayer(_currentLayerIndex);
             for (int i = 0; i < currentLayer.Length && i < tileCount; i++)
             {
-                // Encode without flip flags
-                currentLayer[i] = Retruxel.Core.Helpers.TilemapEntryEncoding.Encode(i, false, false);
+                currentLayer[i] = new TileEntry { TileIndex = i };
             }
 
             RenderCanvas();
@@ -228,9 +234,33 @@ public partial class TilemapEditorWindow
             {
                 if (jsonEl.ValueKind == System.Text.Json.JsonValueKind.Array)
                 {
-                    var intArray = jsonEl.EnumerateArray().Select(e => e.GetInt32()).ToArray();
                     var currentLayer = _tilemapData.GetLayer(_currentLayerIndex);
-                    Array.Copy(intArray, currentLayer, Math.Min(intArray.Length, currentLayer.Length));
+                    int index = 0;
+                    
+                    foreach (var item in jsonEl.EnumerateArray())
+                    {
+                        if (index >= currentLayer.Length) break;
+                        
+                        // New format: object with tileIndex, flipH, flipV, rotation
+                        if (item.ValueKind == System.Text.Json.JsonValueKind.Object)
+                        {
+                            currentLayer[index] = new TileEntry
+                            {
+                                TileIndex = item.TryGetProperty("tileIndex", out var ti) ? ti.GetInt32() : -1,
+                                FlipH = item.TryGetProperty("flipH", out var fh) && fh.GetBoolean(),
+                                FlipV = item.TryGetProperty("flipV", out var fv) && fv.GetBoolean(),
+                                Rotation = item.TryGetProperty("rotation", out var rot) ? rot.GetInt32() : 0
+                            };
+                        }
+                        // Old format: int (backward compat - treat as plain tile index)
+                        else if (item.ValueKind == System.Text.Json.JsonValueKind.Number)
+                        {
+                            int tileIndex = item.GetInt32();
+                            currentLayer[index] = new TileEntry { TileIndex = tileIndex };
+                        }
+                        
+                        index++;
+                    }
                     RenderCanvas();
                 }
                 else if (jsonEl.ValueKind == System.Text.Json.JsonValueKind.String)
@@ -240,10 +270,27 @@ public partial class TilemapEditorWindow
                         LoadFromBase64(base64Data);
                 }
             }
-            else if (mapDataObj is int[] intArray)
+            else if (mapDataObj is object[] objArray)
             {
                 var currentLayer = _tilemapData.GetLayer(_currentLayerIndex);
-                Array.Copy(intArray, currentLayer, Math.Min(intArray.Length, currentLayer.Length));
+                for (int i = 0; i < Math.Min(objArray.Length, currentLayer.Length); i++)
+                {
+                    // Handle anonymous objects from BtnSave
+                    var obj = objArray[i];
+                    var type = obj.GetType();
+                    var tiProp = type.GetProperty("tileIndex");
+                    var fhProp = type.GetProperty("flipH");
+                    var fvProp = type.GetProperty("flipV");
+                    var rotProp = type.GetProperty("rotation");
+                    
+                    currentLayer[i] = new TileEntry
+                    {
+                        TileIndex = tiProp != null ? (int)tiProp.GetValue(obj)! : -1,
+                        FlipH = fhProp != null && (bool)fhProp.GetValue(obj)!,
+                        FlipV = fvProp != null && (bool)fvProp.GetValue(obj)!,
+                        Rotation = rotProp != null ? (int)rotProp.GetValue(obj)! : 0
+                    };
+                }
                 RenderCanvas();
             }
         }
@@ -257,9 +304,9 @@ public partial class TilemapEditorWindow
 
     private void LoadFromBase64(string base64Data)
     {
-        var intArray = TilemapSerializer.FromBase64(base64Data, _tilemapData.Width * _tilemapData.Height);
+        var entries = TilemapSerializer.FromBase64(base64Data, _tilemapData.Width * _tilemapData.Height);
         var currentLayer = _tilemapData.GetLayer(_currentLayerIndex);
-        Array.Copy(intArray, currentLayer, Math.Min(intArray.Length, currentLayer.Length));
+        Array.Copy(entries, currentLayer, Math.Min(entries.Length, currentLayer.Length));
         RenderCanvas();
     }
 }

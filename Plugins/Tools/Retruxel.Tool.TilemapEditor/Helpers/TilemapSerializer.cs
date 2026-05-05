@@ -3,64 +3,97 @@ using System;
 namespace Retruxel.Tool.TilemapEditor.Helpers;
 
 /// <summary>
-/// Handles tilemap data serialization to/from Base64 and int arrays.
-/// Preserves flip flags (bits 9-10) during serialization.
+/// Handles tilemap data serialization to/from Base64.
+/// Uses 4 bytes per tile entry to store TileIndex + FlipH + FlipV + Rotation.
 /// </summary>
 public static class TilemapSerializer
 {
     /// <summary>
-    /// Serializes tilemap data to Base64, preserving flip flags.
-    /// Uses ushort (16-bit) encoding with sentinel value 0xFFFF for empty cells.
+    /// Serializes tilemap data to Base64.
+    /// Format: 4 bytes per entry
+    ///   Byte 0-1: tileIndex as ushort little-endian (0xFFFF = empty)
+    ///   Byte 2: flags — bit 0 = flipH, bit 1 = flipV
+    ///   Byte 3: rotation — 0, 90, 180, 270 encoded as 0, 1, 2, 3
     /// </summary>
-    public static string ToBase64(int[] layerData)
+    public static string ToBase64(TileEntry[] layerData)
     {
-        byte[] bytes = new byte[layerData.Length * 2];
+        byte[] bytes = new byte[layerData.Length * 4];
 
         for (int i = 0; i < layerData.Length; i++)
         {
-            int tileId = layerData[i];
+            var entry = layerData[i];
+            int offset = i * 4;
             
-            // ETAPA 4: Preserve bits 0-10 (tileIndex + flipH + flipV)
-            // Sentinel: 0xFFFF for empty cells (-1)
-            // Max value: 0x7FF (bits 0-10 = 2047)
-            ushort value = tileId < 0 ? (ushort)0xFFFF : (ushort)(tileId & 0x7FF);
-
-            bytes[i * 2] = (byte)(value & 0xFF);
-            bytes[i * 2 + 1] = (byte)((value >> 8) & 0xFF);
+            // Bytes 0-1: tileIndex
+            ushort tileIndex = entry.TileIndex < 0 ? (ushort)0xFFFF : (ushort)entry.TileIndex;
+            bytes[offset] = (byte)(tileIndex & 0xFF);
+            bytes[offset + 1] = (byte)((tileIndex >> 8) & 0xFF);
+            
+            // Byte 2: flags
+            byte flags = 0;
+            if (entry.FlipH) flags |= 0x01;
+            if (entry.FlipV) flags |= 0x02;
+            bytes[offset + 2] = flags;
+            
+            // Byte 3: rotation (0, 90, 180, 270 → 0, 1, 2, 3)
+            byte rotation = entry.Rotation switch
+            {
+                90 => 1,
+                180 => 2,
+                270 => 3,
+                _ => 0
+            };
+            bytes[offset + 3] = rotation;
         }
 
         return Convert.ToBase64String(bytes);
     }
 
     /// <summary>
-    /// Deserializes tilemap data from Base64, preserving flip flags.
+    /// Deserializes tilemap data from Base64.
     /// </summary>
-    public static int[] FromBase64(string base64Data, int expectedSize)
+    public static TileEntry[] FromBase64(string base64Data, int expectedSize)
     {
         byte[] bytes = Convert.FromBase64String(base64Data);
-        int tileCount = bytes.Length / 2;
-        var result = new int[expectedSize];
-        Array.Fill(result, -1);
+        int entryCount = bytes.Length / 4;
+        var result = new TileEntry[expectedSize];
+        
+        for (int i = 0; i < expectedSize; i++)
+            result[i] = TileEntry.Empty;
 
-        for (int i = 0; i < Math.Min(tileCount, expectedSize); i++)
+        for (int i = 0; i < Math.Min(entryCount, expectedSize); i++)
         {
-            ushort value = (ushort)(bytes[i * 2] | (bytes[i * 2 + 1] << 8));
+            int offset = i * 4;
             
-            // ETAPA 4: Preserve all bits (including flip flags)
-            // Sentinel 0xFFFF → -1, otherwise keep value as-is
-            result[i] = value == 0xFFFF ? -1 : (int)value;
+            // Bytes 0-1: tileIndex
+            ushort tileIndex = (ushort)(bytes[offset] | (bytes[offset + 1] << 8));
+            
+            // Byte 2: flags
+            byte flags = bytes[offset + 2];
+            bool flipH = (flags & 0x01) != 0;
+            bool flipV = (flags & 0x02) != 0;
+            
+            // Byte 3: rotation
+            byte rotationByte = bytes[offset + 3];
+            int rotation = rotationByte switch
+            {
+                1 => 90,
+                2 => 180,
+                3 => 270,
+                _ => 0
+            };
+            
+            result[i] = tileIndex == 0xFFFF
+                ? TileEntry.Empty
+                : new TileEntry
+                {
+                    TileIndex = tileIndex,
+                    FlipH = flipH,
+                    FlipV = flipV,
+                    Rotation = rotation
+                };
         }
 
-        return result;
-    }
-
-    /// <summary>
-    /// Creates a copy of tilemap data as int array.
-    /// </summary>
-    public static int[] ToIntArray(int[] layerData)
-    {
-        var result = new int[layerData.Length];
-        Array.Copy(layerData, result, layerData.Length);
         return result;
     }
 }

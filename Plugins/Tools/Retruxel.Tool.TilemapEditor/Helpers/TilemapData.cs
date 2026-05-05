@@ -8,7 +8,7 @@ namespace Retruxel.Tool.TilemapEditor.Helpers;
 /// </summary>
 public class TilemapData
 {
-    private List<int[]> _layers = new();
+    private List<TileEntry[]> _layers = new();
     private int _width;
     private int _height;
 
@@ -24,43 +24,57 @@ public class TilemapData
 
         for (int i = 0; i < layerCount; i++)
         {
-            var layer = new int[width * height];
-            Array.Fill(layer, -1);
+            var layer = new TileEntry[width * height];
+            for (int j = 0; j < layer.Length; j++)
+                layer[j] = TileEntry.Empty;
             _layers.Add(layer);
         }
     }
 
-    public int[] GetLayer(int index) => _layers[index];
+    public TileEntry[] GetLayer(int index) => _layers[index];
 
-    public void SetTile(int layerIndex, int x, int y, int tileId)
+    public void SetTile(int layerIndex, int x, int y, TileEntry entry)
     {
         if (layerIndex < 0 || layerIndex >= _layers.Count) return;
         if (x < 0 || x >= _width || y < 0 || y >= _height) return;
 
         int index = y * _width + x;
-        _layers[layerIndex][index] = tileId;
+        _layers[layerIndex][index] = entry.Clone();
     }
 
-    public int GetTile(int layerIndex, int x, int y)
+    // Backward-compat overload for simple tile placement (no flip)
+    public void SetTile(int layerIndex, int x, int y, int tileIndex)
+        => SetTile(layerIndex, x, y, new TileEntry { TileIndex = tileIndex });
+
+    public TileEntry GetTile(int layerIndex, int x, int y)
     {
-        if (layerIndex < 0 || layerIndex >= _layers.Count) return -1;
-        if (x < 0 || x >= _width || y < 0 || y >= _height) return -1;
+        if (layerIndex < 0 || layerIndex >= _layers.Count) return TileEntry.Empty;
+        if (x < 0 || x >= _width || y < 0 || y >= _height) return TileEntry.Empty;
 
         int index = y * _width + x;
         return _layers[layerIndex][index];
     }
 
+    public int GetTileIndex(int layerIndex, int x, int y)
+        => GetTile(layerIndex, x, y).TileIndex;
+
     public void ClearLayer(int layerIndex)
     {
         if (layerIndex < 0 || layerIndex >= _layers.Count) return;
-        Array.Fill(_layers[layerIndex], -1);
+        for (int i = 0; i < _layers[layerIndex].Length; i++)
+            _layers[layerIndex][i] = TileEntry.Empty;
     }
 
-    public void FillLayer(int layerIndex, int tileId)
+    public void FillLayer(int layerIndex, TileEntry entry)
     {
         if (layerIndex < 0 || layerIndex >= _layers.Count) return;
-        Array.Fill(_layers[layerIndex], tileId);
+        for (int i = 0; i < _layers[layerIndex].Length; i++)
+            _layers[layerIndex][i] = entry.Clone();
     }
+
+    // Backward-compat overload
+    public void FillLayer(int layerIndex, int tileIndex)
+        => FillLayer(layerIndex, new TileEntry { TileIndex = tileIndex });
 
     public void Resize(int newWidth, int newHeight)
     {
@@ -68,8 +82,9 @@ public class TilemapData
 
         for (int i = 0; i < _layers.Count; i++)
         {
-            var newLayer = new int[newSize];
-            Array.Fill(newLayer, -1);
+            var newLayer = new TileEntry[newSize];
+            for (int j = 0; j < newLayer.Length; j++)
+                newLayer[j] = TileEntry.Empty;
 
             // Copy existing data
             for (int y = 0; y < Math.Min(_height, newHeight); y++)
@@ -78,7 +93,7 @@ public class TilemapData
                 {
                     int oldIndex = y * _width + x;
                     int newIndex = y * newWidth + x;
-                    newLayer[newIndex] = _layers[i][oldIndex];
+                    newLayer[newIndex] = _layers[i][oldIndex].Clone();
                 }
             }
 

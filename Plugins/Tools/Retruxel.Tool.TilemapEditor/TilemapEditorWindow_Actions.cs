@@ -88,7 +88,11 @@ public partial class TilemapEditorWindow
 
     private void BtnFill_Click(object sender, RoutedEventArgs e)
     {
-        _tilemapData.FillLayer(_currentLayerIndex, _selectedTileId);
+        // Encode tile with current flip flags
+        int encodedValue = Retruxel.Core.Helpers.TilemapEntryEncoding.Encode(
+            _selectedTileId, _selectedFlipH, _selectedFlipV);
+        
+        _tilemapData.FillLayer(_currentLayerIndex, encodedValue);
         RenderCanvas();
     }
 
@@ -120,11 +124,12 @@ public partial class TilemapEditorWindow
             TxtHeight.Text = rows.ToString();
             _tilemapData.Resize(columns, rows);
 
-            // Fill tilemap with tiles in order (0, 1, 2, ...)
+            // Fill tilemap with tiles in order (0, 1, 2, ...) - no flip
             var currentLayer = _tilemapData.GetLayer(_currentLayerIndex);
             for (int i = 0; i < currentLayer.Length && i < tileCount; i++)
             {
-                currentLayer[i] = i;
+                // Encode without flip flags
+                currentLayer[i] = Retruxel.Core.Helpers.TilemapEntryEncoding.Encode(i, false, false);
             }
 
             RenderCanvas();

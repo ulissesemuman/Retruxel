@@ -125,11 +125,21 @@ public partial class TilemapEditorWindow
 
             for (int i = 0; i < currentLayer.Length; i++)
             {
-                int oldTileId = currentLayer[i];
-                if (oldTileId >= 0 && indexMapping.ContainsKey(oldTileId))
+                int encodedValue = currentLayer[i];
+                if (encodedValue >= 0)
                 {
-                    currentLayer[i] = indexMapping[oldTileId];
-                    remappedCount++;
+                    // Decode tile index and flip flags
+                    int oldTileId = Retruxel.Core.Helpers.TilemapEntryEncoding.DecodeTileIndex(encodedValue);
+                    bool flipH = Retruxel.Core.Helpers.TilemapEntryEncoding.DecodeFlipH(encodedValue);
+                    bool flipV = Retruxel.Core.Helpers.TilemapEntryEncoding.DecodeFlipV(encodedValue);
+                    
+                    if (indexMapping.ContainsKey(oldTileId))
+                    {
+                        // Remap tile index but preserve flip flags
+                        int newTileId = indexMapping[oldTileId];
+                        currentLayer[i] = Retruxel.Core.Helpers.TilemapEntryEncoding.Encode(newTileId, flipH, flipV);
+                        remappedCount++;
+                    }
                 }
             }
 
@@ -311,10 +321,10 @@ public partial class TilemapEditorWindow
                             int index = y * width + x;
                             if (index < currentLayer.Length)
                             {
-                                int tileId = currentLayer[index];
-                                if (tileId >= 0)
+                                int encodedValue = currentLayer[index];
+                                if (encodedValue >= 0)
                                 {
-                                    var tileImage = _tilesetRenderer.ExtractTile(tileId);
+                                    var tileImage = _tilesetRenderer.ExtractTileEncoded(encodedValue);
                                     if (tileImage != null)
                                         context.DrawImage(tileImage, new Rect(x * tileSize, y * tileSize, tileSize, tileSize));
                                 }

@@ -1,5 +1,4 @@
 
-using Retruxel.Core.Helpers;
 using Retruxel.Core.Interfaces;
 using System;
 using System.Collections.Generic;
@@ -49,13 +48,16 @@ public class TilemapPreprocessorTool : ITool
     {
         // Extract parameters
         var solidTiles = GetIntArray(input, "solidTiles");
-        var mapData = GetIntArray(input, "mapData");
+        var mapDataObj = input.ContainsKey("mapData") ? input["mapData"] : null;
+
+        // Convert mapData to TileEntry[] if it's an object array
+        var mapData = ConvertToTileEntryArray(mapDataObj);
 
         // DEBUG: Log mapData info
         System.Diagnostics.Debug.WriteLine($"[TilemapPreprocessor] mapData received: Length={mapData.Length}");
         if (mapData.Length > 0)
         {
-            System.Diagnostics.Debug.WriteLine($"[TilemapPreprocessor] First 10 values: {string.Join(", ", mapData.Take(10))}");
+            System.Diagnostics.Debug.WriteLine($"[TilemapPreprocessor] First entry: TileIndex={mapData[0].TileIndex}, FlipH={mapData[0].FlipH}, FlipV={mapData[0].FlipV}");
         }
 
         var startTile = GetInt(input, "startTile", 0);
@@ -69,7 +71,7 @@ public class TilemapPreprocessorTool : ITool
         // Only apply clipping if mapX < 0 or mapY < 0 (tilemap starts off-screen)
         bool needsClipping = mapX < 0 || mapY < 0;
 
-        int[] processedMapData;
+        TileEntry[] processedMapData;
         int finalWidth;
         int finalHeight;
         int drawX;
@@ -101,12 +103,8 @@ public class TilemapPreprocessorTool : ITool
         var collisionArray = GenerateCollisionBitfield(solidTiles, maxTileSlots, collisionBytes);
         var collisionHex = string.Join(", ", collisionArray.Select(b => $"0x{b:X2}"));
 
-        // ETAPA 6: Process map data with flip flag decoding
-        var processedMap = ProcessMapData(processedMapData, startTile, finalWidth, finalHeight, maxTileSlots, paletteSlot);
-
-        // Return multiple formats for flexibility
-        var processedMapHex = FormatMapAsHex(processedMap, finalWidth, finalHeight);
-        var processedMapFlat = string.Join(", ", processedMap.Select(v => $"0x{v:X4}"));
+        // Process map data - convert to ProcessedTileEntry[] with VRAM slots
+        var processedMap = ProcessMapData(processedMapData, startTile, finalWidth, finalHeight, maxTileSlots);
 
         var result = new Dictionary<string, object>
         {
@@ -117,10 +115,8 @@ public class TilemapPreprocessorTool : ITool
             ["solidTilesCount"] = solidTiles.Length,
             ["solidTilesList"] = string.Join(", ", solidTiles),
 
-            // Map data (as processed integers)
+            // Map data (as ProcessedTileEntry[])
             ["processedMap"] = processedMap,
-            ["processedMapHex"] = processedMapHex,
-            ["processedMapFlat"] = processedMapFlat,
             ["mapEntryCount"] = processedMap.Length,
 
             // Clipping info
@@ -130,18 +126,63 @@ public class TilemapPreprocessorTool : ITool
             ["drawY"] = drawY,
             ["originalWidth"] = mapWidth,
             ["originalHeight"] = mapHeight,
-            ["wasClipped"] = needsClipping
+            ["wasClipped"] = needsClipping,
+            
+            // Pass paletteSlot for target extension
+            ["paletteSlot"] = paletteSlot
         };
 
         return result;
     }
 
     /// <summary>
+    /// Converts mapData object to TileEntry array.
+    /// Supports: TileEntry[], anonymous objects with tileIndex/flipH/flipV/rotation, int[] (backward compat).
+    /// </summary>
+    private TileEntry[] ConvertToTileEntryArray(object? mapDataObj)
+    {
+        if (mapDataObj == null) return Array.Empty<TileEntry>();
+
+        // Already TileEntry[]
+        if (mapDataObj is TileEntry[] entries)
+            return entries;
+
+        // Anonymous objects from JSON
+        if (mapDataObj is object[] objArray)
+        {
+            return objArray.Select(obj =>
+            {
+                var type = obj.GetType();
+                var tiProp = type.GetProperty("tileIndex");
+                var fhProp = type.GetProperty("flipH");
+                var fvProp = type.GetProperty("flipV");
+                var rotProp = type.GetProperty("rotation");
+
+                return new TileEntry
+                {
+                    TileIndex = tiProp != null ? (int)tiProp.GetValue(obj)! : -1,
+                    FlipH = fhProp != null && (bool)fhProp.GetValue(obj)!,
+                    FlipV = fvProp != null && (bool)fvProp.GetValue(obj)!,
+                    Rotation = rotProp != null ? (int)rotProp.GetValue(obj)! : 0
+                };
+            }).ToArray();
+        }
+
+        // Backward compat: int[] (plain tile indices)
+        if (mapDataObj is int[] intArray)
+        {
+            return intArray.Select(i => new TileEntry { TileIndex = i }).ToArray();
+        }
+
+        return Array.Empty<TileEntry>();
+    }
+
+    /// <summary>
     /// Applies clipping to the tilemap when it starts off-screen (negative mapX or mapY).
     /// Returns only the visible portion by skipping the off-screen tiles.
     /// </summary>
-    private (int[] clippedData, int width, int height, int drawX, int drawY) ApplyClipping(
-        int[] mapData, int mapWidth, int mapHeight, int mapX, int mapY)
+    private (TileEntry[] clippedData, int width, int height, int drawX, int drawY) ApplyClipping(
+        TileEntry[] mapData, int mapWidth, int mapHeight, int mapX, int mapY)
     {
         int sourceOffsetX = 0;
         int sourceOffsetY = 0;
@@ -167,7 +208,7 @@ public class TilemapPreprocessorTool : ITool
         }
 
         // Extract the visible portion
-        var clippedData = new int[drawWidth * drawHeight];
+        var clippedData = new TileEntry[drawWidth * drawHeight];
         for (int y = 0; y < drawHeight; y++)
         {
             for (int x = 0; x < drawWidth; x++)
@@ -177,7 +218,7 @@ public class TilemapPreprocessorTool : ITool
 
                 if (sourceX >= mapWidth || sourceY >= mapHeight)
                 {
-                    clippedData[y * drawWidth + x] = -1; // Empty tile
+                    clippedData[y * drawWidth + x] = TileEntry.Empty;
                     continue;
                 }
 
@@ -185,7 +226,7 @@ public class TilemapPreprocessorTool : ITool
                 if (sourceIndex < mapData.Length)
                     clippedData[y * drawWidth + x] = mapData[sourceIndex];
                 else
-                    clippedData[y * drawWidth + x] = -1;
+                    clippedData[y * drawWidth + x] = TileEntry.Empty;
             }
         }
 
@@ -210,98 +251,45 @@ public class TilemapPreprocessorTool : ITool
     }
 
     /// <summary>
-    /// ETAPA 6: Processes map data by decoding flip flags and generating SMS nametable words.
-    /// 
-    /// Input encoding (internal editor format):
-    ///   Bit 10: flipV
-    ///   Bit 9:  flipH
-    ///   Bits 0-8: tileIndex
-    /// 
-    /// Output format (SMS nametable word):
-    ///   Bits 15-9: tile index (0-447)
-    ///   Bit 8: horizontal flip
-    ///   Bit 7: vertical flip
-    ///   Bit 4: palette select (0=BG, 1=Sprite)
-    ///   Bits 3-0: priority/unused
+    /// Processes map data by adding startTile offset to create VRAM slots.
+    /// Returns ProcessedTileEntry[] with transformation flags - no hardware-specific encoding.
     /// </summary>
-    private int[] ProcessMapData(int[] mapData, int startTile, int mapWidth, int mapHeight, int maxTileSlots, int paletteSlot)
+    private ProcessedTileEntry[] ProcessMapData(TileEntry[] mapData, int startTile, int mapWidth, int mapHeight, int maxTileSlots)
     {
         var totalCells = mapWidth * mapHeight;
-        var result = new int[totalCells];
+        var result = new ProcessedTileEntry[totalCells];
 
         for (int i = 0; i < totalCells; i++)
         {
             if (i >= mapData.Length)
             {
-                result[i] = 0; // Empty cell
+                result[i] = new ProcessedTileEntry { VramSlot = 0 };
                 continue;
             }
 
-            int rawId = mapData[i];
+            var entry = mapData[i];
 
-            // -1 = empty cell → transparent tile 0
-            if (rawId < 0)
+            // Empty cell → VRAM slot 0
+            if (entry.IsEmpty)
             {
-                result[i] = 0;
+                result[i] = new ProcessedTileEntry { VramSlot = 0 };
                 continue;
             }
-
-            // ETAPA 6: Decode flip flags from internal encoding
-            int tileIndex = TilemapEntryEncoding.DecodeTileIndex(rawId);
-            bool flipH = TilemapEntryEncoding.DecodeFlipH(rawId);
-            bool flipV = TilemapEntryEncoding.DecodeFlipV(rawId);
 
             // Add startTile offset
-            int vramSlot = tileIndex + startTile;
+            int vramSlot = entry.TileIndex + startTile;
             if (vramSlot >= maxTileSlots) vramSlot = maxTileSlots - 1;
 
-            // Build SMS nametable word
-            // Bits 15-9: tile index
-            int nametableWord = vramSlot & 0x1FF;
-
-            // Bit 8: horizontal flip
-            if (flipH) nametableWord |= (1 << 8);
-
-            // Bit 7: vertical flip
-            if (flipV) nametableWord |= (1 << 7);
-
-            // Bit 4: palette select (0=BG palette, 1=Sprite palette)
-            if (paletteSlot == 1) nametableWord |= (1 << 4);
-
-            result[i] = nametableWord;
+            result[i] = new ProcessedTileEntry
+            {
+                VramSlot = vramSlot,
+                FlipH = entry.FlipH,
+                FlipV = entry.FlipV,
+                Rotation = entry.Rotation
+            };
         }
 
         return result;
-    }
-
-    /// <summary>
-    /// Formats processed map data as multi-line hex string (one row per line).
-    /// </summary>
-    private string FormatMapAsHex(int[] processedMap, int mapWidth, int mapHeight)
-    {
-        var lines = new List<string>();
-
-        for (int row = 0; row < mapHeight; row++)
-        {
-            var entries = new List<string>();
-
-            for (int col = 0; col < mapWidth; col++)
-            {
-                int idx = row * mapWidth + col;
-                if (idx >= processedMap.Length)
-                {
-                    entries.Add("0x0000");
-                    continue;
-                }
-
-                entries.Add($"0x{processedMap[idx]:X4}");
-            }
-
-            bool isLast = row == mapHeight - 1;
-            lines.Add($"    {string.Join(", ", entries)}{(isLast ? "" : ",")}");
-        }
-
-        return string.Join("\n", lines);
     }
 
     // Helper methods to safely extract values from input dictionary
@@ -319,7 +307,20 @@ public class TilemapPreprocessorTool : ITool
     private int[] GetIntArray(Dictionary<string, object> input, string key)
     {
         if (input.TryGetValue(key, out var value))
-            return ArrayConversionHelper.ToIntArray(value);
+        {
+            if (value is int[] intArray) return intArray;
+            if (value is System.Collections.IEnumerable enumerable)
+            {
+                var list = new List<int>();
+                foreach (var item in enumerable)
+                {
+                    if (item is int i) list.Add(i);
+                    else if (item is long l) list.Add((int)l);
+                    else if (item is double d) list.Add((int)d);
+                }
+                return list.ToArray();
+            }
+        }
         return Array.Empty<int>();
     }
 }

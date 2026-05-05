@@ -122,7 +122,7 @@ public partial class TilemapEditorWindow
 
                 _tilemapData.Resize(width, height);
 
-                var mapData = (int[])tilemapData["mapData"];
+                var mapData = (Helpers.TileEntry[])tilemapData["mapData"];
                 if (mapData.Length > 0)
                 {
                     var currentLayer = _tilemapData.GetLayer(_currentLayerIndex);

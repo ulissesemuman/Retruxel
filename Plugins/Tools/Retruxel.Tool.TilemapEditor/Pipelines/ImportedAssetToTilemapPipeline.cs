@@ -72,15 +72,32 @@ public class ImportedAssetToTilemapPipeline : AssetPipelineBase<ImportedAssetDat
         uint[] mappedPalette = PaletteMapper.MapToTargetHardware(input.Palette, target, useLab);
         System.Diagnostics.Debug.WriteLine($"[ImportedAssetToTilemapPipeline] Palette mapped to {targetId.ToUpper()} hardware using {(useLab ? "LAB" : "RGB")} color space");
 
-        // Return data for tilemap editor (keep as int[] in memory)
+        // Return data for tilemap editor
+        // Convert to TileEntry[] if tilemapEncoded is available
+        TileEntry[] mapData;
+        if (input.Metadata.ContainsKey("tilemapEncoded") && input.Metadata["tilemapEncoded"] is int[] encoded)
+        {
+            // New format from TilePackerTool - has flip flags
+            mapData = encoded.Select(e => new TileEntry
+            {
+                TileIndex = e & 0x1FF,  // Bits 0-8
+                FlipH = (e & (1 << 9)) != 0,
+                FlipV = (e & (1 << 10)) != 0,
+                Rotation = 0  // TilePacker doesn't support rotation yet
+            }).ToArray();
+        }
+        else
+        {
+            // Old format - plain tile indices
+            mapData = input.TilemapData.Select(x => new TileEntry { TileIndex = (int)x }).ToArray();
+        }
+
         return new Dictionary<string, object>
         {
             ["tilesAssetId"] = assetId,
             ["mapWidth"] = input.MapWidth,
             ["mapHeight"] = input.MapHeight,
-            ["mapData"] = input.Metadata.ContainsKey("tilemapEncoded") 
-                ? (int[])input.Metadata["tilemapEncoded"]
-                : input.TilemapData.Select(x => (int)x).ToArray(),
+            ["mapData"] = mapData,
             ["palette"] = mappedPalette,
             ["asset"] = asset
         };

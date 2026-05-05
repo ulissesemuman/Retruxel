@@ -145,7 +145,13 @@ public partial class TilemapEditorWindow
             if (newTileCount < oldTileCount)
             {
                 var currentLayer = _tilemapData.GetLayer(_currentLayerIndex);
-                int tilesAboveLimit = currentLayer.Count(t => t >= newTileCount);
+                // Decode tile indices before comparing
+                int tilesAboveLimit = currentLayer.Count(encodedValue => 
+                {
+                    if (encodedValue < 0) return false;
+                    int tileId = Retruxel.Core.Helpers.TilemapEntryEncoding.DecodeTileIndex(encodedValue);
+                    return tileId >= newTileCount;
+                });
 
                 if (tilesAboveLimit > 0)
                 {

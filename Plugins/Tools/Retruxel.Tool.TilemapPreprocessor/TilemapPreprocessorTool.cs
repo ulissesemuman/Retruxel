@@ -57,22 +57,6 @@ public class TilemapPreprocessorTool : ITool
         {
             System.Diagnostics.Debug.WriteLine($"[TilemapPreprocessor] First 10 values: {string.Join(", ", mapData.Take(10))}");
         }
-        else
-        {
-            System.Diagnostics.Debug.WriteLine($"[TilemapPreprocessor] WARNING: mapData is EMPTY!");
-            if (input.TryGetValue("mapData", out var rawMapData))
-            {
-                System.Diagnostics.Debug.WriteLine($"[TilemapPreprocessor] Raw mapData type: {rawMapData?.GetType().Name}");
-                if (rawMapData is object[] objArr)
-                {
-                    System.Diagnostics.Debug.WriteLine($"[TilemapPreprocessor] object[] length: {objArr.Length}");
-                    if (objArr.Length > 0)
-                    {
-                        System.Diagnostics.Debug.WriteLine($"[TilemapPreprocessor] First element type: {objArr[0]?.GetType().Name}, value: {objArr[0]}");
-                    }
-                }
-            }
-        }
 
         var startTile = GetInt(input, "startTile", 0);
         var mapWidth = GetInt(input, "mapWidth", 32);
@@ -80,6 +64,7 @@ public class TilemapPreprocessorTool : ITool
         var mapX = GetInt(input, "mapX", 0);
         var mapY = GetInt(input, "mapY", 0);
         var maxTileSlots = GetInt(input, "maxTileSlots", 448);
+        var paletteSlot = GetInt(input, "paletteSlot", 0);
 
         // Only apply clipping if mapX < 0 or mapY < 0 (tilemap starts off-screen)
         bool needsClipping = mapX < 0 || mapY < 0;
@@ -116,8 +101,8 @@ public class TilemapPreprocessorTool : ITool
         var collisionArray = GenerateCollisionBitfield(solidTiles, maxTileSlots, collisionBytes);
         var collisionHex = string.Join(", ", collisionArray.Select(b => $"0x{b:X2}"));
 
-        // Process map data (add startTile to each tile ID)
-        var processedMap = ProcessMapData(processedMapData, startTile, finalWidth, finalHeight, maxTileSlots);
+        // ETAPA 6: Process map data with flip flag decoding
+        var processedMap = ProcessMapData(processedMapData, startTile, finalWidth, finalHeight, maxTileSlots, paletteSlot);
 
         // Return multiple formats for flexibility
         var processedMapHex = FormatMapAsHex(processedMap, finalWidth, finalHeight);
@@ -225,10 +210,21 @@ public class TilemapPreprocessorTool : ITool
     }
 
     /// <summary>
-    /// Processes map data by adding startTile offset to each tile ID.
-    /// Returns array of processed tile values (raw integers).
+    /// ETAPA 6: Processes map data by decoding flip flags and generating SMS nametable words.
+    /// 
+    /// Input encoding (internal editor format):
+    ///   Bit 10: flipV
+    ///   Bit 9:  flipH
+    ///   Bits 0-8: tileIndex
+    /// 
+    /// Output format (SMS nametable word):
+    ///   Bits 15-9: tile index (0-447)
+    ///   Bit 8: horizontal flip
+    ///   Bit 7: vertical flip
+    ///   Bit 4: palette select (0=BG, 1=Sprite)
+    ///   Bits 3-0: priority/unused
     /// </summary>
-    private int[] ProcessMapData(int[] mapData, int startTile, int mapWidth, int mapHeight, int maxTileSlots)
+    private int[] ProcessMapData(int[] mapData, int startTile, int mapWidth, int mapHeight, int maxTileSlots, int paletteSlot)
     {
         var totalCells = mapWidth * mapHeight;
         var result = new int[totalCells];
@@ -244,12 +240,35 @@ public class TilemapPreprocessorTool : ITool
             int rawId = mapData[i];
 
             // -1 = empty cell → transparent tile 0
-            int vramSlot = rawId < 0 ? 0 : rawId + startTile;
+            if (rawId < 0)
+            {
+                result[i] = 0;
+                continue;
+            }
 
-            // Clamp to valid VRAM range
+            // ETAPA 6: Decode flip flags from internal encoding
+            int tileIndex = TilemapEntryEncoding.DecodeTileIndex(rawId);
+            bool flipH = TilemapEntryEncoding.DecodeFlipH(rawId);
+            bool flipV = TilemapEntryEncoding.DecodeFlipV(rawId);
+
+            // Add startTile offset
+            int vramSlot = tileIndex + startTile;
             if (vramSlot >= maxTileSlots) vramSlot = maxTileSlots - 1;
 
-            result[i] = vramSlot;
+            // Build SMS nametable word
+            // Bits 15-9: tile index
+            int nametableWord = vramSlot & 0x1FF;
+
+            // Bit 8: horizontal flip
+            if (flipH) nametableWord |= (1 << 8);
+
+            // Bit 7: vertical flip
+            if (flipV) nametableWord |= (1 << 7);
+
+            // Bit 4: palette select (0=BG palette, 1=Sprite palette)
+            if (paletteSlot == 1) nametableWord |= (1 << 4);
+
+            result[i] = nametableWord;
         }
 
         return result;

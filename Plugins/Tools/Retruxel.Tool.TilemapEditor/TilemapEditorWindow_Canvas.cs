@@ -42,13 +42,14 @@ public partial class TilemapEditorWindow
                     int index = y * width + x;
                     if (index < currentLayer.Length)
                     {
-                        int tileId = currentLayer[index];
-                        if (tileId >= 0)
+                        int encodedValue = currentLayer[index];
+                        if (encodedValue >= 0)
                         {
+                            int tileId = Retruxel.Core.Helpers.TilemapEntryEncoding.DecodeTileIndex(encodedValue);
                             if (tileId > maxTileId)
                                 outOfRangeCount++;
 
-                            RenderTileAt(x, y, tileId, scaledTileSize);
+                            RenderTileAt(x, y, encodedValue, scaledTileSize);
                         }
                     }
                 }
@@ -135,11 +136,11 @@ public partial class TilemapEditorWindow
         TxtViewportInfo.Text = $"VIEWPORT: {viewportWidth}×{viewportHeight} | Offset: {_mapOffsetX},{_mapOffsetY}";
     }
 
-    private void RenderTileAt(int x, int y, int tileId, double scaledTileSize)
+    private void RenderTileAt(int x, int y, int encodedValue, double scaledTileSize)
     {
-        if (_tilesetRenderer.Image == null || tileId < 0) return;
+        if (_tilesetRenderer.Image == null || encodedValue < 0) return;
 
-        var tileImage = _tilesetRenderer.ExtractTile(tileId);
+        var tileImage = _tilesetRenderer.ExtractTileEncoded(encodedValue);
         if (tileImage == null) return;
 
         var image = new Image

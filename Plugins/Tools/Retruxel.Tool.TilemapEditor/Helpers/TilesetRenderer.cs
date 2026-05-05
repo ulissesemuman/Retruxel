@@ -1,6 +1,7 @@
 using System;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
+using Retruxel.Core.Helpers;
 
 namespace Retruxel.Tool.TilemapEditor.Helpers;
 
@@ -86,5 +87,40 @@ public class TilesetRenderer
         var croppedBitmap = new CroppedBitmap(_tilesetImage, new System.Windows.Int32Rect(srcX, srcY, _tileSize, _tileSize));
         croppedBitmap.Freeze();
         return croppedBitmap;
+    }
+
+    /// <summary>
+    /// Extracts a tile with flip flags decoded from encoded tilemap entry.
+    /// </summary>
+    public BitmapSource ExtractTileEncoded(int encodedValue)
+    {
+        int tileId = TilemapEntryEncoding.DecodeTileIndex(encodedValue);
+        bool flipH = TilemapEntryEncoding.DecodeFlipH(encodedValue);
+        bool flipV = TilemapEntryEncoding.DecodeFlipV(encodedValue);
+
+        var baseTile = ExtractTile(tileId);
+        
+        if (!flipH && !flipV)
+            return baseTile;
+
+        return ApplyTransform(baseTile, flipH, flipV);
+    }
+
+    /// <summary>
+    /// Applies horizontal and/or vertical flip to a tile bitmap.
+    /// </summary>
+    private BitmapSource ApplyTransform(BitmapSource source, bool flipH, bool flipV)
+    {
+        var transform = new TransformGroup();
+        
+        if (flipH)
+            transform.Children.Add(new ScaleTransform(-1, 1, _tileSize / 2.0, _tileSize / 2.0));
+        
+        if (flipV)
+            transform.Children.Add(new ScaleTransform(1, -1, _tileSize / 2.0, _tileSize / 2.0));
+
+        var transformed = new TransformedBitmap(source, transform);
+        transformed.Freeze();
+        return transformed;
     }
 }

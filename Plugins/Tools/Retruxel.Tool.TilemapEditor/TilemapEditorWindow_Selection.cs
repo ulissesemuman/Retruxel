@@ -67,6 +67,10 @@ public partial class TilemapEditorWindow
             _selectedTileIds.Add(tileId);
             _selectionWidth = 1;
             _selectionHeight = 1;
+            
+            // Reset flip for block selection
+            _selectedFlipH = false;
+            _selectedFlipV = false;
         }
         else
         {
@@ -77,6 +81,8 @@ public partial class TilemapEditorWindow
             _selectionWidth = 1;
             _selectionHeight = 1;
             _tileSelectionStart = null;
+            
+            // Keep flip state for single tile
         }
 
         UpdateTileSelectionVisual();
@@ -145,6 +151,10 @@ public partial class TilemapEditorWindow
                     _selectedTileIds.Add(tileId);
             }
         }
+        
+        // Reset flip for block selection
+        _selectedFlipH = false;
+        _selectedFlipV = false;
 
         UpdateTileSelectionVisual();
         UpdateSelectedTilePreview();
@@ -312,7 +322,12 @@ public partial class TilemapEditorWindow
                 int index = targetY * _tilemapData.Width + targetX;
                 var currentLayer = _tilemapData.GetLayer(_currentLayerIndex);
                 if (index >= 0 && index < currentLayer.Length)
-                    currentLayer[index] = _selectedTileIds[i];
+                {
+                    // Encode tile with flip flags (always false for block selection)
+                    int encodedValue = Retruxel.Core.Helpers.TilemapEntryEncoding.Encode(
+                        _selectedTileIds[i], false, false);
+                    currentLayer[index] = encodedValue;
+                }
             }
         }
 

@@ -229,7 +229,11 @@ public partial class TilemapEditorWindow
         if (tileX < 0 || tileX >= width || tileY < 0 || tileY >= height)
             return;
 
-        _tilemapData.SetTile(_currentLayerIndex, tileX, tileY, _selectedTileId);
+        // Encode tile with flip flags
+        int encodedValue = Retruxel.Core.Helpers.TilemapEntryEncoding.Encode(
+            _selectedTileId, _selectedFlipH, _selectedFlipV);
+
+        _tilemapData.SetTile(_currentLayerIndex, tileX, tileY, encodedValue);
         RenderCanvas();
     }
 

@@ -27,6 +27,8 @@ public partial class TilemapEditorWindow : Window
     private readonly IndexedPngService _indexedPngService = new();
 
     private int _selectedTileId = 0;
+    private bool _selectedFlipH = false;
+    private bool _selectedFlipV = false;
     private int _currentLayerIndex = 0;
     private double _canvasZoom = 1.0;
     private double _tileZoomLevel = 1.0;

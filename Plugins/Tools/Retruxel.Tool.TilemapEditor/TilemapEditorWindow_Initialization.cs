@@ -33,6 +33,7 @@ public partial class TilemapEditorWindow
 
         ConfigurePaletteUI(specs.PaletteMode, specs.PaletteBitsPerTile);
         InitializePaletteSlotSelector();
+        InitializeFlipHotkeys();
         RenderCanvas();
 
         _isInitializing = false;

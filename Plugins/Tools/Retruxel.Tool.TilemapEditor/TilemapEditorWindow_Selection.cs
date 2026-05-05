@@ -184,13 +184,25 @@ public partial class TilemapEditorWindow
 
         if (_selectedTileIds.Count == 1)
         {
-            // Single tile
-            var tileImage = _tilesetRenderer.ExtractTile(_selectedTileIds[0]);
+            // Single tile with flip preview
+            int encodedValue = Retruxel.Core.Helpers.TilemapEntryEncoding.Encode(
+                _selectedTileIds[0], _selectedFlipH, _selectedFlipV);
+            var tileImage = _tilesetRenderer.ExtractTileEncoded(encodedValue);
             if (tileImage != null)
             {
                 ImgSelectedTile.Source = tileImage;
                 ImgSelectedTile.Stretch = Stretch.Fill;
-                TxtSelectedTileInfo.Text = $"Tile ID: {_selectedTileIds[0]}";
+                
+                string flipInfo = "";
+                if (_selectedFlipH || _selectedFlipV)
+                {
+                    var flags = new List<string>();
+                    if (_selectedFlipH) flags.Add("H");
+                    if (_selectedFlipV) flags.Add("V");
+                    flipInfo = $" [Flip: {string.Join("+", flags)}]";
+                }
+                
+                TxtSelectedTileInfo.Text = $"Tile ID: {_selectedTileIds[0]}{flipInfo}";
             }
         }
         else

@@ -3,24 +3,36 @@ using Retruxel.Tool.SpriteEditor.Models;
 using System;
 using System.Collections.Generic;
 using System.Windows;
+using System.Windows.Input;
 
 namespace Retruxel.Tool.SpriteEditor;
 
 public partial class SpriteEditorWindow
 {
+    private void TitleBar_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+        => DragMove();
+
+    private void BtnClose_Click(object sender, RoutedEventArgs e)
+        => Close();
+
+    private void BtnCancel_Click(object sender, RoutedEventArgs e)
+        => Close();
     private void InitializeUI()
     {
         InitializeAnimation();
         RefreshFramesList();
+        UpdateFrameDurationField();
         RenderCanvas();
         RenderPreview();
     }
 
     public void LoadModuleData(Dictionary<string, object> moduleData)
     {
-        if (moduleData.TryGetValue("imagePath", out var imagePathObj) && imagePathObj is string imagePath)
+        // Load tileset asset if specified
+        if (moduleData.TryGetValue("tilesetAssetId", out var assetIdObj) && assetIdObj is string assetId)
         {
-            LoadTileset(imagePath);
+            _tilesetAssetId = assetId;
+            // Asset will be loaded by InitializeAssetSelector
         }
 
         if (moduleData.TryGetValue("frames", out var framesObj) && framesObj is List<object> framesList)
@@ -54,6 +66,26 @@ public partial class SpriteEditorWindow
                         }
                     }
 
+                    if (frameDict.TryGetValue("hitboxes", out var hitboxesObj) && hitboxesObj is List<object> hitboxesList)
+                    {
+                        foreach (var hitboxObj in hitboxesList)
+                        {
+                            if (hitboxObj is Dictionary<string, object> hitboxDict)
+                            {
+                                var hitbox = new Models.HitboxDefinition
+                                {
+                                    Name = hitboxDict.TryGetValue("name", out var hNameObj) && hNameObj is string hName ? hName : "Hitbox",
+                                    Type = hitboxDict.TryGetValue("type", out var hTypeObj) && hTypeObj is string hType ? Enum.Parse<Models.HitboxType>(hType) : Models.HitboxType.Hitbox,
+                                    X = hitboxDict.TryGetValue("x", out var hXObj) && hXObj is int hX ? hX : 0,
+                                    Y = hitboxDict.TryGetValue("y", out var hYObj) && hYObj is int hY ? hY : 0,
+                                    Width = hitboxDict.TryGetValue("width", out var hWObj) && hWObj is int hW ? hW : 8,
+                                    Height = hitboxDict.TryGetValue("height", out var hHObj) && hHObj is int hH ? hH : 8
+                                };
+                                frame.Hitboxes.Add(hitbox);
+                            }
+                        }
+                    }
+
                     _state.Frames.Add(frame);
                 }
             }
@@ -80,7 +112,15 @@ public partial class SpriteEditorWindow
             _state.AnimationSpeed = speed;
         }
 
+        if (moduleData.TryGetValue("paletteSlot", out var paletteSlotObj) && paletteSlotObj is int paletteSlot)
+        {
+            if (CmbPaletteSlot.Items.Count > paletteSlot)
+                CmbPaletteSlot.SelectedIndex = paletteSlot;
+        }
+
         RefreshFramesList();
+        UpdateFrameDurationField();
+        RefreshHitboxList();
         RenderCanvas();
         RenderPreview();
     }
@@ -110,20 +150,44 @@ public partial class SpriteEditorWindow
                 });
             }
 
+            var hitboxesList = new List<object>();
+
+            foreach (var hitbox in frame.Hitboxes)
+            {
+                hitboxesList.Add(new Dictionary<string, object>
+                {
+                    ["name"] = hitbox.Name,
+                    ["type"] = hitbox.Type.ToString(),
+                    ["x"] = hitbox.X,
+                    ["y"] = hitbox.Y,
+                    ["width"] = hitbox.Width,
+                    ["height"] = hitbox.Height
+                });
+            }
+
             framesList.Add(new Dictionary<string, object>
             {
                 ["name"] = frame.Name,
                 ["duration"] = frame.Duration,
-                ["tiles"] = tilesList
+                ["tiles"] = tilesList,
+                ["hitboxes"] = hitboxesList
             });
         }
 
-        return new Dictionary<string, object>
+        var result = new Dictionary<string, object>
         {
             ["frames"] = framesList,
             ["currentFrameIndex"] = _state.CurrentFrameIndex,
             ["loopAnimation"] = ChkLoop.IsChecked == true,
             ["animationSpeed"] = _state.AnimationSpeed
         };
+
+        if (!string.IsNullOrEmpty(_tilesetAssetId))
+            result["tilesetAssetId"] = _tilesetAssetId;
+
+        if (CmbPaletteSlot.SelectedIndex >= 0)
+            result["paletteSlot"] = CmbPaletteSlot.SelectedIndex;
+
+        return result;
     }
 }

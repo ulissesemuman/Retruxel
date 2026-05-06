@@ -37,6 +37,8 @@ public partial class SpriteEditorWindow
         if (FramesListBox.SelectedItem is ListBoxItem item && item.Tag is int index)
         {
             _state.CurrentFrameIndex = index;
+            UpdateFrameDurationField();
+            RefreshHitboxList();
             RenderCanvas();
         }
     }
@@ -88,6 +90,29 @@ public partial class SpriteEditorWindow
         }
 
         RefreshFramesList();
+        UpdateFrameDurationField();
         OnSpriteChanged();
+    }
+
+    private void UpdateFrameDurationField()
+    {
+        if (_state.Frames.Count == 0)
+            return;
+
+        var currentFrame = _state.Frames[_state.CurrentFrameIndex];
+        TxtFrameDuration.Text = currentFrame.Duration.ToString();
+    }
+
+    private void TxtFrameDuration_TextChanged(object sender, TextChangedEventArgs e)
+    {
+        if (_isInitializing || _state.Frames.Count == 0)
+            return;
+
+        if (int.TryParse(TxtFrameDuration.Text, out int duration) && duration > 0)
+        {
+            var currentFrame = _state.Frames[_state.CurrentFrameIndex];
+            currentFrame.Duration = duration;
+            UpdateAnimationSpeed();
+        }
     }
 }

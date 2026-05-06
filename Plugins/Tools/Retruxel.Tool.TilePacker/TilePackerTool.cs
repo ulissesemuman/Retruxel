@@ -42,16 +42,10 @@ public class TilePackerTool : ITool
 
         var result = PackTiles(bitmap, tileWidth, tileHeight, enableFlipH, enableFlipV, enableRotation);
 
-        // ETAPA 2: Add tilemapEncoded with flip flags embedded
-        var tilemapEncoded = result.Tilemap
-            .Select(e => TilemapEntryEncoding.Encode(e.TileIndex, e.FlipH, e.FlipV))
-            .ToArray();
-
         return new Dictionary<string, object>
         {
             ["uniqueTiles"] = result.UniqueTiles,
             ["tilemap"] = result.Tilemap,
-            ["tilemapEncoded"] = tilemapEncoded,  // NEW: encoded int[] with flip flags
             ["tilemapWidth"] = result.TilemapWidth,
             ["tilemapHeight"] = result.TilemapHeight,
             ["originalTileCount"] = result.OriginalTileCount,

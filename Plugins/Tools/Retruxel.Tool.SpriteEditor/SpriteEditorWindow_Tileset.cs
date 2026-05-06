@@ -1,4 +1,7 @@
+using Retruxel.Lib.ImageProcessing;
+using SkiaSharp;
 using System;
+using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -9,56 +12,76 @@ namespace Retruxel.Tool.SpriteEditor;
 
 public partial class SpriteEditorWindow
 {
-    private BitmapSource? _tilesetImage;
     private int _tilesetColumns;
     private int _tilesetRows;
     private int _totalTiles;
+    private double _tileZoomLevel = 2.0;
+    private string? _currentAssetId;
+    private int _activePaletteSlot = 1;
 
-    public void LoadTileset(string imagePath)
+    private void RefreshTilesetWithPalette()
     {
-        if (!System.IO.File.Exists(imagePath))
-            return;
+        if (_indexedData is null || _currentScene is null) return;
 
-        var bitmap = new BitmapImage(new Uri(imagePath, UriKind.Absolute));
-        _tilesetImage = bitmap;
-        _tilesetColumns = bitmap.PixelWidth / 8;
-        _tilesetRows = bitmap.PixelHeight / 8;
-        _totalTiles = _tilesetColumns * _tilesetRows;
+        var slot = _currentScene.PaletteSlots[_activePaletteSlot];
+        var skBitmap = _indexedPngService.RenderPreview(_indexedData, slot.Colors, scale: (int)_tileZoomLevel);
+        _tilesetImage = ConvertSkBitmapToBitmapSource(skBitmap);
 
         RenderTileset();
+    }
+
+    private void UpdateVramInfo()
+    {
+        if (_indexedData is null)
+        {
+            TxtVramInfo.Text = "";
+            return;
+        }
+
+        var tileCount = _totalTiles;
+        var vramBytes = tileCount * 32;
+        var startTile = _state.StartTile;
+        var endTile = startTile + tileCount - 1;
+
+        TxtVramInfo.Text = $"Tiles: {tileCount} | VRAM: {vramBytes}B | Slots: {startTile}–{endTile}";
     }
 
     private void RenderTileset()
     {
         if (_tilesetImage == null)
+        {
+            TilesetItemsControl.Items.Clear();
             return;
+        }
 
         TilesetItemsControl.Items.Clear();
 
+        int tileSize = (int)(8 * _tileZoomLevel);
+
         for (int i = 0; i < _totalTiles; i++)
         {
-            var tileButton = CreateTileButton(i);
+            var tileButton = CreateTileButton(i, tileSize);
             TilesetItemsControl.Items.Add(tileButton);
         }
     }
 
-    private Border CreateTileButton(int tileIndex)
+    private Border CreateTileButton(int tileIndex, int tileSize)
     {
         var tileImage = ExtractTile(tileIndex);
 
         var image = new Image
         {
             Source = tileImage,
-            Width = 24,
-            Height = 24,
-            Stretch = Stretch.None
+            Width = tileSize,
+            Height = tileSize,
+            Stretch = Stretch.Fill
         };
         RenderOptions.SetBitmapScalingMode(image, BitmapScalingMode.NearestNeighbor);
 
         var border = new Border
         {
-            Width = 24,
-            Height = 24,
+            Width = tileSize,
+            Height = tileSize,
             Margin = new Thickness(2),
             Background = (Brush)FindResource("BrushSurfaceContainerLow"),
             Child = image,
@@ -79,18 +102,11 @@ public partial class SpriteEditorWindow
 
         int col = tileIndex % _tilesetColumns;
         int row = tileIndex / _tilesetColumns;
+        int tileSize = (int)(8 * _tileZoomLevel);
 
-        var croppedBitmap = new CroppedBitmap(_tilesetImage, new Int32Rect(col * 8, row * 8, 8, 8));
+        var croppedBitmap = new CroppedBitmap(_tilesetImage, new Int32Rect(col * tileSize, row * tileSize, tileSize, tileSize));
 
-        var renderTarget = new RenderTargetBitmap(8, 8, 96, 96, PixelFormats.Pbgra32);
-        var visual = new DrawingVisual();
-        using (var context = visual.RenderOpen())
-        {
-            context.DrawImage(croppedBitmap, new Rect(0, 0, 8, 8));
-        }
-        renderTarget.Render(visual);
-
-        return renderTarget;
+        return croppedBitmap;
     }
 
     private void TileButton_Click(object sender, MouseButtonEventArgs e)
@@ -126,5 +142,24 @@ public partial class SpriteEditorWindow
                 item.BorderThickness = new Thickness(0);
             }
         }
+    }
+
+    private BitmapSource ConvertSkBitmapToBitmapSource(SKBitmap skBitmap)
+    {
+        using var image = SKImage.FromBitmap(skBitmap);
+        using var data = image.Encode(SKEncodedImageFormat.Png, 100);
+
+        var memoryStream = new MemoryStream();
+        data.SaveTo(memoryStream);
+        memoryStream.Seek(0, SeekOrigin.Begin);
+
+        var bitmapImage = new BitmapImage();
+        bitmapImage.BeginInit();
+        bitmapImage.CacheOption = BitmapCacheOption.OnLoad;
+        bitmapImage.StreamSource = memoryStream;
+        bitmapImage.EndInit();
+        bitmapImage.Freeze();
+
+        return bitmapImage;
     }
 }

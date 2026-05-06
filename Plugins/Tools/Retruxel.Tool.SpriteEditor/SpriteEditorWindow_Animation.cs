@@ -8,9 +8,6 @@ namespace Retruxel.Tool.SpriteEditor;
 
 public partial class SpriteEditorWindow
 {
-    private DispatcherTimer? _animationTimer;
-    private int _animationFrameIndex = 0;
-
     private void InitializeAnimation()
     {
         _animationTimer = new DispatcherTimer();

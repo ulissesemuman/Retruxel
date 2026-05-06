@@ -57,8 +57,8 @@ public class ImportedAssetToTilemapPipeline : AssetPipelineBase<ImportedAssetDat
             FileName = Path.GetFileName(assetPath),
             RelativePath = Path.GetRelativePath(projectPath, assetPath).Replace('\\', '/'),
             VramRegionId = "background",
-            SourceWidth = input.Tiles.Length > 0 ? TilesetLayoutCalculator.CalculateTilesetWidth(input.Tiles.Length, input.TileWidth) : 0,
-            SourceHeight = input.Tiles.Length > 0 ? TilesetLayoutCalculator.CalculateTilesetHeight(input.Tiles.Length, input.TileWidth, input.TileHeight) : 0,
+            SourceWidth = input.Tiles.Length > 0 ? CalculateTilesetWidth(input.Tiles.Length, input.TileWidth) : 0,
+            SourceHeight = input.Tiles.Length > 0 ? CalculateTilesetHeight(input.Tiles.Length, input.TileWidth, input.TileHeight) : 0,
             TileCount = input.Tiles.Length
         };
 
@@ -69,16 +69,16 @@ public class ImportedAssetToTilemapPipeline : AssetPipelineBase<ImportedAssetDat
 
         // Map RGB palette to target hardware colors
         bool useLab = options.ContainsKey("useLab") && (bool)options["useLab"];
-        uint[] mappedPalette = PaletteMapper.MapToTargetHardware(input.Palette, target, useLab);
+        uint[] mappedPalette = MapToTargetHardware(input.Palette, target, useLab);
         System.Diagnostics.Debug.WriteLine($"[ImportedAssetToTilemapPipeline] Palette mapped to {targetId.ToUpper()} hardware using {(useLab ? "LAB" : "RGB")} color space");
 
         // Return data for tilemap editor
-        // Convert to TileEntry[] if tilemapEncoded is available
-        TileEntry[] mapData;
+        // Convert to Helpers.TileEntry[] if tilemapEncoded is available
+        Helpers.TileEntry[] mapData;
         if (input.Metadata.ContainsKey("tilemapEncoded") && input.Metadata["tilemapEncoded"] is int[] encoded)
         {
             // New format from TilePackerTool - has flip flags
-            mapData = encoded.Select(e => new TileEntry
+            mapData = encoded.Select(e => new Helpers.TileEntry
             {
                 TileIndex = e & 0x1FF,  // Bits 0-8
                 FlipH = (e & (1 << 9)) != 0,
@@ -89,7 +89,7 @@ public class ImportedAssetToTilemapPipeline : AssetPipelineBase<ImportedAssetDat
         else
         {
             // Old format - plain tile indices
-            mapData = input.TilemapData.Select(x => new TileEntry { TileIndex = (int)x }).ToArray();
+            mapData = input.TilemapData.Select(x => new Helpers.TileEntry { TileIndex = (int)x }).ToArray();
         }
 
         return new Dictionary<string, object>
@@ -195,7 +195,7 @@ public class ImportedAssetToTilemapPipeline : AssetPipelineBase<ImportedAssetDat
         var assetPath = Path.Combine(assetsDir, $"{assetId}.png");
 
         // Calculate tileset dimensions (arrange tiles in a grid)
-        int tilesPerRow = TilesetLayoutCalculator.CalculateTilesPerRow(input.Tiles.Length);
+        int tilesPerRow = CalculateTilesPerRow(input.Tiles.Length);
         int tilesetWidth = tilesPerRow * input.TileWidth;
         int tilesetHeight = ((input.Tiles.Length + tilesPerRow - 1) / tilesPerRow) * input.TileHeight;
 
@@ -206,7 +206,7 @@ public class ImportedAssetToTilemapPipeline : AssetPipelineBase<ImportedAssetDat
         {
             throw new ArgumentException("Missing required option: 'target'");
         }
-        uint[] finalPalette = PaletteMapper.MapToTargetHardware(input.Palette, target, useLab);
+        uint[] finalPalette = MapToTargetHardware(input.Palette, target, useLab);
         System.Diagnostics.Debug.WriteLine($"[SaveTilesAsAsset] Mapped {input.Palette.Length} RGB colors to {targetId.ToUpper()} hardware palette using {(useLab ? "LAB" : "RGB")} color space");
 
         // Create bitmap
@@ -248,7 +248,7 @@ public class ImportedAssetToTilemapPipeline : AssetPipelineBase<ImportedAssetDat
                         System.Diagnostics.Debug.WriteLine($"[SaveTilesAsAsset] Tile {tileIndex}: drawing at ({tileX}, {tileY})");
                     }
 
-                    TilesetBitmapRenderer.DrawTileUnsafe(backBuffer, stride, input.Tiles[tileIndex], finalPalette, tileX, tileY, input.TileWidth, input.TileHeight, tileIndex, colorTable);
+                    DrawTileUnsafe(backBuffer, stride, input.Tiles[tileIndex], finalPalette, tileX, tileY, input.TileWidth, input.TileHeight, tileIndex, colorTable);
                 }
             }
 
@@ -268,7 +268,7 @@ public class ImportedAssetToTilemapPipeline : AssetPipelineBase<ImportedAssetDat
         return assetPath;
     }
 
-    private unsafe void TilesetBitmapRenderer.DrawTileUnsafe(byte* backBuffer, int stride, byte[] tilePixels, uint[] palette, int offsetX, int offsetY, int tileWidth, int tileHeight, int tileIndex, byte[]? colorTable)
+    private unsafe void DrawTileUnsafe(byte* backBuffer, int stride, byte[] tilePixels, uint[] palette, int offsetX, int offsetY, int tileWidth, int tileHeight, int tileIndex, byte[]? colorTable)
     {
         // Debug first tile
         if (tileIndex == 0)
@@ -446,7 +446,7 @@ public class ImportedAssetToTilemapPipeline : AssetPipelineBase<ImportedAssetDat
         }
     }
 
-    private int TilesetLayoutCalculator.CalculateTilesPerRow(int tileCount)
+    private int CalculateTilesPerRow(int tileCount)
     {
         // Arrange tiles in a square-ish grid (prefer 16 tiles per row for SMS)
         if (tileCount <= 16) return tileCount;
@@ -454,14 +454,14 @@ public class ImportedAssetToTilemapPipeline : AssetPipelineBase<ImportedAssetDat
         return 32;
     }
 
-    private int TilesetLayoutCalculator.CalculateTilesetWidth(int tileCount, int tileWidth)
+    private int CalculateTilesetWidth(int tileCount, int tileWidth)
     {
-        return TilesetLayoutCalculator.CalculateTilesPerRow(tileCount) * tileWidth;
+        return CalculateTilesPerRow(tileCount) * tileWidth;
     }
 
-    private int TilesetLayoutCalculator.CalculateTilesetHeight(int tileCount, int tileWidth, int tileHeight)
+    private int CalculateTilesetHeight(int tileCount, int tileWidth, int tileHeight)
     {
-        int tilesPerRow = TilesetLayoutCalculator.CalculateTilesPerRow(tileCount);
+        int tilesPerRow = CalculateTilesPerRow(tileCount);
         int rows = (tileCount + tilesPerRow - 1) / tilesPerRow;
         return rows * tileHeight;
     }
@@ -470,7 +470,7 @@ public class ImportedAssetToTilemapPipeline : AssetPipelineBase<ImportedAssetDat
     /// Maps RGB palette to target hardware colors.
     /// Finds the closest hardware color for each RGB color.
     /// </summary>
-    private uint[] PaletteMapper.MapToTargetHardware(uint[] rgbPalette, ITarget target, bool useLab = false)
+    private uint[] MapToTargetHardware(uint[] rgbPalette, ITarget target, bool useLab = false)
     {
         // Get hardware palette from target
         var hardwareColors = target.GetHardwarePalette();
@@ -502,7 +502,39 @@ public class ImportedAssetToTilemapPipeline : AssetPipelineBase<ImportedAssetDat
     /// Finds the closest hardware color to a given RGB color.
     /// Uses LAB color space for perceptually accurate matching, or RGB Euclidean distance.
     /// </summary>
-    
+    private uint FindClosestHardwareColor(uint rgbColor, uint[] hardwarePalette, bool useLab)
+    {
+        byte r1 = (byte)((rgbColor >> 16) & 0xFF);
+        byte g1 = (byte)((rgbColor >> 8) & 0xFF);
+        byte b1 = (byte)(rgbColor & 0xFF);
+
+        int closestIndex = 0;
+        double minDistance = double.MaxValue;
+
+        if (useLab)
+        {
+            // LAB color space (perceptually accurate)
+            var (l1, a1, b1Lab) = RgbToLab(r1, g1, b1);
+
+            for (int i = 0; i < hardwarePalette.Length; i++)
+            {
+                uint hwColor = hardwarePalette[i];
+                byte r2 = (byte)((hwColor >> 16) & 0xFF);
+                byte g2 = (byte)((hwColor >> 8) & 0xFF);
+                byte b2 = (byte)(hwColor & 0xFF);
+
+                var (l2, a2, b2Lab) = RgbToLab(r2, g2, b2);
+
+                double dl = l1 - l2;
+                double da = a1 - a2;
+                double db = b1Lab - b2Lab;
+                double distance = Math.Sqrt(dl * dl + da * da + db * db);
+
+                if (distance < minDistance)
+                {
+                    minDistance = distance;
+                    closestIndex = i;
+                }
             }
         }
         else
@@ -534,15 +566,53 @@ public class ImportedAssetToTilemapPipeline : AssetPipelineBase<ImportedAssetDat
     /// <summary>
     /// Converts RGB to LAB color space for perceptually accurate color matching.
     /// </summary>
-    
+    private (double L, double A, double B) RgbToLab(byte r, byte g, byte b)
+    {
+        // Convert RGB to linear RGB
+        double rLinear = SrgbToLinear(r / 255.0);
+        double gLinear = SrgbToLinear(g / 255.0);
+        double bLinear = SrgbToLinear(b / 255.0);
+
+        // Convert to XYZ (D65 illuminant)
+        double x = rLinear * 0.4124564 + gLinear * 0.3575761 + bLinear * 0.1804375;
+        double y = rLinear * 0.2126729 + gLinear * 0.7151522 + bLinear * 0.0721750;
+        double z = rLinear * 0.0193339 + gLinear * 0.1191920 + bLinear * 0.9503041;
+
+        // Normalize by D65 white point
+        x /= 0.95047;
+        y /= 1.00000;
+        z /= 1.08883;
+
+        // Convert to LAB
+        x = LabF(x);
+        y = LabF(y);
+        z = LabF(z);
+
+        double L = 116.0 * y - 16.0;
+        double A = 500.0 * (x - y);
+        double B = 200.0 * (y - z);
+
+        return (L, A, B);
+    }
 
     /// <summary>
     /// Converts sRGB gamma-corrected value to linear RGB.
     /// </summary>
-    
+    private double SrgbToLinear(double value)
+    {
+        return value <= 0.04045
+            ? value / 12.92
+            : Math.Pow((value + 0.055) / 1.055, 2.4);
+    }
 
     /// <summary>
     /// LAB color space conversion function.
     /// </summary>
-    
+    private double LabF(double t)
+    {
+        const double delta = 6.0 / 29.0;
+        return t > delta * delta * delta
+            ? Math.Pow(t, 1.0 / 3.0)
+            : t / (3.0 * delta * delta) + 4.0 / 29.0;
+    }
 }

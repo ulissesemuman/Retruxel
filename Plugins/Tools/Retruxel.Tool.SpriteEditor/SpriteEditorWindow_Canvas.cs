@@ -28,9 +28,11 @@ public partial class SpriteEditorWindow
 
         int tileIndex = (int)e.Data.GetData("TileIndex");
         Point dropPosition = e.GetPosition(CompositionCanvas);
+        int zoom = GetCanvasZoom();
+        int gridSize = 8 * zoom;
 
-        int snappedX = (int)(dropPosition.X / 8) * 8;
-        int snappedY = (int)(dropPosition.Y / 8) * 8;
+        int snappedX = (int)(dropPosition.X / gridSize) * gridSize / zoom;
+        int snappedY = (int)(dropPosition.Y / gridSize) * gridSize / zoom;
 
         AddTileToCurrentFrame(tileIndex, snappedX, snappedY);
     }
@@ -61,6 +63,7 @@ public partial class SpriteEditorWindow
             return;
 
         var currentFrame = _state.Frames[_state.CurrentFrameIndex];
+        int zoom = GetCanvasZoom();
 
         foreach (var tile in currentFrame.Tiles)
         {
@@ -69,23 +72,23 @@ public partial class SpriteEditorWindow
             var image = new Image
             {
                 Source = tileImage,
-                Width = 8,
-                Height = 8,
+                Width = 8 * zoom,
+                Height = 8 * zoom,
                 Stretch = Stretch.None
             };
             RenderOptions.SetBitmapScalingMode(image, BitmapScalingMode.NearestNeighbor);
 
             var border = new Border
             {
-                Width = 8,
-                Height = 8,
+                Width = 8 * zoom,
+                Height = 8 * zoom,
                 Child = image,
                 Tag = tile,
                 Cursor = Cursors.Hand
             };
 
-            Canvas.SetLeft(border, tile.OffsetX);
-            Canvas.SetTop(border, tile.OffsetY);
+            Canvas.SetLeft(border, tile.OffsetX * zoom);
+            Canvas.SetTop(border, tile.OffsetY * zoom);
 
             border.MouseLeftButtonDown += CanvasTile_MouseDown;
             border.MouseMove += CanvasTile_MouseMove;
@@ -95,11 +98,16 @@ public partial class SpriteEditorWindow
         }
 
         DrawGrid();
+        DrawHitboxes();
+        UpdateStatusBar();
     }
 
     private void DrawGrid()
     {
-        for (int x = 0; x <= CompositionCanvas.Width; x += 8)
+        int zoom = GetCanvasZoom();
+        int gridSize = 8 * zoom;
+
+        for (int x = 0; x <= CompositionCanvas.Width; x += gridSize)
         {
             var line = new Line
             {
@@ -114,7 +122,7 @@ public partial class SpriteEditorWindow
             CompositionCanvas.Children.Add(line);
         }
 
-        for (int y = 0; y <= CompositionCanvas.Height; y += 8)
+        for (int y = 0; y <= CompositionCanvas.Height; y += gridSize)
         {
             var line = new Line
             {
@@ -154,12 +162,14 @@ public partial class SpriteEditorWindow
         if (_draggingTile != null && e.LeftButton == MouseButtonState.Pressed)
         {
             Point position = e.GetPosition(CompositionCanvas);
+            int zoom = GetCanvasZoom();
+            int gridSize = 8 * zoom;
 
-            int snappedX = (int)(position.X / 8) * 8;
-            int snappedY = (int)(position.Y / 8) * 8;
+            int snappedX = (int)(position.X / gridSize) * gridSize;
+            int snappedY = (int)(position.Y / gridSize) * gridSize;
 
-            _draggingTile.OffsetX = snappedX;
-            _draggingTile.OffsetY = snappedY;
+            _draggingTile.OffsetX = snappedX / zoom;
+            _draggingTile.OffsetY = snappedY / zoom;
 
             OnSpriteChanged();
         }
@@ -187,5 +197,40 @@ public partial class SpriteEditorWindow
         var currentFrame = _state.Frames[_state.CurrentFrameIndex];
         currentFrame.Tiles.Remove(tile);
         OnSpriteChanged();
+    }
+
+    private void UpdateStatusBar()
+    {
+        if (_state.Frames.Count == 0)
+        {
+            TxtFrameInfo.Text = "Frame: 0/0";
+            TxtSpriteSize.Text = "Size: 0×0";
+            return;
+        }
+
+        var currentFrame = _state.Frames[_state.CurrentFrameIndex];
+        TxtFrameInfo.Text = $"Frame: {_state.CurrentFrameIndex + 1}/{_state.Frames.Count}";
+
+        int minX = int.MaxValue, minY = int.MaxValue;
+        int maxX = int.MinValue, maxY = int.MinValue;
+
+        foreach (var tile in currentFrame.Tiles)
+        {
+            if (tile.OffsetX < minX) minX = tile.OffsetX;
+            if (tile.OffsetY < minY) minY = tile.OffsetY;
+            if (tile.OffsetX + 8 > maxX) maxX = tile.OffsetX + 8;
+            if (tile.OffsetY + 8 > maxY) maxY = tile.OffsetY + 8;
+        }
+
+        if (currentFrame.Tiles.Count > 0)
+        {
+            int width = maxX - minX;
+            int height = maxY - minY;
+            TxtSpriteSize.Text = $"Size: {width}×{height}";
+        }
+        else
+        {
+            TxtSpriteSize.Text = "Size: 0×0";
+        }
     }
 }

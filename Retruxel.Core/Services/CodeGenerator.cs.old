@@ -2,7 +2,9 @@ using Retruxel.Core.Interfaces;
 using Retruxel.Core.Models;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using System.Text.Json.Nodes;
 using System.Threading.Tasks;
 
 namespace Retruxel.Core.Services;
@@ -11,14 +13,8 @@ namespace Retruxel.Core.Services;
 /// Orchestrates code generation across all active modules in a project.
 /// Collects generated files from each module's target-specific translator
 /// and assembles a BuildContext ready for the IToolchain to compile.
-/// 
-/// Functionality split across partial classes:
-/// - CodeGenerator_Modules.cs: Module processing and context injection
-/// - CodeGenerator_Batch.cs: Batch module processing (GameVars, TextArray)
-/// - CodeGenerator_Validation.cs: Validation logic (tile conflicts)
-/// - CodeGenerator_Helpers.cs: Utility methods
 /// </summary>
-public partial class CodeGenerator
+public class CodeGenerator
 {
     private readonly ModuleRegistry _moduleRegistry;
     private readonly ModuleRenderer _moduleRenderer;
@@ -346,5 +342,278 @@ public partial class CodeGenerator
         }
 
         return buildContext;
+    }
+
+    /// <summary>
+    /// Generates gamevars.h and gamevars.c files for all GameVar module instances.
+    /// Uses batch processing to generate a single file containing all variables.
+    /// </summary>
+    private List<GeneratedFile> GenerateGameVarsFile(
+        RetruxelProject project,
+        List<IModule> gameVarInstances,
+        IProgress<string>? progress)
+    {
+        var files = new List<GeneratedFile>();
+
+        // Collect all GameVar data
+        var vars = gameVarInstances.Select(m =>
+        {
+            var json = m.Serialize();
+            var node = JsonNode.Parse(json) as JsonObject;
+            return new Dictionary<string, object>
+            {
+                ["name"] = node?["name"]?.GetValue<string>() ?? "myVar",
+                ["type"] = node?["type"]?.GetValue<string>() ?? "int",
+                ["initialValue"] = node?["initialValue"]?.GetValue<string>() ?? "0",
+                ["showInHud"] = node?["showInHud"]?.GetValue<bool>() ?? false
+            };
+        }).ToList();
+
+        // Check if any var is int or byte
+        var hasIntOrByte = vars.Any(v =>
+        {
+            var type = v["type"].ToString();
+            return type == "int" || type == "byte";
+        });
+
+        // Build variables for template
+        var variables = new Dictionary<string, object>
+        {
+            ["vars"] = vars,
+            ["hasIntOrByte"] = hasIntOrByte
+        };
+
+        // Try to render via ModuleRenderer
+        if (_moduleRenderer.CanRender("gamevar", project.TargetId))
+        {
+            // For batch modules, we need a special render path
+            // For now, manually construct the template rendering
+            var key = $"{project.TargetId}::gamevar".ToLowerInvariant();
+            var templatePath = Path.Combine(
+                Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location) ?? "",
+                "Plugins", "CodeGens", "gamevar", project.TargetId, "gamevars.c.rtrx");
+
+            if (File.Exists(templatePath))
+            {
+                var template = File.ReadAllText(templatePath);
+                var content = TemplateEngine.Render(template, variables);
+
+                files.Add(new GeneratedFile
+                {
+                    FileName = "gamevars.c",
+                    Content = content,
+                    FileType = GeneratedFileType.Source,
+                    SourceModuleId = "gamevar"
+                });
+
+                progress?.Report($"INFO: gamevars.c generated with {vars.Count} variable(s).");
+            }
+        }
+
+        return files;
+    }
+
+    /// <summary>
+    /// Generates retruxel_text.h and retruxel_text.c files for all TextArray module instances.
+    /// Uses batch processing to generate a single file containing all text arrays.
+    /// </summary>
+    private List<GeneratedFile> GenerateTextArrayFile(
+        RetruxelProject project,
+        List<IModule> textArrayInstances,
+        IProgress<string>? progress)
+    {
+        var files = new List<GeneratedFile>();
+
+        // Check if there are any strings defined
+        var hasStrings = textArrayInstances.Any(m =>
+        {
+            var json = m.Serialize();
+            var node = JsonNode.Parse(json) as JsonObject;
+            var languagesNode = node?["languages"] as JsonArray;
+            return languagesNode?.Any(langNode =>
+            {
+                var langObj = langNode as JsonObject;
+                var stringsNode = langObj?["strings"] as JsonArray;
+                return stringsNode?.Any(s => !string.IsNullOrEmpty(s?.GetValue<string>())) ?? false;
+            }) ?? false;
+        });
+
+        if (!hasStrings)
+        {
+            progress?.Report("INFO: text.array modules exist but contain no strings - skipping text system generation.");
+            return files;
+        }
+
+        // Use ModuleRenderer.RenderBatch for batch module processing
+        var allInstancesJson = textArrayInstances.Select(m => m.Serialize()).ToList();
+        var batchFiles = _moduleRenderer.RenderBatch(
+            "text.array",
+            project.TargetId,
+            allInstancesJson,
+            project.ProjectPath);
+
+        files.AddRange(batchFiles);
+        progress?.Report($"INFO: retruxel_text.c generated with {textArrayInstances.Count} text array(s).");
+
+        return files;
+    }
+
+    /// <summary>
+    /// Validates tile conflicts between tilemap and text.display modules.
+    /// SMS_autoSetUpTextRenderer() loads ASCII font into tiles 0-255.
+    /// If tilemap startTile < 256, it will overwrite the font.
+    /// </summary>
+    private static void ValidateTileConflicts(
+        Dictionary<string, List<IModule>> instancesByModule,
+        IProgress<string>? progress)
+    {
+        // Check if both tilemap and text.display are present
+        var hasTilemap = instancesByModule.ContainsKey("tilemap");
+        var hasTextDisplay = instancesByModule.ContainsKey("text.display");
+
+        if (!hasTilemap || !hasTextDisplay)
+            return;
+
+        // Check each tilemap instance for startTile < 256
+        foreach (var tilemapModule in instancesByModule["tilemap"])
+        {
+            var json = tilemapModule.Serialize();
+            try
+            {
+                var node = JsonNode.Parse(json) as JsonObject;
+                if (node is null) continue;
+
+                var startTile = node["startTile"]?.GetValue<int>() ?? 0;
+
+                if (startTile < 256)
+                {
+                    progress?.Report($"WARN: Tilemap startTile={startTile} conflicts with text.display font (tiles 0-255).");
+                    progress?.Report($"WARN: Set tilemap startTile >= 256 to avoid overwriting the ASCII font.");
+                    progress?.Report($"WARN: Text will appear corrupted if tilemap overwrites font tiles.");
+                }
+            }
+            catch
+            {
+                // Skip validation if JSON parsing fails
+            }
+        }
+    }
+
+    /// <summary>
+    /// Wraps a module so that its Serialize() output includes context flags
+    /// about which other modules are present in the project.
+    ///
+    /// Current flags injected:
+    ///   entity → "usePhysics", "useInput", "useAnimation"
+    ///   enemy  → "useAnimation"
+    ///   physics → "useTilemap"
+    ///
+    /// The wrapper only modifies Serialize() — all other IModule members
+    /// delegate to the original module unchanged.
+    /// </summary>
+    private static IModule InjectContextFlags(IModule module, HashSet<string> presentModuleIds)
+    {
+        if (module.ModuleId == "entity")
+        {
+            var usePhysics = presentModuleIds.Contains("physics");
+            var useInput = presentModuleIds.Contains("input");
+            var useAnimation = presentModuleIds.Contains("animation");
+
+            if (usePhysics || useInput || useAnimation)
+                return new ContextualModule(module, json => InjectFlags(json, new()
+                {
+                    ["usePhysics"] = usePhysics,
+                    ["useInput"] = useInput,
+                    ["useAnimation"] = useAnimation
+                }));
+        }
+
+        if (module.ModuleId == "enemy")
+        {
+            var useAnimation = presentModuleIds.Contains("animation");
+
+            if (useAnimation)
+                return new ContextualModule(module, json => InjectFlags(json, new()
+                {
+                    ["useAnimation"] = useAnimation
+                }));
+        }
+
+        if (module.ModuleId == "physics")
+        {
+            var useTilemap = presentModuleIds.Contains("tilemap");
+
+            if (useTilemap)
+                return new ContextualModule(module, json => InjectFlags(json, new()
+                {
+                    ["useTilemap"] = useTilemap
+                }));
+        }
+
+        return module;
+    }
+
+    /// <summary>
+    /// Parses a JSON string, merges extra flags into the root object, and returns
+    /// the modified JSON string.
+    /// </summary>
+    private static string InjectFlags(string json, Dictionary<string, bool> flags)
+    {
+        try
+        {
+            var node = JsonNode.Parse(json) as JsonObject ?? new JsonObject();
+            foreach (var (key, value) in flags)
+                node[key] = value;
+            return node.ToJsonString();
+        }
+        catch
+        {
+            return json; // If parsing fails, return original unchanged
+        }
+    }
+
+    /// <summary>
+    /// Calculates the first free tile slot after all graphic tiles.
+    /// Used as the starting point for the compact font.
+    /// </summary>
+    private static int CalculateGraphicTilesEnd(RetruxelProject project)
+    {
+        // Simple heuristic: reserve 256 tiles for graphics
+        // In production, this would scan tilemap/sprite modules for actual usage
+        return 256;
+    }
+
+    /// <summary>
+    /// Formats a byte array as a C array initializer string.
+    /// Example: "0x3C, 0x42, 0x42, 0x3C"
+    /// Returns "0x00" for empty arrays to prevent C compilation errors.
+    /// </summary>
+    private static string FormatByteArray(byte[] data)
+    {
+        if (data.Length == 0) return "0x00";
+
+        var chunks = data.Select((b, i) => new { Byte = b, Index = i })
+            .GroupBy(x => x.Index / 16)
+            .Select(g => string.Join(", ", g.Select(x => $"0x{x.Byte:X2}")));
+
+        return string.Join(",\n    ", chunks);
+    }
+
+    /// <summary>
+    /// Wraps an IModule, overriding Serialize() to inject additional JSON properties.
+    /// All other members delegate to the wrapped module.
+    /// </summary>
+    private sealed class ContextualModule(IModule inner, Func<string, string> serializeTransform) : IModule
+    {
+        public string ModuleId => inner.ModuleId;
+        public string DisplayName => inner.DisplayName;
+        public string Category => inner.Category;
+        public ModuleType Type => inner.Type;
+        public string[] Compatibility => inner.Compatibility;
+        public SingletonPolicy SingletonPolicy => inner.SingletonPolicy;
+        public ModuleScope DefaultScope => inner.DefaultScope;
+        public string Serialize() => serializeTransform(inner.Serialize());
+        public void Deserialize(string json) => inner.Deserialize(json);
+        public string GetValidationSample() => inner.GetValidationSample();
     }
 }

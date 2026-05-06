@@ -37,11 +37,15 @@
             <Border Grid.Row="0" Background="{StaticResource BrushSurfaceContainerLow}" 
                 MouseLeftButtonDown="TitleBar_MouseLeftButtonDown">
                 <Grid>
-                    <TextBlock Text="SPRITE EDITOR" 
-                           Style="{StaticResource TextHeadline}"
-                           Foreground="{StaticResource BrushPrimary}"
-                           VerticalAlignment="Center" 
-                           Margin="16,0"/>
+                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="16,0">
+                        <TextBlock Text="SPRITE EDITOR" 
+                               Style="{StaticResource TextHeadline}"
+                               Foreground="{StaticResource BrushPrimary}"/>
+                        <TextBlock x:Name="TxtSpriteName" Text="" 
+                               Style="{StaticResource TextHeadline}"
+                               Foreground="{StaticResource BrushOnSurfaceVariant}"
+                               Margin="8,0,0,0"/>
+                    </StackPanel>
                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
                         <Button Content="SAVE" Style="{StaticResource ButtonPrimary}" 
                             Click="BtnSave_Click" Width="80" Height="32" Margin="0,0,8,0"/>
@@ -53,17 +57,26 @@
 
             <!-- Main Content -->
             <Grid Grid.Row="1">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="240"/>
-                    <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="280"/>
-                </Grid.ColumnDefinitions>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="56"/>
+                </Grid.RowDefinitions>
+                
+                <Grid Grid.Row="0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="240"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="280"/>
+                    </Grid.ColumnDefinitions>
 
                 <!-- Left: Tileset Panel -->
                 <Border Grid.Column="0" Background="{StaticResource BrushSurfaceContainerLow}">
                     <Grid>
                         <Grid.RowDefinitions>
                             <RowDefinition Height="32"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
                             <RowDefinition Height="*"/>
                         </Grid.RowDefinitions>
 
@@ -72,7 +85,50 @@
                                Foreground="{StaticResource BrushOnSurfaceVariant}"
                                Margin="16,8"/>
 
-                        <ScrollViewer Grid.Row="1" x:Name="TilesetScrollViewer"
+                        <!-- Asset Selector -->
+                        <StackPanel Grid.Row="1" Margin="16,8,16,0">
+                            <TextBlock Text="Asset" Style="{StaticResource TextLabel}" Margin="0,0,0,4"/>
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="8"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <ComboBox x:Name="CmbTilesetAsset" Grid.Column="0" Height="32"/>
+                                <Button x:Name="BtnBrowseTileset" Grid.Column="2" Content="..." 
+                                    Style="{StaticResource ButtonSecondary}" Width="32" Height="32"
+                                    Click="BtnBrowseTileset_Click"/>
+                            </Grid>
+                        </StackPanel>
+
+                        <!-- Palette Slot Selector -->
+                        <StackPanel Grid.Row="2" Margin="16,8,16,0">
+                            <TextBlock Text="Palette Slot" Style="{StaticResource TextLabel}" Margin="0,0,0,4"/>
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="8"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <ComboBox x:Name="CmbPaletteSlot" Grid.Column="0" Height="32"/>
+                                <Button x:Name="BtnEditPalette" Grid.Column="2" Content="EDIT" 
+                                    Style="{StaticResource ButtonSecondary}" Width="48" Height="32"/>
+                            </Grid>
+                        </StackPanel>
+
+                        <!-- Zoom Controls -->
+                        <StackPanel Grid.Row="3" Orientation="Horizontal" Margin="16,8,16,8">
+                            <TextBlock Text="Zoom:" Style="{StaticResource TextLabel}" 
+                                   VerticalAlignment="Center" Margin="0,0,8,0"/>
+                            <Button x:Name="BtnTilesetZoom50" Content="50%" 
+                                Style="{StaticResource ButtonSecondary}" Width="48" Height="24"/>
+                            <Button x:Name="BtnTilesetZoom100" Content="100%" 
+                                Style="{StaticResource ButtonPrimary}" Width="48" Height="24" Margin="4,0,0,0"/>
+                            <Button x:Name="BtnTilesetZoom200" Content="200%" 
+                                Style="{StaticResource ButtonSecondary}" Width="48" Height="24" Margin="4,0,0,0"/>
+                        </StackPanel>
+
+                        <ScrollViewer Grid.Row="4" x:Name="TilesetScrollViewer"
                                   VerticalScrollBarVisibility="Auto"
                                   HorizontalScrollBarVisibility="Disabled">
                             <ItemsControl x:Name="TilesetItemsControl">
@@ -91,6 +147,7 @@
                     <Grid>
                         <Grid.RowDefinitions>
                             <RowDefinition Height="32"/>
+                            <RowDefinition Height="Auto"/>
                             <RowDefinition Height="*"/>
                         </Grid.RowDefinitions>
 
@@ -99,11 +156,25 @@
                                Foreground="{StaticResource BrushOnSurfaceVariant}"
                                Margin="16,8"/>
 
-                        <ScrollViewer Grid.Row="1" x:Name="CanvasScrollViewer"
+                        <!-- Canvas Zoom Controls -->
+                        <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="16,8,16,8">
+                            <TextBlock Text="Zoom:" Style="{StaticResource TextLabel}" 
+                                   VerticalAlignment="Center" Margin="0,0,8,0"/>
+                            <Button x:Name="BtnCanvasZoom50" Content="50%" 
+                                Style="{StaticResource ButtonSecondary}" Width="48" Height="24"/>
+                            <Button x:Name="BtnCanvasZoom100" Content="100%" 
+                                Style="{StaticResource ButtonSecondary}" Width="48" Height="24" Margin="4,0,0,0"/>
+                            <Button x:Name="BtnCanvasZoom200" Content="200%" 
+                                Style="{StaticResource ButtonPrimary}" Width="48" Height="24" Margin="4,0,0,0"/>
+                            <Button x:Name="BtnCanvasZoom400" Content="400%" 
+                                Style="{StaticResource ButtonSecondary}" Width="48" Height="24" Margin="4,0,0,0"/>
+                        </StackPanel>
+
+                        <ScrollViewer Grid.Row="2" x:Name="CanvasScrollViewer"
                                   HorizontalScrollBarVisibility="Auto"
                                   VerticalScrollBarVisibility="Auto">
                             <Canvas x:Name="CompositionCanvas" 
-                                Width="256" Height="256"
+                                Width="512" Height="512"
                                 Background="{StaticResource BrushSurfaceContainerHigh}"
                                 AllowDrop="True"
                                 Drop="Canvas_Drop"
@@ -117,6 +188,7 @@
                     <Grid>
                         <Grid.RowDefinitions>
                             <RowDefinition Height="*"/>
+                            <RowDefinition Height="160"/>
                             <RowDefinition Height="200"/>
                         </Grid.RowDefinitions>
 
@@ -149,8 +221,35 @@
                             </StackPanel>
                         </Grid>
 
-                        <!-- Animation Preview -->
+                        <!-- Hitboxes Panel -->
                         <Grid Grid.Row="1" Background="{StaticResource BrushSurface}">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="32"/>
+                                <RowDefinition Height="*"/>
+                                <RowDefinition Height="40"/>
+                            </Grid.RowDefinitions>
+
+                            <TextBlock Grid.Row="0" Text="HITBOXES" 
+                                   Style="{StaticResource TextLabelCaps}"
+                                   Foreground="{StaticResource BrushOnSurfaceVariant}"
+                                   Margin="16,8"/>
+
+                            <ListBox Grid.Row="1" x:Name="HitboxesListBox"
+                                 Background="Transparent"
+                                 BorderThickness="0"
+                                 Margin="8,0"/>
+
+                            <StackPanel Grid.Row="2" Orientation="Horizontal" 
+                                    HorizontalAlignment="Center">
+                                <Button Content="+" Style="{StaticResource ButtonSecondary}" 
+                                    Click="BtnAddHitbox_Click" Width="80" Height="32"/>
+                                <Button Content="−" Style="{StaticResource ButtonSecondary}" 
+                                    Click="BtnDeleteHitbox_Click" Width="80" Height="32" Margin="8,0,0,0"/>
+                            </StackPanel>
+                        </Grid>
+
+                        <!-- Animation Preview -->
+                        <Grid Grid.Row="2" Background="{StaticResource BrushSurface}">
                             <Grid.RowDefinitions>
                                 <RowDefinition Height="32"/>
                                 <RowDefinition Height="*"/>
@@ -182,6 +281,46 @@
                                       Margin="16,0,0,0"/>
                             </StackPanel>
                         </Grid>
+                    </Grid>
+                </Border>
+                </Grid>
+
+                <!-- Status Bar -->
+                <Border Grid.Row="1" Background="{StaticResource BrushSurfaceContainerLow}" 
+                    BorderBrush="{StaticResource BrushOutlineVariant}" BorderThickness="0,1,0,0">
+                    <Grid Margin="16,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+
+                        <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
+                            <TextBlock x:Name="TxtStatusInfo" Text="Ready" 
+                                   Style="{StaticResource TextLabel}"
+                                   Foreground="{StaticResource BrushOnSurfaceVariant}"/>
+                        </StackPanel>
+
+                        <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                            <TextBlock Text="Duration:" Style="{StaticResource TextLabel}" 
+                                   Foreground="{StaticResource BrushOnSurfaceVariant}" Margin="0,0,4,0"/>
+                            <TextBox x:Name="TxtFrameDuration" Width="48" Height="24" 
+                                 Text="100" TextAlignment="Center"
+                                 Background="{StaticResource BrushSurfaceContainerHigh}"
+                                 Foreground="{StaticResource BrushOnSurface}"
+                                 BorderBrush="{StaticResource BrushOutlineVariant}"
+                                 TextChanged="TxtFrameDuration_TextChanged"/>
+                            <TextBlock Text="ms" Style="{StaticResource TextLabel}" 
+                                   Foreground="{StaticResource BrushOnSurfaceVariant}" Margin="4,0,16,0"/>
+                            <TextBlock x:Name="TxtVramInfo" Text="VRAM: 0 tiles (0 bytes)" 
+                                   Style="{StaticResource TextLabel}"
+                                   Foreground="{StaticResource BrushOnSurfaceVariant}" Margin="0,0,16,0"/>
+                            <TextBlock x:Name="TxtFrameInfo" Text="Frame: 0/0" 
+                                   Style="{StaticResource TextLabel}"
+                                   Foreground="{StaticResource BrushOnSurfaceVariant}" Margin="0,0,16,0"/>
+                            <TextBlock x:Name="TxtSpriteSize" Text="Size: 0×0" 
+                                   Style="{StaticResource TextLabel}"
+                                   Foreground="{StaticResource BrushOnSurfaceVariant}"/>
+                        </StackPanel>
                     </Grid>
                 </Border>
             </Grid>

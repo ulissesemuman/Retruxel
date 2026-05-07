@@ -78,7 +78,7 @@ public class AssetProcessorTool : ITool
     private IndexedPngData ApplyGenerationParams(SKBitmap sourceBitmap, AssetGenerationParams genParams)
     {
         var pixels = ExtractPixelsFromBitmap(sourceBitmap);
-        var palette = OptimizePalette(pixels, genParams.ColorCount, genParams.DiversityWeight);
+        var palette = AssetProcessorTool.OptimizePalette(pixels, genParams.ColorCount, genParams.DiversityWeight);
 
         if (genParams.ColorOrder != null && genParams.ColorOrder.Length > 0)
         {
@@ -123,36 +123,6 @@ public class AssetProcessorTool : ITool
         List<(byte R, byte G, byte B)> pixels,
         int targetColorCount,
         double diversity = 1.25)
-    {
-        var colorSet = new HashSet<uint>();
-        foreach (var (r, g, b) in pixels)
-        {
-            uint color = 0xFF000000u | ((uint)r << 16) | ((uint)g << 8) | b;
-            colorSet.Add(color);
-        }
-
-        if (colorSet.Count <= targetColorCount)
-        {
-            return colorSet.Select(c => (
-                R: (byte)((c >> 16) & 0xFF),
-                G: (byte)((c >> 8) & 0xFF),
-                B: (byte)(c & 0xFF)
-            )).ToList();
-        }
-
-        var optimized = HierarchicalClustering(colorSet, targetColorCount, 20, diversity);
-
-        return optimized.Select(c => (
-            R: (byte)((c >> 16) & 0xFF),
-            G: (byte)((c >> 8) & 0xFF),
-            B: (byte)(c & 0xFF)
-        )).ToList();
-    }
-
-    private List<(byte R, byte G, byte B)> OptimizePalette(
-        List<(byte R, byte G, byte B)> pixels,
-        int targetColorCount,
-        double diversity)
     {
         var colorSet = new HashSet<uint>();
         foreach (var (r, g, b) in pixels)

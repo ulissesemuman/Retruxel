@@ -20,6 +20,13 @@ public class ScreenToTilesConverter
         public byte[] TilePaletteAssignments { get; set; } = Array.Empty<byte>();
     }
 
+    private class OptimizedPalette
+    {
+        public uint[][] Palettes { get; set; } = Array.Empty<uint[]>();
+        public byte[] TilePaletteAssignments { get; set; } = Array.Empty<byte>();
+        public int TotalColors { get; set; }
+    }
+
     /// <summary>
     /// Converts RGBA screen buffer to tiles (8×8), optimized palette, and nametable.
     /// Nametable is 1:1 (no deduplication) - use tile optimizer tool to reduce tile count.
@@ -90,7 +97,7 @@ public class ScreenToTilesConverter
 
         var assignments = AssignTilesToPalettes(tiles.ToArray(), tileColors.ToArray(), palettes, colorsPerSlot);
 
-        var optimized = new PaletteOptimizer.OptimizedPalette
+        var optimized = new OptimizedPalette
         {
             Palettes = palettes,
             TilePaletteAssignments = assignments,
@@ -179,7 +186,7 @@ public class ScreenToTilesConverter
     private static byte[][] RemapTilesToPalette(
         byte[][] tiles,
         uint[][] tileColors,
-        PaletteOptimizer.OptimizedPalette optimized)
+        OptimizedPalette optimized)
     {
         var remappedTiles = new byte[tiles.Length][];
         var flatPalette = optimized.Palettes.SelectMany(p => p).ToArray();

@@ -130,7 +130,7 @@ public partial class PaletteOptimizationWindow : Window
     {
         return _useLab
             ? ColorMatching.FindNearestLab(color, palette)
-            : ColorMatching.FindNearestRgb(color, palette);
+            : ColorMatching.FindNearestRgb1(color, palette);
     }
 
     // ── Bitmap helpers ────────────────────────────────────────────────────────

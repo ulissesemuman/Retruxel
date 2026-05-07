@@ -397,33 +397,23 @@ public partial class AssetImporterWindow : Window
                 ShowPaletteImportDialog(indexedData, _currentScene, _target);
             }
 
-            // Save optimized bitmap to temp file
-            var tempPath = Path.Combine(Path.GetTempPath(), assetName + ".png");
-            using (var stream = File.OpenWrite(tempPath))
-            {
-                using var image = SKImage.FromBitmap(optimizedSkBitmap);
-                using var data = image.Encode(SKEncodedImageFormat.Png, 100);
-                data.SaveTo(stream);
-            }
-
             optimizedSkBitmap.Dispose();
 
-            try
-            {
-                ImportedAsset = Services.AssetImporter.Import(
-                    tempPath,
-                    _projectPath,
-                    regionId,
-                    _target,
-                    skPalette);
-                DialogResult = true;
-                Close();
-            }
-            finally
-            {
-                if (File.Exists(tempPath))
-                    File.Delete(tempPath);
-            }
+            // Import using ORIGINAL file (_sourcePngPath)
+            // AssetImporter copies original to Assets/Source/
+            // Stores AssetGenerationParams (palette, colorSpace, diversity)
+            // Editors use AssetProcessorTool to process on-the-fly
+            ImportedAsset = Services.AssetImporter.Import(
+                _sourcePngPath,
+                _projectPath,
+                regionId,
+                _target,
+                skPalette,
+                colorSpace: "LAB",
+                diversityWeight: optimizationWindow.SelectedDiversity);
+            
+            DialogResult = true;
+            Close();
         }
         catch (AssetImportException ex)
         {

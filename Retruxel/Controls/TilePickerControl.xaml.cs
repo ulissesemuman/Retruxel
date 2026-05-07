@@ -19,7 +19,7 @@ namespace Retruxel.Controls;
 /// </summary>
 public partial class TilePickerControl : UserControl
 {
-    private readonly List<TileEntry> _tiles = new();
+    private readonly List<GlyphTile> _tiles = new();
     private readonly HashSet<int> _selectedIndices = new();
     private Point _dragStartPos;
     private int _dragTileIdx = -1;
@@ -78,14 +78,14 @@ public partial class TilePickerControl : UserControl
 
     public void LoadFromDefaultFont(char rangeStart, char rangeEnd)
     {
-        var tiles = new List<TileEntry>();
+        var tiles = new List<GlyphTile>();
 
         for (char c = rangeStart; c <= rangeEnd; c++)
         {
             var bitmap = DefaultFont.GetGlyph(c);
             if (bitmap is null) continue;
 
-            tiles.Add(new TileEntry
+            tiles.Add(new GlyphTile
             {
                 Character = c,
                 Bitmap = bitmap,
@@ -102,7 +102,7 @@ public partial class TilePickerControl : UserControl
         using var stream = File.OpenRead(pngPath);
         using var bitmap = SKBitmap.Decode(stream);
 
-        var tiles = new List<TileEntry>();
+        var tiles = new List<GlyphTile>();
         int tilesW = bitmap.Width / 8;
         int tilesH = bitmap.Height / 8;
 
@@ -128,7 +128,7 @@ public partial class TilePickerControl : UserControl
                 }
 
                 int linearIndex = ty * tilesW + tx;
-                tiles.Add(new TileEntry
+                tiles.Add(new GlyphTile
                 {
                     Character = null,
                     Bitmap = tileBitmap,
@@ -152,7 +152,7 @@ public partial class TilePickerControl : UserControl
             Color = SKColors.White
         };
 
-        var tiles = new List<TileEntry>();
+        var tiles = new List<GlyphTile>();
 
         for (int cp = 0x20; cp <= 0xFF; cp++)
         {
@@ -179,7 +179,7 @@ public partial class TilePickerControl : UserControl
 
             if (bitmap.All(b => b == 0) && c != ' ') continue;
 
-            tiles.Add(new TileEntry
+            tiles.Add(new GlyphTile
             {
                 Character = c,
                 Bitmap = bitmap,
@@ -193,7 +193,7 @@ public partial class TilePickerControl : UserControl
 
     public void LoadFromRawBytes(byte[] fontData, char startChar)
     {
-        var tiles = new List<TileEntry>();
+        var tiles = new List<GlyphTile>();
         int glyphCount = fontData.Length / 8;
 
         for (int i = 0; i < glyphCount; i++)
@@ -201,7 +201,7 @@ public partial class TilePickerControl : UserControl
             var bitmap = new byte[8];
             Array.Copy(fontData, i * 8, bitmap, 0, 8);
 
-            tiles.Add(new TileEntry
+            tiles.Add(new GlyphTile
             {
                 Character = (char)(startChar + i),
                 Bitmap = bitmap,
@@ -219,7 +219,7 @@ public partial class TilePickerControl : UserControl
     /// </summary>
     public void LoadFromSmsVram(byte[] vramData, int startTile)
     {
-        var tiles = new List<TileEntry>();
+        var tiles = new List<GlyphTile>();
         int tileCount = vramData.Length / 32;
 
         for (int t = 0; t < tileCount; t++)
@@ -245,7 +245,7 @@ public partial class TilePickerControl : UserControl
                 bitmap[row] = b;
             }
 
-            tiles.Add(new TileEntry
+            tiles.Add(new GlyphTile
             {
                 Character = null,
                 Bitmap = bitmap,
@@ -257,7 +257,7 @@ public partial class TilePickerControl : UserControl
         LoadFromTileEntries(tiles);
     }
 
-    public void LoadFromTileEntries(List<TileEntry> tiles)
+    public void LoadFromTileEntries(List<GlyphTile> tiles)
     {
         _tiles.Clear();
         _tiles.AddRange(tiles);
@@ -272,7 +272,7 @@ public partial class TilePickerControl : UserControl
         TileGridImage.Source = null;
     }
 
-    public IReadOnlyList<TileEntry> GetSelectedTiles()
+    public IReadOnlyList<GlyphTile> GetSelectedTiles()
     {
         return _selectedIndices.OrderBy(i => i).Select(i => _tiles[i]).ToList();
     }

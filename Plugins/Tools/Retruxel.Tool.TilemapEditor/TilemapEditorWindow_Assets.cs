@@ -122,7 +122,7 @@ public partial class TilemapEditorWindow
 
                 _tilemapData.Resize(width, height);
 
-                var mapData = (Helpers.TileEntry[])tilemapData["mapData"];
+                var mapData = (TileEntry[])tilemapData["mapData"];
                 if (mapData.Length > 0)
                 {
                     var currentLayer = _tilemapData.GetLayer(_currentLayerIndex);
@@ -143,7 +143,7 @@ public partial class TilemapEditorWindow
                     if (result == MessageBoxResult.Yes)
                     {
                         var asset = (AssetEntry)tilemapData["asset"];
-                        OpenPaletteEditorForAsset(asset);
+                        OpenPaletteEditor(asset);
                     }
                 }
 

@@ -1,63 +1,47 @@
-using System;
-
 namespace Retruxel.Core.Models;
 
 /// <summary>
-/// Represents a single 8x8 tile that can be used in text rendering or tilesets.
-/// Can originate from DefaultFont, external PNG, TTF rasterization, or raw bytes.
+/// Represents a single tile placement in a tilemap.
+/// Stores tile identity and transformation intent — no hardware-specific encoding.
+/// Target-agnostic: used by TilePacker, TilemapEditor, and code generation pipeline.
 /// </summary>
 public class TileEntry
 {
     /// <summary>
-    /// Unicode character this tile represents, if applicable.
-    /// Null for tiles from spritesheets that have no character mapping.
+    /// Index of the unique tile in the tileset (0-based, relative to startTile).
+    /// -1 = empty cell.
     /// </summary>
-    public char? Character { get; init; }
+    public int TileIndex { get; set; } = -1;
+
+    /// <summary>Flip the tile horizontally.</summary>
+    public bool FlipH { get; set; }
+
+    /// <summary>Flip the tile vertically.</summary>
+    public bool FlipV { get; set; }
 
     /// <summary>
-    /// Raw 8x8 glyph bitmap in font8x8 format:
-    /// 8 bytes, row-wise, LSB = leftmost pixel.
+    /// Clockwise rotation in degrees. Valid values: 0, 90, 180, 270.
+    /// Only used when the target hardware supports rotation.
     /// </summary>
-    public byte[] Bitmap { get; init; } = new byte[8];
+    public int Rotation { get; set; }
 
-    /// <summary>
-    /// Human-readable source description shown in tooltips.
-    /// Examples: "font8x8 Basic", "MyFont.ttf", "icons.png tile 3"
-    /// </summary>
-    public string SourceLabel { get; init; } = "";
+    /// <summary>X position in the original image (used by TilePacker).</summary>
+    public int X { get; set; }
 
-    /// <summary>
-    /// Zero-based index within the source (glyph index, tile index, etc.)
-    /// </summary>
-    public int SourceIndex { get; init; }
-}
+    /// <summary>Y position in the original image (used by TilePacker).</summary>
+    public int Y { get; set; }
 
-/// <summary>
-/// Event args for tile selection events.
-/// </summary>
-public class TileSelectedEventArgs : EventArgs
-{
-    public TileEntry Tile { get; }
-    public int Index { get; }
+    public bool IsEmpty => TileIndex < 0;
 
-    public TileSelectedEventArgs(TileEntry tile, int index)
+    public static TileEntry Empty => new() { TileIndex = -1 };
+
+    public TileEntry Clone() => new()
     {
-        Tile = tile;
-        Index = index;
-    }
-}
-
-/// <summary>
-/// Event args for tile drag events.
-/// </summary>
-public class TileDragEventArgs : EventArgs
-{
-    public TileEntry Tile { get; }
-    public int Index { get; }
-
-    public TileDragEventArgs(TileEntry tile, int index)
-    {
-        Tile = tile;
-        Index = index;
-    }
+        TileIndex = TileIndex,
+        FlipH = FlipH,
+        FlipV = FlipV,
+        Rotation = Rotation,
+        X = X,
+        Y = Y
+    };
 }

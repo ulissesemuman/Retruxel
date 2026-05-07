@@ -154,7 +154,7 @@ internal class VariableResolver
             JsonValueKind.Number => prop.TryGetInt32(out var i) ? (object)i : prop.GetDouble(),
             JsonValueKind.True => true,
             JsonValueKind.False => false,
-            JsonValueKind.Array => prop.EnumerateArray().Select(e => e.ToString()).ToList(),
+            JsonValueKind.Array => prop,  // Keep as JsonElement for complex arrays
             JsonValueKind.Object => prop,
             _ => prop.GetString() ?? varDef.Default ?? ""
         };

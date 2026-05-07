@@ -1,4 +1,4 @@
-using Retruxel.Tool.TilemapEditor.Helpers;
+using Retruxel.Core.Models;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;

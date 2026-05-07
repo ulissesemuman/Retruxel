@@ -2,6 +2,7 @@ using Retruxel.Core.Interfaces;
 using Retruxel.Core.Models;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text.Json;
 
 namespace Retruxel.Modules.Graphics;
@@ -168,8 +169,99 @@ public class TilemapModule : IGraphicModule
 
     public IEnumerable<GeneratedFile> GenerateCode() => [];
 
-    public string Serialize() => JsonSerializer.Serialize(_state, _jsonOptions);
-    public void Deserialize(string json) => _state = JsonSerializer.Deserialize<TilemapState>(json, _jsonOptions) ?? new();
+    public string Serialize()
+    {
+        var json = JsonSerializer.Serialize(_state, _jsonOptions);
+        
+        // DEBUG: Log serialized JSON
+        System.Diagnostics.Debug.WriteLine($"[TilemapModule.Serialize] MapData.Length = {_state.MapData.Length}");
+        if (_state.MapData.Length > 0)
+        {
+            System.Diagnostics.Debug.WriteLine($"[TilemapModule.Serialize] First item type: {_state.MapData[0]?.GetType().Name}");
+            System.Diagnostics.Debug.WriteLine($"[TilemapModule.Serialize] JSON length: {json.Length}");
+            System.Diagnostics.Debug.WriteLine($"[TilemapModule.Serialize] JSON preview: {json.Substring(0, Math.Min(500, json.Length))}");
+        }
+        
+        return json;
+    }
+    
+    public void Deserialize(string json)
+    {
+        using var doc = JsonDocument.Parse(json);
+        var root = doc.RootElement;
+        
+        _state = new TilemapState
+        {
+            TilesAssetId = root.TryGetProperty("tilesAssetId", out var ta) ? ta.GetString() ?? "" : "",
+            MapAssetId = root.TryGetProperty("mapAssetId", out var ma) ? ma.GetString() ?? "" : "",
+            StartTile = root.TryGetProperty("startTile", out var st) ? st.GetInt32() : 0,
+            MapX = root.TryGetProperty("mapX", out var mx) ? mx.GetInt32() : 0,
+            MapY = root.TryGetProperty("mapY", out var my) ? my.GetInt32() : 0,
+            MapWidth = root.TryGetProperty("mapWidth", out var mw) ? mw.GetInt32() : 32,
+            MapHeight = root.TryGetProperty("mapHeight", out var mh) ? mh.GetInt32() : 24,
+            PaletteSlot = root.TryGetProperty("paletteSlot", out var ps) ? ps.GetInt32() : 0,
+            PaletteRef = root.TryGetProperty("paletteRef", out var pr) ? pr.GetString() ?? "" : "",
+            SolidTiles = root.TryGetProperty("solidTiles", out var solid) && solid.ValueKind == JsonValueKind.Array
+                ? solid.EnumerateArray().Select(e => e.GetInt32()).ToArray()
+                : Array.Empty<int>(),
+            MapData = ParseMapData(root)
+        };
+    }
+    
+    private static object[] ParseMapData(JsonElement root)
+    {
+        if (!root.TryGetProperty("mapData", out var mapDataProp))
+            return Array.Empty<object>();
+        
+        if (mapDataProp.ValueKind != JsonValueKind.Array)
+            return Array.Empty<object>();
+        
+        var result = new List<object>();
+        
+        foreach (var item in mapDataProp.EnumerateArray())
+        {
+            // New format: object with tileIndex, flipH, flipV, rotation
+            if (item.ValueKind == JsonValueKind.Object)
+            {
+                var entry = new Dictionary<string, object>();
+                
+                if (item.TryGetProperty("tileIndex", out var ti))
+                    entry["tileIndex"] = ti.GetInt32();
+                else
+                    entry["tileIndex"] = -1;
+                
+                if (item.TryGetProperty("flipH", out var fh))
+                    entry["flipH"] = fh.GetBoolean();
+                else
+                    entry["flipH"] = false;
+                
+                if (item.TryGetProperty("flipV", out var fv))
+                    entry["flipV"] = fv.GetBoolean();
+                else
+                    entry["flipV"] = false;
+                
+                if (item.TryGetProperty("rotation", out var rot))
+                    entry["rotation"] = rot.GetInt32();
+                else
+                    entry["rotation"] = 0;
+                
+                result.Add(entry);
+            }
+            // Old format: plain integer (convert to object)
+            else if (item.ValueKind == JsonValueKind.Number)
+            {
+                result.Add(new Dictionary<string, object>
+                {
+                    ["tileIndex"] = item.GetInt32(),
+                    ["flipH"] = false,
+                    ["flipV"] = false,
+                    ["rotation"] = 0
+                });
+            }
+        }
+        
+        return result.ToArray();
+    }
     public string GetValidationSample() => JsonSerializer.Serialize(new TilemapState(), _jsonOptions);
 
     private class TilemapState
@@ -181,7 +273,7 @@ public class TilemapModule : IGraphicModule
         public int MapY { get; set; } = 0;
         public int MapWidth { get; set; } = 32;
         public int MapHeight { get; set; } = 24;
-        public int[] MapData { get; set; } = [];
+        public object[] MapData { get; set; } = []; // Array of objects with tileIndex, flipH, flipV, rotation
         public int[] SolidTiles { get; set; } = [];
         public int PaletteSlot { get; set; } = 0;
 

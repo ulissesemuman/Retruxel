@@ -31,18 +31,10 @@ public partial class TilemapEditorWindow
             TxtLayerInfo.Text = "";
         }
 
-        ConfigurePaletteUI(specs.PaletteMode, specs.PaletteBitsPerTile);
         InitializePaletteSlotSelector();
         InitializeFlipHotkeys();
         RenderCanvas();
 
         _isInitializing = false;
-    }
-
-    private void ConfigurePaletteUI(PaletteMode mode, int paletteBits)
-    {
-        // Palette UI is now handled by InitializePaletteSlotSelector()
-        // This method is kept for compatibility but does nothing
-        // The old palette module system is obsolete
     }
 }

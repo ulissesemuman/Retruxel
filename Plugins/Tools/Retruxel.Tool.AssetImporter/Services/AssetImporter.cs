@@ -7,6 +7,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using Retruxel.Lib.ImageProcessing;
 
 namespace Retruxel.Tool.AssetImporter.Services;
 
@@ -42,7 +43,9 @@ public static class AssetImporter
         string projectPath,
         string vramRegionId,
         ITarget target,
-        List<SKColor>? reducedPalette = null)
+        List<SKColor>? reducedPalette = null,
+        string? colorSpace = null,
+        double? diversityWeight = null)
     {
         // 1. Validate source file
         if (!File.Exists(sourcePngPath))
@@ -55,55 +58,65 @@ public static class AssetImporter
 
         ValidateDimensions(sourceBitmap, sourcePngPath);
 
-        // 3. Get hardware palette
+        // 3. Determine output paths
+        var region = target.Specs.VramRegions.FirstOrDefault(r => r.Id == vramRegionId)
+            ?? throw new AssetImportException($"VRAM region '{vramRegionId}' not found in target specs.");
+
+        var assetId = Path.GetFileNameWithoutExtension(sourcePngPath);
+        var assetFileName = assetId + ".png";
+        
+        // Source folder: Assets/Source/
+        var sourceFolder = Path.Combine(projectPath, "Assets", "Source");
+        var sourceFullPath = Path.Combine(sourceFolder, assetFileName);
+        var sourceRelativePath = Path.Combine("Assets", "Source", assetFileName).Replace('\\', '/');
+
+        // 4. Ensure folder exists
+        Directory.CreateDirectory(sourceFolder);
+
+        // 5. Copy original to Source folder (preserve original)
+        File.Copy(sourcePngPath, sourceFullPath, overwrite: true);
+
+        // 6. Get hardware palette
         var hardwarePalette = target.GetHardwarePalette();
         if (hardwarePalette.Count == 0)
             throw new AssetImportException($"Target '{target.TargetId}' returned an empty hardware palette.");
 
-        // 4. Reduce colors to hardware palette
-        using var reducedBitmap = reducedPalette != null
-            ? ConvertToReducedBitmap(sourceBitmap, reducedPalette)
-            : ReduceColors(sourceBitmap, hardwarePalette);
-
-        // 4.5. Convert to indexed PNG
-        var indexedPngService = new Retruxel.Lib.ImageProcessing.IndexedPngService();
+        // 7. Calculate generation params from reduced palette
         var palette = reducedPalette ?? hardwarePalette.Select(c => new SKColor(c.R, c.G, c.B)).ToList();
-        var indexedData = indexedPngService.ConvertToIndexed(reducedBitmap, palette);
+        var colorCount = palette.Count;
 
-        // 5. Determine output path
-        var region = target.Specs.VramRegions.FirstOrDefault(r => r.Id == vramRegionId)
-            ?? throw new AssetImportException($"VRAM region '{vramRegionId}' not found in target specs.");
+        // 8. Calculate tile count from source dimensions
+        var tileCount = (sourceBitmap.Width / TileSize) * (sourceBitmap.Height / TileSize);
 
-        var subfolder = region.Id;
-        var assetId = Path.GetFileNameWithoutExtension(sourcePngPath);
-        var assetFileName = assetId + ".png";
-        var assetFolder = Path.Combine(projectPath, "assets", subfolder);
-        var assetFullPath = Path.Combine(assetFolder, assetFileName);
-        var relativePath = Path.Combine("assets", subfolder, assetFileName)
-                                .Replace('\\', '/');
+        // 9. Extract suggested colors for palette slot population
+        var suggestedColors = palette.Select(c => $"#{c.Red:X2}{c.Green:X2}{c.Blue:X2}").ToList();
 
-        // 6. Ensure folder exists
-        Directory.CreateDirectory(assetFolder);
-
-        // 7. Save indexed PNG
-        indexedPngService.Write(indexedData, assetFullPath);
-
-        // 8. Calculate tile count
-        var tileCount = (reducedBitmap.Width / TileSize) * (reducedBitmap.Height / TileSize);
+        // 10. Create generation params
+        var generationParams = new AssetGenerationParams
+        {
+            TargetPalette = 0, // Default to slot 0
+            ColorCount = colorCount,
+            ColorSpace = colorSpace ?? "LAB",
+            DiversityWeight = diversityWeight ?? 0.7,
+            ColorOrder = null // No reordering by default
+        };
 
         return new AssetEntry
         {
             Id = assetId,
             FileName = assetFileName,
-            RelativePath = relativePath,
+            RelativePath = sourceRelativePath, // Points to source
+            SourcePath = sourceRelativePath,
+            GeneratedPath = string.Empty, // No generated file needed
+            GenerationParams = generationParams,
             VramRegionId = vramRegionId,
             TileCount = tileCount,
-            SourceWidth = reducedBitmap.Width,
-            SourceHeight = reducedBitmap.Height,
+            SourceWidth = sourceBitmap.Width,
+            SourceHeight = sourceBitmap.Height,
             ImportedAt = DateTime.Now,
             IsIndexed = true,
-            ColorCount = indexedData.Colors.Count,
-            SuggestedColors = indexedData.Colors
+            ColorCount = colorCount,
+            SuggestedColors = suggestedColors
         };
     }
 
@@ -118,16 +131,48 @@ public static class AssetImporter
             ?? throw new AssetImportException($"Failed to decode image: {sourcePngPath}");
 
         var palette = target.GetHardwarePalette();
-        return ReduceColors(source, palette);
+        var reduced = ReduceColors(source, palette);
+
+        return BitmapFromByteArray(reduced, source.Width, source.Height, palette);
     }
 
-    // ── Color Reduction ───────────────────────────────────────────────────────
+    public static SKBitmap PreviewReduction1(string sourcePngPath, ITarget target)
+    {
+        using var stream = File.OpenRead(sourcePngPath);
+        using var source = SKBitmap.Decode(stream)
+            ?? throw new AssetImportException($"Failed to decode image: {sourcePngPath}");
+
+        var palette = target.GetHardwarePalette();
+
+        return ReduceColors1(source, palette);
+    }
+
+    public static SKBitmap BitmapFromByteArray(byte[] indices, int width, int height, IReadOnlyList<HardwareColor> palette)
+    {
+        var bitmap = new SKBitmap(width, height);
+
+        // Converte HardwareColor para SKColor uma vez só
+        var skPalette = palette.Select(c => SKColor.Parse(c.ToHex())).ToArray();
+
+        using (var canvas = new SKCanvas(bitmap))
+        {
+            for (int y = 0; y < height; y++)
+            {
+                for (int x = 0; x < width; x++)
+                {
+                    int index = indices[y * width + x];
+                    bitmap.SetPixel(x, y, skPalette[index]);
+                }
+            }
+        }
+        return bitmap;
+    }
 
     /// <summary>
     /// Reduces every pixel in the bitmap to the nearest color in the hardware palette.
     /// Uses Euclidean distance in RGB space for nearest-color matching.
     /// </summary>
-    private static SKBitmap ReduceColors(
+    private static SKBitmap ReduceColors1(
         SKBitmap source,
         IReadOnlyList<HardwareColor> palette)
     {
@@ -147,7 +192,7 @@ public static class AssetImporter
                     continue;
                 }
 
-                var nearest = Retruxel.Lib.ImageProcessing.ColorMatching.FindNearestRgb(
+                var nearest = Retruxel.Lib.ImageProcessing.ColorMatching.FindNearestRgb1(
                     (pixel.Red, pixel.Green, pixel.Blue), rgbPalette);
                 result.SetPixel(x, y, new SKColor(nearest.R, nearest.G, nearest.B, pixel.Alpha));
             }
@@ -156,7 +201,36 @@ public static class AssetImporter
         return result;
     }
 
-    // ── Validation ────────────────────────────────────────────────────────────
+    private static byte[] ReduceColors(
+        SKBitmap source,
+        IReadOnlyList<HardwareColor> palette)
+    {
+        var result = new SKBitmap(source.Width, source.Height, SKColorType.Rgba8888, SKAlphaType.Premul);
+        var rgbPalette = palette.Select(c => (c.R, c.G, c.B)).ToList();
+        var indices = new byte[source.Width * source.Height];
+        int idx = 0;
+
+        for (int y = 0; y < source.Height; y++)
+        {
+            for (int x = 0; x < source.Width; x++)
+            {
+                var pixel = source.GetPixel(x, y);
+
+                // Treat fully transparent pixels as transparent in output
+                if (pixel.Alpha == 0)
+                {
+                    indices[idx++] = 0;
+                }
+                else
+                {
+                    var color = (pixel.Red, pixel.Green, pixel.Blue);
+                    indices[idx++] = ColorMatching.FindNearestColorIndex(color, rgbPalette, ColorMatching.DistanceMode.RGB);
+                }
+            }
+        }
+
+        return indices;
+    }
 
     /// <summary>
     /// Validates that the image dimensions are multiples of 8 (tile size).
@@ -171,8 +245,6 @@ public static class AssetImporter
             throw new AssetImportException(
                 $"Image height ({bitmap.Height}px) must be a multiple of {TileSize}. File: {Path.GetFileName(path)}");
     }
-
-    // ── I/O ───────────────────────────────────────────────────────────────────
 
     private static void SavePng(SKBitmap bitmap, string outputPath)
     {
@@ -203,9 +275,9 @@ public static class AssetImporter
                     continue;
                 }
 
-                var nearest = Retruxel.Lib.ImageProcessing.ColorMatching.FindNearestRgb(
+                var nearest = Retruxel.Lib.ImageProcessing.ColorMatching.FindNearestColorIndex(
                     (pixel.Red, pixel.Green, pixel.Blue), rgbPalette);
-                result.SetPixel(x, y, new SKColor(nearest.R, nearest.G, nearest.B, pixel.Alpha));
+                //result.SetPixel(x, y, new SKColor(nearest.R, nearest.G, nearest.B, pixel.Alpha));
             }
         }
 

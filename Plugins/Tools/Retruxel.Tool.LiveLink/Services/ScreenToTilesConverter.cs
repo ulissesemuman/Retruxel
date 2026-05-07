@@ -27,7 +27,7 @@ public class ScreenToTilesConverter
         byte[] screenBuffer,
         int screenWidth,
         int screenHeight,
-        string targetConsole,
+        Retruxel.Core.Interfaces.ITarget target,
         int tileWidth = 8,
         int tileHeight = 8)
     {
@@ -58,22 +58,35 @@ public class ScreenToTilesConverter
 
         System.Diagnostics.Debug.WriteLine($"[ScreenToTilesConverter] Found {allColors.Length} unique colors in screen");
 
-        // Optimize palette based on target console
-        PaletteOptimizer.OptimizedPalette optimized;
+        // Get palette configuration from target
+        int paletteSlotCount = target.GetPaletteSlotCount();
+        int colorsPerSlot = target.GetColorsPerSlot();
+        int totalSlots = paletteSlotCount * colorsPerSlot;
 
-        if (targetConsole == "sms" || targetConsole == "gg")
+        System.Diagnostics.Debug.WriteLine($"[ScreenToTilesConverter] Target: {paletteSlotCount} slots × {colorsPerSlot} colors = {totalSlots} total");
+
+        // Optimize palette using hierarchical clustering
+        var clusters = HierarchicalClustering(allColors, totalSlots);
+
+        // Build palette structure
+        var palettes = new uint[paletteSlotCount][];
+        for (int i = 0; i < paletteSlotCount; i++)
         {
-            optimized = PaletteOptimizer.OptimizeForSms(tiles.ToArray(), allColors);
+            palettes[i] = new uint[colorsPerSlot];
+            for (int j = 0; j < colorsPerSlot && i * colorsPerSlot + j < clusters.Length; j++)
+            {
+                palettes[i][j] = clusters[i * colorsPerSlot + j];
+            }
         }
-        else if (targetConsole == "nes")
+
+        var assignments = AssignTilesToPalettes(tiles.ToArray(), tileColors.ToArray(), palettes, colorsPerSlot);
+
+        var optimized = new PaletteOptimizer.OptimizedPalette
         {
-            optimized = PaletteOptimizer.OptimizeForNes(tiles.ToArray(), allColors);
-        }
-        else
-        {
-            // Default: use SMS format
-            optimized = PaletteOptimizer.OptimizeForSms(tiles.ToArray(), allColors);
-        }
+            Palettes = palettes,
+            TilePaletteAssignments = assignments,
+            TotalColors = Math.Min(clusters.Length, totalSlots)
+        };
 
         // Remap tile pixels to palette indices
         var remappedTiles = RemapTilesToPalette(tiles.ToArray(), tileColors.ToArray(), optimized);
@@ -174,7 +187,7 @@ public class ScreenToTilesConverter
                 if (localColorIdx < colors.Length)
                 {
                     uint color = colors[localColorIdx];
-                    remapped[i] = FindClosestColorIndex(color, flatPalette);
+                    remapped[i] = FindNearestColorIndex(color, flatPalette);
                 }
             }
 
@@ -184,7 +197,7 @@ public class ScreenToTilesConverter
         return remappedTiles;
     }
 
-    private static byte FindClosestColorIndex(uint color, uint[] palette)
+    private static byte FindNearestColorIndex(uint color, uint[] palette)
     {
         int bestIdx = 0;
         double minDist = double.MaxValue;
@@ -217,5 +230,146 @@ public class ScreenToTilesConverter
         int db = b1 - b2;
 
         return Math.Sqrt(dr * dr + dg * dg + db * db);
+    }
+
+    private static uint[] HierarchicalClustering(uint[] colors, int targetSlots)
+    {
+        if (colors.Length <= targetSlots)
+            return colors;
+
+        var colorSet = new HashSet<uint>(colors);
+        var colorList = colorSet.ToList();
+        var centroids = new uint[targetSlots];
+
+        // K-means++ initialization
+        var random = new Random();
+        centroids[0] = colorList[random.Next(colorList.Count)];
+
+        for (int i = 1; i < targetSlots; i++)
+        {
+            var distances = new double[colorList.Count];
+            double totalDistance = 0;
+
+            for (int j = 0; j < colorList.Count; j++)
+            {
+                double minDist = double.MaxValue;
+                for (int k = 0; k < i; k++)
+                {
+                    double dist = ColorDistance(colorList[j], centroids[k]);
+                    if (dist < minDist)
+                        minDist = dist;
+                }
+                distances[j] = minDist * minDist;
+                totalDistance += distances[j];
+            }
+
+            double threshold = random.NextDouble() * totalDistance;
+            double sum = 0;
+
+            for (int j = 0; j < colorList.Count; j++)
+            {
+                sum += distances[j];
+                if (sum >= threshold)
+                {
+                    centroids[i] = colorList[j];
+                    break;
+                }
+            }
+        }
+
+        // K-means clustering
+        for (int iter = 0; iter < 20; iter++)
+        {
+            var clusters = new List<uint>[targetSlots];
+            for (int i = 0; i < targetSlots; i++)
+                clusters[i] = new List<uint>();
+
+            foreach (var color in colorList)
+            {
+                int nearest = 0;
+                double minDist = ColorDistance(color, centroids[0]);
+
+                for (int i = 1; i < targetSlots; i++)
+                {
+                    double dist = ColorDistance(color, centroids[i]);
+                    if (dist < minDist)
+                    {
+                        minDist = dist;
+                        nearest = i;
+                    }
+                }
+
+                clusters[nearest].Add(color);
+            }
+
+            bool changed = false;
+            for (int i = 0; i < targetSlots; i++)
+            {
+                if (clusters[i].Count > 0)
+                {
+                    long r = 0, g = 0, b = 0;
+                    foreach (var color in clusters[i])
+                    {
+                        r += (color >> 16) & 0xFF;
+                        g += (color >> 8) & 0xFF;
+                        b += color & 0xFF;
+                    }
+
+                    int count = clusters[i].Count;
+                    uint newCentroid = 0xFF000000u | ((uint)(r / count) << 16) | ((uint)(g / count) << 8) | (uint)(b / count);
+
+                    if (newCentroid != centroids[i])
+                    {
+                        centroids[i] = newCentroid;
+                        changed = true;
+                    }
+                }
+            }
+
+            if (!changed)
+                break;
+        }
+
+        return centroids;
+    }
+
+    private static byte[] AssignTilesToPalettes(byte[][] tiles, uint[][] tileColors, uint[][] palettes, int colorsPerPalette)
+    {
+        var assignments = new byte[tiles.Length];
+
+        for (int tileIdx = 0; tileIdx < tiles.Length; tileIdx++)
+        {
+            var tile = tiles[tileIdx];
+            var colors = tileColors[tileIdx].Distinct().ToArray();
+
+            int bestPalette = 0;
+            double minError = double.MaxValue;
+
+            for (int palIdx = 0; palIdx < palettes.Length; palIdx++)
+            {
+                double error = 0;
+                foreach (var color in colors)
+                {
+                    double minDist = double.MaxValue;
+                    for (int i = 0; i < colorsPerPalette && i < palettes[palIdx].Length; i++)
+                    {
+                        double dist = ColorDistance(color, palettes[palIdx][i]);
+                        if (dist < minDist)
+                            minDist = dist;
+                    }
+                    error += minDist;
+                }
+
+                if (error < minError)
+                {
+                    minError = error;
+                    bestPalette = palIdx;
+                }
+            }
+
+            assignments[tileIdx] = (byte)bestPalette;
+        }
+
+        return assignments;
     }
 }

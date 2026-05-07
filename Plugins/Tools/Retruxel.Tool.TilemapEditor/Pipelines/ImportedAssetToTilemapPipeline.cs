@@ -6,7 +6,6 @@ using System.IO;
 using System.Linq;
 using System.Windows.Media.Imaging;
 using Retruxel.Core.Helpers;
-using Retruxel.Tool.TilemapEditor.Helpers;
 
 namespace Retruxel.Tool.TilemapEditor.Pipelines;
 
@@ -73,23 +72,21 @@ public class ImportedAssetToTilemapPipeline : AssetPipelineBase<ImportedAssetDat
         System.Diagnostics.Debug.WriteLine($"[ImportedAssetToTilemapPipeline] Palette mapped to {targetId.ToUpper()} hardware using {(useLab ? "LAB" : "RGB")} color space");
 
         // Return data for tilemap editor
-        // Convert to Helpers.TileEntry[] if tilemapEncoded is available
-        Helpers.TileEntry[] mapData;
-        if (input.Metadata.ContainsKey("tilemapEncoded") && input.Metadata["tilemapEncoded"] is int[] encoded)
+        // TileEntry now comes from Core.Models (via TilePacker)
+        TileEntry[] mapData;
+        if (input.Metadata.ContainsKey("tilemap") && input.Metadata["tilemap"] is System.Collections.IList tilemapList)
         {
-            // New format from TilePackerTool - has flip flags
-            mapData = encoded.Select(e => new Helpers.TileEntry
+            // New format from TilePackerTool - already TileEntry from Core
+            mapData = new TileEntry[tilemapList.Count];
+            for (int i = 0; i < tilemapList.Count; i++)
             {
-                TileIndex = e & 0x1FF,  // Bits 0-8
-                FlipH = (e & (1 << 9)) != 0,
-                FlipV = (e & (1 << 10)) != 0,
-                Rotation = 0  // TilePacker doesn't support rotation yet
-            }).ToArray();
+                mapData[i] = (TileEntry)tilemapList[i];
+            }
         }
         else
         {
             // Old format - plain tile indices
-            mapData = input.TilemapData.Select(x => new Helpers.TileEntry { TileIndex = (int)x }).ToArray();
+            mapData = input.TilemapData.Select(x => new TileEntry { TileIndex = (int)x }).ToArray();
         }
 
         return new Dictionary<string, object>

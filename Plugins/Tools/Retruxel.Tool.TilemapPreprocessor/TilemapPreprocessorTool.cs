@@ -3,6 +3,7 @@ using Retruxel.Core.Interfaces;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.Json;
 
 namespace Retruxel.Tool.TilemapPreprocessor;
 
@@ -50,14 +51,48 @@ public class TilemapPreprocessorTool : ITool
         var solidTiles = GetIntArray(input, "solidTiles");
         var mapDataObj = input.ContainsKey("mapData") ? input["mapData"] : null;
 
+        // DEBUG: Log input
+        System.Diagnostics.Debug.WriteLine($"[TilemapPreprocessor] ===== EXECUTE START =====");
+        System.Diagnostics.Debug.WriteLine($"[TilemapPreprocessor] mapDataObj type: {mapDataObj?.GetType().Name ?? "null"}");
+        
+        // Convert JsonElement to object[] if needed
+        if (mapDataObj is JsonElement jsonElement && jsonElement.ValueKind == JsonValueKind.Array)
+        {
+            var arrayLength = jsonElement.GetArrayLength();
+            System.Diagnostics.Debug.WriteLine($"[TilemapPreprocessor] mapDataObj is JsonElement array with {arrayLength} items");
+            
+            var objArray = new object[arrayLength];
+            int idx = 0;
+            foreach (var item in jsonElement.EnumerateArray())
+            {
+                objArray[idx++] = item;
+            }
+            mapDataObj = objArray;
+            
+            if (arrayLength > 0)
+            {
+                System.Diagnostics.Debug.WriteLine($"[TilemapPreprocessor] First item type: {objArray[0]?.GetType().Name}");
+            }
+        }
+        else if (mapDataObj is object[] objArr)
+        {
+            System.Diagnostics.Debug.WriteLine($"[TilemapPreprocessor] mapDataObj is object[] with {objArr.Length} items");
+            if (objArr.Length > 0)
+            {
+                System.Diagnostics.Debug.WriteLine($"[TilemapPreprocessor] First item type: {objArr[0]?.GetType().Name}");
+            }
+        }
+
         // Convert mapData to TileEntry[] if it's an object array
         var mapData = ConvertToTileEntryArray(mapDataObj);
 
         // DEBUG: Log mapData info
-        System.Diagnostics.Debug.WriteLine($"[TilemapPreprocessor] mapData received: Length={mapData.Length}");
+        System.Diagnostics.Debug.WriteLine($"[TilemapPreprocessor] mapData converted: Length={mapData.Length}");
         if (mapData.Length > 0)
         {
             System.Diagnostics.Debug.WriteLine($"[TilemapPreprocessor] First entry: TileIndex={mapData[0].TileIndex}, FlipH={mapData[0].FlipH}, FlipV={mapData[0].FlipV}");
+            if (mapData.Length > 1)
+                System.Diagnostics.Debug.WriteLine($"[TilemapPreprocessor] Second entry: TileIndex={mapData[1].TileIndex}, FlipH={mapData[1].FlipH}, FlipV={mapData[1].FlipV}");
         }
 
         var startTile = GetInt(input, "startTile", 0);
@@ -137,7 +172,7 @@ public class TilemapPreprocessorTool : ITool
 
     /// <summary>
     /// Converts mapData object to TileEntry array.
-    /// Supports: TileEntry[], anonymous objects with tileIndex/flipH/flipV/rotation, int[] (backward compat).
+    /// Supports: TileEntry[], JsonElement array, anonymous objects, int[] (backward compat).
     /// </summary>
     private TileEntry[] ConvertToTileEntryArray(object? mapDataObj)
     {
@@ -147,24 +182,37 @@ public class TilemapPreprocessorTool : ITool
         if (mapDataObj is TileEntry[] entries)
             return entries;
 
-        // Anonymous objects from JSON
+        // JsonElement or anonymous objects from JSON
         if (mapDataObj is object[] objArray)
         {
             return objArray.Select(obj =>
             {
-                var type = obj.GetType();
-                var tiProp = type.GetProperty("tileIndex");
-                var fhProp = type.GetProperty("flipH");
-                var fvProp = type.GetProperty("flipV");
-                var rotProp = type.GetProperty("rotation");
-
-                return new TileEntry
+                if (obj is JsonElement jsonElem && jsonElem.ValueKind == JsonValueKind.Object)
                 {
-                    TileIndex = tiProp != null ? (int)tiProp.GetValue(obj)! : -1,
-                    FlipH = fhProp != null && (bool)fhProp.GetValue(obj)!,
-                    FlipV = fvProp != null && (bool)fvProp.GetValue(obj)!,
-                    Rotation = rotProp != null ? (int)rotProp.GetValue(obj)! : 0
-                };
+                    return new TileEntry
+                    {
+                        TileIndex = jsonElem.TryGetProperty("tileIndex", out var ti) && ti.TryGetInt32(out var tiVal) ? tiVal : -1,
+                        FlipH = jsonElem.TryGetProperty("flipH", out var fh) && fh.ValueKind == JsonValueKind.True,
+                        FlipV = jsonElem.TryGetProperty("flipV", out var fv) && fv.ValueKind == JsonValueKind.True,
+                        Rotation = jsonElem.TryGetProperty("rotation", out var rot) && rot.TryGetInt32(out var rotVal) ? rotVal : 0
+                    };
+                }
+                else
+                {
+                    var type = obj.GetType();
+                    var tiProp = type.GetProperty("tileIndex");
+                    var fhProp = type.GetProperty("flipH");
+                    var fvProp = type.GetProperty("flipV");
+                    var rotProp = type.GetProperty("rotation");
+
+                    return new TileEntry
+                    {
+                        TileIndex = tiProp != null ? (int)tiProp.GetValue(obj)! : -1,
+                        FlipH = fhProp != null && (bool)fhProp.GetValue(obj)!,
+                        FlipV = fvProp != null && (bool)fvProp.GetValue(obj)!,
+                        Rotation = rotProp != null ? (int)rotProp.GetValue(obj)! : 0
+                    };
+                }
             }).ToArray();
         }
 

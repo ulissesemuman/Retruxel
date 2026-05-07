@@ -172,6 +172,13 @@ public partial class SceneEditorView
 
             var asset = window.ImportedAsset;
 
+            System.Diagnostics.Debug.WriteLine($"[SceneEditorView] Asset imported: {asset.Id}");
+            System.Diagnostics.Debug.WriteLine($"[SceneEditorView] Asset SourcePath: {asset.SourcePath}");
+            System.Diagnostics.Debug.WriteLine($"[SceneEditorView] Asset RelativePath: {asset.RelativePath}");
+            System.Diagnostics.Debug.WriteLine($"[SceneEditorView] Asset IsIndexed: {asset.IsIndexed}");
+            System.Diagnostics.Debug.WriteLine($"[SceneEditorView] Asset ColorCount: {asset.ColorCount}");
+            System.Diagnostics.Debug.WriteLine($"[SceneEditorView] Current project assets count: {_project.Assets.Count}");
+
             // Create state change for importing asset (Large change — auto-saves)
             var change = new StateChange
             {
@@ -179,7 +186,9 @@ public partial class SceneEditorView
                 Type = ChangeType.Large,
                 Execute = () =>
                 {
+                    System.Diagnostics.Debug.WriteLine($"[SceneEditorView] Adding asset to project.Assets...");
                     _project.Assets.Add(asset);
+                    System.Diagnostics.Debug.WriteLine($"[SceneEditorView] Asset added. New count: {_project.Assets.Count}");
                     RefreshAssetPanel();
                 },
                 IsUndoable = false // Asset import is not undoable (file already copied)

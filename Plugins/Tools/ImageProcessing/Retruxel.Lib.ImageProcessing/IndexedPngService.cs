@@ -181,5 +181,29 @@ public class IndexedPngData
     public int Width { get; init; }
     public int Height { get; init; }
     public byte[] Indices { get; init; } = [];
-    public List<string> Colors { get; init; } = new(); // suggested/original colors
+    public List<string> Colors { get; init; } = new(); // Hex strings for JSON serialization
+    
+    /// <summary>
+    /// RGB colors as byte triplets (R, G, B) for direct hardware conversion.
+    /// Cached on first access to avoid repeated parsing.
+    /// </summary>
+    public byte[] ColorsRgb
+    {
+        get
+        {
+            if (_colorsRgb == null)
+            {
+                _colorsRgb = new byte[Colors.Count * 3];
+                for (int i = 0; i < Colors.Count; i++)
+                {
+                    var hex = Colors[i].TrimStart('#');
+                    _colorsRgb[i * 3 + 0] = System.Convert.ToByte(hex.Substring(0, 2), 16); // R
+                    _colorsRgb[i * 3 + 1] = System.Convert.ToByte(hex.Substring(2, 2), 16); // G
+                    _colorsRgb[i * 3 + 2] = System.Convert.ToByte(hex.Substring(4, 2), 16); // B
+                }
+            }
+            return _colorsRgb;
+        }
+    }
+    private byte[]? _colorsRgb;
 }

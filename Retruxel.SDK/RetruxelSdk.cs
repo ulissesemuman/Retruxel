@@ -49,4 +49,5 @@ using System.Runtime.CompilerServices;
 [assembly: TypeForwardedTo(typeof(Retruxel.Core.Models.RetruxelProject))]
 [assembly: TypeForwardedTo(typeof(Retruxel.Core.Models.AssetEntry))]
 [assembly: TypeForwardedTo(typeof(Retruxel.Core.Models.SceneData))]
+[assembly: TypeForwardedTo(typeof(Retruxel.Core.Models.TileEntry))]
 [assembly: TypeForwardedTo(typeof(Retruxel.Core.Interfaces.EmulatorState))]

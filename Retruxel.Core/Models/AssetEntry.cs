@@ -73,6 +73,57 @@ public class AssetEntry
     /// Used to pre-populate PaletteSlot when user chooses "replace slot".
     /// </summary>
     public List<string> SuggestedColors { get; set; } = new();
+
+    /// <summary>
+    /// Path to the original source image (before processing).
+    /// Ex: "Assets/Source/player_original.png"
+    /// </summary>
+    public string SourcePath { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Path to the generated/processed image.
+    /// Ex: "Assets/Generated/player.png"
+    /// </summary>
+    public string GeneratedPath { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Parameters used to generate the processed image from source.
+    /// Null for legacy assets imported before this system.
+    /// </summary>
+    public AssetGenerationParams? GenerationParams { get; set; }
+}
+
+/// <summary>
+/// Parameters for generating processed assets from source images.
+/// </summary>
+ public class AssetGenerationParams
+{
+    /// <summary>
+    /// Target palette slot index (0 = Background, 1 = Sprite).
+    /// </summary>
+    public int TargetPalette { get; set; }
+
+    /// <summary>
+    /// Number of colors to reduce to (typically 16 for SMS).
+    /// </summary>
+    public int ColorCount { get; set; } = 16;
+
+    /// <summary>
+    /// Color space for distance calculation: "RGB" or "LAB".
+    /// </summary>
+    public string ColorSpace { get; set; } = "LAB";
+
+    /// <summary>
+    /// Diversity weight for color selection (0.0 - 1.0).
+    /// Higher = more diverse colors, lower = more accurate to source.
+    /// </summary>
+    public double DiversityWeight { get; set; } = 0.7;
+
+    /// <summary>
+    /// Custom color order after reduction.
+    /// Array of indices to reorder the palette.
+    /// </summary>
+    public int[]? ColorOrder { get; set; }
 }
 
 

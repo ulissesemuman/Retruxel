@@ -94,42 +94,37 @@ public partial class TilemapEditorWindow
                 return;
             }
 
-            var indexMapping = new Dictionary<int, int>();
-
-            if (tilemapObj is System.Collections.IEnumerable enumerable)
+            // TilePacker now returns List<TileEntry> directly
+            if (tilemapObj is not List<TileEntry> tilemap)
             {
-                int tilesPerRow = originalAsset.SourceWidth / _target.Specs.TileWidth;
-
-                foreach (var entry in enumerable)
-                {
-                    if (entry == null) continue;
-
-                    var entryType = entry.GetType();
-                    var tileIndexProp = entryType.GetProperty("TileIndex");
-                    var xProp = entryType.GetProperty("X");
-                    var yProp = entryType.GetProperty("Y");
-
-                    if (tileIndexProp == null || xProp == null || yProp == null) continue;
-
-                    var newTileIndex = Convert.ToInt32(tileIndexProp.GetValue(entry));
-                    var x = Convert.ToInt32(xProp.GetValue(entry));
-                    var y = Convert.ToInt32(yProp.GetValue(entry));
-
-                    int oldTileIndex = y * tilesPerRow + x;
-                    indexMapping[oldTileIndex] = newTileIndex;
-                }
+                MessageBox.Show("Invalid tilemap format.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                return;
             }
 
+            // Build index mapping from old tileset to optimized tileset
+            var indexMapping = new Dictionary<int, int>();
+            int tilesPerRow = originalAsset.SourceWidth / _target.Specs.TileWidth;
+
+            foreach (var entry in tilemap)
+            {
+                int oldTileIndex = entry.Y * tilesPerRow + entry.X;
+                indexMapping[oldTileIndex] = entry.TileIndex;
+            }
+
+            // Apply optimization to current layer
             var currentLayer = _tilemapData.GetLayer(_currentLayerIndex);
             int remappedCount = 0;
 
-            for (int i = 0; i < currentLayer.Length; i++)
+            for (int i = 0; i < currentLayer.Length && i < tilemap.Count; i++)
             {
                 var entry = currentLayer[i];
                 if (!entry.IsEmpty && indexMapping.ContainsKey(entry.TileIndex))
                 {
-                    // Remap tile index but preserve flip flags
+                    // Remap tile index and apply flip flags from TilePacker
                     entry.TileIndex = indexMapping[entry.TileIndex];
+                    entry.FlipH = tilemap[i].FlipH;
+                    entry.FlipV = tilemap[i].FlipV;
+                    entry.Rotation = tilemap[i].Rotation;
                     currentLayer[i] = entry;
                     remappedCount++;
                 }

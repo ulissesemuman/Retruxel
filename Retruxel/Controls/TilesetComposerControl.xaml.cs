@@ -16,11 +16,11 @@ namespace Retruxel.Controls;
 /// </summary>
 public partial class TilesetComposerControl : UserControl
 {
-    private readonly List<TileEntry> _composedTiles = new();
+    private readonly List<GlyphTile> _composedTiles = new();
     private const int TileScale = 2;
     private const int Columns = 16;
 
-    public IReadOnlyList<TileEntry> ComposedTiles => _composedTiles;
+    public IReadOnlyList<GlyphTile> ComposedTiles => _composedTiles;
 
     public event EventHandler? CompositionChanged;
 
@@ -37,7 +37,7 @@ public partial class TilesetComposerControl : UserControl
         RenderComposer();
     }
 
-    public void LoadComposition(IEnumerable<TileEntry> tiles)
+    public void LoadComposition(IEnumerable<GlyphTile> tiles)
     {
         _composedTiles.Clear();
         _composedTiles.AddRange(tiles);
@@ -57,7 +57,7 @@ public partial class TilesetComposerControl : UserControl
 
     private void Border_Drop(object sender, DragEventArgs e)
     {
-        if (e.Data.GetData("RetruxelTileEntry") is not TileEntry tile) return;
+        if (e.Data.GetData("RetruxelTileEntry") is not GlyphTile tile) return;
 
         // Avoid duplicates for character tiles
         if (tile.Character.HasValue &&

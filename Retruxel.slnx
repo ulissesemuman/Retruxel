@@ -12,6 +12,7 @@
   <Folder Name="/Plugins/Tools/">
     <Project Path="Plugins/Tools/Retruxel.Tool.AnimationPreprocessor/Retruxel.Tool.AnimationPreprocessor.csproj" />
     <Project Path="Plugins/Tools/Retruxel.Tool.AssetImporter/Retruxel.Tool.AssetImporter.csproj" />
+    <Project Path="Plugins/Tools/Retruxel.Tool.AssetProcessor/Retruxel.Tool.AssetProcessor.csproj" />
     <Project Path="Plugins/Tools/Retruxel.Tool.AudioEditor/Retruxel.Tool.AudioEditor.csproj" />
     <Project Path="Plugins/Tools/Retruxel.Tool.AutoPorting/Retruxel.Tool.AutoPorting.csproj" />
     <Project Path="Plugins/Tools/Retruxel.Tool.BankManager/Retruxel.Tool.BankManager.csproj" />

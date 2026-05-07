@@ -36,30 +36,50 @@ public partial class TilemapEditorWindow
     {
         try
         {
-            var absPath = Path.Combine(_projectPath, asset.RelativePath.Replace('/', Path.DirectorySeparatorChar));
-            if (!File.Exists(absPath))
+            // Use AssetProcessorTool to process asset with generation params
+            if (asset.GenerationParams != null)
             {
-                MessageBox.Show($"Tileset image not found: {absPath}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                return;
-            }
-
-            // Load indexed PNG if available
-            if (asset.IsIndexed)
-            {
-                _indexedData = _indexedPngService.Read(absPath);
-                if (_indexedData != null)
+                var assetProcessorTool = _toolRegistry?.GetTool("asset_processor") as Retruxel.Tool.AssetProcessor.AssetProcessorTool;
+                if (assetProcessorTool != null)
                 {
-                    RefreshTilesetPreview();
+                    _indexedData = assetProcessorTool.ProcessAsset(asset, _projectPath);
+                    if (_indexedData != null)
+                    {
+                        RefreshTilesetPreview();
+                    }
                 }
                 else
                 {
-                    // Fallback to regular loading if indexed read fails
-                    _tilesetRenderer.LoadTileset(absPath, _target.Specs.TileWidth);
+                    MessageBox.Show("AssetProcessorTool not found. Cannot process asset.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    return;
                 }
             }
             else
             {
-                _tilesetRenderer.LoadTileset(absPath, _target.Specs.TileWidth);
+                // Legacy: Load directly if no generation params
+                var absPath = Path.Combine(_projectPath, asset.RelativePath.Replace('/', Path.DirectorySeparatorChar));
+                if (!File.Exists(absPath))
+                {
+                    MessageBox.Show($"Tileset image not found: {absPath}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    return;
+                }
+
+                if (asset.IsIndexed)
+                {
+                    _indexedData = _indexedPngService.Read(absPath);
+                    if (_indexedData != null)
+                    {
+                        RefreshTilesetPreview();
+                    }
+                    else
+                    {
+                        _tilesetRenderer.LoadTileset(absPath, _target.Specs.TileWidth);
+                    }
+                }
+                else
+                {
+                    _tilesetRenderer.LoadTileset(absPath, _target.Specs.TileWidth);
+                }
             }
 
             // Auto-calculate columns for import
@@ -198,9 +218,8 @@ public partial class TilemapEditorWindow
 
     private void RefreshTilesetPreview()
     {
-        if (_indexedData == null || _currentScene == null) return;
+        if (_currentScene == null || _indexedData == null) return;
 
-        // Validate palette slot index
         if (_selectedPaletteSlot >= _currentScene.PaletteSlots.Count)
         {
             System.Diagnostics.Debug.WriteLine($"WARNING: Selected palette slot {_selectedPaletteSlot} is out of range (scene has {_currentScene.PaletteSlots.Count} slots)");
@@ -209,11 +228,7 @@ public partial class TilemapEditorWindow
 
         var slot = _currentScene.PaletteSlots[_selectedPaletteSlot];
         var preview = _indexedPngService.RenderPreview(_indexedData, slot.Colors, scale: 1);
-
-        // Convert SKBitmap to BitmapSource
         var bitmapSource = ConvertSkBitmapToBitmapSource(preview);
-
-        // Load preview into tileset renderer
         _tilesetRenderer.LoadFromBitmap(bitmapSource, _target.Specs.TileWidth);
     }
 }

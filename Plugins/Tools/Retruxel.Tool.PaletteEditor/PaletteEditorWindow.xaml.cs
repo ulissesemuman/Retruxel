@@ -87,7 +87,7 @@ public partial class PaletteEditorWindow : Window
         _hardwareColors = ConvertToWpfColors(target.GetHardwarePalette().Cast<object>().ToArray());
 
         for (int i = 0; i < slot.Colors.Count && i < _currentPalette.Length; i++)
-            _currentPalette[i] = (byte)FindClosestColorIndex(slot.Colors[i]);
+            _currentPalette[i] = (byte)FindNearestColorIndex(slot.Colors[i]);
 
         InitializeComponent();
 
@@ -354,7 +354,7 @@ public partial class PaletteEditorWindow : Window
         return result;
     }
 
-    private int FindClosestColorIndex(string hexColor)
+    private int FindNearestColorIndex(string hexColor)
     {
         if (string.IsNullOrEmpty(hexColor) || hexColor.Length < 7 || hexColor[0] != '#')
             return 0;

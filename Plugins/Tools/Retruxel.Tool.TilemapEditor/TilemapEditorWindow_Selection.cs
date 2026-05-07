@@ -1,4 +1,4 @@
-using Retruxel.Tool.TilemapEditor.Helpers;
+using Retruxel.Core.Models;
 using System;
 using System.Collections.Generic;
 using System.Linq;

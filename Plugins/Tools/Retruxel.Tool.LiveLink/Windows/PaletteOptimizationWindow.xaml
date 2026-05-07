@@ -2,7 +2,7 @@
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="PALETTE OPTIMIZATION"
-        Width="1000" Height="700"
+        Width="1000" Height="900"
         WindowStartupLocation="CenterOwner"
         Background="{StaticResource BrushSurfaceContainerLow}"
         ResizeMode="NoResize">
@@ -58,9 +58,15 @@
 
                     <Border Grid.Row="1"
                             Background="{StaticResource BrushSurface}">
-                        <Image x:Name="ImgOriginal"
-                               Stretch="Uniform"
-                               RenderOptions.BitmapScalingMode="NearestNeighbor"/>
+                        <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto">
+                            <Image x:Name="ImgOriginal"
+                                   Stretch="None"
+                                   RenderOptions.BitmapScalingMode="NearestNeighbor">
+                                <Image.LayoutTransform>
+                                    <ScaleTransform ScaleX="1.5" ScaleY="1.5"/>
+                                </Image.LayoutTransform>
+                            </Image>
+                        </ScrollViewer>
                     </Border>
                 </Grid>
             </Border>
@@ -83,9 +89,15 @@
 
                     <Border Grid.Row="1"
                             Background="{StaticResource BrushSurface}">
-                        <Image x:Name="ImgOptimized"
-                               Stretch="Uniform"
-                               RenderOptions.BitmapScalingMode="NearestNeighbor"/>
+                        <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto">
+                            <Image x:Name="ImgOptimized"
+                                   Stretch="None"
+                                   RenderOptions.BitmapScalingMode="NearestNeighbor">
+                                <Image.LayoutTransform>
+                                    <ScaleTransform ScaleX="1.5" ScaleY="1.5"/>
+                                </Image.LayoutTransform>
+                            </Image>
+                        </ScrollViewer>
                     </Border>
                 </Grid>
             </Border>
@@ -136,13 +148,13 @@
                     </Grid.ColumnDefinitions>
 
                     <TextBlock Grid.Column="0"
-                               Text="0.75 (Frequency)"
+                               Text="0.75 (Frequency - cores dominantes)"
                                Style="{StaticResource TextLabel}"
                                Foreground="{StaticResource BrushOnSurfaceVariant}"
                                HorizontalAlignment="Left"/>
 
                     <TextBlock Grid.Column="1"
-                               Text="1.25 (Distance)"
+                               Text="1.25 (Distance - detalhes e cores raras)"
                                Style="{StaticResource TextLabel}"
                                Foreground="{StaticResource BrushOnSurfaceVariant}"
                                HorizontalAlignment="Right"/>

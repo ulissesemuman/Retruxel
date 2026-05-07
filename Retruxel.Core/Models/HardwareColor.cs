@@ -18,14 +18,15 @@ public record HardwareColor(byte R, byte G, byte B)
     /// </summary>
     public static HardwareColor FromHex(string hex)
     {
+        if (string.IsNullOrWhiteSpace(hex)) return new HardwareColor(0, 0, 0);
         hex = hex.TrimStart('#');
-        if (hex.Length != 6)
-            throw new ArgumentException("Hex color must be 6 characters (RRGGBB)");
+        if (hex.Length != 6) return new HardwareColor(0, 0, 0);
 
+        ReadOnlySpan<char> span = hex.AsSpan();
         return new HardwareColor(
-            Convert.ToByte(hex.Substring(0, 2), 16),
-            Convert.ToByte(hex.Substring(2, 2), 16),
-            Convert.ToByte(hex.Substring(4, 2), 16)
+            byte.Parse(span.Slice(0, 2), System.Globalization.NumberStyles.HexNumber),
+            byte.Parse(span.Slice(2, 2), System.Globalization.NumberStyles.HexNumber),
+            byte.Parse(span.Slice(4, 2), System.Globalization.NumberStyles.HexNumber)
         );
     }
 }

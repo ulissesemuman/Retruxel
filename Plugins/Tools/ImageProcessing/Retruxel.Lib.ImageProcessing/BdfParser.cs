@@ -13,9 +13,9 @@ namespace Retruxel.Lib.ImageProcessing;
 /// </summary>
 public static class BdfParser
 {
-    public static List<TileEntry> Parse(string bdfContent)
+    public static List<GlyphTile> Parse(string bdfContent)
     {
-        var result = new List<TileEntry>();
+        var result = new List<GlyphTile>();
         var lines = bdfContent.Split('\n');
 
         for (int i = 0; i < lines.Length; i++)
@@ -33,7 +33,7 @@ public static class BdfParser
         return result;
     }
 
-    private static TileEntry? ParseGlyph(string[] lines, ref int index)
+    private static GlyphTile? ParseGlyph(string[] lines, ref int index)
     {
         int encoding = -1;
         int dwidth = 0;
@@ -85,7 +85,7 @@ public static class BdfParser
             }
         }
 
-        return new TileEntry
+        return new GlyphTile
         {
             Character = (char)encoding,
             Bitmap = bitmap,

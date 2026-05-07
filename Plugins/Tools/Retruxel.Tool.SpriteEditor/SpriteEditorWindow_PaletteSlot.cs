@@ -58,6 +58,7 @@ public partial class SpriteEditorWindow
         _activePaletteSlot = CmbPaletteSlot.SelectedIndex;
         SavePaletteSlotSelection();
 
+        // Refresh preview in memory only
         RefreshTilesetWithPalette();
         RenderCanvas();
     }
@@ -94,7 +95,6 @@ public partial class SpriteEditorWindow
 
         try
         {
-            // Use ITarget constructor for scene palette slot editing
             var paletteEditor = new Retruxel.Tool.PaletteEditor.PaletteEditorWindow(_target, slot)
             {
                 Owner = this
@@ -102,9 +102,9 @@ public partial class SpriteEditorWindow
 
             if (paletteEditor.ShowDialog() == true)
             {
-                // PaletteSlotData was updated directly by the editor
                 System.Diagnostics.Debug.WriteLine($"[SpriteEditor] Palette updated with {slot.Colors.Count} colors");
 
+                // Refresh preview in memory only
                 RefreshTilesetWithPalette();
                 RenderCanvas();
             }

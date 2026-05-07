@@ -1,6 +1,7 @@
 
 using Retruxel.Core.Helpers;
 using Retruxel.Core.Interfaces;
+using Retruxel.Core.Models;
 using SkiaSharp;
 using System;
 using System.Collections.Generic;
@@ -61,7 +62,7 @@ public class TilePackerTool : ITool
         var totalTiles = tilesX * tilesY;
 
         var uniqueTiles = new List<byte[]>();
-        var tilemap = new List<TilemapEntry>();
+        var tilemap = new List<TileEntry>();
         var tileHashes = new Dictionary<string, int>();
 
         for (int ty = 0; ty < tilesY; ty++)
@@ -71,7 +72,7 @@ public class TilePackerTool : ITool
                 var tile = ExtractTile(bitmap, tx * tileWidth, ty * tileHeight, tileWidth, tileHeight);
                 var (tileIndex, flipH, flipV, rotate) = FindOrAddTile(tile, uniqueTiles, tileHashes, enableFlipH, enableFlipV, enableRotation);
 
-                tilemap.Add(new TilemapEntry
+                tilemap.Add(new TileEntry
                 {
                     TileIndex = tileIndex,
                     FlipH = flipH,
@@ -253,21 +254,11 @@ public class TilePackerTool : ITool
     private class PackResult
     {
         public List<byte[]> UniqueTiles { get; set; } = new();
-        public List<TilemapEntry> Tilemap { get; set; } = new();
+        public List<TileEntry> Tilemap { get; set; } = new();
         public int TilemapWidth { get; set; }
         public int TilemapHeight { get; set; }
         public int OriginalTileCount { get; set; }
         public int OptimizedTileCount { get; set; }
         public double CompressionRatio { get; set; }
-    }
-
-    private class TilemapEntry
-    {
-        public int TileIndex { get; set; }
-        public bool FlipH { get; set; }
-        public bool FlipV { get; set; }
-        public int Rotation { get; set; }
-        public int X { get; set; }
-        public int Y { get; set; }
     }
 }

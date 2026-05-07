@@ -672,17 +672,23 @@ public partial class LiveLinkWindow
             LogInfo("Converting screen to tiles...");
 
             // Get destination target from project (not source console)
-            string? destinationTarget = null;
-            if (_input?.TryGetValue("targetId", out var targetObj) == true)
+            Retruxel.Core.Interfaces.ITarget? destinationTarget = null;
+            if (_input?.TryGetValue("target", out var targetObj) == true)
             {
-                destinationTarget = targetObj?.ToString();
+                destinationTarget = targetObj as Retruxel.Core.Interfaces.ITarget;
+            }
+
+            if (destinationTarget == null)
+            {
+                LogError("No destination target available for conversion");
+                return;
             }
 
             var conversion = ScreenToTilesConverter.Convert(
                 screenBuffer,
                 width,
                 height,
-                destinationTarget ?? _sourceConsole!);
+                destinationTarget);
 
             LogSuccess($"✓ Converted to {conversion.Tiles.Length} tiles, {conversion.Palette.Length} colors");
             LogInfo($"Nametable: {conversion.NametableWidth}×{conversion.NametableHeight}");
@@ -691,27 +697,16 @@ public partial class LiveLinkWindow
             var colorGroups = conversion.Palette.GroupBy(c => c).OrderByDescending(g => g.Count());
             LogInfo($"Color distribution: {string.Join(", ", colorGroups.Take(5).Select(g => $"#{g.Key:X6} ({g.Count()}x)"))}");
 
-            // Check tile limit for DESTINATION target (not source console)
-            if (!string.IsNullOrEmpty(destinationTarget))
+            // Check tile limit for DESTINATION target
+            int maxTiles = destinationTarget.GetPaletteSlotCount() * destinationTarget.GetColorsPerSlot();
+            if (conversion.Tiles.Length > maxTiles)
             {
-                var targetSpecs = GetConsoleSpecs(destinationTarget);
-                if (targetSpecs != null)
-                {
-                    int maxTiles = targetSpecs.MaxTilesInVram;
-                    if (conversion.Tiles.Length > maxTiles)
-                    {
-                        LogWarning($"⚠ Generated {conversion.Tiles.Length} tiles, but target {destinationTarget.ToUpper()} supports max {maxTiles} tiles");
-                        LogWarning($"⚠ Use Tile Optimizer tool to deduplicate and reduce tile count");
-                    }
-                    else
-                    {
-                        LogInfo($"✓ Tile count ({conversion.Tiles.Length}) is within {destinationTarget.ToUpper()} limit ({maxTiles})");
-                    }
-                }
+                LogWarning($"⚠ Generated {conversion.Tiles.Length} tiles, but target {destinationTarget.DisplayName} supports max {maxTiles} tiles");
+                LogWarning($"⚠ Use Tile Optimizer tool to deduplicate and reduce tile count");
             }
             else
             {
-                LogInfo($"No destination target specified - skipping tile limit check");
+                LogInfo($"✓ Tile count ({conversion.Tiles.Length}) is within {destinationTarget.DisplayName} limit ({maxTiles})");
             }
 
             // Store in capture result

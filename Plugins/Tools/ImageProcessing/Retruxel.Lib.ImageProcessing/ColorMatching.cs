@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace Retruxel.Lib.ImageProcessing;
 
@@ -9,6 +10,18 @@ namespace Retruxel.Lib.ImageProcessing;
 /// </summary>
 public static class ColorMatching
 {
+    public enum DistanceMode
+    {
+        RGB,
+        Perceptual,
+        LAB
+    }
+
+    private struct LabColor
+    {
+        public double L, A, B;
+    }
+
     /// <summary>
     /// Finds the nearest color in a palette using Euclidean distance in RGB space.
     /// Uses squared distance for performance (avoids Math.Sqrt).
@@ -16,7 +29,7 @@ public static class ColorMatching
     /// <param name="color">Source color to match.</param>
     /// <param name="palette">Target palette to search.</param>
     /// <returns>Closest color from the palette.</returns>
-    public static (byte R, byte G, byte B) FindNearestRgb(
+    public static (byte R, byte G, byte B) FindNearestRgb1(
         (byte R, byte G, byte B) color,
         IReadOnlyList<(byte R, byte G, byte B)> palette)
     {
@@ -38,6 +51,94 @@ public static class ColorMatching
             }
         }
         return bestColor;
+    }
+
+    public static byte FindNearestColorIndex(
+        (byte R, byte G, byte B) color,
+        IReadOnlyList<(byte R, byte G, byte B)> palette,
+        DistanceMode distanceMode = DistanceMode.RGB)
+    {
+        var fastPalette = palette.Select(p => new {
+                                            R = (int)p.R,
+                                            G = (int)p.G,
+                                            B = (int)p.B
+                                        }).ToArray();
+
+        if (distanceMode == DistanceMode.LAB)
+        {
+            return (byte)FindNearestLab(color, palette).R; // Assuming palette is indexed and R component holds the index
+        }
+
+        byte bestIndex = 0;
+        double bestDistance = double.MaxValue;
+
+        int targetR = color.R;
+        int targetG = color.G;
+        int targetB = color.B;
+
+        for (byte i = 0; i < fastPalette.Length; i++)
+        {
+            var p = fastPalette[i];
+
+            int dr = targetR - p.R;
+            int dg = targetG - p.G;
+            int db = targetB - p.B;
+
+            double distance;
+
+            if (distanceMode == DistanceMode.Perceptual)
+            {
+                distance = (double)((dr * dr * 0.299) + (dg * dg * 0.587) + (db * db * 0.114));
+            }
+            else
+            {
+                distance = (double)(dr * dr + dg * dg + db * db);
+            }
+
+            if (distance < bestDistance)
+            {
+                bestDistance = distance;
+                bestIndex = i;
+
+                if (distance == 0) break;
+            }
+        }
+        return bestIndex;
+    }
+
+    public static byte FindNearestColorIndexLab(
+        (byte R, byte G, byte B) color,
+        IReadOnlyList<(byte R, byte G, byte B)> palette)
+    {
+        var fastPalette = palette.Select(p => {
+            var lab = RgbToLab(p.R, p.G, p.B);
+            return new LabColor {L = lab.L, A = lab.A, B = lab.B};
+        }).ToArray();
+
+        byte bestIndex = 0;
+        double bestDistance = double.MaxValue;
+
+        var targetLab = RgbToLab(color.R, color.G, color.B);
+
+        for (byte i = 0; i < fastPalette.Length; i++)
+        {
+            var p = fastPalette[i];
+
+            var dl = targetLab.L - p.L;
+            var da = targetLab.A - p.A;
+            var db = targetLab.B - p.B;
+
+            double distance = (double)(dl * dl + da * da + db * db);
+ 
+            if (distance < bestDistance)
+            {
+                bestDistance = distance;
+                bestIndex = i;
+
+                if (distance == 0) break;
+            }
+        }
+        return bestIndex;
     }
 
     /// <summary>

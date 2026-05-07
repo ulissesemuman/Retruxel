@@ -386,6 +386,10 @@ public class AssetProcessorTool : ITool
         var indices = new byte[bitmap.Width * bitmap.Height];
         int idx = 0;
 
+        var hardwareColors = palette.Select(c => new HardwareColor { R = c.R, G = c.G, B = c.B }).ToList();
+        var distanceMode = useLab ? ColorMatching.DistanceMode.LAB : ColorMatching.DistanceMode.RGB;
+        var fastPalette = ColorMatching.PrepareFastPalette(hardwareColors, distanceMode);
+
         for (int y = 0; y < bitmap.Height; y++)
         {
             for (int x = 0; x < bitmap.Width; x++)
@@ -398,7 +402,7 @@ public class AssetProcessorTool : ITool
                 else
                 {
                     var color = (pixel.Red, pixel.Green, pixel.Blue);
-                    indices[idx++] = (byte)FindNearestColorIndex(color, palette, useLab);
+                    indices[idx++] = ColorMatching.FindNearestColorIndex(color, fastPalette, distanceMode);
                 }
             }
         }
@@ -406,94 +410,5 @@ public class AssetProcessorTool : ITool
         return indices;
     }
 
-    private int FindNearestColorIndex((byte R, byte G, byte B) color, List<(byte R, byte G, byte B)> palette, bool useLab)
-    {
-        if (useLab)
-        {
-            var lab = RgbToLab(color.R, color.G, color.B);
-            int closestIndex = 0;
-            double minDistance = double.MaxValue;
 
-            for (int i = 0; i < palette.Count; i++)
-            {
-                var p = palette[i];
-                var pLab = RgbToLab(p.R, p.G, p.B);
-                var dL = lab.L - pLab.L;
-                var dA = lab.A - pLab.A;
-                var dB = lab.B - pLab.B;
-                var distance = dL * dL + dA * dA + dB * dB;
-
-                if (distance < minDistance)
-                {
-                    minDistance = distance;
-                    closestIndex = i;
-                }
-            }
-
-            return closestIndex;
-        }
-        else
-        {
-            int closestIndex = 0;
-            double minDistance = double.MaxValue;
-
-            uint colorUint = 0xFF000000u | ((uint)color.R << 16) | ((uint)color.G << 8) | color.B;
-
-            for (int i = 0; i < palette.Count; i++)
-            {
-                var p = palette[i];
-                uint paletteUint = 0xFF000000u | ((uint)p.R << 16) | ((uint)p.G << 8) | p.B;
-                byte r1 = (byte)((colorUint >> 16) & 0xFF);
-                byte g1 = (byte)((colorUint >> 8) & 0xFF);
-                byte b1 = (byte)(colorUint & 0xFF);
-                byte r2 = (byte)((paletteUint >> 16) & 0xFF);
-                byte g2 = (byte)((paletteUint >> 8) & 0xFF);
-                byte b2 = (byte)(paletteUint & 0xFF);
-                var distance = ColorMatching.ColorDistance(r1, g1, b1, r2, g2, b2);
-                if (distance < minDistance)
-                {
-                    minDistance = distance;
-                    closestIndex = i;
-                }
-            }
-
-            return closestIndex;
-        }
-    }
-
-    private (double L, double A, double B) RgbToLab(byte r, byte g, byte b)
-    {
-        double rLinear = RgbToLinear(r / 255.0);
-        double gLinear = RgbToLinear(g / 255.0);
-        double bLinear = RgbToLinear(b / 255.0);
-
-        double x = rLinear * 0.4124564 + gLinear * 0.3575761 + bLinear * 0.1804375;
-        double y = rLinear * 0.2126729 + gLinear * 0.7151522 + bLinear * 0.0721750;
-        double z = rLinear * 0.0193339 + gLinear * 0.1191920 + bLinear * 0.9503041;
-
-        x /= 0.95047;
-        y /= 1.00000;
-        z /= 1.08883;
-
-        double fx = LabF(x);
-        double fy = LabF(y);
-        double fz = LabF(z);
-
-        double L = 116.0 * fy - 16.0;
-        double A = 500.0 * (fx - fy);
-        double B = 200.0 * (fy - fz);
-
-        return (L, A, B);
-    }
-
-    private double RgbToLinear(double c)
-    {
-        return c <= 0.04045 ? c / 12.92 : Math.Pow((c + 0.055) / 1.055, 2.4);
-    }
-
-    private double LabF(double t)
-    {
-        const double delta = 6.0 / 29.0;
-        return t > delta * delta * delta ? Math.Pow(t, 1.0 / 3.0) : t / (3.0 * delta * delta) + 4.0 / 29.0;
-    }
 }

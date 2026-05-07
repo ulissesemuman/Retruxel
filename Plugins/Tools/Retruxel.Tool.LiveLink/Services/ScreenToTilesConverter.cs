@@ -191,6 +191,13 @@ public class ScreenToTilesConverter
     {
         var remappedTiles = new byte[tiles.Length][];
         var flatPalette = optimized.Palettes.SelectMany(p => p).ToArray();
+        var hardwareColors = flatPalette.Select(c => new Retruxel.Core.Models.HardwareColor
+        {
+            R = (byte)((c >> 16) & 0xFF),
+            G = (byte)((c >> 8) & 0xFF),
+            B = (byte)(c & 0xFF)
+        }).ToList();
+        var fastPalette = ColorMatching.PrepareFastPalette(hardwareColors, ColorMatching.DistanceMode.RGB);
 
         for (int tileIdx = 0; tileIdx < tiles.Length; tileIdx++)
         {
@@ -204,7 +211,12 @@ public class ScreenToTilesConverter
                 if (localColorIdx < colors.Length)
                 {
                     uint color = colors[localColorIdx];
-                    remapped[i] = FindNearestColorIndex(color, flatPalette);
+                    var rgb = (
+                        R: (byte)((color >> 16) & 0xFF),
+                        G: (byte)((color >> 8) & 0xFF),
+                        B: (byte)(color & 0xFF)
+                    );
+                    remapped[i] = ColorMatching.FindNearestColorIndex(rgb, fastPalette, ColorMatching.DistanceMode.RGB);
                 }
             }
 
@@ -212,30 +224,6 @@ public class ScreenToTilesConverter
         }
 
         return remappedTiles;
-    }
-
-    private static byte FindNearestColorIndex(uint color, uint[] palette)
-    {
-        int bestIdx = 0;
-        double minDist = double.MaxValue;
-
-        for (int i = 0; i < palette.Length; i++)
-        {
-            byte r1 = (byte)((color >> 16) & 0xFF);
-            byte g1 = (byte)((color >> 8) & 0xFF);
-            byte b1 = (byte)(color & 0xFF);
-            byte r2 = (byte)((palette[i] >> 16) & 0xFF);
-            byte g2 = (byte)((palette[i] >> 8) & 0xFF);
-            byte b2 = (byte)(palette[i] & 0xFF);
-            double dist = ColorMatching.ColorDistance(r1, g1, b1, r2, g2, b2);
-            if (dist < minDist)
-            {
-                minDist = dist;
-                bestIdx = i;
-            }
-        }
-
-        return (byte)bestIdx;
     }
 
     private static byte[] AssignTilesToPalettes(byte[][] tiles, uint[][] tileColors, uint[][] palettes, int colorsPerPalette)

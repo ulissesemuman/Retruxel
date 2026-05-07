@@ -1,6 +1,5 @@
 using Retruxel.Core.Interfaces;
 using Retruxel.Lib.ImageProcessing;
-using Retruxel.Tool.LiveLink.Services;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -8,7 +7,7 @@ using System.Windows;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 
-namespace Retruxel.Tool.LiveLink.Windows;
+namespace Retruxel.Tool.AssetProcessor;
 
 public partial class PaletteOptimizationWindow : Window
 {
@@ -91,7 +90,7 @@ public partial class PaletteOptimizationWindow : Window
     {
         if (_originalPixels.Count == 0 || ImgOptimized == null) return;
 
-        var rgbPalette = PaletteOptimizer.OptimizePalette(
+        var rgbPalette = AssetProcessorTool.OptimizePalette(
             _originalPixels, _targetColorCount, _currentDiversity);
 
         OptimizedPalette = MapToHardwarePalette(rgbPalette);

@@ -115,6 +115,40 @@ public class AssetProcessorTool : ITool
         return pixels;
     }
 
+    /// <summary>
+    /// Public method for palette optimization with custom diversity.
+    /// Used by PaletteOptimizationWindow for real-time preview.
+    /// </summary>
+    public static List<(byte R, byte G, byte B)> OptimizePalette(
+        List<(byte R, byte G, byte B)> pixels,
+        int targetColorCount,
+        double diversity = 1.25)
+    {
+        var colorSet = new HashSet<uint>();
+        foreach (var (r, g, b) in pixels)
+        {
+            uint color = 0xFF000000u | ((uint)r << 16) | ((uint)g << 8) | b;
+            colorSet.Add(color);
+        }
+
+        if (colorSet.Count <= targetColorCount)
+        {
+            return colorSet.Select(c => (
+                R: (byte)((c >> 16) & 0xFF),
+                G: (byte)((c >> 8) & 0xFF),
+                B: (byte)(c & 0xFF)
+            )).ToList();
+        }
+
+        var optimized = HierarchicalClustering(colorSet, targetColorCount, 20, diversity);
+
+        return optimized.Select(c => (
+            R: (byte)((c >> 16) & 0xFF),
+            G: (byte)((c >> 8) & 0xFF),
+            B: (byte)(c & 0xFF)
+        )).ToList();
+    }
+
     private List<(byte R, byte G, byte B)> OptimizePalette(
         List<(byte R, byte G, byte B)> pixels,
         int targetColorCount,
@@ -145,7 +179,7 @@ public class AssetProcessorTool : ITool
         )).ToList();
     }
 
-    private uint[] HierarchicalClustering(HashSet<uint> colors, int targetSlots, int maxIterations, double diversity)
+    private static uint[] HierarchicalClustering(HashSet<uint> colors, int targetSlots, int maxIterations, double diversity)
     {
         var colorList = colors.ToList();
         var centroids = DiversityWeightedInit(colorList, targetSlots, diversity);
@@ -183,7 +217,7 @@ public class AssetProcessorTool : ITool
         return centroids;
     }
 
-    private uint[] DiversityWeightedInit(List<uint> colors, int k, double diversity)
+    private static uint[] DiversityWeightedInit(List<uint> colors, int k, double diversity)
     {
         int seed = (int)(diversity * 10000);
         var random = new Random(seed);
@@ -265,7 +299,7 @@ public class AssetProcessorTool : ITool
         return centroids.ToArray();
     }
 
-    private int FindNearestCentroid(uint color, uint[] centroids)
+    private static int FindNearestCentroid(uint color, uint[] centroids)
     {
         int nearest = 0;
         double minDist = ColorDistance(color, centroids[0]);
@@ -283,7 +317,7 @@ public class AssetProcessorTool : ITool
         return nearest;
     }
 
-    private double ColorDistance(uint c1, uint c2)
+    private static double ColorDistance(uint c1, uint c2)
     {
         int r1 = (int)((c1 >> 16) & 0xFF);
         int g1 = (int)((c1 >> 8) & 0xFF);
@@ -300,7 +334,7 @@ public class AssetProcessorTool : ITool
         return Math.Sqrt(dr * dr + dg * dg + db * db);
     }
 
-    private uint CalculateCentroid(List<uint> colors)
+    private static uint CalculateCentroid(List<uint> colors)
     {
         long r = 0, g = 0, b = 0;
 

@@ -13,6 +13,9 @@
   <ItemGroup>
     <ProjectReference Include="..\..\..\Retruxel.SDK\Retruxel.SDK.csproj" />
     <ProjectReference Include="..\ImageProcessing\Retruxel.Lib.ImageProcessing\Retruxel.Lib.ImageProcessing.csproj" />
+    <ProjectReference Include="..\Retruxel.Tool.AssetProcessor\Retruxel.Tool.AssetProcessor.csproj">
+      <Private>false</Private>
+    </ProjectReference>
   </ItemGroup>
 
   <ItemGroup>

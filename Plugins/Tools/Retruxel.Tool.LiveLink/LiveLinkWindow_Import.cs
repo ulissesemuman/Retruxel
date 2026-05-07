@@ -1,5 +1,6 @@
 using Retruxel.Core.Models;
 using Retruxel.Core.Services;
+using Retruxel.Tool.AssetProcessor;
 using Retruxel.Tool.LiveLink.Pipelines;
 using Retruxel.Tool.LiveLink.Services;
 using System;
@@ -58,7 +59,7 @@ public partial class LiveLinkWindow
             // Open preview window - it will handle optimization internally
             var targetForPreview = TargetRegistry.GetTargetById(targetId ?? "sms");
 
-            var previewWindow = new Windows.PaletteOptimizationWindow(
+            var previewWindow = new PaletteOptimizationWindow(
                 previewBitmap,
                 targetColorCount,
                 ChkUseLab.IsChecked == true,

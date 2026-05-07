@@ -1,3 +1,4 @@
+using Retruxel.Tool.AssetProcessor;
 using SkiaSharp;
 using System;
 using System.Collections.Generic;
@@ -154,7 +155,7 @@ public partial class TilemapEditorWindow
             int targetColorCount = Math.Max(16, hardwareColorCount / 2);
 
             // Open palette optimization window
-            var optimizationWindow = new Tool.LiveLink.Windows.PaletteOptimizationWindow(
+            var optimizationWindow = new PaletteOptimizationWindow(
                 reducedBitmapSource,
                 targetColorCount: targetColorCount,
                 useLab: true,

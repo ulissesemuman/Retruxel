@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Windows.Media;
 
 namespace Retruxel.Tool.AssetProcessor;
 
@@ -153,42 +154,72 @@ public class AssetProcessorTool : ITool
     {
         var colorList = colors.ToList();
         var centroids = DiversityWeightedInit(colorList, targetSlots, diversity);
+        int[] pixelAssignment = new int[colorList.Count];
+
+        // Arrays para acumular R, G, B e contagem de cada cluster sem alocar novas listas
+        long[] sumR = new long[targetSlots];
+        long[] sumG = new long[targetSlots];
+        long[] sumB = new long[targetSlots];
+        int[] clusterCounts = new int[targetSlots];
 
         for (int iter = 0; iter < maxIterations; iter++)
         {
-            var clusters = new List<uint>[targetSlots];
-            for (int i = 0; i < targetSlots; i++)
-                clusters[i] = new List<uint>();
-
-            foreach (var color in colorList)
-            {
-                int nearest = FindNearestCentroid(color, centroids);
-                clusters[nearest].Add(color);
-            }
+            Array.Clear(sumR, 0, targetSlots);
+            Array.Clear(sumG, 0, targetSlots);
+            Array.Clear(sumB, 0, targetSlots);
+            Array.Clear(clusterCounts, 0, targetSlots);
 
             bool changed = false;
-            for (int i = 0; i < targetSlots; i++)
+
+            // Fase de Atribui��o
+            for (int i = 0; i < colorList.Count; i++)
             {
-                if (clusters[i].Count > 0)
+                uint color = colorList[i];
+                int nearest = FindNearestCentroid(color, centroids);
+
+                if (pixelAssignment[i] != nearest)
                 {
-                    var newCentroid = CalculateCentroid(clusters[i]);
-                    if (newCentroid != centroids[i])
-                    {
-                        centroids[i] = newCentroid;
-                        changed = true;
-                    }
+                    pixelAssignment[i] = nearest;
+                    changed = true;
                 }
+
+                // Acumula para o novo centroide
+                sumR[nearest] += (color >> 16) & 0xFF;
+                sumG[nearest] += (color >> 8) & 0xFF;
+                sumB[nearest] += color & 0xFF;
+                clusterCounts[nearest]++;
             }
 
-            if (!changed)
-                break;
-        }
+            if (!changed && iter > 0) break;
 
+            // Fase de Atualiza��o
+            for (int i = 0; i < targetSlots; i++)
+            {
+                if (clusterCounts[i] > 0)
+                {
+                    byte r = (byte)(sumR[i] / clusterCounts[i]);
+                    byte g = (byte)(sumG[i] / clusterCounts[i]);
+                    byte b = (byte)(sumB[i] / clusterCounts[i]);
+                    centroids[i] = 0xFF000000u | ((uint)r << 16) | ((uint)g << 8) | b;
+                }
+            }
+        }
         return centroids;
     }
 
     private static uint[] DiversityWeightedInit(List<uint> colors, int k, double diversity)
     {
+        var colorCountsDict = new Dictionary<uint, int>();
+        foreach (var color in colors)
+        {
+            colorCountsDict.TryGetValue(color, out int count);
+            colorCountsDict[color] = count + 1;
+        }
+
+        uint[] uniqueColors = colorCountsDict.Keys.ToArray();
+        int[] counts = colorCountsDict.Values.ToArray();
+        int uniqueCount = uniqueColors.Length;
+
         int seed = (int)(diversity * 10000);
         var random = new Random(seed);
         var centroids = new List<uint>();
@@ -204,31 +235,36 @@ public class AssetProcessorTool : ITool
             colorCounts[color]++;
         }
 
-        var uniqueColors = colorCounts.Keys.ToList();
         var firstColor = uniqueColors.OrderByDescending(c => colorCounts[c] * bias).First();
         centroids.Add(firstColor);
 
         for (int i = 1; i < k; i++)
         {
-            var weights = new double[uniqueColors.Count];
+            var weights = new double[uniqueCount];
             double totalWeight = 0;
 
-            for (int j = 0; j < uniqueColors.Count; j++)
+            for (int j = 0; j < uniqueCount; j++)
             {
-                var color = uniqueColors[j];
-
-                if (centroids.Contains(color))
-                {
-                    weights[j] = 0;
-                    continue;
-                }
+                uint color = uniqueColors[j];
 
                 double minDist = double.MaxValue;
                 foreach (var centroid in centroids)
                 {
-                    double dist = ColorDistance(color, centroid);
+                    byte r1 = (byte)((color >> 16) & 0xFF);
+                    byte g1 = (byte)((color >> 8) & 0xFF);
+                    byte b1 = (byte)(color & 0xFF);
+                    byte r2 = (byte)((centroid >> 16) & 0xFF);
+                    byte g2 = (byte)((centroid >> 8) & 0xFF);
+                    byte b2 = (byte)(centroid & 0xFF);
+                    double dist = ColorMatching.ColorDistance(r1, g1, b1, r2, g2, b2);
                     if (dist < minDist)
                         minDist = dist;
+                }
+
+                if (minDist == 0) // J� � um centroide
+                {
+                    weights[j] = 0;
+                    continue;
                 }
 
                 double freqWeight = colorCounts[color] * bias;
@@ -240,7 +276,7 @@ public class AssetProcessorTool : ITool
             double threshold = random.NextDouble() * totalWeight;
             double sum = 0;
 
-            for (int j = 0; j < uniqueColors.Count; j++)
+            for (int j = 0; j < uniqueColors.Length; j++)
             {
                 sum += weights[j];
                 if (sum >= threshold)
@@ -254,7 +290,7 @@ public class AssetProcessorTool : ITool
             {
                 int maxIdx = 0;
                 double maxWeight = 0;
-                for (int j = 0; j < uniqueColors.Count; j++)
+                for (int j = 0; j < uniqueColors.Length; j++)
                 {
                     if (weights[j] > maxWeight)
                     {
@@ -272,11 +308,20 @@ public class AssetProcessorTool : ITool
     private static int FindNearestCentroid(uint color, uint[] centroids)
     {
         int nearest = 0;
-        double minDist = ColorDistance(color, centroids[0]);
+        byte r = (byte)((color >> 16) & 0xFF);
+        byte g = (byte)((color >> 8) & 0xFF);
+        byte b = (byte)(color & 0xFF);
+        byte r0 = (byte)((centroids[0] >> 16) & 0xFF);
+        byte g0 = (byte)((centroids[0] >> 8) & 0xFF);
+        byte b0 = (byte)(centroids[0] & 0xFF);
+        double minDist = ColorMatching.ColorDistance(r, g, b, r0, g0, b0);
 
         for (int i = 1; i < centroids.Length; i++)
         {
-            double dist = ColorDistance(color, centroids[i]);
+            byte ri = (byte)((centroids[i] >> 16) & 0xFF);
+            byte gi = (byte)((centroids[i] >> 8) & 0xFF);
+            byte bi = (byte)(centroids[i] & 0xFF);
+            double dist = ColorMatching.ColorDistance(r, g, b, ri, gi, bi);
             if (dist < minDist)
             {
                 minDist = dist;
@@ -287,7 +332,7 @@ public class AssetProcessorTool : ITool
         return nearest;
     }
 
-    private static double ColorDistance(uint c1, uint c2)
+    private static double ColorDistance1(uint c1, uint c2)
     {
         int r1 = (int)((c1 >> 16) & 0xFF);
         int g1 = (int)((c1 >> 8) & 0xFF);
@@ -301,7 +346,7 @@ public class AssetProcessorTool : ITool
         int dg = g1 - g2;
         int db = b1 - b2;
 
-        return Math.Sqrt(dr * dr + dg * dg + db * db);
+        return (dr * dr + dg * dg + db * db);
     }
 
     private static uint CalculateCentroid(List<uint> colors)
@@ -398,7 +443,13 @@ public class AssetProcessorTool : ITool
             {
                 var p = palette[i];
                 uint paletteUint = 0xFF000000u | ((uint)p.R << 16) | ((uint)p.G << 8) | p.B;
-                var distance = ColorDistance(colorUint, paletteUint);
+                byte r1 = (byte)((colorUint >> 16) & 0xFF);
+                byte g1 = (byte)((colorUint >> 8) & 0xFF);
+                byte b1 = (byte)(colorUint & 0xFF);
+                byte r2 = (byte)((paletteUint >> 16) & 0xFF);
+                byte g2 = (byte)((paletteUint >> 8) & 0xFF);
+                byte b2 = (byte)(paletteUint & 0xFF);
+                var distance = ColorMatching.ColorDistance(r1, g1, b1, r2, g2, b2);
                 if (distance < minDistance)
                 {
                     minDistance = distance;

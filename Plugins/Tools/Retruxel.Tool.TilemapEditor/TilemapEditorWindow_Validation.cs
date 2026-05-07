@@ -212,8 +212,8 @@ public partial class TilemapEditorWindow
                     continue;
                 }
 
-                var nearest = Retruxel.Lib.ImageProcessing.ColorMatching.FindNearestColorIndex(
-                    (pixel.Red, pixel.Green, pixel.Blue), hardwarePalette);
+                //var nearest = Retruxel.Lib.ImageProcessing.ColorMatching.FindNearestColorIndex(
+                //    (pixel.Red, pixel.Green, pixel.Blue), hardwarePalette);
                 //result.SetPixel(x, y, new SKColor(nearest.R, nearest.G, nearest.B, pixel.Alpha));
             }
         }

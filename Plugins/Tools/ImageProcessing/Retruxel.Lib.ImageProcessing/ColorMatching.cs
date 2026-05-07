@@ -1,6 +1,10 @@
+using Retruxel.Core.Models;
 using System;
 using System.Collections.Generic;
+using System.Drawing;
 using System.Linq;
+using System.Runtime.CompilerServices;
+using static Retruxel.Lib.ImageProcessing.ColorMatching;
 
 namespace Retruxel.Lib.ImageProcessing;
 
@@ -17,9 +21,20 @@ public static class ColorMatching
         LAB
     }
 
-    private struct LabColor
+    public struct LabColor
     {
         public double L, A, B;
+    }
+
+    public struct RgbColor
+    {
+        public byte R, G, B;
+    }
+
+    public struct FastColor
+    {
+        public RgbColor rgbColor;
+        public LabColor labColor;
     }
 
     /// <summary>
@@ -55,50 +70,41 @@ public static class ColorMatching
 
     public static byte FindNearestColorIndex(
         (byte R, byte G, byte B) color,
-        IReadOnlyList<(byte R, byte G, byte B)> palette,
+        FastColor[] fastPalette,
         DistanceMode distanceMode = DistanceMode.RGB)
     {
-        var fastPalette = palette.Select(p => new {
-                                            R = (int)p.R,
-                                            G = (int)p.G,
-                                            B = (int)p.B
-                                        }).ToArray();
-
-        if (distanceMode == DistanceMode.LAB)
-        {
-            return (byte)FindNearestLab(color, palette).R; // Assuming palette is indexed and R component holds the index
-        }
+        double tL = 0, tA = 0, tB = 0;
+        if (distanceMode == DistanceMode.LAB) (tL, tA, tB) = RgbToLab(color.R, color.G, color.B);
 
         byte bestIndex = 0;
         double bestDistance = double.MaxValue;
 
-        int targetR = color.R;
-        int targetG = color.G;
-        int targetB = color.B;
+        byte targetR = color.R;
+        byte targetG = color.G;
+        byte targetB = color.B;
 
         for (byte i = 0; i < fastPalette.Length; i++)
         {
             var p = fastPalette[i];
 
-            int dr = targetR - p.R;
-            int dg = targetG - p.G;
-            int db = targetB - p.B;
-
             double distance;
 
-            if (distanceMode == DistanceMode.Perceptual)
+            if (distanceMode == DistanceMode.LAB)
             {
-                distance = (double)((dr * dr * 0.299) + (dg * dg * 0.587) + (db * db * 0.114));
+                double dL = tL - fastPalette[i].labColor.L;
+                double dA = tA - fastPalette[i].labColor.A;
+                double dB = tB - fastPalette[i].labColor.B;
+                distance = dL * dL + dA * dA + dB * dB;
             }
             else
             {
-                distance = (double)(dr * dr + dg * dg + db * db);
+                distance = ColorDistance(targetR, targetG, targetB, fastPalette[i].rgbColor.R, fastPalette[i].rgbColor.G, fastPalette[i].rgbColor.B, distanceMode);
             }
 
             if (distance < bestDistance)
             {
                 bestDistance = distance;
-                bestIndex = i;
+                bestIndex = (byte)i;
 
                 if (distance == 0) break;
             }
@@ -106,9 +112,56 @@ public static class ColorMatching
         return bestIndex;
     }
 
+    public static FastColor[] PrepareFastPalette(IReadOnlyList<HardwareColor> palette, DistanceMode distanceMode)
+    {
+        int count = palette.Count;
+        var fastPalette = new FastColor[count];
+
+        for (int i = 0; i < count; i++)
+        {
+            var p = palette[i];
+
+            var lab = (distanceMode == DistanceMode.LAB)
+                      ? RgbToLab(p.R, p.G, p.B)
+                      : (L: 0.0, A: 0.0, B: 0.0);
+
+            fastPalette[i] = new FastColor
+            {
+                rgbColor = new RgbColor
+                {
+                    R = p.R,
+                    G = p.G,
+                    B = p.B
+                },
+                labColor = new LabColor
+                {
+                    L = lab.L,
+                    A = lab.A,
+                    B = lab.B
+                }
+            };
+        }
+
+        return fastPalette;
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static double ColorDistance(byte r1, byte g1, byte b1, byte r2, byte g2, byte b2, DistanceMode mode = DistanceMode.RGB)
+    {
+        int dr = r1 - r2;
+        int dg = g1 - g2;
+        int db = b1 - b2;
+
+        return mode switch
+        {
+            DistanceMode.Perceptual => (dr * dr * 0.299) + (dg * dg * 0.587) + (db * db * 0.114),
+            _ => (dr * dr + dg * dg + db * db) // RGB
+        };
+    }
+
     public static byte FindNearestColorIndexLab(
         (byte R, byte G, byte B) color,
-        IReadOnlyList<(byte R, byte G, byte B)> palette)
+        RgbColor[] palette)
     {
         var fastPalette = palette.Select(p => {
             var lab = RgbToLab(p.R, p.G, p.B);

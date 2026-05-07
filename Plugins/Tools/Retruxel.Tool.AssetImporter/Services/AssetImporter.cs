@@ -2,12 +2,13 @@
 
 using Retruxel.Core.Interfaces;
 using Retruxel.Core.Models;
+using Retruxel.Lib.ImageProcessing;
 using SkiaSharp;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using Retruxel.Lib.ImageProcessing;
+using static Retruxel.Lib.ImageProcessing.ColorMatching;
 
 namespace Retruxel.Tool.AssetImporter.Services;
 
@@ -203,12 +204,14 @@ public static class AssetImporter
 
     private static byte[] ReduceColors(
         SKBitmap source,
-        IReadOnlyList<HardwareColor> palette)
+        IReadOnlyList<HardwareColor> palette,
+        DistanceMode distanceMode = DistanceMode.RGB)
     {
         var result = new SKBitmap(source.Width, source.Height, SKColorType.Rgba8888, SKAlphaType.Premul);
-        var rgbPalette = palette.Select(c => (c.R, c.G, c.B)).ToList();
         var indices = new byte[source.Width * source.Height];
         int idx = 0;
+
+        var fastPalette = PrepareFastPalette(palette, distanceMode);
 
         for (int y = 0; y < source.Height; y++)
         {
@@ -224,7 +227,7 @@ public static class AssetImporter
                 else
                 {
                     var color = (pixel.Red, pixel.Green, pixel.Blue);
-                    indices[idx++] = ColorMatching.FindNearestColorIndex(color, rgbPalette, ColorMatching.DistanceMode.RGB);
+                    indices[idx++] = ColorMatching.FindNearestColorIndex(color, fastPalette, ColorMatching.DistanceMode.RGB);
                 }
             }
         }
@@ -275,8 +278,8 @@ public static class AssetImporter
                     continue;
                 }
 
-                var nearest = Retruxel.Lib.ImageProcessing.ColorMatching.FindNearestColorIndex(
-                    (pixel.Red, pixel.Green, pixel.Blue), rgbPalette);
+                //var nearest = Retruxel.Lib.ImageProcessing.ColorMatching.FindNearestColorIndex(
+                //    (pixel.Red, pixel.Green, pixel.Blue), rgbPalette);
                 //result.SetPixel(x, y, new SKColor(nearest.R, nearest.G, nearest.B, pixel.Alpha));
             }
         }

@@ -12,8 +12,6 @@ namespace Retruxel.Tool.PaletteEditor;
 
 public partial class PaletteEditorWindow : Window
 {
-    // ── State ─────────────────────────────────────────────────────────────────
-
     private int _selectedSlotIndex = -1;
     private byte[] _currentPalette;
 
@@ -32,8 +30,6 @@ public partial class PaletteEditorWindow : Window
     // Results written on Apply
     public Dictionary<string, object>? ModuleData { get; private set; }
     public string? SelectedConnectorId { get; private set; }
-
-    // ── Constructors ──────────────────────────────────────────────────────────
 
     /// <summary>
     /// Opens the palette editor from a scene module context (e.g. PaletteModule, TilemapEditor).
@@ -102,8 +98,6 @@ public partial class PaletteEditorWindow : Window
         LocalizationService.LanguageChanged += ApplyLocalization;
     }
 
-    // ── Localization ──────────────────────────────────────────────────────────
-
     private void ApplyLocalization()
     {
         Title = $"RETRUXEL · {_loc.Get("paletteeditor.title")}";
@@ -125,8 +119,6 @@ public partial class PaletteEditorWindow : Window
         if (_selectedSlotIndex >= 0)
             SelectSlot(_selectedSlotIndex);
     }
-
-    // ── UI Initialization ─────────────────────────────────────────────────────
 
     private void InitializeUI()
     {
@@ -181,8 +173,6 @@ public partial class PaletteEditorWindow : Window
             HardwareColorGrid.Children.Add(btn);
         }
     }
-
-    // ── Palette Logic ─────────────────────────────────────────────────────────
 
     private void LoadDefaultPalette()
     {
@@ -245,8 +235,7 @@ public partial class PaletteEditorWindow : Window
         SelectSlot(_selectedSlotIndex);
     }
 
-    // ── Apply / Save ──────────────────────────────────────────────────────────
-
+    
     private void Apply()
     {
         // Path A: opened from target slot context — update PaletteSlotData directly
@@ -274,8 +263,6 @@ public partial class PaletteEditorWindow : Window
         DialogResult = true;
         Close();
     }
-
-    // ── Usage Report ──────────────────────────────────────────────────────────
 
     private void UpdateUsageReport(int slotIndex)
     {
@@ -321,8 +308,6 @@ public partial class PaletteEditorWindow : Window
         });
     }
 
-    // ── Palette Management (stub) ─────────────────────────────────────────────
-
     private void CreateNewPalette()
     {
         // TODO: implement palette list management
@@ -340,8 +325,6 @@ public partial class PaletteEditorWindow : Window
         // TODO: implement palette list management
         MessageBox.Show("Delete palette", "Not Implemented", MessageBoxButton.OK, MessageBoxImage.Information);
     }
-
-    // ── Helpers ───────────────────────────────────────────────────────────────
 
     private static Color[] ConvertToWpfColors(object[] colors)
     {
@@ -380,15 +363,11 @@ public partial class PaletteEditorWindow : Window
         return closestIndex;
     }
 
-    // ── Lifecycle ─────────────────────────────────────────────────────────────
-
     protected override void OnClosed(EventArgs e)
     {
         LocalizationService.LanguageChanged -= ApplyLocalization;
         base.OnClosed(e);
     }
-
-    // ── Inner Types ───────────────────────────────────────────────────────────
 
     /// <summary>
     /// Adapter that wraps ITarget as IPaletteProvider.

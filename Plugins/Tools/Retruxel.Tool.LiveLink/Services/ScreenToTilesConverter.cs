@@ -1,3 +1,4 @@
+using Retruxel.Lib.ImageProcessing;
 using Retruxel.Tool.AssetProcessor;
 using System;
 using System.Collections.Generic;
@@ -220,7 +221,13 @@ public class ScreenToTilesConverter
 
         for (int i = 0; i < palette.Length; i++)
         {
-            double dist = ColorDistance(color, palette[i]);
+            byte r1 = (byte)((color >> 16) & 0xFF);
+            byte g1 = (byte)((color >> 8) & 0xFF);
+            byte b1 = (byte)(color & 0xFF);
+            byte r2 = (byte)((palette[i] >> 16) & 0xFF);
+            byte g2 = (byte)((palette[i] >> 8) & 0xFF);
+            byte b2 = (byte)(palette[i] & 0xFF);
+            double dist = ColorMatching.ColorDistance(r1, g1, b1, r2, g2, b2);
             if (dist < minDist)
             {
                 minDist = dist;
@@ -229,23 +236,6 @@ public class ScreenToTilesConverter
         }
 
         return (byte)bestIdx;
-    }
-
-    private static double ColorDistance(uint c1, uint c2)
-    {
-        int r1 = (int)((c1 >> 16) & 0xFF);
-        int g1 = (int)((c1 >> 8) & 0xFF);
-        int b1 = (int)(c1 & 0xFF);
-
-        int r2 = (int)((c2 >> 16) & 0xFF);
-        int g2 = (int)((c2 >> 8) & 0xFF);
-        int b2 = (int)(c2 & 0xFF);
-
-        int dr = r1 - r2;
-        int dg = g1 - g2;
-        int db = b1 - b2;
-
-        return Math.Sqrt(dr * dr + dg * dg + db * db);
     }
 
     private static byte[] AssignTilesToPalettes(byte[][] tiles, uint[][] tileColors, uint[][] palettes, int colorsPerPalette)
@@ -268,7 +258,13 @@ public class ScreenToTilesConverter
                     double minDist = double.MaxValue;
                     for (int i = 0; i < colorsPerPalette && i < palettes[palIdx].Length; i++)
                     {
-                        double dist = ColorDistance(color, palettes[palIdx][i]);
+                        byte r1 = (byte)((color >> 16) & 0xFF);
+                        byte g1 = (byte)((color >> 8) & 0xFF);
+                        byte b1 = (byte)(color & 0xFF);
+                        byte r2 = (byte)((palettes[palIdx][i] >> 16) & 0xFF);
+                        byte g2 = (byte)((palettes[palIdx][i] >> 8) & 0xFF);
+                        byte b2 = (byte)((palettes[palIdx][i] & 0xFF));
+                        double dist = ColorMatching.ColorDistance(r1, g1, b1, r2, g2, b2);
                         if (dist < minDist)
                             minDist = dist;
                     }

@@ -13,6 +13,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media.Imaging;
+using static Retruxel.Lib.ImageProcessing.ColorMatching;
 using ToolRegistry = Retruxel.Core.Services.ToolRegistry;
 
 namespace Retruxel.Tool.AssetImporter;
@@ -105,7 +106,6 @@ public partial class AssetImporterWindow : Window
         }
     }
 
-    // ── Title bar ─────────────────────────────────────────────────────────────
 
     private void TitleBar_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
         => DragMove();
@@ -115,8 +115,6 @@ public partial class AssetImporterWindow : Window
 
     private void BtnCancel_Click(object sender, RoutedEventArgs e)
         => Close();
-
-    // ── Source selection ──────────────────────────────────────────────────────
 
     private void RbSource_Changed(object sender, RoutedEventArgs e)
     {
@@ -180,8 +178,6 @@ public partial class AssetImporterWindow : Window
         ShowValidation("Emulator capture processing not yet implemented.");
     }
 
-    // ── File selection ────────────────────────────────────────────────────────
-
     private void BtnBrowse_Click(object sender, RoutedEventArgs e)
     {
         var loc = ServiceLocator.Localization;
@@ -220,8 +216,6 @@ public partial class AssetImporterWindow : Window
 
         LoadSourceImage(png);
     }
-
-    // ── Image loading & preview ───────────────────────────────────────────────
 
     private void LoadSourceImage(string pngPath)
     {
@@ -280,7 +274,7 @@ public partial class AssetImporterWindow : Window
         try
         {
             _reducedPreview?.Dispose();
-            _reducedPreview = Services.AssetImporter.PreviewReduction(pngPath, _target);
+            _reducedPreview = Services.AssetImporter.ReduceColorsToHardware(pngPath, _target);
 
             ImgReduced.Source = SkiaBitmapToWpf(_reducedPreview);
             ImgReduced.Visibility = Visibility.Visible;
@@ -297,8 +291,6 @@ public partial class AssetImporterWindow : Window
             TxtReducedInfo.Text = string.Format(loc.Translate("assetimporter.error.preview"), ex.Message);
         }
     }
-
-    // ── Asset name validation ─────────────────────────────────────────────────
 
     private void TxtAssetName_TextChanged(object sender, System.Windows.Controls.TextChangedEventArgs e)
     {
@@ -338,8 +330,6 @@ public partial class AssetImporterWindow : Window
         BtnImport.IsEnabled = _sourcePngPath is not null && ValidateAssetName();
     }
 
-    // ── Import ────────────────────────────────────────────────────────────────
-
     private void BtnImport_Click(object sender, RoutedEventArgs e)
     {
         if (_sourcePngPath is null || _reducedPreview is null) return;
@@ -368,7 +358,7 @@ public partial class AssetImporterWindow : Window
             var optimizationWindow = new PaletteOptimizationWindow(
                 previewBitmap,
                 targetColorCount,
-                useLab: true, // Use LAB color space for better perceptual matching
+                DistanceMode.LAB, // Use LAB color space for better perceptual matching
                 _target);
 
             optimizationWindow.Owner = this;
@@ -426,7 +416,6 @@ public partial class AssetImporterWindow : Window
         }
     }
 
-    // ── Helpers ───────────────────────────────────────────────────────────────
 
     private void ShowValidation(string message)
         => TxtValidation.Text = message;

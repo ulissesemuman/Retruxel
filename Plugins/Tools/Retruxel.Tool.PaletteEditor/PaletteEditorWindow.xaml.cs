@@ -1,12 +1,14 @@
 using Retruxel.Core.Interfaces;
 using Retruxel.Core.Models;
 using Retruxel.Core.Services;
+using Retruxel.Lib.ImageProcessing;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
+using static Retruxel.Lib.ImageProcessing.ColorMatching;
 
 namespace Retruxel.Tool.PaletteEditor;
 
@@ -76,14 +78,22 @@ public partial class PaletteEditorWindow : Window
     /// </summary>
     public PaletteEditorWindow(ITarget target, PaletteSlotData slot)
     {
+        IReadOnlyList<HardwareColor> targetPalette = target.GetHardwarePalette();
+
         _target = target;
         _paletteSlot = slot;
         _paletteProvider = new TargetPaletteProvider(target);
         _currentPalette = new byte[target.GetColorsPerSlot()];
-        _hardwareColors = ConvertToWpfColors(target.GetHardwarePalette().Cast<object>().ToArray());
+        _hardwareColors = ConvertToWpfColors(targetPalette.Cast<object>().ToArray());
+
+        var fastPalette = PrepareFastPalette(targetPalette);
 
         for (int i = 0; i < slot.Colors.Count && i < _currentPalette.Length; i++)
-            _currentPalette[i] = (byte)FindNearestColorIndex(slot.Colors[i]);
+        {
+            HardwareColor hardwareColor = HardwareColor.FromHex(slot.Colors[i]);
+
+            _currentPalette[i] = ColorMatching.FindNearestColorIndex((hardwareColor.R, hardwareColor.G, hardwareColor.B), fastPalette);
+        }
 
         InitializeComponent();
 
@@ -234,8 +244,7 @@ public partial class PaletteEditorWindow : Window
         RefreshSlots();
         SelectSlot(_selectedSlotIndex);
     }
-
-    
+        
     private void Apply()
     {
         // Path A: opened from target slot context — update PaletteSlotData directly
@@ -335,32 +344,6 @@ public partial class PaletteEditorWindow : Window
                 result[i] = Color.FromRgb(hwColor.R, hwColor.G, hwColor.B);
         }
         return result;
-    }
-
-    private int FindNearestColorIndex(string hexColor)
-    {
-        if (string.IsNullOrEmpty(hexColor) || hexColor.Length < 7 || hexColor[0] != '#')
-            return 0;
-
-        int r = Convert.ToInt32(hexColor.Substring(1, 2), 16);
-        int g = Convert.ToInt32(hexColor.Substring(3, 2), 16);
-        int b = Convert.ToInt32(hexColor.Substring(5, 2), 16);
-
-        int closestIndex = 0;
-        int minDistance = int.MaxValue;
-
-        for (int i = 0; i < _hardwareColors.Length; i++)
-        {
-            var hw = _hardwareColors[i];
-            int distance = Math.Abs(hw.R - r) + Math.Abs(hw.G - g) + Math.Abs(hw.B - b);
-            if (distance < minDistance)
-            {
-                minDistance = distance;
-                closestIndex = i;
-            }
-        }
-
-        return closestIndex;
     }
 
     protected override void OnClosed(EventArgs e)

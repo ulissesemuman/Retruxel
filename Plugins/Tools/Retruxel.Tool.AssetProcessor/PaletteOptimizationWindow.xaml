@@ -180,6 +180,12 @@
                                      GroupName="ColorSpace"
                                      Style="{StaticResource SegmentedRadio}"
                                      Checked="ColorSpace_Changed"/>
+                        <RadioButton x:Name="RbPerceptual"
+                                     Content="Perceptual"
+                                     GroupName="ColorSpace"
+                                     IsChecked="True"
+                                     Style="{StaticResource SegmentedRadio}"
+                             Checked="ColorSpace_Changed"/>
                         <RadioButton x:Name="RbLab"
                                      Content="LAB"
                                      GroupName="ColorSpace"

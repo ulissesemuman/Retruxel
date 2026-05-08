@@ -9,12 +9,10 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\..\Retruxel.Core\Retruxel.Core.csproj">
-      <Private>false</Private>
-    </ProjectReference>
     <ProjectReference Include="..\..\..\Retruxel.SDK\Retruxel.SDK.csproj">
       <Private>false</Private>
     </ProjectReference>
+    <ProjectReference Include="..\ImageProcessing\Retruxel.Lib.ImageProcessing\Retruxel.Lib.ImageProcessing.csproj" />
   </ItemGroup>
 
   <ItemGroup>

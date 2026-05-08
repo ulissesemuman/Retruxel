@@ -333,34 +333,6 @@
                                               VerticalAlignment="Center"/>
                                 </Grid>
                             </Border>
-                            
-                            <Separator Margin="0,0,0,16"/>
-                            
-                            <TextBlock Text="COLOR MAPPING"
-                                       Style="{StaticResource TextLabelCaps}"
-                                       Foreground="{StaticResource BrushPrimary}"
-                                       Margin="0,0,0,12"/>
-                            
-                            <Border Style="{StaticResource SettingRow}" Padding="0">
-                                <Grid>
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="*"/>
-                                        <ColumnDefinition Width="Auto"/>
-                                    </Grid.ColumnDefinitions>
-                                    <StackPanel Grid.Column="0" VerticalAlignment="Center">
-                                        <TextBlock Text="LAB Color Space"
-                                                   Style="{StaticResource TextBody}"
-                                                   Foreground="{StaticResource BrushOnSurface}"/>
-                                        <TextBlock Text="Perceptually accurate color matching"
-                                                   Style="{StaticResource TextLabel}"
-                                                   TextWrapping="Wrap"/>
-                                    </StackPanel>
-                                    <CheckBox x:Name="ChkUseLab" Grid.Column="1"
-                                              Style="{StaticResource ToggleSwitch}"
-                                              IsChecked="True"
-                                              VerticalAlignment="Center"/>
-                                </Grid>
-                            </Border>
                             </StackPanel>
                         </Border>
                     </ScrollViewer>

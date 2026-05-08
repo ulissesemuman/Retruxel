@@ -69,7 +69,7 @@ public class AssetProcessorTool : ITool
         if (!File.Exists(sourcePath))
             return null;
 
-        using var sourceBitmap = SKBitmap.Decode(sourcePath);
+        using var sourceBitmap = LoadNormalizedBitmap(sourcePath);
         if (sourceBitmap == null)
             return null;
 
@@ -77,7 +77,21 @@ public class AssetProcessorTool : ITool
         return ApplyGenerationParams(sourceBitmap, asset.GenerationParams);
     }
 
-    private IndexedPngData ApplyGenerationParams(SKBitmap sourceBitmap, AssetGenerationParams genParams)
+    public static SKBitmap LoadNormalizedBitmap(string path)
+    {
+        using var codec = SKCodec.Create(path);
+        if (codec == null) throw new Exception("Falha ao abrir imagem.");
+
+        var info = new SKImageInfo(codec.Info.Width, codec.Info.Height, SKColorType.Bgra8888, SKAlphaType.Premul);
+
+        var bitmap = new SKBitmap(info);
+
+        codec.GetPixels(bitmap.Info, bitmap.GetPixels());
+
+        return bitmap;
+    }
+
+    private IndexedPngData ApplyGenerationParams1(SKBitmap sourceBitmap, AssetGenerationParams genParams)
     {
         var pixels = ExtractPixelsFromBitmap(sourceBitmap);
         var palette = ColorMatching.OptimizePalette(pixels, genParams.ColorCount, genParams.DiversityWeight);
@@ -105,7 +119,47 @@ public class AssetProcessorTool : ITool
                 break;
         }
 
-        var indices = MapPixelsToIndices(sourceBitmap, palette, distanceMode);
+        var indices = ColorMatching.ReduceColors(sourceBitmap, palette, distanceMode);
+        var hexColors = palette.Select(c => $"#{c.R:X2}{c.G:X2}{c.B:X2}").ToList();
+
+        return new IndexedPngData
+        {
+            Width = sourceBitmap.Width,
+            Height = sourceBitmap.Height,
+            Indices = indices,
+            Colors = hexColors
+        };
+    }
+
+    private IndexedPngData ApplyGenerationParams(SKBitmap sourceBitmap, AssetGenerationParams genParams)
+    {
+        var palette = new List<HardwareColor>();
+        DistanceMode distanceMode;
+
+        switch (genParams.ColorSpace)
+        {
+            case "RGB":
+                distanceMode = DistanceMode.RGB;
+                break;
+            case "Perceptual":
+                distanceMode = DistanceMode.Perceptual;
+                break;
+            case "LAB":
+                distanceMode = DistanceMode.LAB;
+                break;
+            default:
+                distanceMode = DistanceMode.RGB;
+                break;
+        }
+
+        var a = ColorMatching.ReduceColors(sourceBitmap, palette, distanceMode);
+
+        if (genParams.ColorOrder != null && genParams.ColorOrder.Length > 0)
+        {
+            palette = ReorderPalette(palette, genParams.ColorOrder);
+        }
+
+        var indices = ColorMatching.ReduceColors(sourceBitmap, palette, distanceMode);
         var hexColors = palette.Select(c => $"#{c.R:X2}{c.G:X2}{c.B:X2}").ToList();
 
         return new IndexedPngData
@@ -145,32 +199,5 @@ public class AssetProcessorTool : ITool
                 reordered.Add(palette[index]);
         }
         return reordered;
-    }
-
-    private byte[] MapPixelsToIndices(SKBitmap bitmap, List<HardwareColor> palette, DistanceMode distanceMode = DistanceMode.RGB)
-    {
-        var indices = new byte[bitmap.Width * bitmap.Height];
-        int idx = 0;
-
-        var fastPalette = ColorMatching.PrepareFastPalette(palette, distanceMode);
-
-        for (int y = 0; y < bitmap.Height; y++)
-        {
-            for (int x = 0; x < bitmap.Width; x++)
-            {
-                var pixel = bitmap.GetPixel(x, y);
-                if (pixel.Alpha == 0)
-                {
-                    indices[idx++] = 0;
-                }
-                else
-                {
-                    var color = (pixel.Red, pixel.Green, pixel.Blue);
-                    indices[idx++] = ColorMatching.FindNearestColorIndex(color, fastPalette, distanceMode);
-                }
-            }
-        }
-
-        return indices;
     }
 }

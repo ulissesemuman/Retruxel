@@ -125,7 +125,7 @@ public static class AssetImporter
     /// Generates a preview of the color-reduced image without saving to disk.
     /// Used by the AssetImporterWindow to show the before/after comparison.
     /// </summary>
-    public static SKBitmap PreviewReduction(string sourcePngPath, ITarget target)
+    public static SKBitmap ReduceColorsToHardware(string sourcePngPath, ITarget target)
     {
         using var stream = File.OpenRead(sourcePngPath);
         using var source = SKBitmap.Decode(stream)
@@ -134,28 +134,7 @@ public static class AssetImporter
         var palette = target.GetHardwarePalette();
         var reduced = ColorMatching.ReduceColors(source, palette);
 
-        return BitmapFromByteArray(reduced, source.Width, source.Height, palette);
-    }
-
-    public static SKBitmap BitmapFromByteArray(byte[] indices, int width, int height, IReadOnlyList<HardwareColor> palette)
-    {
-        var bitmap = new SKBitmap(width, height);
-
-        // Converte HardwareColor para SKColor uma vez só
-        var skPalette = palette.Select(c => SKColor.Parse(c.ToHex())).ToArray();
-
-        using (var canvas = new SKCanvas(bitmap))
-        {
-            for (int y = 0; y < height; y++)
-            {
-                for (int x = 0; x < width; x++)
-                {
-                    int index = indices[y * width + x];
-                    bitmap.SetPixel(x, y, skPalette[index]);
-                }
-            }
-        }
-        return bitmap;
+        return ColorMatching.BitmapFromByteArray(reduced, source.Width, source.Height, palette);
     }
 
     /// <summary>

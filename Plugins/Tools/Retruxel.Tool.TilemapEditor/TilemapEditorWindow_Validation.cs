@@ -1,3 +1,5 @@
+using Retruxel.Core.Interfaces;
+using Retruxel.Lib.ImageProcessing;
 using Retruxel.Tool.AssetProcessor;
 using SkiaSharp;
 using System;
@@ -5,6 +7,8 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Windows;
+using System.Windows.Media.Imaging;
+using static Retruxel.Lib.ImageProcessing.ColorMatching;
 
 namespace Retruxel.Tool.TilemapEditor;
 
@@ -145,9 +149,8 @@ public partial class TilemapEditorWindow
 
             // Reduce to hardware palette first (like AssetImporter does)
             var hardwarePalette = _target.GetHardwarePalette();
-            var rgbPalette = hardwarePalette.Select(c => (c.R, c.G, c.B)).ToList();
 
-            using var reducedBitmap = ReduceColorsToHardware(skBitmap, rgbPalette);
+            using var reducedBitmap = ReduceColorsToHardware(skBitmap, _target);
             var reducedBitmapSource = ConvertSkBitmapToBitmapSource(reducedBitmap);
 
             // Calculate target color count: half of hardware palette, minimum 16
@@ -158,7 +161,7 @@ public partial class TilemapEditorWindow
             var optimizationWindow = new PaletteOptimizationWindow(
                 reducedBitmapSource,
                 targetColorCount: targetColorCount,
-                useLab: true,
+                DistanceMode.LAB,
                 target: _target)
             {
                 Owner = this
@@ -196,35 +199,15 @@ public partial class TilemapEditorWindow
         }
     }
 
-    private SKBitmap ReduceColorsToHardware(SKBitmap source, List<(byte R, byte G, byte B)> hardwarePalette)
+    public static SKBitmap ReduceColorsToHardware(SKBitmap source, ITarget target)
     {
-        var result = new SKBitmap(source.Width, source.Height, SKColorType.Rgba8888, SKAlphaType.Premul);
-        var hardwareColors = hardwarePalette.Select(c => new Retruxel.Core.Models.HardwareColor(c.R, c.G, c.B)).ToList();
-        var fastPalette = Retruxel.Lib.ImageProcessing.ColorMatching.PrepareFastPalette(hardwareColors, Retruxel.Lib.ImageProcessing.ColorMatching.DistanceMode.RGB);
+        var palette = target.GetHardwarePalette();
+        var reduced = ColorMatching.ReduceColors(source, palette);
 
-        for (int y = 0; y < source.Height; y++)
-        {
-            for (int x = 0; x < source.Width; x++)
-            {
-                var pixel = source.GetPixel(x, y);
-
-                if (pixel.Alpha == 0)
-                {
-                    result.SetPixel(x, y, SKColors.Transparent);
-                    continue;
-                }
-
-                var nearestIndex = Retruxel.Lib.ImageProcessing.ColorMatching.FindNearestColorIndex(
-                    (pixel.Red, pixel.Green, pixel.Blue), fastPalette, Retruxel.Lib.ImageProcessing.ColorMatching.DistanceMode.RGB);
-                var nearest = hardwarePalette[nearestIndex];
-                result.SetPixel(x, y, new SKColor(nearest.R, nearest.G, nearest.B, pixel.Alpha));
-            }
-        }
-
-        return result;
+        return ColorMatching.BitmapFromByteArray(reduced, source.Width, source.Height, palette);
     }
 
-    private System.Windows.Media.Imaging.BitmapSource ConvertSkBitmapToBitmapSource(SKBitmap skBitmap)
+    private BitmapSource ConvertSkBitmapToBitmapSource(SKBitmap skBitmap)
     {
         using var image = SKImage.FromBitmap(skBitmap);
         using var data = image.Encode(SKEncodedImageFormat.Png, 100);

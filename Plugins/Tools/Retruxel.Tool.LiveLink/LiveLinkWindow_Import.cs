@@ -9,6 +9,7 @@ using System.Linq;
 using System.Windows;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
+using static Retruxel.Lib.ImageProcessing.ColorMatching;
 
 namespace Retruxel.Tool.LiveLink;
 
@@ -62,7 +63,7 @@ public partial class LiveLinkWindow
             var previewWindow = new PaletteOptimizationWindow(
                 previewBitmap,
                 targetColorCount,
-                ChkUseLab.IsChecked == true,
+                DistanceMode.RGB,
                 targetForPreview);
 
             previewWindow.Owner = this;
@@ -130,9 +131,7 @@ public partial class LiveLinkWindow
             var options = new Dictionary<string, object>
             {
                 ["sourceEmulator"] = _connection?.EmulatorId ?? "unknown",
-                ["destinationTarget"] = _input?.TryGetValue("targetId", out var target) == true ? target : null!,
-                ["useLab"] = ChkUseLab.IsChecked == true,
-                ["diversity"] = selectedDiversity
+                ["destinationTarget"] = _input?.TryGetValue("targetId", out var target) == true ? target : null!
             };
 
             var importedData = pipeline.ProcessTyped(optimizedCapture, options);

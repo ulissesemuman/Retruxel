@@ -5,7 +5,7 @@ using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
 using System.Runtime.CompilerServices;
-using static Retruxel.Lib.ImageProcessing.ColorMatching;
+using Retruxel.Lib.ImageProcessing;
 
 namespace Retruxel.Lib.ImageProcessing;
 
@@ -39,37 +39,6 @@ public static class ColorMatching
     }
 
     /// <summary>
-    /// Finds the nearest color in a palette using Euclidean distance in RGB space.
-    /// Uses squared distance for performance (avoids Math.Sqrt).
-    /// </summary>
-    /// <param name="color">Source color to match.</param>
-    /// <param name="palette">Target palette to search.</param>
-    /// <returns>Closest color from the palette.</returns>
-    public static (byte R, byte G, byte B) FindNearestRgb1(
-        (byte R, byte G, byte B) color,
-        IReadOnlyList<(byte R, byte G, byte B)> palette)
-    {
-        var bestColor = palette[0];
-        var bestDistance = double.MaxValue;
-
-        foreach (var p in palette)
-        {
-            var dr = (double)(color.R - p.R);
-            var dg = (double)(color.G - p.G);
-            var db = (double)(color.B - p.B);
-            var distance = dr * dr + dg * dg + db * db;
-
-            if (distance < bestDistance)
-            {
-                bestDistance = distance;
-                bestColor = p;
-                if (distance == 0) break;
-            }
-        }
-        return bestColor;
-    }
-
-    /// <summary>
     /// Converts source bitmap to reduced palette without hardware palette matching.
     /// Used when a pre-optimized palette is provided.
     /// </summary>
@@ -78,7 +47,6 @@ public static class ColorMatching
         IReadOnlyList<HardwareColor> palette,
         DistanceMode distanceMode = DistanceMode.RGB)
     {
-        var result = new SKBitmap(source.Width, source.Height, SKColorType.Rgba8888, SKAlphaType.Premul);
         var indices = new byte[source.Width * source.Height];
         int idx = 0;
 
@@ -150,7 +118,7 @@ public static class ColorMatching
         return bestIndex;
     }
 
-    public static FastColor[] PrepareFastPalette(IReadOnlyList<HardwareColor> palette, DistanceMode distanceMode)
+    public static FastColor[] PrepareFastPalette(IReadOnlyList<HardwareColor> palette, DistanceMode distanceMode = DistanceMode.RGB)
     {
         int count = palette.Count;
         var fastPalette = new FastColor[count];
@@ -198,38 +166,6 @@ public static class ColorMatching
     }
 
     /// <summary>
-    /// Finds the nearest color in a palette using perceptual distance in LAB color space.
-    /// LAB provides better visual matching than RGB but is slower due to conversion overhead.
-    /// </summary>
-    /// <param name="color">Source color to match.</param>
-    /// <param name="palette">Target palette to search.</param>
-    /// <returns>Closest color from the palette.</returns>
-    public static (byte R, byte G, byte B) FindNearestLab(
-        (byte R, byte G, byte B) color,
-        IReadOnlyList<(byte R, byte G, byte B)> palette)
-    {
-        var lab = RgbToLab(color.R, color.G, color.B);
-        var bestColor = palette[0];
-        var bestDistance = double.MaxValue;
-
-        foreach (var p in palette)
-        {
-            var pLab = RgbToLab(p.R, p.G, p.B);
-            var dL = lab.L - pLab.L;
-            var dA = lab.A - pLab.A;
-            var dB = lab.B - pLab.B;
-            var distance = dL * dL + dA * dA + dB * dB;
-
-            if (distance < bestDistance)
-            {
-                bestDistance = distance;
-                bestColor = p;
-            }
-        }
-        return bestColor;
-    }
-
-    /// <summary>
     /// Converts RGB color to LAB color space.
     /// LAB is a perceptually uniform color space where Euclidean distance correlates with human perception.
     /// </summary>
@@ -256,6 +192,37 @@ public static class ColorMatching
         double B = 200.0 * (fy - fz);
 
         return (L, A, B);
+    }
+
+    public static SKBitmap BitmapFromByteArray(byte[] indices, int width, int height, IReadOnlyList<HardwareColor> palette)
+    {
+        var bitmap = new SKBitmap(width, height);
+
+        var skPalette = palette.Select(c => SKColor.Parse(c.ToHex())).ToArray();
+
+        using (var canvas = new SKCanvas(bitmap))
+        {
+            for (int y = 0; y < height; y++)
+            {
+                for (int x = 0; x < width; x++)
+                {
+                    int index = indices[y * width + x];
+                    bitmap.SetPixel(x, y, skPalette[index]);
+                }
+            }
+        }
+        return bitmap;
+    }
+
+    private static double RgbToLinear(double c)
+    {
+        return c <= 0.04045 ? c / 12.92 : Math.Pow((c + 0.055) / 1.055, 2.4);
+    }
+
+    private static double LabF(double t)
+    {
+        const double delta = 6.0 / 29.0;
+        return t > delta * delta * delta ? Math.Pow(t, 1.0 / 3.0) : t / (3.0 * delta * delta) + 4.0 / 29.0;
     }
 
     /// <summary>
@@ -473,15 +440,5 @@ public static class ColorMatching
 
         return nearest;
     }
-
-    private static double RgbToLinear(double c)
-    {
-        return c <= 0.04045 ? c / 12.92 : Math.Pow((c + 0.055) / 1.055, 2.4);
-    }
-
-    private static double LabF(double t)
-    {
-        const double delta = 6.0 / 29.0;
-        return t > delta * delta * delta ? Math.Pow(t, 1.0 / 3.0) : t / (3.0 * delta * delta) + 4.0 / 29.0;
-    }
+ 
 }

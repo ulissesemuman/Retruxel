@@ -132,20 +132,9 @@ public static class AssetImporter
             ?? throw new AssetImportException($"Failed to decode image: {sourcePngPath}");
 
         var palette = target.GetHardwarePalette();
-        var reduced = ReduceColors(source, palette);
+        var reduced = ColorMatching.ReduceColors(source, palette);
 
         return BitmapFromByteArray(reduced, source.Width, source.Height, palette);
-    }
-
-    public static SKBitmap PreviewReduction1(string sourcePngPath, ITarget target)
-    {
-        using var stream = File.OpenRead(sourcePngPath);
-        using var source = SKBitmap.Decode(stream)
-            ?? throw new AssetImportException($"Failed to decode image: {sourcePngPath}");
-
-        var palette = target.GetHardwarePalette();
-
-        return ReduceColors1(source, palette);
     }
 
     public static SKBitmap BitmapFromByteArray(byte[] indices, int width, int height, IReadOnlyList<HardwareColor> palette)
@@ -170,72 +159,6 @@ public static class AssetImporter
     }
 
     /// <summary>
-    /// Reduces every pixel in the bitmap to the nearest color in the hardware palette.
-    /// Uses Euclidean distance in RGB space for nearest-color matching.
-    /// </summary>
-    private static SKBitmap ReduceColors1(
-        SKBitmap source,
-        IReadOnlyList<HardwareColor> palette)
-    {
-        var result = new SKBitmap(source.Width, source.Height, SKColorType.Rgba8888, SKAlphaType.Premul);
-        var rgbPalette = palette.Select(c => (c.R, c.G, c.B)).ToList();
-
-        for (int y = 0; y < source.Height; y++)
-        {
-            for (int x = 0; x < source.Width; x++)
-            {
-                var pixel = source.GetPixel(x, y);
-
-                // Treat fully transparent pixels as transparent in output
-                if (pixel.Alpha == 0)
-                {
-                    result.SetPixel(x, y, SKColors.Transparent);
-                    continue;
-                }
-
-                var nearest = Retruxel.Lib.ImageProcessing.ColorMatching.FindNearestRgb1(
-                    (pixel.Red, pixel.Green, pixel.Blue), rgbPalette);
-                result.SetPixel(x, y, new SKColor(nearest.R, nearest.G, nearest.B, pixel.Alpha));
-            }
-        }
-
-        return result;
-    }
-
-    private static byte[] ReduceColors(
-        SKBitmap source,
-        IReadOnlyList<HardwareColor> palette,
-        DistanceMode distanceMode = DistanceMode.RGB)
-    {
-        var result = new SKBitmap(source.Width, source.Height, SKColorType.Rgba8888, SKAlphaType.Premul);
-        var indices = new byte[source.Width * source.Height];
-        int idx = 0;
-
-        var fastPalette = PrepareFastPalette(palette, distanceMode);
-
-        for (int y = 0; y < source.Height; y++)
-        {
-            for (int x = 0; x < source.Width; x++)
-            {
-                var pixel = source.GetPixel(x, y);
-
-                // Treat fully transparent pixels as transparent in output
-                if (pixel.Alpha == 0)
-                {
-                    indices[idx++] = 0;
-                }
-                else
-                {
-                    var color = (pixel.Red, pixel.Green, pixel.Blue);
-                    indices[idx++] = ColorMatching.FindNearestColorIndex(color, fastPalette, ColorMatching.DistanceMode.RGB);
-                }
-            }
-        }
-
-        return indices;
-    }
-
-    /// <summary>
     /// Validates that the image dimensions are multiples of 8 (tile size).
     /// </summary>
     private static void ValidateDimensions(SKBitmap bitmap, string path)
@@ -255,36 +178,6 @@ public static class AssetImporter
         using var data = image.Encode(SKEncodedImageFormat.Png, 100);
         using var stream = File.OpenWrite(outputPath);
         data.SaveTo(stream);
-    }
-
-    /// <summary>
-    /// Converts source bitmap to reduced palette without hardware palette matching.
-    /// Used when a pre-optimized palette is provided.
-    /// </summary>
-    private static SKBitmap ConvertToReducedBitmap(SKBitmap source, List<SKColor> palette)
-    {
-        var result = new SKBitmap(source.Width, source.Height, SKColorType.Rgba8888, SKAlphaType.Premul);
-        var rgbPalette = palette.Select(c => (c.Red, c.Green, c.Blue)).ToList();
-
-        for (int y = 0; y < source.Height; y++)
-        {
-            for (int x = 0; x < source.Width; x++)
-            {
-                var pixel = source.GetPixel(x, y);
-
-                if (pixel.Alpha == 0)
-                {
-                    result.SetPixel(x, y, SKColors.Transparent);
-                    continue;
-                }
-
-                //var nearest = Retruxel.Lib.ImageProcessing.ColorMatching.FindNearestColorIndex(
-                //    (pixel.Red, pixel.Green, pixel.Blue), rgbPalette);
-                //result.SetPixel(x, y, new SKColor(nearest.R, nearest.G, nearest.B, pixel.Alpha));
-            }
-        }
-
-        return result;
     }
 }
 

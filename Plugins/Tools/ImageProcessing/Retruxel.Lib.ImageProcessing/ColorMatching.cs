@@ -1,4 +1,5 @@
 using Retruxel.Core.Models;
+using SkiaSharp;
 using System;
 using System.Collections.Generic;
 using System.Drawing;
@@ -66,6 +67,43 @@ public static class ColorMatching
             }
         }
         return bestColor;
+    }
+
+    /// <summary>
+    /// Converts source bitmap to reduced palette without hardware palette matching.
+    /// Used when a pre-optimized palette is provided.
+    /// </summary>
+    public static byte[] ReduceColors(
+        SKBitmap source,
+        IReadOnlyList<HardwareColor> palette,
+        DistanceMode distanceMode = DistanceMode.RGB)
+    {
+        var result = new SKBitmap(source.Width, source.Height, SKColorType.Rgba8888, SKAlphaType.Premul);
+        var indices = new byte[source.Width * source.Height];
+        int idx = 0;
+
+        var fastPalette = PrepareFastPalette(palette, distanceMode);
+
+        for (int y = 0; y < source.Height; y++)
+        {
+            for (int x = 0; x < source.Width; x++)
+            {
+                var pixel = source.GetPixel(x, y);
+
+                // Treat fully transparent pixels as transparent in output
+                if (pixel.Alpha == 0)
+                {
+                    indices[idx++] = 0;
+                }
+                else
+                {
+                    var color = (pixel.Red, pixel.Green, pixel.Blue);
+                    indices[idx++] = ColorMatching.FindNearestColorIndex(color, fastPalette, ColorMatching.DistanceMode.RGB);
+                }
+            }
+        }
+
+        return indices;
     }
 
     public static byte FindNearestColorIndex(
@@ -157,41 +195,6 @@ public static class ColorMatching
             DistanceMode.Perceptual => (dr * dr * 0.299) + (dg * dg * 0.587) + (db * db * 0.114),
             _ => (dr * dr + dg * dg + db * db) // RGB
         };
-    }
-
-    public static byte FindNearestColorIndexLab(
-        (byte R, byte G, byte B) color,
-        RgbColor[] palette)
-    {
-        var fastPalette = palette.Select(p => {
-            var lab = RgbToLab(p.R, p.G, p.B);
-            return new LabColor {L = lab.L, A = lab.A, B = lab.B};
-        }).ToArray();
-
-        byte bestIndex = 0;
-        double bestDistance = double.MaxValue;
-
-        var targetLab = RgbToLab(color.R, color.G, color.B);
-
-        for (byte i = 0; i < fastPalette.Length; i++)
-        {
-            var p = fastPalette[i];
-
-            var dl = targetLab.L - p.L;
-            var da = targetLab.A - p.A;
-            var db = targetLab.B - p.B;
-
-            double distance = (double)(dl * dl + da * da + db * db);
- 
-            if (distance < bestDistance)
-            {
-                bestDistance = distance;
-                bestIndex = i;
-
-                if (distance == 0) break;
-            }
-        }
-        return bestIndex;
     }
 
     /// <summary>

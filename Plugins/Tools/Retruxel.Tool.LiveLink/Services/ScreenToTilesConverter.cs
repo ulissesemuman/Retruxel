@@ -191,12 +191,11 @@ public class ScreenToTilesConverter
     {
         var remappedTiles = new byte[tiles.Length][];
         var flatPalette = optimized.Palettes.SelectMany(p => p).ToArray();
-        var hardwareColors = flatPalette.Select(c => new Retruxel.Core.Models.HardwareColor
-        {
-            R = (byte)((c >> 16) & 0xFF),
-            G = (byte)((c >> 8) & 0xFF),
-            B = (byte)(c & 0xFF)
-        }).ToList();
+        var hardwareColors = flatPalette.Select(c => new Retruxel.Core.Models.HardwareColor(
+            (byte)((c >> 16) & 0xFF),
+            (byte)((c >> 8) & 0xFF),
+            (byte)(c & 0xFF)
+        )).ToList();
         var fastPalette = ColorMatching.PrepareFastPalette(hardwareColors, ColorMatching.DistanceMode.RGB);
 
         for (int tileIdx = 0; tileIdx < tiles.Length; tileIdx++)

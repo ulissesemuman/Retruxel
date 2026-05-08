@@ -199,6 +199,8 @@ public partial class TilemapEditorWindow
     private SKBitmap ReduceColorsToHardware(SKBitmap source, List<(byte R, byte G, byte B)> hardwarePalette)
     {
         var result = new SKBitmap(source.Width, source.Height, SKColorType.Rgba8888, SKAlphaType.Premul);
+        var hardwareColors = hardwarePalette.Select(c => new Retruxel.Core.Models.HardwareColor(c.R, c.G, c.B)).ToList();
+        var fastPalette = Retruxel.Lib.ImageProcessing.ColorMatching.PrepareFastPalette(hardwareColors, Retruxel.Lib.ImageProcessing.ColorMatching.DistanceMode.RGB);
 
         for (int y = 0; y < source.Height; y++)
         {
@@ -212,9 +214,10 @@ public partial class TilemapEditorWindow
                     continue;
                 }
 
-                //var nearest = Retruxel.Lib.ImageProcessing.ColorMatching.FindNearestColorIndex(
-                //    (pixel.Red, pixel.Green, pixel.Blue), hardwarePalette);
-                //result.SetPixel(x, y, new SKColor(nearest.R, nearest.G, nearest.B, pixel.Alpha));
+                var nearestIndex = Retruxel.Lib.ImageProcessing.ColorMatching.FindNearestColorIndex(
+                    (pixel.Red, pixel.Green, pixel.Blue), fastPalette, Retruxel.Lib.ImageProcessing.ColorMatching.DistanceMode.RGB);
+                var nearest = hardwarePalette[nearestIndex];
+                result.SetPixel(x, y, new SKColor(nearest.R, nearest.G, nearest.B, pixel.Alpha));
             }
         }
 

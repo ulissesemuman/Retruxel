@@ -386,7 +386,7 @@ public class AssetProcessorTool : ITool
         var indices = new byte[bitmap.Width * bitmap.Height];
         int idx = 0;
 
-        var hardwareColors = palette.Select(c => new HardwareColor { R = c.R, G = c.G, B = c.B }).ToList();
+        var hardwareColors = palette.Select(c => new HardwareColor(c.R, c.G, c.B)).ToList();
         var distanceMode = useLab ? ColorMatching.DistanceMode.LAB : ColorMatching.DistanceMode.RGB;
         var fastPalette = ColorMatching.PrepareFastPalette(hardwareColors, distanceMode);
 

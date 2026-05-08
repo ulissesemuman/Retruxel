@@ -90,10 +90,10 @@ public partial class PaletteOptimizationWindow : Window
     {
         if (_originalPixels.Count == 0 || ImgOptimized == null) return;
 
-        var rgbPalette = AssetProcessorTool.OptimizePalette(
+        var hardwarePalette = ColorMatching.OptimizePalette(
             _originalPixels, _targetColorCount, _currentDiversity);
 
-        OptimizedPalette = MapToHardwarePalette(rgbPalette);
+        OptimizedPalette = hardwarePalette.Select(c => (c.R, c.G, c.B)).ToList();
 
         var bitmap = ApplyPalette(_originalBitmap, OptimizedPalette);
         ImgOptimized.Source = bitmap;

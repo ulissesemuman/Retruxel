@@ -74,8 +74,8 @@ public class ScreenToTilesConverter
 
         System.Diagnostics.Debug.WriteLine($"[ScreenToTilesConverter] Target: {paletteSlotCount} slots × {colorsPerSlot} colors = {totalSlots} total");
 
-        // Optimize palette using AssetProcessorTool
-        var clusters = AssetProcessorTool.OptimizePalette(
+        // Optimize palette using ColorMatching
+        var hardwarePalette = ColorMatching.OptimizePalette(
             allColors.Select(c => (
                 R: (byte)((c >> 16) & 0xFF),
                 G: (byte)((c >> 8) & 0xFF),
@@ -83,7 +83,9 @@ public class ScreenToTilesConverter
             )).ToList(),
             totalSlots,
             1.25 // Default diversity
-        ).Select(c => 0xFF000000u | ((uint)c.R << 16) | ((uint)c.G << 8) | c.B).ToArray();
+        );
+
+        var clusters = hardwarePalette.Select(c => 0xFF000000u | ((uint)c.R << 16) | ((uint)c.G << 8) | c.B).ToArray();
 
         // Build palette structure
         var palettes = new uint[paletteSlotCount][];

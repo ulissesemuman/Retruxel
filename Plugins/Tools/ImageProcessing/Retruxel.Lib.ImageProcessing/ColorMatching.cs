@@ -98,7 +98,7 @@ public static class ColorMatching
                 else
                 {
                     var color = (pixel.Red, pixel.Green, pixel.Blue);
-                    indices[idx++] = ColorMatching.FindNearestColorIndex(color, fastPalette, ColorMatching.DistanceMode.RGB);
+                    indices[idx++] = ColorMatching.FindNearestColorIndex(color, fastPalette, distanceMode);
                 }
             }
         }
@@ -256,6 +256,222 @@ public static class ColorMatching
         double B = 200.0 * (fy - fz);
 
         return (L, A, B);
+    }
+
+    /// <summary>
+    /// Public method for palette optimization with custom diversity.
+    /// Used by PaletteOptimizationWindow for real-time preview.
+    /// </summary>
+    public static List<HardwareColor> OptimizePalette(
+        List<(byte R, byte G, byte B)> pixels,
+        int targetColorCount,
+        double diversity = 1.25)
+    {
+        var colorSet = new HashSet<uint>();
+        foreach (var (r, g, b) in pixels)
+        {
+            uint color = 0xFF000000u | ((uint)r << 16) | ((uint)g << 8) | b;
+            colorSet.Add(color);
+        }
+
+        if (colorSet.Count <= targetColorCount)
+        {
+            return colorSet.Select(c => new HardwareColor(
+                (byte)((c >> 16) & 0xFF),
+                (byte)((c >> 8) & 0xFF),
+                (byte)(c & 0xFF)
+            )).ToList();
+        }
+
+        var optimized = HierarchicalClustering(colorSet, targetColorCount, 20, diversity);
+
+        return optimized.Select(c => new HardwareColor(
+            (byte)((c >> 16) & 0xFF),
+            (byte)((c >> 8) & 0xFF),
+            (byte)(c & 0xFF)
+        )).ToList();
+    }
+
+    private static uint[] HierarchicalClustering(HashSet<uint> colors, int targetSlots, int maxIterations, double diversity)
+    {
+        var colorList = colors.ToList();
+        var centroids = DiversityWeightedInit(colorList, targetSlots, diversity);
+        int[] pixelAssignment = new int[colorList.Count];
+
+        // Arrays para acumular R, G, B e contagem de cada cluster sem alocar novas listas
+        long[] sumR = new long[targetSlots];
+        long[] sumG = new long[targetSlots];
+        long[] sumB = new long[targetSlots];
+        int[] clusterCounts = new int[targetSlots];
+
+        for (int iter = 0; iter < maxIterations; iter++)
+        {
+            Array.Clear(sumR, 0, targetSlots);
+            Array.Clear(sumG, 0, targetSlots);
+            Array.Clear(sumB, 0, targetSlots);
+            Array.Clear(clusterCounts, 0, targetSlots);
+
+            bool changed = false;
+
+            // Fase de Atribui��o
+            for (int i = 0; i < colorList.Count; i++)
+            {
+                uint color = colorList[i];
+                int nearest = FindNearestCentroid(color, centroids);
+
+                if (pixelAssignment[i] != nearest)
+                {
+                    pixelAssignment[i] = nearest;
+                    changed = true;
+                }
+
+                // Acumula para o novo centroide
+                sumR[nearest] += (color >> 16) & 0xFF;
+                sumG[nearest] += (color >> 8) & 0xFF;
+                sumB[nearest] += color & 0xFF;
+                clusterCounts[nearest]++;
+            }
+
+            if (!changed && iter > 0) break;
+
+            // Fase de Atualiza��o
+            for (int i = 0; i < targetSlots; i++)
+            {
+                if (clusterCounts[i] > 0)
+                {
+                    byte r = (byte)(sumR[i] / clusterCounts[i]);
+                    byte g = (byte)(sumG[i] / clusterCounts[i]);
+                    byte b = (byte)(sumB[i] / clusterCounts[i]);
+                    centroids[i] = 0xFF000000u | ((uint)r << 16) | ((uint)g << 8) | b;
+                }
+            }
+        }
+        return centroids;
+    }
+
+    private static uint[] DiversityWeightedInit(List<uint> colors, int k, double diversity)
+    {
+        var colorCountsDict = new Dictionary<uint, int>();
+        foreach (var color in colors)
+        {
+            colorCountsDict.TryGetValue(color, out int count);
+            colorCountsDict[color] = count + 1;
+        }
+
+        uint[] uniqueColors = colorCountsDict.Keys.ToArray();
+        int[] counts = colorCountsDict.Values.ToArray();
+        int uniqueCount = uniqueColors.Length;
+
+        int seed = (int)(diversity * 10000);
+        var random = new Random(seed);
+        var centroids = new List<uint>();
+
+        double bias = diversity * 0.5 + 0.5;
+        double decay = diversity * 0.25 + 0.65;
+
+        var colorCounts = new Dictionary<uint, int>();
+        foreach (var color in colors)
+        {
+            if (!colorCounts.ContainsKey(color))
+                colorCounts[color] = 0;
+            colorCounts[color]++;
+        }
+
+        var firstColor = uniqueColors.OrderByDescending(c => colorCounts[c] * bias).First();
+        centroids.Add(firstColor);
+
+        for (int i = 1; i < k; i++)
+        {
+            var weights = new double[uniqueCount];
+            double totalWeight = 0;
+
+            for (int j = 0; j < uniqueCount; j++)
+            {
+                uint color = uniqueColors[j];
+
+                double minDist = double.MaxValue;
+                foreach (var centroid in centroids)
+                {
+                    byte r1 = (byte)((color >> 16) & 0xFF);
+                    byte g1 = (byte)((color >> 8) & 0xFF);
+                    byte b1 = (byte)(color & 0xFF);
+                    byte r2 = (byte)((centroid >> 16) & 0xFF);
+                    byte g2 = (byte)((centroid >> 8) & 0xFF);
+                    byte b2 = (byte)(centroid & 0xFF);
+                    double dist = ColorMatching.ColorDistance(r1, g1, b1, r2, g2, b2);
+                    if (dist < minDist)
+                        minDist = dist;
+                }
+
+                if (minDist == 0) // J� � um centroide
+                {
+                    weights[j] = 0;
+                    continue;
+                }
+
+                double freqWeight = colorCounts[color] * bias;
+                double divWeight = minDist * minDist * decay;
+                weights[j] = divWeight + freqWeight * 0.1;
+                totalWeight += weights[j];
+            }
+
+            double threshold = random.NextDouble() * totalWeight;
+            double sum = 0;
+
+            for (int j = 0; j < uniqueColors.Length; j++)
+            {
+                sum += weights[j];
+                if (sum >= threshold)
+                {
+                    centroids.Add(uniqueColors[j]);
+                    break;
+                }
+            }
+
+            if (centroids.Count == i)
+            {
+                int maxIdx = 0;
+                double maxWeight = 0;
+                for (int j = 0; j < uniqueColors.Length; j++)
+                {
+                    if (weights[j] > maxWeight)
+                    {
+                        maxWeight = weights[j];
+                        maxIdx = j;
+                    }
+                }
+                centroids.Add(uniqueColors[maxIdx]);
+            }
+        }
+
+        return centroids.ToArray();
+    }
+
+    private static int FindNearestCentroid(uint color, uint[] centroids)
+    {
+        int nearest = 0;
+        byte r = (byte)((color >> 16) & 0xFF);
+        byte g = (byte)((color >> 8) & 0xFF);
+        byte b = (byte)(color & 0xFF);
+        byte r0 = (byte)((centroids[0] >> 16) & 0xFF);
+        byte g0 = (byte)((centroids[0] >> 8) & 0xFF);
+        byte b0 = (byte)(centroids[0] & 0xFF);
+        double minDist = ColorMatching.ColorDistance(r, g, b, r0, g0, b0);
+
+        for (int i = 1; i < centroids.Length; i++)
+        {
+            byte ri = (byte)((centroids[i] >> 16) & 0xFF);
+            byte gi = (byte)((centroids[i] >> 8) & 0xFF);
+            byte bi = (byte)(centroids[i] & 0xFF);
+            double dist = ColorMatching.ColorDistance(r, g, b, ri, gi, bi);
+            if (dist < minDist)
+            {
+                minDist = dist;
+                nearest = i;
+            }
+        }
+
+        return nearest;
     }
 
     private static double RgbToLinear(double c)

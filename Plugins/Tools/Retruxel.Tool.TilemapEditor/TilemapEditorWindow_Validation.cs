@@ -154,13 +154,14 @@ public partial class TilemapEditorWindow
             var reducedBitmapSource = ConvertSkBitmapToBitmapSource(reducedBitmap);
 
             // Calculate target color count: half of hardware palette, minimum 16
-            int hardwareColorCount = hardwarePalette.Count;
-            int targetColorCount = Math.Max(16, hardwareColorCount / 2);
+            //int paletteSlotCount = _target.GetPaletteSlotCount();
+            int colorsPerSlot = _target.GetColorsPerSlot();
+            int targetColorCount = /*paletteSlotCount **/ colorsPerSlot;
 
             // Open palette optimization window
             var optimizationWindow = new PaletteOptimizationWindow(
                 reducedBitmapSource,
-                targetColorCount: targetColorCount,
+                targetColorCount,
                 DistanceMode.LAB,
                 target: _target)
             {

@@ -1,4 +1,3 @@
-using Retruxel.Core.Models;
 using Retruxel.Core.Services;
 using Retruxel.Tool.AssetProcessor;
 using Retruxel.Tool.LiveLink.Pipelines;
@@ -40,31 +39,29 @@ public partial class LiveLinkWindow
             }
 
             // Determine target color count based on destination target
-            string? targetId = null;
+            Retruxel.Core.Interfaces.ITarget? destinationTarget = null;
             int targetColorCount = 16; // Default
+            
             if (_input?.TryGetValue("targetId", out var targetObj) == true)
             {
-                targetId = targetObj?.ToString();
-                targetColorCount = targetId switch
+                var targetId = targetObj?.ToString();
+                destinationTarget = TargetRegistry.GetTargetById(targetId ?? "sms");
+                
+                if (destinationTarget != null)
                 {
-                    "sms" => 32,  // 2 palettes × 16 colors (hardware max)
-                    "gg" => 32,   // 2 palettes × 16 colors (hardware max)
-                    "nes" => 16,  // 4 palettes × 4 colors (hardware max)
-                    "snes" => 256, // 8 palettes × 32 colors (common mode)
-                    "gb" => 32,   // 8 palettes × 4 colors
-                    "gbc" => 64,  // 8 palettes × 4 colors (BG) + 8 palettes × 4 colors (sprites)
-                    _ => 16
-                };
+                    int paletteSlotCount = destinationTarget.GetPaletteSlotCount();
+                    int colorsPerSlot = destinationTarget.GetColorsPerSlot();
+                    targetColorCount = paletteSlotCount * colorsPerSlot;
+                    
+                    LogInfo($"Target: {destinationTarget.DisplayName} - {paletteSlotCount} slots × {colorsPerSlot} colors = {targetColorCount} total");
+                }
             }
-
-            // Open preview window - it will handle optimization internally
-            var targetForPreview = TargetRegistry.GetTargetById(targetId ?? "sms");
-
+            
             var previewWindow = new PaletteOptimizationWindow(
                 previewBitmap,
                 targetColorCount,
                 DistanceMode.RGB,
-                targetForPreview);
+                destinationTarget);
 
             previewWindow.Owner = this;
 

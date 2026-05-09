@@ -91,46 +91,6 @@ public class AssetProcessorTool : ITool
         return bitmap;
     }
 
-    private IndexedPngData ApplyGenerationParams1(SKBitmap sourceBitmap, AssetGenerationParams genParams)
-    {
-        var pixels = ExtractPixelsFromBitmap(sourceBitmap);
-        var palette = ColorMatching.OptimizePalette(pixels, genParams.ColorCount, genParams.DiversityWeight);
-
-        if (genParams.ColorOrder != null && genParams.ColorOrder.Length > 0)
-        {
-            palette = ReorderPalette(palette, genParams.ColorOrder);
-        }
-
-        DistanceMode distanceMode;
-
-        switch (genParams.ColorSpace)
-        {
-            case "RGB":
-                distanceMode = DistanceMode.RGB;
-                break;
-            case "Perceptual":
-                distanceMode = DistanceMode.Perceptual;
-                break;
-            case "LAB":
-                distanceMode = DistanceMode.LAB;
-                break;
-            default:
-                distanceMode = DistanceMode.RGB;
-                break;
-        }
-
-        var indices = ColorMatching.ReduceColors(sourceBitmap, palette, distanceMode);
-        var hexColors = palette.Select(c => $"#{c.R:X2}{c.G:X2}{c.B:X2}").ToList();
-
-        return new IndexedPngData
-        {
-            Width = sourceBitmap.Width,
-            Height = sourceBitmap.Height,
-            Indices = indices,
-            Colors = hexColors
-        };
-    }
-
     private IndexedPngData ApplyGenerationParams(SKBitmap sourceBitmap, AssetGenerationParams genParams)
     {
         var palette = new List<HardwareColor>();

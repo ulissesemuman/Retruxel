@@ -44,9 +44,7 @@ public static class AssetImporter
         string projectPath,
         string vramRegionId,
         ITarget target,
-        List<SKColor>? reducedPalette = null,
-        string? colorSpace = null,
-        double? diversityWeight = null)
+        List<SKColor>? reducedPalette = null)
     {
         // 1. Validate source file
         if (!File.Exists(sourcePngPath))
@@ -97,8 +95,6 @@ public static class AssetImporter
         {
             TargetPalette = 0, // Default to slot 0
             ColorCount = colorCount,
-            ColorSpace = colorSpace ?? "LAB",
-            DiversityWeight = diversityWeight ?? 0.7,
             ColorOrder = null // No reordering by default
         };
 

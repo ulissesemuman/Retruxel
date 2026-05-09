@@ -339,24 +339,16 @@ public partial class AssetImporterWindow : Window
 
         try
         {
-            // Convert SKBitmap to WPF BitmapSource for optimization window
-            var previewBitmap = SkiaBitmapToWpf(_reducedPreview);
+            BitmapSource bitmapSource = LoadBitmapFromPath(_sourcePngPath);
 
-            // Determine target color count
-            int targetColorCount = _target.TargetId switch
-            {
-                "sms" => 32,  // 2 palettes × 16 colors
-                "gg" => 32,   // 2 palettes × 16 colors
-                "nes" => 16,  // 4 palettes × 4 colors
-                "snes" => 256, // 8 palettes × 32 colors
-                "gb" => 32,   // 8 palettes × 4 colors
-                "gbc" => 64,  // 8 palettes × 4 colors (BG) + 8 palettes × 4 colors (sprites)
-                _ => 16
-            };
+            // Determine target color count from target specs
+            //int paletteSlotCount = _target.GetPaletteSlotCount();
+            int colorsPerSlot = _target.GetColorsPerSlot();
+            int targetColorCount = /*paletteSlotCount **/ colorsPerSlot;
 
             // Open palette optimization preview window
             var optimizationWindow = new PaletteOptimizationWindow(
-                previewBitmap,
+                bitmapSource,
                 targetColorCount,
                 DistanceMode.LAB, // Use LAB color space for better perceptual matching
                 _target);
@@ -398,9 +390,7 @@ public partial class AssetImporterWindow : Window
                 _projectPath,
                 regionId,
                 _target,
-                skPalette,
-                colorSpace: "LAB",
-                diversityWeight: optimizationWindow.SelectedDiversity);
+                skPalette);
             
             DialogResult = true;
             Close();

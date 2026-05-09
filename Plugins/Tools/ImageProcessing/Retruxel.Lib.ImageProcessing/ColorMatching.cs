@@ -74,6 +74,32 @@ public static class ColorMatching
         return indices;
     }
 
+    /// <summary>
+    /// Converts a list of ideal colors to the nearest available colors in a hardware palette, using the 
+    /// specified distance mode.
+    /// </summary>
+    /// <remarks>The order of the returned colors corresponds to the order of the colors provided in 'idealColors'. 
+    /// Performance may vary depending on the palette size and the selected distance mode.</remarks>
+    /// <param name="idealColors">The list of ideal colors to be quantized to the hardware palette.</param>
+    /// <param name="hardwarePalette">The available hardware palette, represented as a read-only list of colors.</param>
+    /// <param name="distanceMode">The color distance calculation mode to be used for finding the nearest color. 
+    /// The default value is DistanceMode.RGB.</param>
+    /// <returns>A list of colors from the hardware palette, where each color corresponds to the nearest match 
+    /// for the respective provided ideal color.</returns>
+    public static List<HardwareColor> QuantizePalette(
+        List<HardwareColor> idealColors,
+        IReadOnlyList<HardwareColor> hardwarePalette,
+        DistanceMode distanceMode = DistanceMode.RGB)
+    {
+        var fastPalette = PrepareFastPalette(hardwarePalette, distanceMode);
+
+        return idealColors.Select(c =>
+        {
+            var index = FindNearestColorIndex((c.R, c.G, c.B), fastPalette, distanceMode);
+            return hardwarePalette[index];
+        }).ToList();
+    }
+
     public static byte FindNearestColorIndex(
         (byte R, byte G, byte B) color,
         FastColor[] fastPalette,

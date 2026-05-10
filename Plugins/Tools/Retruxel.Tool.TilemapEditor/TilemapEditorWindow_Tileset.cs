@@ -1,11 +1,14 @@
 using Retruxel.Core.Models;
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
+using System.Windows.Media.Imaging;
 
 namespace Retruxel.Tool.TilemapEditor;
 
@@ -146,6 +149,38 @@ public partial class TilemapEditorWindow
 
         UpdateTileSelectionVisual();
         UpdateSelectedTilePreview();
+    }
+
+    private BitmapSource ApplyPaletteFromIndex(IReadOnlyList<HardwareColor> newPalette)
+    {
+        int width = _originalBitmap.PixelWidth;
+        int height = _originalBitmap.PixelHeight;
+        int stride = width * 4;
+
+        byte[] outputPixels = new byte[height * stride];
+
+        Parallel.For(0, height, y =>
+        {
+            int rowStart = y * width;
+            int byteStart = rowStart * 4;
+
+            for (int x = 0; x < width; x++)
+            {
+                var finalColor = newPalette[MapIndex[rowStart + x]];
+
+                int offset = byteStart + x * 4;
+                outputPixels[offset] = finalColor.B;
+                outputPixels[offset + 1] = finalColor.G;
+                outputPixels[offset + 2] = finalColor.R;
+                outputPixels[offset + 3] = 255;
+            }
+        });
+
+        _previewBitmap!.WritePixels(
+            new System.Windows.Int32Rect(0, 0, width, height),
+            outputPixels, stride, 0);
+
+        return _previewBitmap;
     }
 
     private void CmbTilesetAsset_SelectionChanged(object sender, SelectionChangedEventArgs e)

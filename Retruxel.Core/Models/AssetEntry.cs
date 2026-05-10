@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 
 namespace Retruxel.Core.Models;
 
@@ -91,6 +92,11 @@ public class AssetEntry
     /// Null for legacy assets imported before this system.
     /// </summary>
     public AssetGenerationParams? GenerationParams { get; set; }
+
+    /// <summary>
+    /// 
+    /// </summary>
+    public byte[] MapIndex { get; set; }
 }
 
 /// <summary>

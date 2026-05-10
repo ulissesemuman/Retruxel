@@ -44,6 +44,7 @@ public static class AssetImporter
         string projectPath,
         string vramRegionId,
         ITarget target,
+        byte[] mapIndex,
         List<SKColor>? reducedPalette = null)
     {
         // 1. Validate source file
@@ -113,7 +114,8 @@ public static class AssetImporter
             ImportedAt = DateTime.Now,
             IsIndexed = true,
             ColorCount = colorCount,
-            SuggestedColors = suggestedColors
+            SuggestedColors = suggestedColors,
+            MapIndex = mapIndex,
         };
     }
 

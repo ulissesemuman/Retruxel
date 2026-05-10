@@ -1,11 +1,13 @@
 using Retruxel.Core.Interfaces;
 using Retruxel.Core.Models;
 using Retruxel.Lib.ImageProcessing;
+using SkiaSharp;
 using System;
 using System.Collections.Generic;
+using System.Drawing;
 using System.Linq;
+using System.Threading.Tasks;
 using System.Windows;
-using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using static Retruxel.Lib.ImageProcessing.ColorMatching;
@@ -17,6 +19,9 @@ public partial class PaletteOptimizationWindow : Window
     private readonly BitmapSource _originalBitmap;
     private readonly int _targetColorCount;
     private readonly ITarget _target;
+
+    private WriteableBitmap? _previewBitmap;
+    private List<HardwareColor> _hardwarePalette;
 
     private DistanceMode _distanceMode;
     private double _currentDiversity = 1.25;
@@ -49,6 +54,7 @@ public partial class PaletteOptimizationWindow : Window
         _target = target;
 
         _originalPixels = ExtractPixels(_originalBitmap);
+        MapIndex = new byte[_originalPixels.Count];
 
         InitializeComponent();
 
@@ -77,6 +83,8 @@ public partial class PaletteOptimizationWindow : Window
 
     private void BtnOk_Click(object sender, RoutedEventArgs e)
     {
+        ConfirmPalette(_hardwarePalette);
+        
         DialogResult = true;
         Close();
     }
@@ -85,24 +93,6 @@ public partial class PaletteOptimizationWindow : Window
     {
         DialogResult = false;
         Close();
-    }
-
-    private void UpdateOptimizedPreview()
-    {
-        if (_originalPixels.Count == 0 || ImgOptimized == null) return;
-
-        var optimizePalette = ColorMatching.OptimizePalette(
-            _originalPixels, _targetColorCount, _currentDiversity);
-
-        var hardwarePalette = ColorMatching.QuantizePalette(optimizePalette, _target.GetHardwarePalette(), _distanceMode);
-
-        OptimizedPalette = hardwarePalette.Select(c => (c.R, c.G, c.B)).ToList();
-
-        var bitmap = ApplyPalette(hardwarePalette);
-        ImgOptimized.Source = bitmap;
-        OptimizedBitmap = bitmap;
-
-        RefreshPaletteSwatches();
     }
 
     private static List<(byte R, byte G, byte B)> ExtractPixels(BitmapSource bitmap)
@@ -118,40 +108,23 @@ public partial class PaletteOptimizationWindow : Window
 
         return result;
     }
-    
-    private BitmapSource ApplyPalette1(
-        BitmapSource original,
-        IReadOnlyList<HardwareColor> palette)
+
+    private void UpdateOptimizedPreview()
     {
-        if (palette.Count == 0) return original;
+        if (_originalPixels.Count == 0 || ImgOptimized == null) return;
 
-        var fastPalette = ColorMatching.PrepareFastPalette(palette, _distanceMode);
+        var reducedPalette = ColorMatching.OptimizePalette(
+            _originalPixels, _targetColorCount, _currentDiversity);
 
-        var converted = EnsureBgra32(original);
-        int width = converted.PixelWidth;
-        int height = converted.PixelHeight;
-        int stride = width * 4;
-        byte[] pixels = new byte[height * stride];
-        converted.CopyPixels(pixels, stride, 0);
+        _hardwarePalette = ColorMatching.QuantizePalette(reducedPalette, _target.GetHardwarePalette(), _distanceMode);
 
-        for (int i = 0; i < pixels.Length; i += 4)
-        {
-            byte b = pixels[i];
-            byte g = pixels[i + 1];
-            byte r = pixels[i + 2];
+        OptimizedPalette = _hardwarePalette.Select(c => (c.R, c.G, c.B)).ToList();
 
-            int index = ColorMatching.FindNearestColorIndex((r, g, b), fastPalette, _distanceMode);
+        var bitmap = ApplyPalette(_hardwarePalette);
+        ImgOptimized.Source = bitmap;
+        OptimizedBitmap = bitmap;
 
-            var finalColor = palette[index];
-
-            pixels[i + 2] = finalColor.R;
-            pixels[i + 1] = finalColor.G;
-            pixels[i] = finalColor.B;
-        }
-
-        return BitmapSource.Create(
-            width, height, 96, 96,
-            PixelFormats.Bgra32, null, pixels, stride);
+        RefreshPaletteSwatches();
     }
 
     private BitmapSource ApplyPalette(IReadOnlyList<HardwareColor> palette)
@@ -164,7 +137,129 @@ public partial class PaletteOptimizationWindow : Window
         int height = _originalBitmap.PixelHeight;
         int stride = width * 4;
         byte[] outputPixels = new byte[height * stride];
-        MapIndex = new byte[_originalPixels.Count];
+
+        Parallel.For(0, height, y =>
+        {
+            int rowStart = y * width;
+            int byteStart = rowStart * 4;
+
+            for (int x = 0; x < width; x++)
+            {
+                var color = _originalPixels[rowStart + x];
+                byte index = ColorMatching.FindNearestColorIndex(color, fastPalette, _distanceMode);
+                var finalColor = palette[index];
+
+                int offset = byteStart + x * 4;
+                outputPixels[offset] = finalColor.B;
+                outputPixels[offset + 1] = finalColor.G;
+                outputPixels[offset + 2] = finalColor.R;
+                outputPixels[offset + 3] = 255;
+            }
+        });
+
+        //return BitmapSource.Create(width, height, 96, 96, PixelFormats.Bgra32, null, outputPixels, stride);
+
+        if (_previewBitmap == null)
+            _previewBitmap = new WriteableBitmap(width, height, 96, 96, PixelFormats.Bgra32, null);
+
+        _previewBitmap.WritePixels(
+            new System.Windows.Int32Rect(0, 0, width, height),
+            outputPixels, stride, 0);
+
+        return _previewBitmap;
+    }
+
+    private void ConfirmPalette(IReadOnlyList<HardwareColor> palette)
+    {
+        var fastPalette = ColorMatching.PrepareFastPalette(palette, _distanceMode);
+
+        int width = _originalBitmap.PixelWidth;
+        int height = _originalBitmap.PixelHeight;
+
+        Parallel.For(0, height, y =>
+        {
+            int rowStart = y * width;
+            for (int x = 0; x < width; x++)
+            {
+                var color = _originalPixels[rowStart + x];
+                MapIndex[rowStart + x] = ColorMatching.FindNearestColorIndex(color, fastPalette, _distanceMode);
+            }
+        });
+    }
+
+    private BitmapSource ApplyPalette2(IReadOnlyList<HardwareColor> palette)
+    {
+        if (palette.Count == 0) return _originalBitmap;
+
+        var fastPalette = ColorMatching.PrepareFastPalette(palette, _distanceMode);
+
+        int width = _originalBitmap.PixelWidth;
+        int height = _originalBitmap.PixelHeight;
+        int stride = width * 4;
+
+
+
+
+
+        var info = new SKImageInfo(width, height, SKColorType.Gray8, SKAlphaType.Opaque);
+
+        var bitmap = new SKBitmap(info);
+
+        Span<byte> skSpan = bitmap.GetPixelSpan();
+
+        MapIndex.CopyTo(skSpan);
+
+        byte[] tableR = new byte[256];
+        byte[] tableG = new byte[256];
+        byte[] tableB = new byte[256];
+
+        for (int i = 0; i < palette.Count; i++)
+        {
+            var color = palette[i];
+
+            byte index = ColorMatching.FindNearestColorIndex((color.R, color.G, color.B), fastPalette, _distanceMode);
+
+            tableR[i] = color.R;
+            tableG[i] = color.G;
+            tableB[i] = color.B;
+        }
+
+        using var surface = SKSurface.Create(new SKImageInfo(width, height));
+        using var paint = new SKPaint
+        {
+            ColorFilter = SKColorFilter.CreateTable(null, tableR, tableG, tableB)
+        };
+
+        surface.Canvas.DrawBitmap(bitmap, 0, 0, paint);
+
+        var bitmapSource = new WriteableBitmap(
+            width, height,
+            96, 96,
+            PixelFormats.Pbgra32,
+            null);
+
+        using (var finalImage = surface.Snapshot())
+        using (var pixmap = finalImage.PeekPixels())
+        {
+            var dstInfo = new SKImageInfo(width, height, SKColorType.Bgra8888, SKAlphaType.Premul);
+
+            bitmapSource.Lock();
+
+            pixmap.ReadPixels(dstInfo, bitmapSource.BackBuffer, bitmapSource.BackBufferStride);
+
+            bitmapSource.AddDirtyRect(new Int32Rect(0, 0, width, height));
+            bitmapSource.Unlock();
+        }
+
+        return bitmapSource;
+
+
+
+
+
+
+
+        byte[] outputPixels = new byte[height * stride];
 
         for (int i = 0; i < _originalPixels.Count; i++)
         {
@@ -198,7 +293,7 @@ public partial class PaletteOptimizationWindow : Window
             .OrderBy(c => RgbToHue(c.R, c.G, c.B))
             .ThenBy(c => RgbToLightness(c.R, c.G, c.B))
             .ThenBy(c => RgbToSaturation(c.R, c.G, c.B))
-            .Select(c => new SolidColorBrush(Color.FromRgb(c.R, c.G, c.B)))
+            .Select(c => new SolidColorBrush(System.Windows.Media.Color.FromRgb(c.R, c.G, c.B)))
             .ToList();
 
         PalettePreview.ItemsSource = brushes;

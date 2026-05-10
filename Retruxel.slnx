@@ -1,6 +1,7 @@
 <Solution>
   <Folder Name="/Plugins/">
     <Project Path="Plugins/Plugins.csproj" />
+    <Project Path="Retruxel.Controls/Retruxel.Controls.csproj" Id="4ee23902-31d3-4657-94b0-95e9d95f1123" />
   </Folder>
   <Folder Name="/Plugins/Targets/">
     <Project Path="Plugins/Targets/Retruxel.Target.ColecoVision/Retruxel.Target.ColecoVision.csproj" />
@@ -28,9 +29,9 @@
     <Project Path="Plugins/Tools/Retruxel.Tool.LiveLink/Retruxel.Tool.LiveLink.csproj" />
     <Project Path="Plugins/Tools/Retruxel.Tool.MarketingKit/Retruxel.Tool.MarketingKit.csproj" />
     <Project Path="Plugins/Tools/Retruxel.Tool.MetaspritePreprocessor/Retruxel.Tool.MetaspritePreprocessor.csproj" />
+    <Project Path="Plugins/Tools/Retruxel.Tool.PaletteEditor/Retruxel.Tool.PaletteEditor.csproj" />
     <Project Path="Plugins/Tools/Retruxel.Tool.PixelArtEditor/Retruxel.Tool.PixelArtEditor.csproj" />
     <Project Path="Plugins/Tools/Retruxel.Tool.PlaytestBot/Retruxel.Tool.PlaytestBot.csproj" />
-    <Project Path="Plugins/Tools/Retruxel.Tool.PaletteEditor/Retruxel.Tool.PaletteEditor.csproj" />
     <Project Path="Plugins/Tools/Retruxel.Tool.PngToTiles/Retruxel.Tool.PngToTiles.csproj" />
     <Project Path="Plugins/Tools/Retruxel.Tool.SpriteEditor/Retruxel.Tool.SpriteEditor.csproj" />
     <Project Path="Plugins/Tools/Retruxel.Tool.TextArrayEditor/Retruxel.Tool.TextArrayEditor.csproj" />

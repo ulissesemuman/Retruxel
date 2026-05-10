@@ -381,6 +381,8 @@ public partial class AssetImporterWindow : Window
 
             optimizedSkBitmap.Dispose();
 
+            var mapIndex = optimizationWindow.MapIndex;
+
             // Import using ORIGINAL file (_sourcePngPath)
             // AssetImporter copies original to Assets/Source/
             // Stores AssetGenerationParams (palette, colorSpace, diversity)
@@ -390,6 +392,7 @@ public partial class AssetImporterWindow : Window
                 _projectPath,
                 regionId,
                 _target,
+                mapIndex,
                 skPalette);
             
             DialogResult = true;

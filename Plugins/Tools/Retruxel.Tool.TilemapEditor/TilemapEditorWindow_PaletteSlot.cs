@@ -29,6 +29,10 @@ public partial class TilemapEditorWindow
         BtnEditPalette.Visibility = Visibility.Collapsed;
         CmbPalette.Items.Clear();
 
+        // Remove old event handlers to prevent duplicates
+        CmbPalette.SelectionChanged -= CmbPalette_SelectionChanged;
+        BtnEditPalette.Click -= BtnEditPalette_Click;
+
         // Create slot selector
         var slotCount = _target.GetPaletteSlotCount();
         System.Diagnostics.Debug.WriteLine($"[TilemapEditor] Palette slot count: {slotCount}");
@@ -63,9 +67,8 @@ public partial class TilemapEditorWindow
         _selectedPaletteSlot = CmbPalette.SelectedIndex;
         SavePaletteSlotSelection();
 
-        // Refresh preview in memory only
-        RefreshTilesetPreview();
-        PopulateTilesetGrid();
+        // Refresh preview (RefreshTilesetFromAsset already calls RebuildTilesetBitmap internally)
+        RefreshTilesetFromAsset();
         RenderCanvas();
     }
 
@@ -129,9 +132,8 @@ public partial class TilemapEditorWindow
                 if (_saveProjectCallback != null)
                     await _saveProjectCallback.Invoke();
 
-                // Refresh preview in memory only
-                RefreshTilesetPreview();
-                PopulateTilesetGrid();
+                // Refresh preview (RefreshTilesetFromAsset already calls RebuildTilesetBitmap internally)
+                RefreshTilesetFromAsset();
                 RenderCanvas();
             }
         }

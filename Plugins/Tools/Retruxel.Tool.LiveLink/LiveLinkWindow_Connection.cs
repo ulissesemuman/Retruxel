@@ -1,5 +1,4 @@
 using Retruxel.Core.Interfaces;
-using Retruxel.Core.Models;
 using Retruxel.Core.Services;
 using Retruxel.Tool.LiveLink.Emulators;
 using Retruxel.Tool.LiveLink.Services;
@@ -97,7 +96,6 @@ public partial class LiveLinkWindow
             BtnConnect.IsEnabled = false;
             BtnCaptureVRAM.IsEnabled = false;
             BtnCaptureScreen.IsEnabled = false;
-            BtnValidateSmsColors.IsEnabled = false;
             BtnExpandCanvas.IsEnabled = false;
 
             LogInfo($"Selected ROM: {Path.GetFileName(romPath)}");
@@ -226,7 +224,6 @@ public partial class LiveLinkWindow
                 BtnConnect.IsEnabled = true;
                 BtnCaptureVRAM.IsEnabled = true;
                 BtnCaptureScreen.IsEnabled = true;
-                BtnValidateSmsColors.IsEnabled = true;
                 BtnExpandCanvas.IsEnabled = false;
                 TxtStatus.Text = $"Connected to {_connection.DisplayName}";
                 TxtStatus.Foreground = Brushes.LimeGreen;
@@ -241,7 +238,6 @@ public partial class LiveLinkWindow
                 BtnConnect.IsEnabled = true;
                 BtnCaptureVRAM.IsEnabled = false;
                 BtnCaptureScreen.IsEnabled = false;
-                BtnValidateSmsColors.IsEnabled = false;
                 LogError("Connection failed - check if emulator is running and script loaded");
                 TxtStatus.Text = "Connection failed";
                 TxtStatus.Foreground = Brushes.OrangeRed;
@@ -254,7 +250,6 @@ public partial class LiveLinkWindow
             BtnConnect.IsEnabled = true;
             BtnCaptureVRAM.IsEnabled = false;
             BtnCaptureScreen.IsEnabled = false;
-            BtnValidateSmsColors.IsEnabled = false;
             LogError($"Error: {ex.Message}");
             MessageBox.Show($"Error: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
             TxtStatus.Text = "Error";

@@ -15,7 +15,7 @@ public class FontRepository
 {
     private static readonly HttpClient _http = new(new HttpClientHandler { AllowAutoRedirect = true });
     private static readonly Random _random = new();
-    
+
     // CN cache
     private static readonly string[] _cdnUrls =
     [
@@ -30,11 +30,11 @@ public class FontRepository
         try
         {
             _http.DefaultRequestHeaders.UserAgent.ParseAdd("Retruxel/1.0");
-            
+
             // Try random CDN first, fallback to the other if it fails
             var primaryIndex = _random.Next(_cdnUrls.Length);
             var fallbackIndex = (primaryIndex + 1) % _cdnUrls.Length;
-            
+
             string content;
             try
             {
@@ -83,13 +83,13 @@ public class FontRepository
                 // Remove: fonts with NxM in the middle where N or M > 1
                 var dimensionPattern = @"(\d+)[xX](\d+)";
                 var dimMatches = Regex.Matches(displayName, dimensionPattern);
-                
+
                 bool shouldSkip = false;
                 foreach (Match dimMatch in dimMatches)
                 {
                     var cols = int.Parse(dimMatch.Groups[1].Value);
                     var rows = int.Parse(dimMatch.Groups[2].Value);
-                    
+
                     // Skip if not 1x1 and pattern is not at the very start
                     if ((cols > 1 || rows > 1) && dimMatch.Index > 0)
                     {
@@ -97,7 +97,7 @@ public class FontRepository
                         break;
                     }
                 }
-                
+
                 if (shouldSkip)
                     continue;
 
@@ -126,7 +126,7 @@ public class FontRepository
             // Try random CDN first, fallback to the other if it fails
             var primaryIndex = _random.Next(_cdnUrls.Length);
             var fallbackIndex = (primaryIndex + 1) % _cdnUrls.Length;
-            
+
             string content;
             try
             {

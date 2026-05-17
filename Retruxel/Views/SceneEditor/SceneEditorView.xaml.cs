@@ -105,7 +105,7 @@ public partial class SceneEditorView : UserControl
     private void BtnUndo_Click(object sender, RoutedEventArgs e) => _undoRedo.Undo();
     private void BtnRedo_Click(object sender, RoutedEventArgs e) => _undoRedo.Redo();
 
-    // ── Sidebar tab switching ─────────────────────────────────────────────────
+    // Sidebar tab switching 
 
     private void BtnTabStructure_Click(object sender, RoutedEventArgs e)
     {
@@ -139,7 +139,7 @@ public partial class SceneEditorView : UserControl
         RefreshAssetPanel();
     }
 
-    // ── Asset panel ───────────────────────────────────────────────────────────
+    // Asset panel 
 
 
 

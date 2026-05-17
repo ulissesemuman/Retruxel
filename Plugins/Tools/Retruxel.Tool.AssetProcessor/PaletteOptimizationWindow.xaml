@@ -23,7 +23,7 @@
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
-        <!-- ── Header ─────────────────────────────────────────────────────── -->
+        <!-- Header -->
         <Border Grid.Row="0"
                 Background="{StaticResource BrushSurfaceContainerHigh}"
                 Padding="16,12">
@@ -32,7 +32,7 @@
                        Foreground="{StaticResource BrushOnSurface}"/>
         </Border>
 
-        <!-- ── Preview area: original vs optimized ────────────────────────── -->
+        <!-- Preview area: original vs optimized -->
         <Grid Grid.Row="1" Margin="16">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"/>
@@ -103,7 +103,7 @@
             </Border>
         </Grid>
 
-        <!-- ── Controls: diversity + color space + palette preview ───────── -->
+        <!-- Controls: diversity + color space + palette preview -->
         <Border Grid.Row="2"
                 Background="{StaticResource BrushSurfaceContainerHigh}"
                 Padding="16"
@@ -225,7 +225,7 @@
             </StackPanel>
         </Border>
 
-        <!-- ── Action bar ─────────────────────────────────────────────────── -->
+        <!-- Action bar -->
         <Border Grid.Row="3"
                 Background="{StaticResource BrushSurfaceContainerHigh}"
                 Padding="16"

@@ -1,6 +1,8 @@
+using Retruxel.Lib.WPFImageProcessing;
 using Retruxel.Tool.LiveLink.Services;
-using System;
+using SkiaSharp;
 using System.Linq;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Media.Imaging;
 
@@ -25,7 +27,7 @@ public partial class LiveLinkWindow
             var sceneBitmap = CreatePreviewBitmap(capture);
             if (sceneBitmap != null)
             {
-                ImgPreview.Source = sceneBitmap;
+                ImgPreview.Source = ImageProcessing.ConvertSkBitmapToBitmapSource(sceneBitmap);
                 LogInfo("Preview: Rendered tilemap (nametable + tiles + palette)");
                 return;
             }
@@ -36,7 +38,8 @@ public partial class LiveLinkWindow
         RenderTilesInGrid(capture);
     }
 
-    private BitmapSource? CreatePreviewBitmap(CaptureResult capture)
+
+    private SKBitmap CreatePreviewBitmap(CaptureResult capture)
     {
         // This creates a bitmap with ORIGINAL source console colors (not mapped to target hardware)
         if (capture.Tiles == null || capture.Tiles.Length == 0 || capture.Palette == null || capture.Palette.Length == 0)
@@ -67,16 +70,13 @@ public partial class LiveLinkWindow
         var sampleEntries = capture.Nametable.Take(10).Select(e => $"0x{e:X4}");
         LogInfo($"Sample nametable entries: {string.Join(", ", sampleEntries)}");
 
-        var bitmap = new WriteableBitmap(
-            width, height, 96, 96,
-            System.Windows.Media.PixelFormats.Bgra32, null);
-
-        bitmap.Lock();
+        // Create SKBitmap with Bgra8888 format
+        var bitmap = new SKBitmap(width, height, SKColorType.Bgra8888, SKAlphaType.Premul);
 
         unsafe
         {
-            byte* ptr = (byte*)bitmap.BackBuffer;
-            int stride = bitmap.BackBufferStride;
+            byte* ptr = (byte*)bitmap.GetPixels();
+            int stride = bitmap.RowBytes;
 
             for (int ty = 0; ty < capture.NametableHeight; ty++)
             {
@@ -99,31 +99,26 @@ public partial class LiveLinkWindow
                         tileIdx = nametableEntry;
 
                         // Get palette from attribute table
-                        // Each attribute byte controls 4x4 tiles (2 bits per 2x2 tile group)
                         int attrX = tx / 4;
                         int attrY = ty / 4;
-                        int attrIdx = attrY * 8 + attrX; // 8 attribute bytes per row (32 tiles / 4)
+                        int attrIdx = attrY * 8 + attrX;
 
                         if (attrIdx < nesAttributeTable.Length)
                         {
                             byte attrByte = nesAttributeTable[attrIdx];
-
-                            // Determine which 2x2 quadrant within the 4x4 block
-                            int quadX = (tx % 4) / 2; // 0 or 1
-                            int quadY = (ty % 4) / 2; // 0 or 1
-                            int quadrant = quadY * 2 + quadX; // 0=TL, 1=TR, 2=BL, 3=BR
-
-                            // Extract 2 bits for this quadrant
+                            int quadX = (tx % 4) / 2;
+                            int quadY = (ty % 4) / 2;
+                            int quadrant = quadY * 2 + quadX;
                             paletteIdx = (byte)((attrByte >> (quadrant * 2)) & 0x03);
                         }
                     }
                     else
                     {
                         // SMS/GG: Extract tile attributes from nametable entry
-                        tileIdx = (ushort)(nametableEntry & 0x1FF); // Bits 0-8: tile index
-                        hFlip = (nametableEntry & 0x200) != 0;        // Bit 9: horizontal flip
-                        vFlip = (nametableEntry & 0x400) != 0;        // Bit 10: vertical flip
-                        paletteIdx = (byte)((nametableEntry >> 11) & 0x01); // Bit 11: palette select
+                        tileIdx = (ushort)(nametableEntry & 0x1FF);
+                        hFlip = (nametableEntry & 0x200) != 0;
+                        vFlip = (nametableEntry & 0x400) != 0;
+                        paletteIdx = (byte)((nametableEntry >> 11) & 0x01);
                     }
 
                     if (tileIdx >= capture.Tiles.Length)
@@ -135,7 +130,6 @@ public partial class LiveLinkWindow
                     {
                         for (int px = 0; px < tileSize; px++)
                         {
-                            // Apply flip transformations
                             int srcPx = hFlip ? (tileSize - 1 - px) : px;
                             int srcPy = vFlip ? (tileSize - 1 - py) : py;
                             int pixelIdx = srcPy * tileSize + srcPx;
@@ -145,17 +139,13 @@ public partial class LiveLinkWindow
 
                             byte colorIdx = tile[pixelIdx];
 
-                            // Apply palette offset
                             int finalColorIdx = colorIdx;
                             if (isNes)
                             {
-                                // NES: 4 palettes of 4 colors each (indices 0-3 per palette)
-                                // Palette 0 at indices 0-3, Palette 1 at 4-7, etc.
                                 finalColorIdx = (paletteIdx * 4) + colorIdx;
                             }
                             else if (hasMultiplePalettes && paletteIdx > 0)
                             {
-                                // SMS/GG: 2 palettes of 16 colors each
                                 finalColorIdx = colorIdx + (paletteIdx * colorsPerPalette);
                             }
 
@@ -178,10 +168,6 @@ public partial class LiveLinkWindow
             }
         }
 
-        bitmap.AddDirtyRect(new Int32Rect(0, 0, width, height));
-        bitmap.Unlock();
-        bitmap.Freeze();
-
         return bitmap;
     }
 
@@ -194,22 +180,19 @@ public partial class LiveLinkWindow
         int width = tilesPerRow * tileSize;
         int height = rows * tileSize;
 
-        var bitmap = new WriteableBitmap(
-            width, height, 96, 96,
-            System.Windows.Media.PixelFormats.Bgra32, null);
+        var bitmap = new SKBitmap(width, height, SKColorType.Bgra8888, SKAlphaType.Premul);
 
-        bitmap.Lock();
+        // For NES sprite tiles without nametable, cycle through sprite palettes (4-7)
+        bool isNesSprites = _sourceConsole == "nes" && capture.Palette != null && capture.Palette.Length == 32;
+        int nesPaletteOffset = isNesSprites ? 16 : 0; // Sprite palettes start at index 16
 
         unsafe
         {
-            byte* ptr = (byte*)bitmap.BackBuffer;
-            int stride = bitmap.BackBufferStride;
+            byte* ptr = (byte*)bitmap.GetPixels();
+            int stride = bitmap.RowBytes;
 
-            // For NES sprite tiles without nametable, cycle through sprite palettes (4-7)
-            bool isNesSprites = _sourceConsole == "nes" && capture.Palette != null && capture.Palette.Length == 32;
-            int nesPaletteOffset = isNesSprites ? 16 : 0; // Sprite palettes start at index 16
-
-            for (int tileIdx = 0; tileIdx < capture.Tiles.Length; tileIdx++)
+            // Process tiles in parallel
+            Parallel.For(0, capture.Tiles.Length, tileIdx =>
             {
                 var tile = capture.Tiles[tileIdx];
                 int tileX = (tileIdx % tilesPerRow) * tileSize;
@@ -267,13 +250,9 @@ public partial class LiveLinkWindow
                         ptr[offset + 3] = (byte)((color >> 24) & 0xFF); // A
                     }
                 }
-            }
+            });
         }
 
-        bitmap.AddDirtyRect(new Int32Rect(0, 0, width, height));
-        bitmap.Unlock();
-        bitmap.Freeze();
-
-        ImgPreview.Source = bitmap;
+        ImgPreview.Source = ImageProcessing.ConvertSkBitmapToBitmapSource(bitmap);
     }
 }

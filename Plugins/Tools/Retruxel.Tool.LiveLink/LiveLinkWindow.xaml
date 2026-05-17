@@ -212,14 +212,6 @@
                                     Click="BtnCaptureScreen_Click"
                                     Margin="0,0,0,8"/>
                             
-                            <Button x:Name="BtnValidateSmsColors"
-                                    Content="VALIDATE SMS COLORS"
-                                    Style="{StaticResource ButtonGhost}"
-                                    Height="40"
-                                    IsEnabled="False"
-                                    Click="BtnValidateSmsColors_Click"
-                                    Margin="0,0,0,8"/>
-                            
                             <Button x:Name="BtnExpandCanvas"
                                     Content="EXPAND CANVAS"
                                     Style="{StaticResource ButtonGhost}"

@@ -60,7 +60,7 @@ public static class StartupService
         await Task.Delay(100);
     }
 
-    // ── Toolchain Verification ────────────────────────────────────────────────
+    // Toolchain Verification 
 
     /// <summary>
     /// Checks whether toolchain binaries are present for each registered target.
@@ -91,7 +91,7 @@ public static class StartupService
         });
     }
 
-    // ── Tool Discovery ────────────────────────────────────────────────
+    // Tool Discovery 
 
     /// <summary>
     /// Discovers and registers tools from Plugins/Tools/ folder.

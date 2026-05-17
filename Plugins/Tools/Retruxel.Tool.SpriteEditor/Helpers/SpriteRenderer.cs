@@ -1,4 +1,5 @@
 using Retruxel.Tool.SpriteEditor.Models;
+using SkiaSharp;
 using System.Linq;
 using System.Windows;
 using System.Windows.Media;
@@ -8,7 +9,7 @@ namespace Retruxel.Tool.SpriteEditor.Helpers;
 
 public static class SpriteRenderer
 {
-    public static BitmapSource RenderFrame(SpriteFrame frame, BitmapSource tilesetImage, int tilesetColumns, int scale = 1)
+    public static SKBitmap RenderFrame(SpriteFrame frame, SKBitmap tilesetImage, int tilesetColumns, int scale = 1)
     {
         if (frame.Tiles.Count == 0)
             return CreateEmptyBitmap(8, 8);
@@ -21,44 +22,49 @@ public static class SpriteRenderer
         int width = (maxX - minX) * scale;
         int height = (maxY - minY) * scale;
 
-        var renderTarget = new RenderTargetBitmap(width, height, 96, 96, PixelFormats.Pbgra32);
-        var visual = new DrawingVisual();
+        var bitmap = new SKBitmap(width, height, SKColorType.Bgra8888, SKAlphaType.Premul);
 
-        using (var context = visual.RenderOpen())
+        using (var canvas = new SKCanvas(bitmap))
         {
+            canvas.Clear(SKColors.Transparent);
+
             foreach (var tile in frame.Tiles)
             {
                 var tileImage = ExtractTile(tilesetImage, tile.TileIndex, tilesetColumns);
-                var rect = new Rect((tile.OffsetX - minX) * scale, (tile.OffsetY - minY) * scale, 8 * scale, 8 * scale);
-                context.DrawImage(tileImage, rect);
+
+                var destRect = SKRect.Create(
+                    (tile.OffsetX - minX) * scale,
+                    (tile.OffsetY - minY) * scale,
+                    8 * scale,
+                    8 * scale);
+
+                canvas.DrawBitmap(tileImage, destRect);
             }
         }
 
-        renderTarget.Render(visual);
-        return renderTarget;
+        return bitmap;
     }
 
-    private static BitmapSource ExtractTile(BitmapSource tilesetImage, int tileIndex, int tilesetColumns)
+    private static SKBitmap ExtractTile(SKBitmap tilesetImage, int tileIndex, int tilesetColumns)
     {
         int col = tileIndex % tilesetColumns;
         int row = tileIndex / tilesetColumns;
 
-        var croppedBitmap = new CroppedBitmap(tilesetImage, new Int32Rect(col * 8, row * 8, 8, 8));
+        var tile = new SKBitmap(8, 8, SKColorType.Bgra8888, SKAlphaType.Premul);
 
-        var renderTarget = new RenderTargetBitmap(8, 8, 96, 96, PixelFormats.Pbgra32);
-        var visual = new DrawingVisual();
-
-        using (var context = visual.RenderOpen())
+        using (var canvas = new SKCanvas(tile))
         {
-            context.DrawImage(croppedBitmap, new Rect(0, 0, 8, 8));
+            var sourceRect = SKRect.Create(col * 8, row * 8, 8, 8);
+            var destRect = SKRect.Create(0, 0, 8, 8);
+
+            canvas.DrawBitmap(tilesetImage, sourceRect, destRect);
         }
 
-        renderTarget.Render(visual);
-        return renderTarget;
+        return tile;
     }
 
-    private static BitmapSource CreateEmptyBitmap(int width, int height)
+    private static SKBitmap CreateEmptyBitmap(int width, int height)
     {
-        return BitmapSource.Create(width, height, 96, 96, PixelFormats.Bgra32, null, new byte[width * height * 4], width * 4);
+        return new SKBitmap(width, height, SKColorType.Bgra8888, SKAlphaType.Premul);
     }
 }

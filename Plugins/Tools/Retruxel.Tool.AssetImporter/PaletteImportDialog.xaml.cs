@@ -12,19 +12,16 @@ namespace Retruxel.Tool.AssetImporter;
 
 public partial class PaletteImportDialog : Window
 {
-    // ── State ─────────────────────────────────────────────────────────────────
-
     private readonly List<string> _assetColors;
     private readonly SceneData _scene;
     private readonly ITarget _target;
     private readonly List<RadioButton> _slotRadioButtons = [];
-
-    // ── Results ───────────────────────────────────────────────────────────────
+    private int _selectedTransparentColorIndex = 0;
+    private readonly List<Border> _transparentColorBorders = [];
 
     public PaletteImportResult Result { get; private set; }
     public int ChosenSlot { get; private set; }
-
-    // ── Constructor ───────────────────────────────────────────────────────────
+    public int TransparentColorIndex => _selectedTransparentColorIndex;
 
     public PaletteImportDialog(List<string> assetColors, SceneData scene, ITarget target)
     {
@@ -37,10 +34,49 @@ public partial class PaletteImportDialog : Window
         TxtInfo.Text = $"This asset uses {assetColors.Count} color{(assetColors.Count == 1 ? "" : "s")}.";
 
         BuildSlotOptions();
+        BuildTransparentColorSelector();
         BuildColorPreview();
     }
 
-    // ── UI Builders ───────────────────────────────────────────────────────────
+    private void BuildTransparentColorSelector()
+    {
+        for (int i = 0; i < _assetColors.Count; i++)
+        {
+            var colorIndex = i;
+            var hexColor = _assetColors[i];
+
+            var border = new Border
+            {
+                Width = 32,
+                Height = 32,
+                Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString(hexColor)),
+                BorderBrush = i == 0 ? Brushes.Yellow : Brushes.Transparent,
+                BorderThickness = new Thickness(3),
+                Margin = new Thickness(4),
+                Cursor = System.Windows.Input.Cursors.Hand,
+                Tag = colorIndex
+            };
+
+            border.MouseLeftButtonDown += (s, e) =>
+            {
+                _selectedTransparentColorIndex = colorIndex;
+                UpdateTransparentColorSelection();
+            };
+
+            _transparentColorBorders.Add(border);
+            TransparentColorPanel.Children.Add(border);
+        }
+    }
+
+    private void UpdateTransparentColorSelection()
+    {
+        for (int i = 0; i < _transparentColorBorders.Count; i++)
+        {
+            _transparentColorBorders[i].BorderBrush = i == _selectedTransparentColorIndex
+                ? Brushes.Yellow
+                : Brushes.Transparent;
+        }
+    }
 
     private void BuildSlotOptions()
     {
@@ -86,7 +122,6 @@ public partial class PaletteImportDialog : Window
             ColorPreviewPanel.Children.Add(MakeSwatch(hexColor, 20));
     }
 
-    // ── Event handlers ────────────────────────────────────────────────────────
 
     private void BtnOk_Click(object sender, RoutedEventArgs e)
     {
@@ -101,6 +136,14 @@ public partial class PaletteImportDialog : Window
             {
                 Result = PaletteImportResult.ReplaceSlot;
                 ChosenSlot = (int)selected.Tag;
+
+                // Reorder colors: move selected transparent color to index 0
+                if (_selectedTransparentColorIndex != 0)
+                {
+                    var transparentColor = _assetColors[_selectedTransparentColorIndex];
+                    _assetColors.RemoveAt(_selectedTransparentColorIndex);
+                    _assetColors.Insert(0, transparentColor);
+                }
             }
             else
             {
@@ -114,8 +157,6 @@ public partial class PaletteImportDialog : Window
 
     private void BtnCancel_Click(object sender, RoutedEventArgs e)
         => Close();
-
-    // ── Helpers ───────────────────────────────────────────────────────────────
 
     private Rectangle MakeSwatch(string hexColor, int size)
     {

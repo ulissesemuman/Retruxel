@@ -1,4 +1,6 @@
 using Retruxel.Core.Models;
+using Retruxel.Lib.WPFImageProcessing;
+using SkiaSharp;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -68,7 +70,7 @@ public partial class TilemapEditorWindow
             _selectedTileIds.Add(tileId);
             _selectionWidth = 1;
             _selectionHeight = 1;
-            
+
             // Reset flip for block selection
             _selectedFlipH = false;
             _selectedFlipV = false;
@@ -82,7 +84,7 @@ public partial class TilemapEditorWindow
             _selectionWidth = 1;
             _selectionHeight = 1;
             _tileSelectionStart = null;
-            
+
             // Keep flip state for single tile
         }
 
@@ -146,13 +148,13 @@ public partial class TilemapEditorWindow
                 // Get actual tile count from asset
                 string? assetId = CmbTilesetAsset.SelectedItem?.ToString();
                 var asset = _project.Assets.FirstOrDefault(a => a.Id == assetId);
-                int maxTiles = asset?.TileCount ?? _tilesetRenderer.TotalTiles;
+                int maxTiles = asset?.GenerationParams.TileCount ?? _tilesetRenderer.TotalTiles;
 
                 if (tileId < maxTiles)
                     _selectedTileIds.Add(tileId);
             }
         }
-        
+
         // Reset flip for block selection
         _selectedFlipH = false;
         _selectedFlipV = false;
@@ -166,23 +168,8 @@ public partial class TilemapEditorWindow
     /// </summary>
     private void UpdateTileSelectionVisual()
     {
-        foreach (var item in TilesetGrid.Items)
-        {
-            if (item is Border border)
-            {
-                int tileId = (int)border.Tag;
-                if (_selectedTileIds.Contains(tileId))
-                {
-                    border.BorderBrush = new SolidColorBrush(Color.FromRgb(0x8E, 0xFF, 0x71));
-                    border.BorderThickness = new Thickness(2);
-                }
-                else
-                {
-                    border.BorderBrush = new SolidColorBrush(Color.FromRgb(0x76, 0x75, 0x75));
-                    border.BorderThickness = new Thickness(1);
-                }
-            }
-        }
+        // Canvas-based tileset uses UpdateTileselectionOverlay() instead
+        UpdateTileselectionOverlay();
     }
 
     /// <summary>
@@ -205,9 +192,9 @@ public partial class TilemapEditorWindow
             var tileImage = _tilesetRenderer.ExtractTile(entry);
             if (tileImage != null)
             {
-                ImgSelectedTile.Source = tileImage;
+                ImgSelectedTile.Source = ImageProcessing.ConvertSkBitmapToBitmapSource(tileImage);
                 ImgSelectedTile.Stretch = Stretch.Fill;
-                
+
                 string flipInfo = "";
                 if (_selectedFlipH || _selectedFlipV)
                 {
@@ -216,7 +203,7 @@ public partial class TilemapEditorWindow
                     if (_selectedFlipV) flags.Add("V");
                     flipInfo = $" [Flip: {string.Join("+", flags)}]";
                 }
-                
+
                 TxtSelectedTileInfo.Text = $"Tile ID: {_selectedTileIds[0]}{flipInfo}";
             }
         }
@@ -224,38 +211,37 @@ public partial class TilemapEditorWindow
         {
             // Block selection
             var blockImage = RenderTileBlock(_selectedTileIds, _selectionWidth, _selectionHeight);
-            ImgSelectedTile.Source = blockImage;
+            ImgSelectedTile.Source = ImageProcessing.ConvertSkBitmapToBitmapSource(blockImage);
             ImgSelectedTile.Stretch = Stretch.Uniform;
             TxtSelectedTileInfo.Text = $"Block: {_selectionWidth}×{_selectionHeight} tiles ({_selectedTileIds.Count} total)";
         }
     }
 
-    /// <summary>
-    /// Renders a block of tiles into a single image.
-    /// </summary>
-    private BitmapSource RenderTileBlock(List<int> tileIds, int width, int height)
+    private SKBitmap RenderTileBlock(List<int> tileIds, int width, int height)
     {
         int tileSize = _target.Specs.TileWidth;
-        var bitmap = new RenderTargetBitmap(
+        var bitmap = new SKBitmap(
             width * tileSize,
             height * tileSize,
-            96, 96,
-            PixelFormats.Pbgra32);
+            SKColorType.Bgra8888,
+            SKAlphaType.Premul);
 
-        var visual = new DrawingVisual();
-        using (var context = visual.RenderOpen())
+        using (var canvas = new SKCanvas(bitmap))
         {
+            canvas.Clear(SKColors.Transparent);
+
             for (int i = 0; i < tileIds.Count; i++)
             {
                 int x = i % width;
                 int y = i / width;
                 var tileImage = _tilesetRenderer.ExtractTile(tileIds[i]);
                 if (tileImage != null)
-                    context.DrawImage(tileImage, new Rect(x * tileSize, y * tileSize, tileSize, tileSize));
+                {
+                    canvas.DrawBitmap(tileImage, x * tileSize, y * tileSize);
+                }
             }
         }
 
-        bitmap.Render(visual);
         return bitmap;
     }
 

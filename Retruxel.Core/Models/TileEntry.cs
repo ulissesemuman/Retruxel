@@ -31,6 +31,13 @@ public class TileEntry
     /// <summary>Y position in the original image (used by TilePacker).</summary>
     public int Y { get; set; }
 
+    /// <summary>
+    /// Palette slot assigned to this tile (0-based).
+    /// Relevant for targets that support per-tile palette selection (SMS BG, GBC, etc.).
+    /// Defaults to 0.
+    /// </summary>
+    public int PaletteSlot { get; set; }
+
     public bool IsEmpty => TileIndex < 0;
 
     public static TileEntry Empty => new() { TileIndex = -1 };
@@ -42,6 +49,7 @@ public class TileEntry
         FlipV = FlipV,
         Rotation = Rotation,
         X = X,
-        Y = Y
+        Y = Y,
+        PaletteSlot = PaletteSlot
     };
 }

@@ -4,11 +4,13 @@
     <TargetFramework>net10.0-windows</TargetFramework>
     <Nullable>enable</Nullable>
     <UseWPF>true</UseWPF>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\..\..\Retruxel.SDK\Retruxel.SDK.csproj" />
     <ProjectReference Include="..\ImageProcessing\Retruxel.Lib.ImageProcessing\Retruxel.Lib.ImageProcessing.csproj" />
+    <ProjectReference Include="..\Retruxel.Lib.WPFImageProcessing\Retruxel.Lib.WPFImageProcessing.csproj" />
   </ItemGroup>
 
   <ItemGroup>

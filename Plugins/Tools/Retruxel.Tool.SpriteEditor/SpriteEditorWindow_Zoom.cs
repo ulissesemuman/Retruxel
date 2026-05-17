@@ -1,5 +1,4 @@
 using System.Windows;
-using System.Windows.Controls;
 
 namespace Retruxel.Tool.SpriteEditor;
 
@@ -35,7 +34,7 @@ public partial class SpriteEditorWindow
         BtnTilesetZoom100.Style = (Style)FindResource(zoom == 1.0 ? "ButtonPrimary" : "ButtonSecondary");
         BtnTilesetZoom200.Style = (Style)FindResource(zoom == 2.0 ? "ButtonPrimary" : "ButtonSecondary");
 
-        RefreshTilesetPreview();
+        RefreshTilesetFromAsset();
     }
 
     private void SetCanvasZoom(double zoom)
@@ -72,7 +71,7 @@ public partial class SpriteEditorWindow
         return (int)_canvasZoom;
     }
 
-    private void RefreshTilesetPreview()
+    private void RefreshTilesetFromAsset()
     {
         RefreshTilesetWithPalette();
     }

@@ -2,7 +2,6 @@ using Retruxel.Controls;
 using Retruxel.Core.Models;
 using Retruxel.Core.Services;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;

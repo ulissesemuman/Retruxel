@@ -1,6 +1,8 @@
 using Retruxel.Lib.ImageProcessing;
+using Retruxel.Lib.WPFImageProcessing;
 using Retruxel.Tool.LiveLink.Emulators;
 using Retruxel.Tool.LiveLink.Services;
+using SkiaSharp;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -631,24 +633,24 @@ public partial class LiveLinkWindow
                 LogWarning($"⚠ Buffer size mismatch: got {screenBuffer.Length}, expected {expectedSize}");
             }
 
-            // Convert screen buffer to bitmap for preview
-            var bitmap = new System.Windows.Media.Imaging.WriteableBitmap(
-                width, height, 96, 96,
-                System.Windows.Media.PixelFormats.Bgra32, null);
-
-            bitmap.Lock();
+            // Convert screen buffer to SKBitmap for preview
+            var bitmap = new SKBitmap(width, height, SKColorType.Bgra8888, SKAlphaType.Premul);
 
             unsafe
             {
-                byte* ptr = (byte*)bitmap.BackBuffer;
-                int stride = bitmap.BackBufferStride;
+                byte* ptr = (byte*)bitmap.GetPixels();
+                int stride = bitmap.RowBytes;
 
-                for (int y = 0; y < height; y++)
+                // Process rows in parallel for better performance
+                Parallel.For(0, height, y =>
                 {
+                    int srcRowStart = y * width * 4;
+                    int dstRowStart = y * stride;
+
                     for (int x = 0; x < width; x++)
                     {
-                        int srcIdx = (y * width + x) * 4;
-                        int dstIdx = y * stride + x * 4;
+                        int srcIdx = srcRowStart + x * 4;
+                        int dstIdx = dstRowStart + x * 4;
 
                         if (srcIdx + 3 < screenBuffer.Length)
                         {
@@ -658,14 +660,10 @@ public partial class LiveLinkWindow
                             ptr[dstIdx + 3] = screenBuffer[srcIdx + 3]; // A
                         }
                     }
-                }
+                });
             }
 
-            bitmap.AddDirtyRect(new System.Windows.Int32Rect(0, 0, width, height));
-            bitmap.Unlock();
-            bitmap.Freeze();
-
-            ImgPreview.Source = bitmap;
+            ImgPreview.Source = ImageProcessing.ConvertSkBitmapToBitmapSource(bitmap);
             LogSuccess("✓ Screen capture complete!");
 
             // Convert screen to tiles + palette + nametable

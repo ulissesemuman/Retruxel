@@ -3,7 +3,7 @@ using System;
 
 namespace Retruxel.Core.Services;
 
-// ── AddElementCommand ─────────────────────────────────────────────────────────
+// AddElementCommand 
 
 /// <summary>
 /// Records the addition of a module element to the scene canvas.
@@ -30,7 +30,7 @@ public class AddElementCommand : IUndoableCommand
     public void Undo() => _remove();
 }
 
-// ── RemoveElementCommand ──────────────────────────────────────────────────────
+// RemoveElementCommand 
 
 /// <summary>
 /// Records the removal of a module element from the scene canvas.
@@ -57,7 +57,7 @@ public class RemoveElementCommand : IUndoableCommand
     public void Undo() => _restore();
 }
 
-// ── MoveElementCommand ────────────────────────────────────────────────────────
+// MoveElementCommand 
 
 /// <summary>
 /// Records moving an element on the canvas from one tile position to another.
@@ -97,7 +97,7 @@ public class MoveElementCommand : IUndoableCommand
     public void Undo() => _moveTo(_prevX, _prevY);
 }
 
-// ── ChangePropertyCommand ─────────────────────────────────────────────────────
+// ChangePropertyCommand 
 
 /// <summary>
 /// Records a property value change in the module properties panel.

@@ -108,42 +108,39 @@
                                    TextWrapping="Wrap"/>
                         
                         <!-- Zoom controls -->
-                        <StackPanel Grid.Row="4" Orientation="Horizontal" HorizontalAlignment="Center">
-                            <Button x:Name="BtnTileZoom50"
-                                    Content="🔍-"
-                                    Click="BtnTileZoom50_Click"
-                                    Style="{StaticResource ButtonGhost}"
-                                    Width="32" Height="24"
-                                    Padding="0"
-                                    ToolTip="50% zoom"
-                                    Margin="0,0,4,0"/>
-                            <Button x:Name="BtnTileZoom100"
-                                    Content="🔍"
-                                    Click="BtnTileZoom100_Click"
-                                    Style="{StaticResource ButtonGhost}"
-                                    Width="32" Height="24"
-                                    Padding="0"
-                                    ToolTip="100% zoom"
-                                    Margin="0,0,4,0"/>
-                            <Button x:Name="BtnTileZoom200"
-                                    Content="🔍+"
-                                    Click="BtnTileZoom200_Click"
-                                    Style="{StaticResource ButtonGhost}"
-                                    Width="32" Height="24"
-                                    Padding="0"
-                                    ToolTip="200% zoom"/>
-                        </StackPanel>
+                        <Grid Grid.Row="4" Margin="0,0,0,4">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
 
-                        <ScrollViewer Grid.Row="6"
+                            <TextBlock Grid.Column="0"
+                                       Text="TILESET"
+                                       Style="{StaticResource TextLabelCaps}"
+                                       Foreground="{StaticResource BrushOnSurfaceVariant}"
+                                       VerticalAlignment="Center"/>
+
+                            <Button x:Name="BtnTilesetZoom"
+                                    Grid.Column="1"
+                                    Content="100%"
+                                    Style="{StaticResource ButtonGhost}"
+                                    Width="64" Height="24"
+                                    Padding="0"
+                                    Click="BtnTilesetZoom_Click"
+                                    ToolTip="Zoom options"/>
+                        </Grid>
+
+                        <ScrollViewer x:Name="TilesetScrollViewer"
+                                      Grid.Row="6"
                                       VerticalScrollBarVisibility="Auto"
-                                      HorizontalScrollBarVisibility="Disabled">
-                            <ItemsControl x:Name="TilesetGrid">
-                                <ItemsControl.ItemsPanel>
-                                    <ItemsPanelTemplate>
-                                        <WrapPanel Orientation="Horizontal"/>
-                                    </ItemsPanelTemplate>
-                                </ItemsControl.ItemsPanel>
-                            </ItemsControl>
+                                      HorizontalScrollBarVisibility="Auto"
+                                      PreviewMouseWheel="TilesetScrollViewer_PreviewMouseWheel">
+                            <Canvas x:Name="TilesetCanvas"
+                                    Background="{StaticResource BrushSurface}"
+                                    MouseLeftButtonDown="TilesetCanvas_MouseLeftButtonDown"
+                                    MouseMove="TilesetCanvas_MouseMove"
+                                    MouseLeftButtonUp="TilesetCanvas_MouseLeftButtonUp"
+                                    MouseWheel="TilesetCanvas_MouseWheel"/>
                         </ScrollViewer>
 
                         <StackPanel Grid.Row="8">
@@ -231,7 +228,10 @@
                                         MouseMove="Canvas_MouseMove"
                                         MouseLeftButtonUp="Canvas_MouseLeftButtonUp"
                                         MouseLeave="Canvas_MouseLeave"
-                                        MouseRightButtonDown="Canvas_MouseRightButtonDown"/>
+                                        MouseRightButtonDown="Canvas_MouseRightButtonDown"
+                                        MouseWheel="Canvas_MouseWheel"
+                                        MouseDown="Canvas_MouseDown"
+                                        MouseUp="Canvas_MouseUp"/>
                             </ScrollViewer>
                         </Border>
 
@@ -243,24 +243,13 @@
                                        Foreground="{StaticResource BrushOnSurfaceVariant}"
                                        VerticalAlignment="Center"
                                        Margin="0,0,8,0"/>
-                            <Button x:Name="BtnZoomFit"
-                                    Content="FIT"
-                                    Click="BtnZoomFit_Click"
+                            <Button x:Name="BtnCanvasZoom"
+                                    Content="100%"
                                     Style="{StaticResource ButtonGhost}"
-                                    Padding="16,0" Height="32"
-                                    Margin="0,0,4,0"/>
-                            <Button x:Name="BtnZoom100"
-                                    Content="1:1"
-                                    Click="BtnZoom100_Click"
-                                    Style="{StaticResource ButtonGhost}"
-                                    Padding="16,0" Height="32"
-                                    Margin="0,0,4,0"/>
-                            <TextBlock x:Name="TxtZoomLevel"
-                                       Text="100%"
-                                       Style="{StaticResource TextLabel}"
-                                       Foreground="{StaticResource BrushOnSurface}"
-                                       VerticalAlignment="Center"
-                                       Margin="8,0,0,0"/>
+                                    Width="72" Height="28"
+                                    Padding="0"
+                                    Click="BtnCanvasZoom_Click"
+                                    ToolTip="Zoom options"/>
                         </StackPanel>
                     </Grid>
                 </Border>

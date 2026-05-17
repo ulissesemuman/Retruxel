@@ -1,4 +1,5 @@
 using Retruxel.Core.Models;
+using Retruxel.Lib.WPFImageProcessing;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -147,7 +148,7 @@ public partial class TilemapEditorWindow
         {
             Width = scaledTileSize,
             Height = scaledTileSize,
-            Source = tileImage,
+            Source = ImageProcessing.ConvertSkBitmapToBitmapSource(tileImage),
             Stretch = Stretch.Fill
         };
         RenderOptions.SetBitmapScalingMode(image, BitmapScalingMode.NearestNeighbor);
@@ -159,6 +160,12 @@ public partial class TilemapEditorWindow
 
     private void Canvas_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
     {
+        if (_currentToolMode == ToolMode.Navigate)
+        {
+            HandleCanvasPanStart(e);
+            return;
+        }
+
         _isPainting = true;
         Point position = e.GetPosition(TilemapCanvas);
         int tileSize = _target.Specs.TileWidth;
@@ -176,6 +183,12 @@ public partial class TilemapEditorWindow
 
     private void Canvas_MouseMove(object sender, MouseEventArgs e)
     {
+        if (_currentToolMode == ToolMode.Navigate)
+        {
+            HandleCanvasPanMove(e);
+            return;
+        }
+
         Point position = e.GetPosition(TilemapCanvas);
         int tileSize = _target.Specs.TileWidth;
         double scaledTileSize = tileSize * _canvasZoom;
@@ -199,7 +212,34 @@ public partial class TilemapEditorWindow
 
     private void Canvas_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
     {
+        if (_currentToolMode == ToolMode.Navigate)
+        {
+            HandleCanvasPanEnd();
+            return;
+        }
+
         _isPainting = false;
+    }
+
+    private void Canvas_MouseWheel(object sender, MouseWheelEventArgs e)
+        => HandleCanvasMouseWheel(e);
+
+    private void Canvas_MouseDown(object sender, MouseButtonEventArgs e)
+    {
+        if (e.ChangedButton == MouseButton.Middle)
+        {
+            HandleCanvasPanStart(e);
+            e.Handled = true;
+        }
+    }
+
+    private void Canvas_MouseUp(object sender, MouseButtonEventArgs e)
+    {
+        if (e.ChangedButton == MouseButton.Middle)
+        {
+            HandleCanvasPanEnd();
+            e.Handled = true;
+        }
     }
 
     private void Canvas_MouseLeave(object sender, MouseEventArgs e)
@@ -241,17 +281,5 @@ public partial class TilemapEditorWindow
         RenderCanvas();
     }
 
-    private void BtnZoomFit_Click(object sender, RoutedEventArgs e)
-    {
-        _canvasZoom = 1.0;
-        TxtZoomLevel.Text = "100%";
-        RenderCanvas();
-    }
 
-    private void BtnZoom100_Click(object sender, RoutedEventArgs e)
-    {
-        _canvasZoom = 1.0;
-        TxtZoomLevel.Text = "100%";
-        RenderCanvas();
-    }
 }

@@ -1,4 +1,6 @@
 using Retruxel.Core.Models;
+using Retruxel.Lib.WPFImageProcessing;
+using SkiaSharp;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -107,13 +109,12 @@ public partial class TilesetComposerControl : UserControl
         int totalW = cols * tileW;
         int totalH = rows * tileH;
 
-        var wb = new WriteableBitmap(totalW, totalH, 96, 96, PixelFormats.Bgra32, null);
-        wb.Lock();
+        var skBitmap = new SKBitmap(totalW, totalH, SKColorType.Bgra8888, SKAlphaType.Premul);
 
         unsafe
         {
-            var ptr = (byte*)wb.BackBuffer;
-            int stride = wb.BackBufferStride;
+            var ptr = (byte*)skBitmap.GetPixels();
+            int stride = skBitmap.RowBytes;
 
             for (int i = 0; i < _composedTiles.Count; i++)
             {
@@ -126,11 +127,9 @@ public partial class TilesetComposerControl : UserControl
             }
         }
 
-        wb.AddDirtyRect(new Int32Rect(0, 0, totalW, totalH));
-        wb.Unlock();
-
-        ComposerImage.Source = wb;
+        ComposerImage.Source = ImageProcessing.ConvertSkBitmapToBitmapSource(skBitmap);
     }
+
 
     private unsafe void RenderTileIntoBuffer(
         byte* ptr, int stride, byte[] bitmap,

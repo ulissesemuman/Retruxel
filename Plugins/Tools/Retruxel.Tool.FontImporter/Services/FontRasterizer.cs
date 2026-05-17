@@ -1,3 +1,4 @@
+using Retruxel.Lib.WPFImageProcessing;
 using SkiaSharp;
 using System;
 using System.Collections.Generic;
@@ -7,7 +8,7 @@ using System.Windows.Media.Imaging;
 namespace Retruxel.Tool.FontImporter.Services;
 
 /// <summary>
-/// Rasterizes TTF/OTF glyphs to WPF BitmapSource using SkiaSharp.
+/// Rasterizes TTF/OTF glyphs using SkiaSharp.
 /// All rendering is white-on-transparent so the Tile Editor can
 /// later apply palette colors on top.
 /// </summary>
@@ -19,7 +20,7 @@ public static class FontRasterizer
     /// Renders a single codepoint at the given tile size.
     /// Returns null if the font has no glyph for that codepoint.
     /// </summary>
-    public static BitmapSource? RenderGlyph(
+    public static SKBitmap? RenderGlyph(
         string ttfPath,
         int codepoint,
         int tileWidth,
@@ -45,7 +46,7 @@ public static class FontRasterizer
 
         DrawGlyph(canvas, font, paint, codepoint, tileWidth, tileHeight, offsetX, offsetY);
 
-        return ToBitmapSource(bitmap);
+        return bitmap;
     }
 
     // Spritesheet--
@@ -55,16 +56,16 @@ public static class FontRasterizer
     /// arranged in a grid of <paramref name="columnsPerRow"/> columns.
     /// Characters are laid out in codepoint order, left-to-right, top-to-bottom.
     /// </summary>
-    public static BitmapSource RenderSpritesheet(
-        string ttfPath,
-        List<int> codepoints,
-        int tileWidth,
-        int tileHeight,
-        int columnsPerRow = 16,
-        bool useAntialiasing = true,
-        float fontSizeMultiplier = 1.0f,
-        int offsetX = 0,
-        int offsetY = 0)
+    public static SKBitmap RenderSpritesheet(
+       string ttfPath,
+       List<int> codepoints,
+       int tileWidth,
+       int tileHeight,
+       int columnsPerRow = 16,
+       bool useAntialiasing = true,
+       float fontSizeMultiplier = 1.0f,
+       int offsetX = 0,
+       int offsetY = 0)
     {
         using var typeface = LoadTypeface(ttfPath)
             ?? throw new InvalidOperationException("Failed to load font.");
@@ -76,7 +77,7 @@ public static class FontRasterizer
         var sheetWidth = tileWidth * columnsPerRow;
         var sheetHeight = tileHeight * rows;
 
-        using var bitmap = new SKBitmap(sheetWidth, sheetHeight);
+        var bitmap = new SKBitmap(sheetWidth, sheetHeight);
         using var canvas = new SKCanvas(bitmap);
         canvas.Clear(SKColors.Transparent);
 
@@ -93,23 +94,22 @@ public static class FontRasterizer
             canvas.Restore();
         }
 
-        return ToBitmapSource(bitmap);
+        return bitmap;
     }
+
 
     /// <summary>
-    /// Encodes the spritesheet BitmapSource to a PNG byte array
+    /// Encodes the spritesheet SKBitmap to a PNG byte array
     /// ready to be written to disk or embedded in the project.
     /// </summary>
-    public static byte[] EncodeToPng(BitmapSource source)
+    public static byte[] EncodeToPng(SKBitmap source)
     {
-        var encoder = new PngBitmapEncoder();
-        encoder.Frames.Add(BitmapFrame.Create(source));
-        using var stream = new MemoryStream();
-        encoder.Save(stream);
-        return stream.ToArray();
+        using var image = SKImage.FromBitmap(source);
+        using var data = image.Encode(SKEncodedImageFormat.Png, 100);
+        return data.ToArray();
     }
 
-    // Internals---
+    // Internals
 
     private static SKTypeface? LoadTypeface(string path)
         => SKTypeface.FromFile(path);
@@ -154,21 +154,5 @@ public static class FontRasterizer
         var y = tileHeight / 2f - bounds.MidY + offsetY;  // center vertically + offset
 
         canvas.DrawText(text, x, y, font, paint);
-    }
-
-    private static BitmapSource ToBitmapSource(SKBitmap bitmap)
-    {
-        using var image = SKImage.FromBitmap(bitmap);
-        using var data = image.Encode(SKEncodedImageFormat.Png, 100);
-        using var stream = new MemoryStream(data.ToArray());
-
-        var wpfBitmap = new BitmapImage();
-        wpfBitmap.BeginInit();
-        wpfBitmap.CacheOption = BitmapCacheOption.OnLoad;
-        wpfBitmap.StreamSource = stream;
-        wpfBitmap.EndInit();
-        wpfBitmap.Freeze();
-
-        return wpfBitmap;
     }
 }

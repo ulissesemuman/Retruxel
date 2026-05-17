@@ -25,7 +25,7 @@ public class AppSettings
     public TargetSettingsMap Targets { get; set; } = new();
 }
 
-// ── General ───────────────────────────────────────────────────────────────────
+// General 
 
 public class GeneralSettings
 {
@@ -82,7 +82,7 @@ public class GeneralSettings
     public List<string> FavoriteTargets { get; set; } = [];
 }
 
-// ── Window ────────────────────────────────────────────────────────────────────
+// Window 
 
 public class WindowSettings
 {
@@ -105,7 +105,7 @@ public class WindowSettings
     public bool IsFirstRun { get; set; } = true;
 }
 
-// ── Appearance ────────────────────────────────────────────────────────────────
+// Appearance 
 
 public class AppearanceSettings
 {
@@ -114,7 +114,7 @@ public class AppearanceSettings
     public int FontSize { get; set; } = 13;
 }
 
-// ── Targets ───────────────────────────────────────────────────────────────────
+// Targets 
 
 /// <summary>
 /// Map of target-specific settings, keyed by TargetId.

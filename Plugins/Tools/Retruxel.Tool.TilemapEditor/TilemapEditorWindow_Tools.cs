@@ -1,4 +1,6 @@
 using Retruxel.Core.Models;
+using Retruxel.Lib.WPFImageProcessing;
+using SkiaSharp;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -12,6 +14,9 @@ namespace Retruxel.Tool.TilemapEditor;
 
 public partial class TilemapEditorWindow
 {
+    // Cached on construction to avoid re-extracting per preview update
+    private readonly List<(byte R, byte G, byte B)> _tilesetPixels;
+
     private void BtnOptimize_Click(object sender, RoutedEventArgs e)
     {
         if (_tilesetRenderer.Image == null || CmbTilesetAsset.SelectedItem == null)
@@ -48,7 +53,9 @@ public partial class TilemapEditorWindow
 
             var input = new Dictionary<string, object>
             {
-                ["imagePath"] = imagePath,
+                ["indexMap"] = _currentAsset.GenerationParams.MapIndex,
+                ["imageWidth"] = _currentAsset.SourceWidth,
+                ["imageHeight"] = _currentAsset.SourceHeight,
                 ["tileWidth"] = _target.Specs.TileWidth,
                 ["tileHeight"] = _target.Specs.TileHeight,
                 ["enableFlipH"] = true,
@@ -58,9 +65,11 @@ public partial class TilemapEditorWindow
 
             var result = tilePackerTool.Execute(input);
 
-            var originalCount = Convert.ToInt32(result["originalTileCount"]);
-            var optimizedCount = Convert.ToInt32(result["optimizedTileCount"]);
-            var compressionRatio = Convert.ToDouble(result["compressionRatio"]);
+            TilePackResult tilePackResult = result["result"] as TilePackResult;
+
+            var originalCount = tilePackResult.OriginalTileCount;
+            var optimizedCount = tilePackResult.OptimizedTileCount;
+            var compressionRatio = tilePackResult.CompressionRatio;
             var savedTiles = originalCount - optimizedCount;
             var savedPercent = (1.0 - compressionRatio) * 100;
 
@@ -85,23 +94,16 @@ public partial class TilemapEditorWindow
     {
         try
         {
-            var tilemapObj = optimizationResult["tilemap"];
-            var uniqueTilesObj = optimizationResult["uniqueTiles"];
-
-            if (tilemapObj == null || uniqueTilesObj == null)
+            if (optimizationResult["result"] is not TilePackResult packResult)
             {
                 MessageBox.Show("Optimization result is empty.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
                 return;
             }
 
-            // TilePacker now returns List<TileEntry> directly
-            if (tilemapObj is not List<TileEntry> tilemap)
-            {
-                MessageBox.Show("Invalid tilemap format.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                return;
-            }
+            var tilemap = packResult.Tilemap;
+            var uniqueTiles = packResult.UniqueTiles;
 
-            // Build index mapping from old tileset to optimized tileset
+            // Build index mapping
             var indexMapping = new Dictionary<int, int>();
             int tilesPerRow = originalAsset.SourceWidth / _target.Specs.TileWidth;
 
@@ -130,18 +132,21 @@ public partial class TilemapEditorWindow
                 }
             }
 
-            var optimizedAssetId = await CreateOptimizedTileset(uniqueTilesObj, originalAsset);
-            if (optimizedAssetId == null)
-            {
-                MessageBox.Show("Failed to create optimized tileset.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                return;
-            }
+            await UpdateAssetWithOptimization(uniqueTiles, originalAsset);
+
+            //var optimizedAssetId = await CreateOptimizedTileset(uniqueTiles, originalAsset);
+
+            //if (optimizedAssetId == null)
+            //{
+            //    MessageBox.Show("Failed to create optimized tileset.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            //    return;
+            //}
 
             LoadAssets();
 
             for (int i = 0; i < CmbTilesetAsset.Items.Count; i++)
             {
-                if (CmbTilesetAsset.Items[i].ToString() == optimizedAssetId)
+                if (CmbTilesetAsset.Items[i].ToString() == originalAsset.Id)
                 {
                     CmbTilesetAsset.SelectedIndex = i;
                     break;
@@ -152,7 +157,7 @@ public partial class TilemapEditorWindow
 
             MessageBox.Show($"Optimization applied successfully!\n\n" +
                           $"Tiles remapped: {remappedCount}\n" +
-                          $"New tileset: {optimizedAssetId}\n\n" +
+                          //$"New tileset: {optimizedAssetId}\n\n" +
                           $"Remember to SAVE the tilemap to persist changes.",
                           "Success", MessageBoxButton.OK, MessageBoxImage.Information);
         }
@@ -162,93 +167,76 @@ public partial class TilemapEditorWindow
         }
     }
 
-    private async Task<string?> CreateOptimizedTileset(object uniqueTilesObj, AssetEntry originalAsset)
+    private async Task UpdateAssetWithOptimization(List<byte[]> uniqueTiles, AssetEntry asset)
+    {
+        int tileWidth = _target.Specs.TileWidth;
+        int tileHeight = _target.Specs.TileHeight;
+        int tilesPerRow = 16;
+        int rows = (int)Math.Ceiling(uniqueTiles.Count / (double)tilesPerRow);
+        int imageWidth = tilesPerRow * tileWidth;
+        int imageHeight = rows * tileHeight;
+
+        var mapIndex = new byte[imageWidth * imageHeight];
+
+        for (int tileIdx = 0; tileIdx < uniqueTiles.Count; tileIdx++)
+        {
+            var tileData = uniqueTiles[tileIdx];
+            int tileX = (tileIdx % tilesPerRow) * tileWidth;
+            int tileY = (tileIdx / tilesPerRow) * tileHeight;
+
+            for (int py = 0; py < tileHeight; py++)
+                for (int px = 0; px < tileWidth; px++)
+                    mapIndex[(tileY + py) * imageWidth + (tileX + px)] = tileData[py * tileWidth + px];
+        }
+
+        asset.GenerationParams.MapIndex = mapIndex;
+        asset.GenerationParams.TileCount = uniqueTiles.Count;
+        asset.GenerationParams.OptimizedWidth = imageWidth;
+        asset.GenerationParams.OptimizedHeight = imageHeight;
+
+        if (_saveProjectCallback != null)
+            await _saveProjectCallback.Invoke();
+    }
+
+    private async Task<string?> CreateOptimizedTileset(List<byte[]> uniqueTiles, AssetEntry originalAsset)
     {
         try
         {
-            if (uniqueTilesObj is not System.Collections.IEnumerable enumerable)
-                return null;
+            if (uniqueTiles.Count == 0) return null;
 
-            var uniqueTilesList = new List<byte[]>();
-            foreach (var tile in enumerable)
-            {
-                if (tile is byte[] tileData)
-                    uniqueTilesList.Add(tileData);
-            }
-
-            if (uniqueTilesList.Count == 0) return null;
-
-            int tileSize = _target.Specs.TileWidth;
+            int tileWidth = _target.Specs.TileWidth;
+            int tileHeight = _target.Specs.TileHeight;
             int tilesPerRow = 16;
-            int rows = (int)Math.Ceiling(uniqueTilesList.Count / (double)tilesPerRow);
-            int imageWidth = tilesPerRow * tileSize;
-            int imageHeight = rows * tileSize;
+            int rows = (int)Math.Ceiling(uniqueTiles.Count / (double)tilesPerRow);
+            int imageWidth = tilesPerRow * tileWidth;
+            int imageHeight = rows * tileHeight;
 
-            var bitmap = new WriteableBitmap(imageWidth, imageHeight, 96, 96, PixelFormats.Bgra32, null);
-            bitmap.Lock();
+            // Monta o indexMap diretamente — sem PNG, sem SKBitmap
+            var mapIndex = new byte[imageWidth * imageHeight];
 
-            try
+            for (int tileIdx = 0; tileIdx < uniqueTiles.Count; tileIdx++)
             {
-                unsafe
-                {
-                    byte* ptr = (byte*)bitmap.BackBuffer;
-                    int stride = bitmap.BackBufferStride;
+                var tileData = uniqueTiles[tileIdx];
+                int tileX = (tileIdx % tilesPerRow) * tileWidth;
+                int tileY = (tileIdx / tilesPerRow) * tileHeight;
 
-                    for (int tileIdx = 0; tileIdx < uniqueTilesList.Count; tileIdx++)
-                    {
-                        var tileData = uniqueTilesList[tileIdx];
-                        int tileX = (tileIdx % tilesPerRow) * tileSize;
-                        int tileY = (tileIdx / tilesPerRow) * tileSize;
-
-                        for (int py = 0; py < tileSize; py++)
-                        {
-                            for (int px = 0; px < tileSize; px++)
-                            {
-                                int srcIdx = (py * tileSize + px) * 4;
-                                int dstX = tileX + px;
-                                int dstY = tileY + py;
-                                int dstIdx = dstY * stride + dstX * 4;
-
-                                ptr[dstIdx] = tileData[srcIdx + 2];
-                                ptr[dstIdx + 1] = tileData[srcIdx + 1];
-                                ptr[dstIdx + 2] = tileData[srcIdx];
-                                ptr[dstIdx + 3] = tileData[srcIdx + 3];
-                            }
-                        }
-                    }
-                }
-
-                bitmap.AddDirtyRect(new System.Windows.Int32Rect(0, 0, imageWidth, imageHeight));
-            }
-            finally
-            {
-                bitmap.Unlock();
-            }
-
-            var assetsDir = Path.Combine(_projectPath, "assets");
-            if (!Directory.Exists(assetsDir))
-                Directory.CreateDirectory(assetsDir);
-
-            var optimizedFileName = $"{originalAsset.Id}_optimized.png";
-            var optimizedPath = Path.Combine(assetsDir, optimizedFileName);
-
-            using (var fileStream = new FileStream(optimizedPath, FileMode.Create))
-            {
-                var encoder = new PngBitmapEncoder();
-                encoder.Frames.Add(BitmapFrame.Create(bitmap));
-                encoder.Save(fileStream);
+                for (int py = 0; py < tileHeight; py++)
+                    for (int px = 0; px < tileWidth; px++)
+                        mapIndex[(tileY + py) * imageWidth + (tileX + px)] = tileData[py * tileWidth + px];
             }
 
             var optimizedAssetId = $"{originalAsset.Id}_optimized";
+
             var newAsset = new AssetEntry
             {
                 Id = optimizedAssetId,
-                FileName = optimizedFileName,
-                RelativePath = $"assets/{optimizedFileName}",
+                FileName = $"{optimizedAssetId}.png",  // nome mantido para referência, sem arquivo real
+                RelativePath = originalAsset.RelativePath,  // aponta para o original
+                SourcePath = originalAsset.SourcePath,    // original preservado
                 VramRegionId = originalAsset.VramRegionId,
                 SourceWidth = imageWidth,
                 SourceHeight = imageHeight,
-                TileCount = uniqueTilesList.Count
+                GenerationParams = originalAsset.GenerationParams  // herda params de redução de cores
             };
 
             if (!_project.Assets.Any(a => a.Id == optimizedAssetId))
@@ -257,8 +245,6 @@ public partial class TilemapEditorWindow
                 if (_saveProjectCallback != null)
                     await _saveProjectCallback.Invoke();
             }
-
-            LoadAssets();
 
             return optimizedAssetId;
         }
@@ -291,15 +277,13 @@ public partial class TilemapEditorWindow
                 int height = int.Parse(TxtHeight.Text);
                 int tileSize = _target.Specs.TileWidth;
 
-                var bitmap = new RenderTargetBitmap(
-                    width * tileSize,
-                    height * tileSize,
-                    96, 96,
-                    PixelFormats.Pbgra32);
+                // Create SKBitmap for rendering
+                var bitmap = new SKBitmap(width * tileSize, height * tileSize, SKColorType.Bgra8888, SKAlphaType.Premul);
 
-                var visual = new DrawingVisual();
-                using (var context = visual.RenderOpen())
+                using (var canvas = new SKCanvas(bitmap))
                 {
+                    canvas.Clear(SKColors.Transparent);
+
                     var currentLayer = _tilemapData.GetLayer(_currentLayerIndex);
                     for (int y = 0; y < height; y++)
                     {
@@ -313,19 +297,20 @@ public partial class TilemapEditorWindow
                                 {
                                     var tileImage = _tilesetRenderer.ExtractTile(entry);
                                     if (tileImage != null)
-                                        context.DrawImage(tileImage, new Rect(x * tileSize, y * tileSize, tileSize, tileSize));
+                                    {
+                                        canvas.DrawBitmap(tileImage, x * tileSize, y * tileSize);
+                                    }
                                 }
                             }
                         }
                     }
                 }
 
-                bitmap.Render(visual);
-
+                // Encode to PNG
+                using var image = SKImage.FromBitmap(bitmap);
+                using var data = image.Encode(SKEncodedImageFormat.Png, 100);
                 using var fileStream = new FileStream(dialog.FileName, FileMode.Create);
-                var encoder = new PngBitmapEncoder();
-                encoder.Frames.Add(BitmapFrame.Create(bitmap));
-                encoder.Save(fileStream);
+                data.SaveTo(fileStream);
 
                 MessageBox.Show($"Tilemap exported to {Path.GetFileName(dialog.FileName)}", "Export PNG", MessageBoxButton.OK, MessageBoxImage.Information);
             }

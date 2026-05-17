@@ -95,7 +95,7 @@
                     <ColumnDefinition Width="220"/>
                 </Grid.ColumnDefinitions>
 
-                <!-- ── LEFT PANEL: CONFIG ── -->
+                <!-- LEFT PANEL: CONFIG -->
                 <Border Grid.Column="0"
                         Background="{StaticResource BrushSurfaceContainerLow}"
                         Padding="20,24">
@@ -365,7 +365,7 @@
                     </StackPanel>
                 </Border>
 
-                <!-- ── CENTER: CHARACTER GRID ── -->
+                <!-- CENTER: CHARACTER GRID -->
                 <Grid Grid.Column="1" Background="{StaticResource BrushSurface}">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="40"/>
@@ -404,7 +404,7 @@
                     </ScrollViewer>
                 </Grid>
 
-                <!-- ── RIGHT PANEL: PREVIEW ── -->
+                <!-- RIGHT PANEL: PREVIEW -->
                 <Border Grid.Column="2"
                         Background="{StaticResource BrushSurfaceContainerLow}"
                         Padding="16,24">

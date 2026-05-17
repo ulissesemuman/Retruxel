@@ -1,5 +1,6 @@
 using Microsoft.Win32;
 using Retruxel.Core.Services;
+using Retruxel.Lib.WPFImageProcessing;
 using Retruxel.Tool.FontImporter.Services;
 using System;
 using System.Collections.Generic;
@@ -319,9 +320,9 @@ public partial class FontImporterWindow : Window
 
         if (_ttfPath is null) return;
 
-        var bmp = FontRasterizer.RenderGlyph(_ttfPath, codepoint, _tileWidth, _tileHeight, _useAntialiasing, _fontSizeMultiplier, _offsetX, _offsetY);
-        if (bmp is not null)
-            GlyphPreview.Source = bmp;
+        var bitmap = FontRasterizer.RenderGlyph(_ttfPath, codepoint, _tileWidth, _tileHeight, _useAntialiasing, _fontSizeMultiplier, _offsetX, _offsetY);
+        if (bitmap is not null)
+            GlyphPreview.Source = ImageProcessing.ConvertSkBitmapToBitmapSource(bitmap);
     }
 
     private void UpdateSheetPreview()
@@ -335,7 +336,7 @@ public partial class FontImporterWindow : Window
         var ordered = _selectedCodepoints.OrderBy(cp => cp).ToList();
         var sheet = FontRasterizer.RenderSpritesheet(
             _ttfPath, ordered, _tileWidth, _tileHeight, columnsPerRow: 16, _useAntialiasing, _fontSizeMultiplier, _offsetX, _offsetY);
-        SheetPreview.Source = sheet;
+        SheetPreview.Source = ImageProcessing.ConvertSkBitmapToBitmapSource(sheet);
     }
 
     private void RegenerateAllGlyphs()
@@ -347,9 +348,9 @@ public partial class FontImporterWindow : Window
             if (cell.Child is not StackPanel panel) continue;
             if (panel.Children[0] is not Image img) continue;
 
-            var bmp = FontRasterizer.RenderGlyph(_ttfPath, cp, _tileWidth, _tileHeight, _useAntialiasing, _fontSizeMultiplier, _offsetX, _offsetY);
-            if (bmp is not null)
-                img.Source = bmp;
+            var bitmap = FontRasterizer.RenderGlyph(_ttfPath, cp, _tileWidth, _tileHeight, _useAntialiasing, _fontSizeMultiplier, _offsetX, _offsetY);
+            if (bitmap is not null)
+                img.Source = ImageProcessing.ConvertSkBitmapToBitmapSource(bitmap);
         }
 
         UpdateSheetPreview();

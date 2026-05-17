@@ -1,5 +1,3 @@
-using Retruxel.Core.Models;
-
 namespace Retruxel.Tool.TilemapEditor;
 
 public partial class TilemapEditorWindow

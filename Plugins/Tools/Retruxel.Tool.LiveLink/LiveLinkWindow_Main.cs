@@ -5,7 +5,6 @@ using Retruxel.Tool.LiveLink.Services;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Threading;
 

@@ -46,7 +46,7 @@ void retruxel_print_uint(unsigned char x, unsigned char y,
 unsigned char g_language = 0;
 {{/if}}
 
-// ── Compact font tile data ────────────────────────────────────────────────────
+// Compact font tile data
 // {{fontTileCount}} glyphs × 32 bytes = {{fontTileCount * 32}} bytes total
 // Derived from font8x8 by Daniel Hepper (Public Domain)
 // Converted to SMS 4bpp planar format by SmsFontConverter
@@ -54,14 +54,14 @@ static const unsigned char retruxel_font_tiles[{{fontTileCount * 32}}] = {
     {{fontTileData}}
 };
 
-// ── Character translation table ───────────────────────────────────────────────
+// Character translation table 
 // Maps ASCII/Latin codepoint (0x00–0xFF) to tile offset within compact font.
 // 0xFF = character not present — renders as blank space.
 static const unsigned char retruxel_font_table[256] = {
     {{fontTranslationTable}}
 };
 
-// ── Text arrays ───────────────────────────────────────────────────────────────
+// Text arrays 
 {{#each arrays}}
 // {{this.name}} — {{this.languages[0].strings.length}} string(s)
 {{#if ../hasMultiLanguage}}
@@ -82,7 +82,7 @@ const char* const text_{{this.name}}[{{this.languages[0].strings.length}}] = {
 {{/ifnot}}
 {{/each}}
 
-// ── Font init ─────────────────────────────────────────────────────────────────
+// Font init 
 // Call once in main() OnStart — loads compact font into VRAM
 void retruxel_font_init(void) {
     SMS_loadTiles(retruxel_font_tiles,
@@ -90,7 +90,7 @@ void retruxel_font_init(void) {
                   sizeof(retruxel_font_tiles));
 }
 
-// ── Print functions ───────────────────────────────────────────────────────────
+// Print functions 
 
 // Writes null-terminated string to nametable at tile position (x, y).
 // Translates each char through compact font table before writing.

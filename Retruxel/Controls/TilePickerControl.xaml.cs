@@ -1,5 +1,6 @@
 using Retruxel.Core.Models;
 using Retruxel.Core.Text;
+using Retruxel.Lib.WPFImageProcessing;
 using SkiaSharp;
 using System;
 using System.Collections.Generic;
@@ -24,7 +25,7 @@ public partial class TilePickerControl : UserControl
     private Point _dragStartPos;
     private int _dragTileIdx = -1;
 
-    // ── Dependency Properties ─────────────────────────────────────────────
+    // Dependency Properties 
 
     public static readonly DependencyProperty TileScaleProperty =
         DependencyProperty.Register(nameof(TileScale), typeof(int),
@@ -62,19 +63,19 @@ public partial class TilePickerControl : UserControl
             control.RenderGrid();
     }
 
-    // ── Events ────────────────────────────────────────────────────────────
+    // Events 
 
     public event EventHandler<TileSelectedEventArgs>? TileSelected;
     public event EventHandler<TileDragEventArgs>? TileDragStarted;
 
-    // ── Constructor ───────────────────────────────────────────────────────
+    // Constructor 
 
     public TilePickerControl()
     {
         InitializeComponent();
     }
 
-    // ── Public API ────────────────────────────────────────────────────────
+    // Public API 
 
     public void LoadFromDefaultFont(char rangeStart, char rangeEnd)
     {
@@ -277,7 +278,7 @@ public partial class TilePickerControl : UserControl
         return _selectedIndices.OrderBy(i => i).Select(i => _tiles[i]).ToList();
     }
 
-    // ── Rendering ─────────────────────────────────────────────────────────
+    // Rendering 
 
     private void RenderGrid()
     {
@@ -295,13 +296,12 @@ public partial class TilePickerControl : UserControl
         int totalW = cols * tileW;
         int totalH = rows * tileH;
 
-        var wb = new WriteableBitmap(totalW, totalH, 96, 96, PixelFormats.Bgra32, null);
-        wb.Lock();
+        var skBitmap = new SKBitmap(totalW, totalH, SKColorType.Bgra8888, SKAlphaType.Premul);
 
         unsafe
         {
-            var ptr = (byte*)wb.BackBuffer;
-            int stride = wb.BackBufferStride;
+            var ptr = (byte*)skBitmap.GetPixels();
+            int stride = skBitmap.RowBytes;
 
             for (int i = 0; i < _tiles.Count; i++)
             {
@@ -322,10 +322,7 @@ public partial class TilePickerControl : UserControl
             }
         }
 
-        wb.AddDirtyRect(new Int32Rect(0, 0, totalW, totalH));
-        wb.Unlock();
-
-        TileGridImage.Source = wb;
+        TileGridImage.Source = ImageProcessing.ConvertSkBitmapToBitmapSource(skBitmap);
     }
 
     private unsafe void RenderTileIntoBuffer(
@@ -390,7 +387,7 @@ public partial class TilePickerControl : UserControl
         }
     }
 
-    // ── Interaction ───────────────────────────────────────────────────────
+    // Interaction 
 
     private void TileGridImage_MouseDown(object sender, MouseButtonEventArgs e)
     {

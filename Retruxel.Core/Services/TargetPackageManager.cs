@@ -161,7 +161,7 @@ public class TargetPackageManager
         });
     }
 
-    // ── Private helpers ───────────────────────────────────────────────────────
+    // Private helpers 
 
     private async Task<List<TargetPackageInfo>> DownloadManifestAsync()
     {
@@ -257,7 +257,7 @@ public class TargetPackageManager
         return BitConverter.ToString(hash).Replace("-", "").ToLowerInvariant();
     }
 
-    // ── Internal models ───────────────────────────────────────────────────────
+    // Internal models 
 
     private class TargetManifest
     {

@@ -21,7 +21,7 @@
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
         
-        <!-- ── Three-column content area ──────────────────────────────────── -->
+        <!-- Three-column content area -->
         <Grid Grid.Row="0">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="280"/>
@@ -29,7 +29,7 @@
                 <ColumnDefinition Width="280"/>
             </Grid.ColumnDefinitions>
 
-            <!-- LEFT PANEL: Palette list + slot grid ───────────────────────── -->
+            <!-- LEFT PANEL: Palette list + slot grid -->
             <Border Grid.Column="0"
                     Background="{StaticResource BrushSurface}"
                     Padding="16">
@@ -93,7 +93,7 @@
                 </Grid>
             </Border>
 
-            <!-- CENTER PANEL: Hardware color picker ────────────────────────── -->
+            <!-- CENTER PANEL: Hardware color picker -->
             <Border Grid.Column="1"
                     Background="{StaticResource BrushSurface}"
                     Padding="24">
@@ -119,7 +119,7 @@
                 </Grid>
             </Border>
 
-            <!-- RIGHT PANEL: Slot detail + quick set + usage ───────────────── -->
+            <!-- RIGHT PANEL: Slot detail + quick set + usage -->
             <Border Grid.Column="2"
                     Background="{StaticResource BrushSurface}"
                     Padding="16">
@@ -193,7 +193,7 @@
             </Border>
         </Grid>
 
-        <!-- ── Action bar ─────────────────────────────────────────────────── -->
+        <!-- Action bar -->
         <Border Grid.Row="1"
                 Background="{StaticResource BrushSurfaceContainerHigh}"
                 Padding="16"

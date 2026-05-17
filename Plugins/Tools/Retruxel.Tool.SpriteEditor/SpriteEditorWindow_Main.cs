@@ -14,7 +14,7 @@ namespace Retruxel.Tool.SpriteEditor;
 public partial class SpriteEditorWindow
 {
     private readonly SpriteState _state = new();
-    private BitmapSource? _tilesetImage;
+    private SKBitmap _tilesetImage;
     private bool _isInitializing = true;
     private string _tilesetAssetId = string.Empty;
     private SceneData? _currentScene;

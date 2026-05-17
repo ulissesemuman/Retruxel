@@ -1,4 +1,3 @@
-using System;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
@@ -59,8 +58,8 @@ public partial class TextArrayEditorWindow
         // Check if using repository font and show copyright warning
         if (CmbFontCategory.SelectedItem is FontCategoryItem selectedFont && selectedFont.IsRepositoryFont)
         {
-            var copyrightInfo = string.IsNullOrEmpty(selectedFont.Copyright) 
-                ? "Copyright information not available" 
+            var copyrightInfo = string.IsNullOrEmpty(selectedFont.Copyright)
+                ? "Copyright information not available"
                 : selectedFont.Copyright;
 
             var result = MessageBox.Show(

@@ -1,3 +1,4 @@
+using Retruxel.Lib.WPFImageProcessing;
 using Retruxel.Tool.SpriteEditor.Helpers;
 using System.Windows;
 using System.Windows.Controls;
@@ -71,7 +72,7 @@ public partial class SpriteEditorWindow
 
             var image = new Image
             {
-                Source = tileImage,
+                Source = ImageProcessing.ConvertSkBitmapToBitmapSource(tileImage),
                 Width = 8 * zoom,
                 Height = 8 * zoom,
                 Stretch = Stretch.None

@@ -1,3 +1,4 @@
+using Retruxel.Core.Models;
 using SkiaSharp;
 using System.Collections.Generic;
 using System.IO;
@@ -19,6 +20,7 @@ public class IndexedPngService
     /// <summary>
     /// Reads a PNG and returns pixel indices and palette colors.
     /// Builds a color map from unique colors in the image.
+    /// Reuses Encode() for fast pixel processing.
     /// </summary>
     public IndexedPngData? Read(string pngPath)
     {
@@ -31,63 +33,30 @@ public class IndexedPngService
 
         var width = bitmap.Width;
         var height = bitmap.Height;
-        var indices = new byte[width * height];
-        var colors = new List<string>();
 
-        // Extract pixels and build unique color palette
-        var colorMap = new Dictionary<SKColor, byte>();
-        byte nextIndex = 0;
-
+        // Build unique color palette
+        var colorSet = new HashSet<SKColor>();
         for (int y = 0; y < height; y++)
         {
             for (int x = 0; x < width; x++)
             {
-                var pixel = bitmap.GetPixel(x, y);
-
-                if (!colorMap.ContainsKey(pixel))
-                {
-                    colorMap[pixel] = nextIndex++;
-                    colors.Add($"#{pixel.Red:X2}{pixel.Green:X2}{pixel.Blue:X2}");
-                }
-
-                indices[y * width + x] = colorMap[pixel];
+                colorSet.Add(bitmap.GetPixel(x, y));
             }
         }
+
+        var palette = colorSet
+            .Select(c => new HardwareColor(c.Red, c.Green, c.Blue))
+            .ToList();
+
+        // Use Encode() for fast indexing
+        var indices = IndexedBitmapRenderer.Encode(bitmap, palette);
 
         return new IndexedPngData
         {
             Width = width,
             Height = height,
             Indices = indices,
-            Colors = colors
-        };
-    }
-
-    /// <summary>
-    /// Converts a non-indexed SKBitmap + reduced color list into indexed PNG data.
-    /// Maps each pixel to the index of the nearest color in the palette.
-    /// </summary>
-    public IndexedPngData ConvertToIndexed(SKBitmap source, List<SKColor> palette)
-    {
-        var width = source.Width;
-        var height = source.Height;
-        var indices = new byte[width * height];
-
-        for (int y = 0; y < height; y++)
-        {
-            for (int x = 0; x < width; x++)
-            {
-                var pixel = source.GetPixel(x, y);
-                indices[y * width + x] = (byte)FindNearestIndex(pixel, palette);
-            }
-        }
-
-        return new IndexedPngData
-        {
-            Width = width,
-            Height = height,
-            Indices = indices,
-            Colors = palette.Select(c => $"#{c.Red:X2}{c.Green:X2}{c.Blue:X2}").ToList()
+            Colors = palette.Select(c => $"#{c.R:X2}{c.G:X2}{c.B:X2}").ToList()
         };
     }
 
@@ -182,7 +151,7 @@ public class IndexedPngData
     public int Height { get; init; }
     public byte[] Indices { get; init; } = [];
     public List<string> Colors { get; init; } = new(); // Hex strings for JSON serialization
-    
+
     /// <summary>
     /// RGB colors as byte triplets (R, G, B) for direct hardware conversion.
     /// Cached on first access to avoid repeated parsing.

@@ -40,12 +40,16 @@ public static class AssetImporter
     /// <returns>AssetEntry ready to add to RetruxelProject.Assets.</returns>
     /// <exception cref="AssetImportException">Thrown when the import fails for a known reason.</exception>
     public static AssetEntry Import(
+        string assetId,
         string sourcePngPath,
         string projectPath,
         string vramRegionId,
         ITarget target,
+        int paletteSlot,
         byte[] mapIndex,
-        List<SKColor>? reducedPalette = null)
+        double selectedDiversity,
+        DistanceMode colorSpace,
+        IReadOnlyList<HardwareColor> reducedPalette = null)
     {
         // 1. Validate source file
         if (!File.Exists(sourcePngPath))
@@ -62,9 +66,8 @@ public static class AssetImporter
         var region = target.Specs.VramRegions.FirstOrDefault(r => r.Id == vramRegionId)
             ?? throw new AssetImportException($"VRAM region '{vramRegionId}' not found in target specs.");
 
-        var assetId = Path.GetFileNameWithoutExtension(sourcePngPath);
         var assetFileName = assetId + ".png";
-        
+
         // Source folder: Assets/Source/
         var sourceFolder = Path.Combine(projectPath, "Assets", "Source");
         var sourceFullPath = Path.Combine(sourceFolder, assetFileName);
@@ -82,21 +85,27 @@ public static class AssetImporter
             throw new AssetImportException($"Target '{target.TargetId}' returned an empty hardware palette.");
 
         // 7. Calculate generation params from reduced palette
-        var palette = reducedPalette ?? hardwarePalette.Select(c => new SKColor(c.R, c.G, c.B)).ToList();
+        var palette = reducedPalette ?? hardwarePalette.Select(c => new HardwareColor(c.R, c.G, c.B)).ToList();
         var colorCount = palette.Count;
 
         // 8. Calculate tile count from source dimensions
         var tileCount = (sourceBitmap.Width / TileSize) * (sourceBitmap.Height / TileSize);
 
         // 9. Extract suggested colors for palette slot population
-        var suggestedColors = palette.Select(c => $"#{c.Red:X2}{c.Green:X2}{c.Blue:X2}").ToList();
+        var paletteHex = palette.Select(c => $"#{c.R:X2}{c.G:X2}{c.B:X2}").ToList();
 
         // 10. Create generation params
         var generationParams = new AssetGenerationParams
         {
-            TargetPalette = 0, // Default to slot 0
+            ColorSpace = colorSpace.ToString(),
+            DiversityWeight = selectedDiversity,
+            TargetPalette = paletteSlot, // Default to slot 0
             ColorCount = colorCount,
-            ColorOrder = null // No reordering by default
+            Palette = paletteHex,
+            MapIndex = mapIndex,
+            TileCount = tileCount,
+            OptimizedWidth = sourceBitmap.Width,
+            OptimizedHeight = sourceBitmap.Height,
         };
 
         return new AssetEntry
@@ -105,17 +114,11 @@ public static class AssetImporter
             FileName = assetFileName,
             RelativePath = sourceRelativePath, // Points to source
             SourcePath = sourceRelativePath,
-            GeneratedPath = string.Empty, // No generated file needed
-            GenerationParams = generationParams,
-            VramRegionId = vramRegionId,
-            TileCount = tileCount,
             SourceWidth = sourceBitmap.Width,
             SourceHeight = sourceBitmap.Height,
+            VramRegionId = vramRegionId,
             ImportedAt = DateTime.Now,
-            IsIndexed = true,
-            ColorCount = colorCount,
-            SuggestedColors = suggestedColors,
-            MapIndex = mapIndex,
+            GenerationParams = generationParams,
         };
     }
 
@@ -130,9 +133,9 @@ public static class AssetImporter
             ?? throw new AssetImportException($"Failed to decode image: {sourcePngPath}");
 
         var palette = target.GetHardwarePalette();
-        var reduced = ColorMatching.ReduceColors(source, palette);
+        var reduced = IndexedBitmapRenderer.Encode(source, palette);
 
-        return ColorMatching.BitmapFromByteArray(reduced, source.Width, source.Height, palette);
+        return IndexedBitmapRenderer.Render(reduced, palette, source.Width, source.Height);
     }
 
     /// <summary>
@@ -147,14 +150,6 @@ public static class AssetImporter
         if (bitmap.Height % TileSize != 0)
             throw new AssetImportException(
                 $"Image height ({bitmap.Height}px) must be a multiple of {TileSize}. File: {Path.GetFileName(path)}");
-    }
-
-    private static void SavePng(SKBitmap bitmap, string outputPath)
-    {
-        using var image = SKImage.FromBitmap(bitmap);
-        using var data = image.Encode(SKEncodedImageFormat.Png, 100);
-        using var stream = File.OpenWrite(outputPath);
-        data.SaveTo(stream);
     }
 }
 

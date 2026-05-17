@@ -8,7 +8,7 @@
 
 using System.Runtime.CompilerServices;
 
-// ── Interfaces ────────────────────────────────────────────────────────────────
+// Interfaces 
 
 [assembly: TypeForwardedTo(typeof(Retruxel.Core.Interfaces.IModule))]
 [assembly: TypeForwardedTo(typeof(Retruxel.Core.Interfaces.ILogicModule))]
@@ -25,7 +25,7 @@ using System.Runtime.CompilerServices;
 [assembly: TypeForwardedTo(typeof(Retruxel.Core.Interfaces.IPaletteProvider))]
 [assembly: TypeForwardedTo(typeof(Retruxel.Core.Services.ServiceLocator))]
 
-// ── Enums ─────────────────────────────────────────────────────────────────────
+// Enums 
 
 [assembly: TypeForwardedTo(typeof(Retruxel.Core.Interfaces.ModuleType))]
 [assembly: TypeForwardedTo(typeof(Retruxel.Core.Models.ParameterType))]
@@ -33,7 +33,7 @@ using System.Runtime.CompilerServices;
 [assembly: TypeForwardedTo(typeof(Retruxel.Core.Models.GeneratedAssetType))]
 [assembly: TypeForwardedTo(typeof(Retruxel.Core.Models.BuildLogLevel))]
 
-// ── Models ────────────────────────────────────────────────────────────────────
+// Models 
 
 [assembly: TypeForwardedTo(typeof(Retruxel.Core.Models.GeneratedFile))]
 [assembly: TypeForwardedTo(typeof(Retruxel.Core.Models.GeneratedAsset))]

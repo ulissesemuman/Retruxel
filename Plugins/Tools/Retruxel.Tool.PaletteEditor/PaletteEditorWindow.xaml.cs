@@ -244,7 +244,7 @@ public partial class PaletteEditorWindow : Window
         RefreshSlots();
         SelectSlot(_selectedSlotIndex);
     }
-        
+
     private void Apply()
     {
         // Path A: opened from target slot context — update PaletteSlotData directly

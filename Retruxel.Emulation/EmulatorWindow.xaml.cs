@@ -1,5 +1,7 @@
 using Microsoft.Win32;
 using Retruxel.Emulation.LibRetro;
+using Retruxel.Lib.WPFImageProcessing;
+using SkiaSharp;
 using System;
 using System.IO;
 using System.Linq;
@@ -15,7 +17,7 @@ namespace Retruxel.Emulation;
 public partial class EmulatorWindow : Window
 {
     private LibRetroCore? _core;
-    private WriteableBitmap? _screenBitmap;
+    private SKBitmap? _screenBitmap;
     private bool _isRunning;
     private CancellationTokenSource? _runCts;
     private byte[]? _lastFrameBuffer;
@@ -99,11 +101,10 @@ public partial class EmulatorWindow : Window
             uint height = _core.AvInfo.geometry.base_height;
             double fps = _core.AvInfo.timing.fps;
 
-            _screenBitmap = new WriteableBitmap(
-                (int)width, (int)height, 96, 96,
-                PixelFormats.Bgra32, null);
+            _screenBitmap = new SkiaSharp.SKBitmap(
+                (int)width, (int)height, SKColorType.Bgra8888, SKAlphaType.Premul);
 
-            ImgScreen.Source = _screenBitmap;
+            ImgScreen.Source = ImageProcessing.ConvertSkBitmapToBitmapSource(_screenBitmap);
 
             TxtStatus.Text = $"ROM loaded: {Path.GetFileName(dialog.FileName)} | {width}x{height} @ {fps:F2} FPS";
             BtnRun.IsEnabled = true;
@@ -232,14 +233,12 @@ public partial class EmulatorWindow : Window
 
         Dispatcher.Invoke(() =>
         {
-            _screenBitmap.Lock();
-
             unsafe
             {
                 byte* src = (byte*)data;
-                byte* dst = (byte*)_screenBitmap.BackBuffer;
+                byte* dst = (byte*)_screenBitmap.GetPixels();
                 int srcPitch = (int)pitch;
-                int dstPitch = _screenBitmap.BackBufferStride;
+                int dstPitch = _screenBitmap.RowBytes;
 
                 for (int y = 0; y < height; y++)
                 {
@@ -250,9 +249,6 @@ public partial class EmulatorWindow : Window
                         Math.Min(srcPitch, dstPitch));
                 }
             }
-
-            _screenBitmap.AddDirtyRect(new Int32Rect(0, 0, (int)width, (int)height));
-            _screenBitmap.Unlock();
         });
     }
 

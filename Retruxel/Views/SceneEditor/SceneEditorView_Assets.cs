@@ -82,7 +82,7 @@ public partial class SceneEditorView
         // Tile count
         var count = new TextBlock
         {
-            Text = $"{asset.TileCount}t",
+            Text = $"{asset.GenerationParams.TileCount}t",
             VerticalAlignment = VerticalAlignment.Center,
             FontSize = 10,
             Margin = new Thickness(0, 0, 8, 0)
@@ -171,13 +171,6 @@ public partial class SceneEditorView
             }
 
             var asset = window.ImportedAsset;
-
-            System.Diagnostics.Debug.WriteLine($"[SceneEditorView] Asset imported: {asset.Id}");
-            System.Diagnostics.Debug.WriteLine($"[SceneEditorView] Asset SourcePath: {asset.SourcePath}");
-            System.Diagnostics.Debug.WriteLine($"[SceneEditorView] Asset RelativePath: {asset.RelativePath}");
-            System.Diagnostics.Debug.WriteLine($"[SceneEditorView] Asset IsIndexed: {asset.IsIndexed}");
-            System.Diagnostics.Debug.WriteLine($"[SceneEditorView] Asset ColorCount: {asset.ColorCount}");
-            System.Diagnostics.Debug.WriteLine($"[SceneEditorView] Current project assets count: {_project.Assets.Count}");
 
             // Create state change for importing asset (Large change — auto-saves)
             var change = new StateChange

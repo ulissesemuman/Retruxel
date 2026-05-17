@@ -82,7 +82,7 @@ public class MetaspritePreprocessorTool : ITool
         };
     }
 
-    // ── Helpers ───────────────────────────────────────────────────────────────
+    // Helpers 
 
     /// <summary>
     /// Parses frames from input. Each frame is an array of tile entries.

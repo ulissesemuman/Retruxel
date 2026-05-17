@@ -2,7 +2,6 @@ using Retruxel.Core.Interfaces;
 using Retruxel.Core.Models;
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Text.Json.Nodes;
 
 namespace Retruxel.Core.Services;

@@ -1,8 +1,9 @@
-using Retruxel.Core.Text;
+using Microsoft.Win32;
 using Retruxel.Core.Models;
+using Retruxel.Core.Text;
+using Retruxel.Lib.WPFImageProcessing;
 using Retruxel.Tool.FontImporter;
 using Retruxel.Tool.LiveLink;
-using Microsoft.Win32;
 using SkiaSharp;
 using System;
 using System.Collections.Generic;
@@ -12,7 +13,6 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
-using System.Windows.Media.Imaging;
 
 namespace Retruxel.Tool.TextArrayEditor;
 
@@ -149,8 +149,7 @@ public partial class TextArrayEditorWindow
                 new SKPaint { FilterQuality = SKFilterQuality.None });
         }
 
-        var bitmapSource = ConvertSkBitmapToBitmapSource(scaledBitmap);
-        ImgFontPreview.Source = bitmapSource;
+        ImgFontPreview.Source = ImageProcessing.ConvertSkBitmapToBitmapSource(scaledBitmap);
 
         TxtFontPreviewTitle.Text = $"FONT PREVIEW ({charList.Count} GLYPHS)";
 
@@ -236,8 +235,7 @@ public partial class TextArrayEditorWindow
                 new SKPaint { FilterQuality = SKFilterQuality.None });
         }
 
-        var bitmapSource = ConvertSkBitmapToBitmapSource(scaledBitmap);
-        ImgFontPreview.Source = bitmapSource;
+        ImgFontPreview.Source = ImageProcessing.ConvertSkBitmapToBitmapSource(scaledBitmap);
 
         TxtFontPreviewTitle.Text = $"FONT PREVIEW ({glyphCount} GLYPHS)";
 

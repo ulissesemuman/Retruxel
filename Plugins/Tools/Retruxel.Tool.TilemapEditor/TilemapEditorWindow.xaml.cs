@@ -9,6 +9,12 @@ using System.Windows;
 
 namespace Retruxel.Tool.TilemapEditor;
 
+public enum ToolMode
+{
+    Paint,
+    Navigate
+}
+
 /// <summary>
 /// Tilemap Editor Window - 100% target-agnostic.
 /// Generates UI dynamically based on target.Specs.Tilemap.
@@ -36,6 +42,7 @@ public partial class TilemapEditorWindow : Window
     private bool _isInitializing = true;
     private int _mapOffsetX = 0;
     private int _mapOffsetY = 0;
+    private ToolMode _currentToolMode = ToolMode.Paint;
 
     private IndexedPngData? _indexedData;
     private SceneData? _currentScene;

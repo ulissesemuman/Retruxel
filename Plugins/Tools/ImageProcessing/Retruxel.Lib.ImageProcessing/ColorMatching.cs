@@ -2,10 +2,8 @@ using Retruxel.Core.Models;
 using SkiaSharp;
 using System;
 using System.Collections.Generic;
-using System.Drawing;
 using System.Linq;
 using System.Runtime.CompilerServices;
-using Retruxel.Lib.ImageProcessing;
 
 namespace Retruxel.Lib.ImageProcessing;
 
@@ -36,42 +34,6 @@ public static class ColorMatching
     {
         public RgbColor rgbColor;
         public LabColor labColor;
-    }
-
-    /// <summary>
-    /// Converts source bitmap to reduced palette without hardware palette matching.
-    /// Used when a pre-optimized palette is provided.
-    /// </summary>
-    public static byte[] ReduceColors(
-        SKBitmap source,
-        IReadOnlyList<HardwareColor> palette,
-        DistanceMode distanceMode = DistanceMode.RGB)
-    {
-        var indices = new byte[source.Width * source.Height];
-        int idx = 0;
-
-        var fastPalette = PrepareFastPalette(palette, distanceMode);
-
-        for (int y = 0; y < source.Height; y++)
-        {
-            for (int x = 0; x < source.Width; x++)
-            {
-                var pixel = source.GetPixel(x, y);
-
-                // Treat fully transparent pixels as transparent in output
-                if (pixel.Alpha == 0)
-                {
-                    indices[idx++] = 0;
-                }
-                else
-                {
-                    var color = (pixel.Red, pixel.Green, pixel.Blue);
-                    indices[idx++] = ColorMatching.FindNearestColorIndex(color, fastPalette, distanceMode);
-                }
-            }
-        }
-
-        return indices;
     }
 
     /// <summary>
@@ -218,26 +180,6 @@ public static class ColorMatching
         double B = 200.0 * (fy - fz);
 
         return (L, A, B);
-    }
-
-    public static SKBitmap BitmapFromByteArray(byte[] indices, int width, int height, IReadOnlyList<HardwareColor> palette)
-    {
-        var bitmap = new SKBitmap(width, height);
-
-        var skPalette = palette.Select(c => SKColor.Parse(c.ToHex())).ToArray();
-
-        using (var canvas = new SKCanvas(bitmap))
-        {
-            for (int y = 0; y < height; y++)
-            {
-                for (int x = 0; x < width; x++)
-                {
-                    int index = indices[y * width + x];
-                    bitmap.SetPixel(x, y, skPalette[index]);
-                }
-            }
-        }
-        return bitmap;
     }
 
     private static double RgbToLinear(double c)
@@ -466,5 +408,5 @@ public static class ColorMatching
 
         return nearest;
     }
- 
+
 }

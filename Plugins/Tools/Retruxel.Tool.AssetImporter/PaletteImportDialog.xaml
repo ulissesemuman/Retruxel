@@ -25,7 +25,7 @@
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
-        <!-- ── Content ────────────────────────────────────────────────────── -->
+        <!-- Content -->
         <ScrollViewer Grid.Row="0"
                       VerticalScrollBarVisibility="Auto">
             <StackPanel Margin="24">
@@ -51,8 +51,26 @@
                              Style="{StaticResource SegmentedRadio}"
                              Margin="0,0,0,24"/>
 
+                <!-- Transparent color selector -->
+                <TextBlock Text="TRANSPARENT COLOR (INDEX 0)"
+                           Style="{StaticResource TextLabelCaps}"
+                           Foreground="{StaticResource BrushOnSurfaceVariant}"
+                           Margin="0,0,0,8"/>
+
+                <TextBlock Text="Click on the color that should be transparent:"
+                           Style="{StaticResource TextBody}"
+                           Foreground="{StaticResource BrushOnSurfaceVariant}"
+                           TextWrapping="Wrap"
+                           Margin="0,0,0,8"/>
+
+                <Border Background="{StaticResource BrushSurfaceContainerHigh}"
+                        Padding="8"
+                        Margin="0,0,0,24">
+                    <WrapPanel x:Name="TransparentColorPanel"/>
+                </Border>
+
                 <!-- Asset color preview -->
-                <TextBlock Text="ASSET COLORS"
+                <TextBlock Text="ALL COLORS IN PALETTE"
                            Style="{StaticResource TextLabelCaps}"
                            Foreground="{StaticResource BrushOnSurfaceVariant}"
                            Margin="0,0,0,8"/>
@@ -65,7 +83,7 @@
             </StackPanel>
         </ScrollViewer>
 
-        <!-- ── Action bar ─────────────────────────────────────────────────── -->
+        <!-- Action bar -->
         <Border Grid.Row="1"
                 Background="{StaticResource BrushSurfaceContainerHigh}"
                 Padding="16"

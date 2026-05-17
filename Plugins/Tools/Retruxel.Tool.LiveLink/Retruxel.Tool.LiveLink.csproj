@@ -16,6 +16,7 @@
     <ProjectReference Include="..\Retruxel.Tool.AssetProcessor\Retruxel.Tool.AssetProcessor.csproj">
       <Private>false</Private>
     </ProjectReference>
+    <ProjectReference Include="..\Retruxel.Tool.CompressionEngine\Retruxel.Tool.CompressionEngine.csproj" />
   </ItemGroup>
 
   <ItemGroup>

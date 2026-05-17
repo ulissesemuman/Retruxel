@@ -1,6 +1,6 @@
+using SkiaSharp;
 using System;
 using System.Collections.Generic;
-using System.Windows.Media.Imaging;
 
 namespace Retruxel.Tool.FontImporter.Services;
 
@@ -36,10 +36,10 @@ public class FontImportResult
     public List<int> Codepoints { get; init; } = [];
 
     /// <summary>
-    /// The generated spritesheet as a WPF BitmapSource.
+    /// The generated spritesheet as an SKBitmap. Each tile corresponds to a codepoint in the Codepoints list.
     /// Call FontRasterizer.EncodeToPng(Spritesheet) to get raw bytes for saving.
     /// </summary>
-    public BitmapSource Spritesheet { get; init; } = null!;
+    public SKBitmap Spritesheet { get; init; } = null!;
 
     /// <summary>Number of columns per row in the spritesheet. Always 16.</summary>
     public int ColumnsPerRow { get; init; } = 16;

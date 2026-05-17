@@ -19,7 +19,7 @@ public partial class TilemapEditorWindow
     private void BtnCancel_Click(object sender, RoutedEventArgs e)
         => Close();
 
-    private void BtnSave_Click(object sender, RoutedEventArgs e)
+    private async void BtnSave_Click(object sender, RoutedEventArgs e)
     {
         if (CmbTilesetAsset.SelectedItem == null)
         {
@@ -34,19 +34,12 @@ public partial class TilemapEditorWindow
             return;
         }
 
-        // Validate asset colors
-        if (!ValidateAssetColors(out var invalidColors))
-        {
-            if (!HandleInvalidColors(invalidColors))
-                return; // User chose to stay in editor or cancelled
-        }
-
         SavePaletteSlotSelection();
 
         var base64Data = TilemapSerializer.ToBase64(_tilemapData.GetLayer(_currentLayerIndex));
         var bytes = Convert.FromBase64String(base64Data);
         var entries = TilemapSerializer.FromBase64(base64Data, bytes.Length / 4);
-        
+
         // Convert TileEntry[] to array of objects for JSON serialization
         var mapDataArray = entries.Select(e => new
         {
@@ -99,7 +92,7 @@ public partial class TilemapEditorWindow
             FlipH = _selectedFlipH,
             FlipV = _selectedFlipV
         };
-        
+
         _tilemapData.FillLayer(_currentLayerIndex, entry);
         RenderCanvas();
     }
@@ -124,7 +117,7 @@ public partial class TilemapEditorWindow
             var asset = _project.Assets.FirstOrDefault(a => a.Id == assetId);
             if (asset == null) return;
 
-            int tileCount = asset.TileCount;
+            int tileCount = asset.GenerationParams.TileCount;
             int rows = (int)Math.Ceiling((double)tileCount / columns);
 
             // Resize tilemap to match tileset dimensions
@@ -237,11 +230,11 @@ public partial class TilemapEditorWindow
                 {
                     var currentLayer = _tilemapData.GetLayer(_currentLayerIndex);
                     int index = 0;
-                    
+
                     foreach (var item in jsonEl.EnumerateArray())
                     {
                         if (index >= currentLayer.Length) break;
-                        
+
                         // New format: object with tileIndex, flipH, flipV, rotation
                         if (item.ValueKind == System.Text.Json.JsonValueKind.Object)
                         {
@@ -259,7 +252,7 @@ public partial class TilemapEditorWindow
                             int tileIndex = item.GetInt32();
                             currentLayer[index] = new TileEntry { TileIndex = tileIndex };
                         }
-                        
+
                         index++;
                     }
                     RenderCanvas();
@@ -283,7 +276,7 @@ public partial class TilemapEditorWindow
                     var fhProp = type.GetProperty("flipH");
                     var fvProp = type.GetProperty("flipV");
                     var rotProp = type.GetProperty("rotation");
-                    
+
                     currentLayer[i] = new TileEntry
                     {
                         TileIndex = tiProp != null ? (int)tiProp.GetValue(obj)! : -1,

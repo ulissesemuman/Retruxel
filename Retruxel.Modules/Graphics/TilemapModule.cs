@@ -172,7 +172,7 @@ public class TilemapModule : IGraphicModule
     public string Serialize()
     {
         var json = JsonSerializer.Serialize(_state, _jsonOptions);
-        
+
         // DEBUG: Log serialized JSON
         System.Diagnostics.Debug.WriteLine($"[TilemapModule.Serialize] MapData.Length = {_state.MapData.Length}");
         if (_state.MapData.Length > 0)
@@ -181,15 +181,15 @@ public class TilemapModule : IGraphicModule
             System.Diagnostics.Debug.WriteLine($"[TilemapModule.Serialize] JSON length: {json.Length}");
             System.Diagnostics.Debug.WriteLine($"[TilemapModule.Serialize] JSON preview: {json.Substring(0, Math.Min(500, json.Length))}");
         }
-        
+
         return json;
     }
-    
+
     public void Deserialize(string json)
     {
         using var doc = JsonDocument.Parse(json);
         var root = doc.RootElement;
-        
+
         _state = new TilemapState
         {
             TilesAssetId = root.TryGetProperty("tilesAssetId", out var ta) ? ta.GetString() ?? "" : "",
@@ -207,44 +207,44 @@ public class TilemapModule : IGraphicModule
             MapData = ParseMapData(root)
         };
     }
-    
+
     private static object[] ParseMapData(JsonElement root)
     {
         if (!root.TryGetProperty("mapData", out var mapDataProp))
             return Array.Empty<object>();
-        
+
         if (mapDataProp.ValueKind != JsonValueKind.Array)
             return Array.Empty<object>();
-        
+
         var result = new List<object>();
-        
+
         foreach (var item in mapDataProp.EnumerateArray())
         {
             // New format: object with tileIndex, flipH, flipV, rotation
             if (item.ValueKind == JsonValueKind.Object)
             {
                 var entry = new Dictionary<string, object>();
-                
+
                 if (item.TryGetProperty("tileIndex", out var ti))
                     entry["tileIndex"] = ti.GetInt32();
                 else
                     entry["tileIndex"] = -1;
-                
+
                 if (item.TryGetProperty("flipH", out var fh))
                     entry["flipH"] = fh.GetBoolean();
                 else
                     entry["flipH"] = false;
-                
+
                 if (item.TryGetProperty("flipV", out var fv))
                     entry["flipV"] = fv.GetBoolean();
                 else
                     entry["flipV"] = false;
-                
+
                 if (item.TryGetProperty("rotation", out var rot))
                     entry["rotation"] = rot.GetInt32();
                 else
                     entry["rotation"] = 0;
-                
+
                 result.Add(entry);
             }
             // Old format: plain integer (convert to object)
@@ -259,7 +259,7 @@ public class TilemapModule : IGraphicModule
                 });
             }
         }
-        
+
         return result.ToArray();
     }
     public string GetValidationSample() => JsonSerializer.Serialize(new TilemapState(), _jsonOptions);

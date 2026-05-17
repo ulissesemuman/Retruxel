@@ -54,13 +54,13 @@ public class TilemapPreprocessorTool : ITool
         // DEBUG: Log input
         System.Diagnostics.Debug.WriteLine($"[TilemapPreprocessor] ===== EXECUTE START =====");
         System.Diagnostics.Debug.WriteLine($"[TilemapPreprocessor] mapDataObj type: {mapDataObj?.GetType().Name ?? "null"}");
-        
+
         // Convert JsonElement to object[] if needed
         if (mapDataObj is JsonElement jsonElement && jsonElement.ValueKind == JsonValueKind.Array)
         {
             var arrayLength = jsonElement.GetArrayLength();
             System.Diagnostics.Debug.WriteLine($"[TilemapPreprocessor] mapDataObj is JsonElement array with {arrayLength} items");
-            
+
             var objArray = new object[arrayLength];
             int idx = 0;
             foreach (var item in jsonElement.EnumerateArray())
@@ -68,7 +68,7 @@ public class TilemapPreprocessorTool : ITool
                 objArray[idx++] = item;
             }
             mapDataObj = objArray;
-            
+
             if (arrayLength > 0)
             {
                 System.Diagnostics.Debug.WriteLine($"[TilemapPreprocessor] First item type: {objArray[0]?.GetType().Name}");
@@ -162,7 +162,7 @@ public class TilemapPreprocessorTool : ITool
             ["originalWidth"] = mapWidth,
             ["originalHeight"] = mapHeight,
             ["wasClipped"] = needsClipping,
-            
+
             // Pass paletteSlot for target extension
             ["paletteSlot"] = paletteSlot
         };

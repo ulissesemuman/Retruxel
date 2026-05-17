@@ -108,14 +108,17 @@
       <ToolDllsWindows Include="..\Plugins\Tools\Retruxel.Tool.*\bin\$(Configuration)\net10.0-windows\Retruxel.Tool.*.dll" />
       <!-- Also copy library DLLs -->
       <LibDlls Include="..\Plugins\Tools\**\Retruxel.Lib.*\bin\$(Configuration)\net10.0\Retruxel.Lib.*.dll" />
+      <LibDllsWindows Include="..\Plugins\Tools\**\Retruxel.Lib.*\bin\$(Configuration)\net10.0-windows\Retruxel.Lib.*.dll" />
     </ItemGroup>
     <!-- Force overwrite by deleting first -->
     <Delete Files="$(OutputPath)Plugins\Tools\%(ToolDlls.Filename)%(ToolDlls.Extension)" />
     <Delete Files="$(OutputPath)Plugins\Tools\%(ToolDllsWindows.Filename)%(ToolDllsWindows.Extension)" />
     <Delete Files="$(OutputPath)Plugins\Tools\%(LibDlls.Filename)%(LibDlls.Extension)" />
+    <Delete Files="$(OutputPath)Plugins\Tools\%(LibDllsWindows.Filename)%(LibDllsWindows.Extension)" />
     <Copy SourceFiles="@(ToolDlls)" DestinationFolder="$(OutputPath)Plugins\Tools" Condition="Exists('%(ToolDlls.FullPath)')" />
     <Copy SourceFiles="@(ToolDllsWindows)" DestinationFolder="$(OutputPath)Plugins\Tools" Condition="Exists('%(ToolDllsWindows.FullPath)')" />
     <Copy SourceFiles="@(LibDlls)" DestinationFolder="$(OutputPath)Plugins\Tools" Condition="Exists('%(LibDlls.FullPath)')" />
+    <Copy SourceFiles="@(LibDllsWindows)" DestinationFolder="$(OutputPath)Plugins\Tools" Condition="Exists('%(LibDllsWindows.FullPath)')" />
   </Target>
 
   <!-- Copy CodeGens folder to Plugins/CodeGens after build -->

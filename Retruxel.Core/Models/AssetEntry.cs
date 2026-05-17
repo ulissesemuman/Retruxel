@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations;
 
 namespace Retruxel.Core.Models;
 
@@ -29,17 +28,10 @@ public class AssetEntry
     public string RelativePath { get; set; } = string.Empty;
 
     /// <summary>
-    /// VRAM region ID from target.Specs.VramRegions.
-    /// Ex: "background", "sprites", "plane_a", "plane_b"
+    /// Path to the original source image (before processing).
+    /// Ex: "Assets/Source/player_original.png"
     /// </summary>
-    public string VramRegionId { get; set; } = string.Empty;
-
-    /// <summary>
-    /// Number of 8×8 tiles in this asset.
-    /// Calculated at import time from image dimensions.
-    /// Ex: a 64×8 image = 8 tiles.
-    /// </summary>
-    public int TileCount { get; set; }
+    public string SourcePath { get; set; } = string.Empty;
 
     /// <summary>
     /// Original image width in pixels. Stored for display in the Asset panel.
@@ -57,63 +49,23 @@ public class AssetEntry
     public DateTime ImportedAt { get; set; }
 
     /// <summary>
-    /// True when this asset is stored as indexed PNG (palette mode).
-    /// All tile/sprite assets must be indexed — enforced by AssetImporter.
+    /// VRAM region ID from target.Specs.VramRegions.
+    /// Ex: "background", "sprites", "plane_a", "plane_b"
     /// </summary>
-    public bool IsIndexed { get; set; } = false;
-
-    /// <summary>
-    /// Number of color indices in this asset (typically 16 for SMS).
-    /// Matches the palette size of the target.
-    /// </summary>
-    public int ColorCount { get; set; } = 16;
-
-    /// <summary>
-    /// Suggested colors from the original image, as hex strings.
-    /// Stored as reference only — not used in compilation.
-    /// Used to pre-populate PaletteSlot when user chooses "replace slot".
-    /// </summary>
-    public List<string> SuggestedColors { get; set; } = new();
-
-    /// <summary>
-    /// Path to the original source image (before processing).
-    /// Ex: "Assets/Source/player_original.png"
-    /// </summary>
-    public string SourcePath { get; set; } = string.Empty;
-
-    /// <summary>
-    /// Path to the generated/processed image.
-    /// Ex: "Assets/Generated/player.png"
-    /// </summary>
-    public string GeneratedPath { get; set; } = string.Empty;
+    public string VramRegionId { get; set; } = string.Empty;
 
     /// <summary>
     /// Parameters used to generate the processed image from source.
     /// Null for legacy assets imported before this system.
     /// </summary>
     public AssetGenerationParams? GenerationParams { get; set; }
-
-    /// <summary>
-    /// 
-    /// </summary>
-    public byte[] MapIndex { get; set; }
 }
 
 /// <summary>
 /// Parameters for generating processed assets from source images.
 /// </summary>
- public class AssetGenerationParams
+public class AssetGenerationParams
 {
-    /// <summary>
-    /// Target palette slot index (0 = Background, 1 = Sprite).
-    /// </summary>
-    public int TargetPalette { get; set; }
-
-    /// <summary>
-    /// Number of colors to reduce to (typically 16 for SMS).
-    /// </summary>
-    public int ColorCount { get; set; } = 16;
-
     /// <summary>
     /// Color space for distance calculation: "RGB" or "LAB".
     /// </summary>
@@ -123,13 +75,60 @@ public class AssetEntry
     /// Diversity weight for color selection (0.0 - 1.0).
     /// Higher = more diverse colors, lower = more accurate to source.
     /// </summary>
-    public double DiversityWeight { get; set; } = 0.7;
+    public double DiversityWeight { get; set; } = 1.25;
 
     /// <summary>
-    /// Custom color order after reduction.
-    /// Array of indices to reorder the palette.
+    /// Target palette slot index (0 = Background, 1 = Sprite FOR SMS).
     /// </summary>
-    public int[]? ColorOrder { get; set; }
+    /// 
+    public int TargetPalette { get; set; }
+
+    /// <summary>
+    /// Number of colors to reduce to (typically 16 for SMS).
+    /// </summary>
+    public int ColorCount { get; set; } = 16;
+
+    /// <summary>
+    /// List of colors in the asset's palette, as hex strings.
+    /// </summary>
+    public List<string> Palette { get; set; } = new();
+
+    /// <summary>
+    /// The processed image data as a byte array of palette indices (mapIndex).
+    /// </summary>
+    public byte[] MapIndex { get; set; }
+
+    /// <summary>
+    /// Optimized image width in pixels. Stored for display in the Asset panel.
+    /// </summary>
+    public int OptimizedWidth { get; set; }
+
+    /// <summary>
+    /// Optimized image height in pixels. Stored for display in the Asset panel.
+    /// </summary>
+    public int OptimizedHeight { get; set; }
+
+    /// <summary>
+    /// Number of 8×8 tiles in this asset.
+    /// Calculated at import time from image dimensions.
+    /// Ex: a 64×8 image = 8 tiles.
+    /// </summary>
+    public int TileCount { get; set; }
+
+    /// <summary>
+    /// Enable detection of duplicate tiles that are flipped horizontally°.
+    /// </summary>
+    public bool EnableFlipH { get; set; }
+
+    /// <summary>
+    /// Enable detection of duplicate tiles that are flipped vertically.
+    /// </summary>
+    public bool EnableFlipV { get; set; }
+
+    /// <summary>
+    /// Enable detection of duplicate tiles that are rotated by 90/180/270°.
+    /// </summary>
+    public bool EnableRotation { get; set; }
 }
 
 

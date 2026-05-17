@@ -1,6 +1,5 @@
-using Retruxel.Lib.ImageProcessing;
+using Retruxel.Lib.WPFImageProcessing;
 using SkiaSharp;
-using System;
 using System.IO;
 using System.Windows;
 using System.Windows.Controls;
@@ -24,8 +23,7 @@ public partial class SpriteEditorWindow
         if (_indexedData is null || _currentScene is null) return;
 
         var slot = _currentScene.PaletteSlots[_activePaletteSlot];
-        var skBitmap = _indexedPngService.RenderPreview(_indexedData, slot.Colors, scale: (int)_tileZoomLevel);
-        _tilesetImage = ConvertSkBitmapToBitmapSource(skBitmap);
+        _tilesetImage = _indexedPngService.RenderPreview(_indexedData, slot.Colors, scale: (int)_tileZoomLevel);
 
         RenderTileset();
     }
@@ -71,7 +69,7 @@ public partial class SpriteEditorWindow
 
         var image = new Image
         {
-            Source = tileImage,
+            Source = ImageProcessing.ConvertSkBitmapToBitmapSource(tileImage),
             Width = tileSize,
             Height = tileSize,
             Stretch = Stretch.Fill
@@ -95,18 +93,26 @@ public partial class SpriteEditorWindow
         return border;
     }
 
-    private BitmapSource ExtractTile(int tileIndex)
+    private SKBitmap ExtractTile(int tileIndex)
     {
         if (_tilesetImage == null)
-            return BitmapSource.Create(8, 8, 96, 96, PixelFormats.Bgra32, null, new byte[8 * 8 * 4], 8 * 4);
+            return new SKBitmap(8, 8, SKColorType.Bgra8888, SKAlphaType.Premul);
 
         int col = tileIndex % _tilesetColumns;
         int row = tileIndex / _tilesetColumns;
         int tileSize = (int)(8 * _tileZoomLevel);
 
-        var croppedBitmap = new CroppedBitmap(_tilesetImage, new Int32Rect(col * tileSize, row * tileSize, tileSize, tileSize));
+        var tile = new SKBitmap(tileSize, tileSize, SKColorType.Bgra8888, SKAlphaType.Premul);
 
-        return croppedBitmap;
+        using (var canvas = new SKCanvas(tile))
+        {
+            var sourceRect = SKRect.Create(col * tileSize, row * tileSize, tileSize, tileSize);
+            var destRect = SKRect.Create(0, 0, tileSize, tileSize);
+
+            canvas.DrawBitmap(_tilesetImage, sourceRect, destRect);
+        }
+
+        return tile;
     }
 
     private void TileButton_Click(object sender, MouseButtonEventArgs e)
@@ -142,24 +148,5 @@ public partial class SpriteEditorWindow
                 item.BorderThickness = new Thickness(0);
             }
         }
-    }
-
-    private BitmapSource ConvertSkBitmapToBitmapSource(SKBitmap skBitmap)
-    {
-        using var image = SKImage.FromBitmap(skBitmap);
-        using var data = image.Encode(SKEncodedImageFormat.Png, 100);
-
-        var memoryStream = new MemoryStream();
-        data.SaveTo(memoryStream);
-        memoryStream.Seek(0, SeekOrigin.Begin);
-
-        var bitmapImage = new BitmapImage();
-        bitmapImage.BeginInit();
-        bitmapImage.CacheOption = BitmapCacheOption.OnLoad;
-        bitmapImage.StreamSource = memoryStream;
-        bitmapImage.EndInit();
-        bitmapImage.Freeze();
-
-        return bitmapImage;
     }
 }

@@ -46,7 +46,7 @@ public class SmsRenderBackend
         sb.AppendLine();
 
         // GameState structure
-        sb.AppendLine("// ── Game State ────────────────────────────────────────────────");
+        sb.AppendLine("// Game State ");
         sb.AppendLine();
         sb.AppendLine("typedef struct {");
         sb.AppendLine("    const unsigned char* tileData;");
@@ -103,7 +103,7 @@ public class SmsRenderBackend
         sb.AppendLine();
 
         // Function declarations
-        sb.AppendLine("// ── Engine Functions ──────────────────────────────────────────");
+        sb.AppendLine("// Engine Functions ");
         sb.AppendLine();
         sb.AppendLine("void Engine_Init(void);");
         sb.AppendLine("void Engine_Render(GameState* state);");

@@ -1,12 +1,14 @@
 using Retruxel.Core.Services;
+using Retruxel.Lib.ImageProcessing;
+using Retruxel.Lib.WPFImageProcessing;
 using Retruxel.Tool.AssetProcessor;
 using Retruxel.Tool.LiveLink.Pipelines;
 using Retruxel.Tool.LiveLink.Services;
+using SkiaSharp;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Windows;
-using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using static Retruxel.Lib.ImageProcessing.ColorMatching;
 
@@ -41,24 +43,27 @@ public partial class LiveLinkWindow
             // Determine target color count based on destination target
             Retruxel.Core.Interfaces.ITarget? destinationTarget = null;
             int targetColorCount = 16; // Default
-            
+
             if (_input?.TryGetValue("targetId", out var targetObj) == true)
             {
                 var targetId = targetObj?.ToString();
                 destinationTarget = TargetRegistry.GetTargetById(targetId ?? "sms");
-                
+
                 if (destinationTarget != null)
                 {
                     int paletteSlotCount = destinationTarget.GetPaletteSlotCount();
                     int colorsPerSlot = destinationTarget.GetColorsPerSlot();
                     targetColorCount = paletteSlotCount * colorsPerSlot;
-                    
+
                     LogInfo($"Target: {destinationTarget.DisplayName} - {paletteSlotCount} slots × {colorsPerSlot} colors = {targetColorCount} total");
                 }
             }
-            
+
+            // Convert WPF bitmap to SKBitmap
+            var skiaBitmap = ImageProcessing.ConvertBitmapSourceToSkiaBitmap(previewBitmap);
+
             var previewWindow = new PaletteOptimizationWindow(
-                previewBitmap,
+                skiaBitmap,
                 targetColorCount,
                 DistanceMode.RGB,
                 destinationTarget);
@@ -94,7 +99,7 @@ public partial class LiveLinkWindow
                 LogInfo("Converting optimized image to tiles...");
 
                 // Extract pixels from optimized bitmap
-                var optimizedPixels = ExtractPixelsFromBitmap(optimizedBitmap);
+                var optimizedPixels = IndexedBitmapRenderer.ExtractPixels(optimizedBitmap);
 
                 // Convert to CaptureResult format
                 optimizedCapture = ConvertBitmapToCapture(optimizedBitmap, optimizedPalette, _lastCapture);
@@ -180,7 +185,7 @@ public partial class LiveLinkWindow
         }
     }
 
-    private CaptureResult ConvertBitmapToCapture(BitmapSource bitmap, List<(byte R, byte G, byte B)> palette, CaptureResult originalCapture)
+    private CaptureResult ConvertBitmapToCapture(SKBitmap bitmap, List<(byte R, byte G, byte B)> palette, CaptureResult originalCapture)
     {
         // Convert palette to uint[]
         var paletteUint = palette.Select(c =>
@@ -194,18 +199,8 @@ public partial class LiveLinkWindow
         }
 
         // Extract pixels from bitmap
-        int width = bitmap.PixelWidth;
-        int height = bitmap.PixelHeight;
-
-        BitmapSource convertedBitmap = bitmap;
-        if (bitmap.Format != PixelFormats.Bgra32)
-        {
-            convertedBitmap = new FormatConvertedBitmap(bitmap, PixelFormats.Bgra32, null, 0);
-        }
-
-        int stride = width * 4;
-        byte[] pixels = new byte[height * stride];
-        convertedBitmap.CopyPixels(pixels, stride, 0);
+        int width = bitmap.Width;
+        int height = bitmap.Height;
 
         // Convert pixels to tiles using original nametable structure
         int tileSize = 8;
@@ -239,12 +234,8 @@ public partial class LiveLinkWindow
                         if (x >= width || y >= height)
                             continue;
 
-                        int pixelOffset = y * stride + x * 4;
-                        byte b = pixels[pixelOffset + 0];
-                        byte g = pixels[pixelOffset + 1];
-                        byte r = pixels[pixelOffset + 2];
-
-                        uint color = 0xFF000000u | ((uint)r << 16) | ((uint)g << 8) | b;
+                        var pixel = bitmap.GetPixel(x, y);
+                        uint color = 0xFF000000u | ((uint)pixel.Red << 16) | ((uint)pixel.Green << 8) | pixel.Blue;
 
                         byte colorIdx = paletteLookup.TryGetValue(color, out var idx) ? idx : (byte)0;
 
@@ -258,40 +249,11 @@ public partial class LiveLinkWindow
         return new CaptureResult
         {
             Tiles = tiles,
-            Palette = paletteUint,
             Nametable = originalCapture.Nametable,
             NametableWidth = originalCapture.NametableWidth,
             NametableHeight = originalCapture.NametableHeight,
-            TileWidth = originalCapture.TileWidth,
-            TileHeight = originalCapture.TileHeight,
-            TargetId = originalCapture.TargetId,
-            Metadata = new Dictionary<string, object>(originalCapture.Metadata)
+            Palette = paletteUint
         };
-    }
-
-    private List<(byte R, byte G, byte B)> ExtractPixelsFromBitmap(BitmapSource bitmap)
-    {
-        int width = bitmap.PixelWidth;
-        int height = bitmap.PixelHeight;
-
-        BitmapSource convertedBitmap = bitmap;
-        if (bitmap.Format != PixelFormats.Bgra32)
-        {
-            convertedBitmap = new FormatConvertedBitmap(bitmap, PixelFormats.Bgra32, null, 0);
-        }
-
-        int stride = width * 4;
-        byte[] pixels = new byte[height * stride];
-
-        convertedBitmap.CopyPixels(pixels, stride, 0);
-
-        var result = new List<(byte R, byte G, byte B)>();
-        for (int i = 0; i < pixels.Length; i += 4)
-        {
-            result.Add((pixels[i + 2], pixels[i + 1], pixels[i]));
-        }
-
-        return result;
     }
 
     private CaptureResult ApplyOptimizedPaletteToCapture(CaptureResult originalCapture, List<(byte R, byte G, byte B)> optimizedPalette)

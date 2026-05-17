@@ -117,14 +117,14 @@
                             Style="{StaticResource SidebarTab}"/>
                 </Grid>
 
-                <!-- ── STRUCTURE panel ── -->
+                <!-- STRUCTURE panel -->
                 <ScrollViewer x:Name="PanelStructure"
                               Grid.Row="1"
                               VerticalScrollBarVisibility="Auto">
                     <StackPanel x:Name="StructurePanel" Margin="0 8 0 0"/>
                 </ScrollViewer>
 
-                <!-- ── MODULES panel ── -->
+                <!-- MODULES panel -->
                 <ScrollViewer x:Name="PanelModules"
                               Grid.Row="1"
                               Visibility="Collapsed"
@@ -145,7 +145,7 @@
                     </StackPanel>
                 </ScrollViewer>
 
-                <!-- ── ASSETS panel ── -->
+                <!-- ASSETS panel -->
                 <ScrollViewer x:Name="PanelAssets"
                               Grid.Row="1"
                               Visibility="Collapsed"

@@ -74,23 +74,11 @@ public partial class SpriteEditorWindow
             return;
         }
 
-        if (asset.IsIndexed && _currentScene != null)
-        {
-            _indexedData = _indexedPngService.Read(imagePath);
-            _tilesetColumns = _indexedData.Width / 8;
-            _tilesetRows = _indexedData.Height / 8;
-            _totalTiles = _tilesetColumns * _tilesetRows;
-            RefreshTilesetWithPalette();
-        }
-        else
-        {
-            var bitmap = new System.Windows.Media.Imaging.BitmapImage(new System.Uri(imagePath));
-            _tilesetImage = bitmap;
-            _tilesetColumns = bitmap.PixelWidth / 8;
-            _tilesetRows = bitmap.PixelHeight / 8;
-            _totalTiles = _tilesetColumns * _tilesetRows;
-            RenderTileset();
-        }
+        _indexedData = _indexedPngService.Read(imagePath);
+        _tilesetColumns = _indexedData.Width / 8;
+        _tilesetRows = _indexedData.Height / 8;
+        _totalTiles = _tilesetColumns * _tilesetRows;
+        RefreshTilesetWithPalette();
 
         UpdateVramInfo();
     }

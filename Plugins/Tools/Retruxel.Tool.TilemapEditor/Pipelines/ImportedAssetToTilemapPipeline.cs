@@ -1,11 +1,12 @@
 using Retruxel.Core.Interfaces;
 using Retruxel.Core.Models;
+using SkiaSharp;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
 using System.Windows.Media.Imaging;
-using Retruxel.Core.Helpers;
 
 namespace Retruxel.Tool.TilemapEditor.Pipelines;
 
@@ -21,12 +22,6 @@ public class ImportedAssetToTilemapPipeline : AssetPipelineBase<ImportedAssetDat
 
     public override Dictionary<string, object> ProcessTyped(ImportedAssetData input, Dictionary<string, object>? options = null)
     {
-        System.Diagnostics.Debug.WriteLine($"[ImportedAssetToTilemapPipeline] ProcessTyped called");
-        System.Diagnostics.Debug.WriteLine($"[ImportedAssetToTilemapPipeline] Input tiles: {input.Tiles.Length}");
-        System.Diagnostics.Debug.WriteLine($"[ImportedAssetToTilemapPipeline] Input TilemapData.Length: {input.TilemapData.Length}");
-        System.Diagnostics.Debug.WriteLine($"[ImportedAssetToTilemapPipeline] Map dimensions: {input.MapWidth}×{input.MapHeight} = {input.MapWidth * input.MapHeight}");
-        System.Diagnostics.Debug.WriteLine($"[ImportedAssetToTilemapPipeline] Metadata keys: {string.Join(", ", input.Metadata.Keys)}");
-
         if (!input.IsValid(out var error))
         {
             throw new InvalidOperationException($"Invalid imported asset data: {error}");
@@ -56,13 +51,13 @@ public class ImportedAssetToTilemapPipeline : AssetPipelineBase<ImportedAssetDat
             FileName = Path.GetFileName(assetPath),
             RelativePath = Path.GetRelativePath(projectPath, assetPath).Replace('\\', '/'),
             VramRegionId = "background",
-            SourceWidth = input.Tiles.Length > 0 ? CalculateTilesetWidth(input.Tiles.Length, input.TileWidth) : 0,
-            SourceHeight = input.Tiles.Length > 0 ? CalculateTilesetHeight(input.Tiles.Length, input.TileWidth, input.TileHeight) : 0,
-            TileCount = input.Tiles.Length
+            GenerationParams = new AssetGenerationParams
+            {
+                OptimizedWidth = input.Tiles.Length > 0 ? CalculateTilesetWidth(input.Tiles.Length, input.TileWidth) : 0,
+                OptimizedHeight = input.Tiles.Length > 0 ? CalculateTilesetHeight(input.Tiles.Length, input.TileWidth, input.TileHeight) : 0,
+                TileCount = input.Tiles.Length,
+            }
         };
-
-        System.Diagnostics.Debug.WriteLine($"[ImportedAssetToTilemapPipeline] Asset dimensions: {asset.SourceWidth}×{asset.SourceHeight}");
-        System.Diagnostics.Debug.WriteLine($"[ImportedAssetToTilemapPipeline] Asset tile count: {asset.TileCount}");
 
         project.Assets.Add(asset);
 
@@ -122,35 +117,21 @@ public class ImportedAssetToTilemapPipeline : AssetPipelineBase<ImportedAssetDat
         bool hasBitmap = (options?.ContainsKey("optimizedBitmap") == true) ||
                         (input.Metadata.ContainsKey("optimizedBitmap"));
 
-        System.Diagnostics.Debug.WriteLine($"[SaveTilesAsAsset] Checking for optimized bitmap...");
-        System.Diagnostics.Debug.WriteLine($"[SaveTilesAsAsset] options is null: {options == null}");
-        if (options != null)
-        {
-            System.Diagnostics.Debug.WriteLine($"[SaveTilesAsAsset] options.Keys: {string.Join(", ", options.Keys)}");
-            System.Diagnostics.Debug.WriteLine($"[SaveTilesAsAsset] Contains 'optimizedBitmap': {options.ContainsKey("optimizedBitmap")}");
-        }
-        System.Diagnostics.Debug.WriteLine($"[SaveTilesAsAsset] metadata.Keys: {string.Join(", ", input.Metadata.Keys)}");
-        System.Diagnostics.Debug.WriteLine($"[SaveTilesAsAsset] hasBitmap: {hasBitmap}");
-
         if (hasBitmap)
         {
             // Get bitmap from options or metadata
             var optimizedBitmap = options?.ContainsKey("optimizedBitmap") == true
-                ? (System.Windows.Media.Imaging.BitmapSource)options["optimizedBitmap"]
-                : (System.Windows.Media.Imaging.BitmapSource)input.Metadata["optimizedBitmap"];
+                ? (SKBitmap)options["optimizedBitmap"]
+                : (SKBitmap)input.Metadata["optimizedBitmap"];
 
             var originalPalette = options?.ContainsKey("originalPalette") == true
                 ? (uint[])options["originalPalette"]
                 : input.Metadata.ContainsKey("originalPalette") ? (uint[])input.Metadata["originalPalette"] : null;
 
-            System.Diagnostics.Debug.WriteLine($"[SaveTilesAsAsset] Using optimized bitmap directly (tileset-only mode)");
-            System.Diagnostics.Debug.WriteLine($"[SaveTilesAsAsset] Bitmap size: {optimizedBitmap.PixelWidth}×{optimizedBitmap.PixelHeight}");
-
             return SaveBitmapDirectly(optimizedBitmap, originalPalette, project, projectPath, assetId, targetId);
         }
 
         // Original reconstruction logic for tilemap mode
-        System.Diagnostics.Debug.WriteLine($"[SaveTilesAsAsset] Using tile reconstruction (tilemap mode)");
         return SaveTilesReconstructed(input, project, projectPath, assetId, targetId, options);
     }
 
@@ -158,20 +139,18 @@ public class ImportedAssetToTilemapPipeline : AssetPipelineBase<ImportedAssetDat
     /// Saves optimized bitmap directly as PNG (tileset-only mode).
     /// Creates 2 assets: original (RGB from emulator) + optimized (target hardware colors).
     /// </summary>
-    private string SaveBitmapDirectly(System.Windows.Media.Imaging.BitmapSource optimizedBitmap, uint[]? originalPalette, RetruxelProject project, string projectPath, string assetId, string targetId)
+    private string SaveBitmapDirectly(SKBitmap optimizedBitmap, uint[]? originalPalette, RetruxelProject project, string projectPath, string assetId, string targetId)
     {
         var assetsDir = Path.Combine(projectPath, "assets", "graphics");
         Directory.CreateDirectory(assetsDir);
 
         // Save optimized version (target hardware colors)
         var optimizedPath = Path.Combine(assetsDir, $"{assetId}.png");
-        using (var fileStream = new FileStream(optimizedPath, FileMode.Create))
-        {
-            var encoder = new PngBitmapEncoder();
-            encoder.Frames.Add(System.Windows.Media.Imaging.BitmapFrame.Create(optimizedBitmap));
-            encoder.Save(fileStream);
-        }
-        System.Diagnostics.Debug.WriteLine($"[SaveBitmapDirectly] Saved optimized PNG: {optimizedPath}");
+
+        using var image = SKImage.FromBitmap(optimizedBitmap);
+        using var data = image.Encode(SKEncodedImageFormat.Png, 100);
+        using var fileStream = new FileStream(optimizedPath, FileMode.Create);
+        data.SaveTo(fileStream);
 
         // TODO: Save original version with RGB palette from emulator
         // This would require reconstructing the bitmap with original palette
@@ -179,6 +158,7 @@ public class ImportedAssetToTilemapPipeline : AssetPipelineBase<ImportedAssetDat
 
         return optimizedPath;
     }
+
 
     /// <summary>
     /// Reconstructs tiles from ImportedAssetData and saves as PNG (tilemap mode).
@@ -206,8 +186,8 @@ public class ImportedAssetToTilemapPipeline : AssetPipelineBase<ImportedAssetDat
         uint[] finalPalette = MapToTargetHardware(input.Palette, target, useLab);
         System.Diagnostics.Debug.WriteLine($"[SaveTilesAsAsset] Mapped {input.Palette.Length} RGB colors to {targetId.ToUpper()} hardware palette using {(useLab ? "LAB" : "RGB")} color space");
 
-        // Create bitmap
-        var bitmap = new WriteableBitmap(tilesetWidth, tilesetHeight, 96, 96, System.Windows.Media.PixelFormats.Bgra32, null);
+        // Create SKBitmap
+        var bitmap = new SKBitmap(tilesetWidth, tilesetHeight, SKColorType.Bgra8888, SKAlphaType.Premul);
 
         // Extract Color Table from metadata if available (SG-1000)
         byte[]? colorTable = null;
@@ -226,62 +206,47 @@ public class ImportedAssetToTilemapPipeline : AssetPipelineBase<ImportedAssetDat
         System.Diagnostics.Debug.WriteLine($"[SaveTilesAsAsset] Drawing {input.Tiles.Length} tiles to {tilesetWidth}×{tilesetHeight} bitmap");
         System.Diagnostics.Debug.WriteLine($"[SaveTilesAsAsset] TilesPerRow: {tilesPerRow}");
 
-        // LOCK BITMAP ONCE FOR ALL TILES
-        bitmap.Lock();
-        try
+        unsafe
         {
-            unsafe
+            var ptr = (byte*)bitmap.GetPixels();
+            int stride = bitmap.RowBytes;
+
+            // Process tiles in parallel for better performance
+            Parallel.For(0, input.Tiles.Length, tileIndex =>
             {
-                var backBuffer = (byte*)bitmap.BackBuffer.ToPointer();
-                int stride = bitmap.BackBufferStride;
+                int tileX = (tileIndex % tilesPerRow) * input.TileWidth;
+                int tileY = (tileIndex / tilesPerRow) * input.TileHeight;
 
-                for (int tileIndex = 0; tileIndex < input.Tiles.Length; tileIndex++)
+                if (tileIndex >= 224 && tileIndex <= 287)
                 {
-                    int tileX = (tileIndex % tilesPerRow) * input.TileWidth;
-                    int tileY = (tileIndex / tilesPerRow) * input.TileHeight;
-
-                    if (tileIndex >= 224 && tileIndex <= 287)
-                    {
-                        System.Diagnostics.Debug.WriteLine($"[SaveTilesAsAsset] Tile {tileIndex}: drawing at ({tileX}, {tileY})");
-                    }
-
-                    DrawTileUnsafe(backBuffer, stride, input.Tiles[tileIndex], finalPalette, tileX, tileY, input.TileWidth, input.TileHeight, tileIndex, colorTable);
+                    System.Diagnostics.Debug.WriteLine($"[SaveTilesAsAsset] Tile {tileIndex}: drawing at ({tileX}, {tileY})");
                 }
-            }
 
-            bitmap.AddDirtyRect(new System.Windows.Int32Rect(0, 0, tilesetWidth, tilesetHeight));
-        }
-        finally
-        {
-            bitmap.Unlock();
+                DrawTileUnsafe(ptr, stride, input.Tiles[tileIndex], finalPalette, tileX, tileY, input.TileWidth, input.TileHeight, tileIndex, colorTable);
+            });
         }
 
         // Save bitmap as PNG
+        using var image = SKImage.FromBitmap(bitmap);
+        using var data = image.Encode(SKEncodedImageFormat.Png, 100);
         using var fileStream = new FileStream(assetPath, FileMode.Create);
-        var encoder = new PngBitmapEncoder();
-        encoder.Frames.Add(BitmapFrame.Create(bitmap));
-        encoder.Save(fileStream);
+        data.SaveTo(fileStream);
 
         return assetPath;
     }
+
 
     private unsafe void DrawTileUnsafe(byte* backBuffer, int stride, byte[] tilePixels, uint[] palette, int offsetX, int offsetY, int tileWidth, int tileHeight, int tileIndex, byte[]? colorTable)
     {
         // Debug first tile
         if (tileIndex == 0)
         {
-            System.Diagnostics.Debug.WriteLine($"[DrawTileUnsafe] Tile 0:");
-            System.Diagnostics.Debug.WriteLine($"  tilePixels.Length: {tilePixels.Length}");
-            System.Diagnostics.Debug.WriteLine($"  palette.Length: {palette.Length}");
-            System.Diagnostics.Debug.WriteLine($"  First 10 color indices: {string.Join(", ", tilePixels.Take(10))}");
-            System.Diagnostics.Debug.WriteLine($"  Palette colors:");
             for (int i = 0; i < Math.Min(palette.Length, 10); i++)
             {
                 uint c = palette[i];
                 byte r = (byte)((c >> 16) & 0xFF);
                 byte g = (byte)((c >> 8) & 0xFF);
                 byte b = (byte)(c & 0xFF);
-                System.Diagnostics.Debug.WriteLine($"    [{i}] = R={r}, G={g}, B={b}");
             }
         }
 
@@ -346,100 +311,83 @@ public class ImportedAssetToTilemapPipeline : AssetPipelineBase<ImportedAssetDat
         }
     }
 
-    private void DrawTileToBitmap(WriteableBitmap bitmap, byte[] tilePixels, uint[] palette, int offsetX, int offsetY, int tileWidth, int tileHeight, int tileIndex = -1, byte[]? colorTable = null)
+    private void DrawTileToBitmap(SKBitmap bitmap, byte[] tilePixels, uint[] palette, int offsetX, int offsetY, int tileWidth, int tileHeight, int tileIndex = -1, byte[]? colorTable = null)
     {
-        bitmap.Lock();
-
-        try
+        unsafe
         {
-            unsafe
+            var backBuffer = (byte*)bitmap.GetPixels();
+            int stride = bitmap.RowBytes;
+
+            for (int y = 0; y < tileHeight; y++)
             {
-                var backBuffer = (byte*)bitmap.BackBuffer.ToPointer();
-                int stride = bitmap.BackBufferStride;
-
-                // Debug: Log stride and buffer info
-                if (tileIndex >= 224 && tileIndex <= 287)
+                for (int x = 0; x < tileWidth; x++)
                 {
-                    System.Diagnostics.Debug.WriteLine($"[DrawTileToBitmap] Tile {tileIndex}: stride={stride}, bitmapSize={bitmap.PixelWidth}x{bitmap.PixelHeight}");
-                }
+                    int pixelIndex = y * tileWidth + x;
+                    if (pixelIndex >= tilePixels.Length) continue;
 
-                for (int y = 0; y < tileHeight; y++)
-                {
-                    for (int x = 0; x < tileWidth; x++)
+                    byte colorIndex = tilePixels[pixelIndex];
+
+                    uint color;
+
+                    // SG-1000 with Color Table: Apply FG/BG colors from Color Table
+                    if (colorTable != null && tileIndex >= 0 && palette.Length == 16)
                     {
-                        int pixelIndex = y * tileWidth + x;
-                        if (pixelIndex >= tilePixels.Length) continue;
-
-                        byte colorIndex = tilePixels[pixelIndex];
-
-                        uint color;
-
-                        // SG-1000 with Color Table: Apply FG/BG colors from Color Table
-                        if (colorTable != null && tileIndex >= 0 && palette.Length == 16)
+                        // Color Table: Each byte controls 8 tiles
+                        int colorTableIndex = tileIndex / 8;
+                        if (colorTableIndex < colorTable.Length)
                         {
-                            // Color Table: Each byte controls 8 tiles
-                            int colorTableIndex = tileIndex / 8;
-                            if (colorTableIndex < colorTable.Length)
-                            {
-                                byte colorByte = colorTable[colorTableIndex];
-                                byte fgColor = (byte)((colorByte >> 4) & 0x0F); // High 4 bits
-                                byte bgColor = (byte)(colorByte & 0x0F);        // Low 4 bits
+                            byte colorByte = colorTable[colorTableIndex];
+                            byte fgColor = (byte)((colorByte >> 4) & 0x0F); // High 4 bits
+                            byte bgColor = (byte)(colorByte & 0x0F);        // Low 4 bits
 
-                                if (x == 0 && y == 0) // Log once per tile
-                                {
-                                    System.Diagnostics.Debug.WriteLine($"[Tile {tileIndex}] ColorTable[{colorTableIndex}]=0x{colorByte:X2} FG={fgColor} BG={bgColor}");
-                                }
-
-                                // 1bpp: 0=background, 1=foreground
-                                byte paletteIndex = colorIndex == 0 ? bgColor : fgColor;
-                                color = palette[paletteIndex];
-                            }
-                            else
+                            if (x == 0 && y == 0) // Log once per tile
                             {
-                                // Fallback: use black/white
-                                color = colorIndex == 0 ? 0xFF000000 : 0xFFFFFFFF;
+                                System.Diagnostics.Debug.WriteLine($"[Tile {tileIndex}] ColorTable[{colorTableIndex}]=0x{colorByte:X2} FG={fgColor} BG={bgColor}");
                             }
-                        }
-                        // Special handling for 1bpp without Color Table (temporary fix)
-                        else if (palette.Length == 16 && colorIndex <= 1)
-                        {
-                            // 1bpp: 0=black, 1=white (temporary fix until Color Table is implemented)
-                            color = colorIndex == 0 ? 0xFF000000 : 0xFFFFFFFF;
+
+                            // 1bpp: 0=background, 1=foreground
+                            byte paletteIndex = colorIndex == 0 ? bgColor : fgColor;
+                            color = palette[paletteIndex];
                         }
                         else
                         {
-                            if (colorIndex >= palette.Length) continue;
-                            color = palette[colorIndex];
+                            // Fallback: use black/white
+                            color = colorIndex == 0 ? 0xFF000000 : 0xFFFFFFFF;
                         }
-
-                        byte a = (byte)((color >> 24) & 0xFF);
-                        byte r = (byte)((color >> 16) & 0xFF);
-                        byte g = (byte)((color >> 8) & 0xFF);
-                        byte b = (byte)(color & 0xFF);
-
-                        int bitmapX = offsetX + x;
-                        int bitmapY = offsetY + y;
-                        int offset = bitmapY * stride + bitmapX * 4;
-
-                        // Debug: Log first pixel of tiles around line 8
-                        if (tileIndex >= 224 && tileIndex <= 287 && x == 0 && y == 0)
-                        {
-                            System.Diagnostics.Debug.WriteLine($"[DrawTileToBitmap] Tile {tileIndex}: first pixel at bitmapX={bitmapX}, bitmapY={bitmapY}, offset={offset}, color=#{r:X2}{g:X2}{b:X2}");
-                        }
-
-                        backBuffer[offset] = b;
-                        backBuffer[offset + 1] = g;
-                        backBuffer[offset + 2] = r;
-                        backBuffer[offset + 3] = a;
                     }
+                    // Special handling for 1bpp without Color Table (temporary fix)
+                    else if (palette.Length == 16 && colorIndex <= 1)
+                    {
+                        // 1bpp: 0=black, 1=white (temporary fix until Color Table is implemented)
+                        color = colorIndex == 0 ? 0xFF000000 : 0xFFFFFFFF;
+                    }
+                    else
+                    {
+                        if (colorIndex >= palette.Length) continue;
+                        color = palette[colorIndex];
+                    }
+
+                    byte a = (byte)((color >> 24) & 0xFF);
+                    byte r = (byte)((color >> 16) & 0xFF);
+                    byte g = (byte)((color >> 8) & 0xFF);
+                    byte b = (byte)(color & 0xFF);
+
+                    int bitmapX = offsetX + x;
+                    int bitmapY = offsetY + y;
+                    int offset = bitmapY * stride + bitmapX * 4;
+
+                    // Debug: Log first pixel of tiles around line 8
+                    if (tileIndex >= 224 && tileIndex <= 287 && x == 0 && y == 0)
+                    {
+                        System.Diagnostics.Debug.WriteLine($"[DrawTileToBitmap] Tile {tileIndex}: first pixel at bitmapX={bitmapX}, bitmapY={bitmapY}, offset={offset}, color=#{r:X2}{g:X2}{b:X2}");
+                    }
+
+                    backBuffer[offset] = b;
+                    backBuffer[offset + 1] = g;
+                    backBuffer[offset + 2] = r;
+                    backBuffer[offset + 3] = a;
                 }
             }
-
-            bitmap.AddDirtyRect(new System.Windows.Int32Rect(offsetX, offsetY, tileWidth, tileHeight));
-        }
-        finally
-        {
-            bitmap.Unlock();
         }
     }
 

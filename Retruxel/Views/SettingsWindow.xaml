@@ -63,7 +63,7 @@
                     <ColumnDefinition Width="*"/>
                 </Grid.ColumnDefinitions>
 
-                <!-- ── LEFT NAV ── -->
+                <!-- LEFT NAV -->
                 <Border Grid.Column="0"
                         Background="{StaticResource BrushSurfaceContainerLow}">
                     <StackPanel Margin="0,16,0,0">
@@ -120,7 +120,7 @@
                     </StackPanel>
                 </Border>
 
-                <!-- ── RIGHT CONTENT ── -->
+                <!-- RIGHT CONTENT -->
                 <Grid x:Name="ContentGrid" Grid.Column="1" Background="{StaticResource BrushSurface}">
 
                     <!-- GENERAL PANEL -->

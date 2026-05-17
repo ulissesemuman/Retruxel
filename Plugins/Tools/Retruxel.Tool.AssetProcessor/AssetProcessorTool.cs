@@ -6,7 +6,6 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Windows.Media;
 using static Retruxel.Lib.ImageProcessing.ColorMatching;
 
 namespace Retruxel.Tool.AssetProcessor;
@@ -38,7 +37,7 @@ public class AssetProcessorTool : ITool
         var projectPath = (string)input["projectPath"];
 
         var processedData = ProcessAsset(asset, projectPath);
-        
+
         return new Dictionary<string, object>
         {
             ["indexedData"] = processedData!,
@@ -54,16 +53,6 @@ public class AssetProcessorTool : ITool
     /// </summary>
     public IndexedPngData? ProcessAsset(AssetEntry asset, string projectPath)
     {
-        if (asset.GenerationParams == null)
-        {
-            // Legacy asset without generation params - load directly
-            var legacyPath = Path.Combine(projectPath, asset.RelativePath.Replace('/', Path.DirectorySeparatorChar));
-            if (!File.Exists(legacyPath))
-                return null;
-
-            return _indexedPngService.Read(legacyPath);
-        }
-
         // Load source image
         var sourcePath = Path.Combine(projectPath, asset.SourcePath.Replace('/', Path.DirectorySeparatorChar));
         if (!File.Exists(sourcePath))
@@ -112,14 +101,7 @@ public class AssetProcessorTool : ITool
                 break;
         }
 
-        var a = ColorMatching.ReduceColors(sourceBitmap, palette, distanceMode);
-
-        if (genParams.ColorOrder != null && genParams.ColorOrder.Length > 0)
-        {
-            palette = ReorderPalette(palette, genParams.ColorOrder);
-        }
-
-        var indices = ColorMatching.ReduceColors(sourceBitmap, palette, distanceMode);
+        var indices = IndexedBitmapRenderer.Encode(sourceBitmap, palette, distanceMode);
         var hexColors = palette.Select(c => $"#{c.R:X2}{c.G:X2}{c.B:X2}").ToList();
 
         return new IndexedPngData
@@ -129,35 +111,5 @@ public class AssetProcessorTool : ITool
             Indices = indices,
             Colors = hexColors
         };
-    }
-
-    private List<(byte R, byte G, byte B)> ExtractPixelsFromBitmap(SKBitmap bitmap)
-    {
-        var pixels = new List<(byte R, byte G, byte B)>();
-        for (int y = 0; y < bitmap.Height; y++)
-        {
-            for (int x = 0; x < bitmap.Width; x++)
-            {
-                var pixel = bitmap.GetPixel(x, y);
-                if (pixel.Alpha > 0)
-                {
-                    pixels.Add((pixel.Red, pixel.Green, pixel.Blue));
-                }
-            }
-        }
-        return pixels;
-    }
-
-    private List<HardwareColor> ReorderPalette(
-        List<HardwareColor> palette,
-        int[] order)
-    {
-        var reordered = new List<HardwareColor>();
-        foreach (var index in order)
-        {
-            if (index >= 0 && index < palette.Count)
-                reordered.Add(palette[index]);
-        }
-        return reordered;
     }
 }

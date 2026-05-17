@@ -2,6 +2,8 @@ using Microsoft.Win32;
 using Retruxel.Core.Interfaces;
 using Retruxel.Core.Models;
 using Retruxel.Core.Services;
+using Retruxel.Lib.ImageProcessing;
+using Retruxel.Lib.WPFImageProcessing;
 using Retruxel.Tool.AssetImporter.Services;
 using Retruxel.Tool.AssetProcessor;
 using SkiaSharp;
@@ -12,6 +14,7 @@ using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using static Retruxel.Lib.ImageProcessing.ColorMatching;
 using ToolRegistry = Retruxel.Core.Services.ToolRegistry;
@@ -38,6 +41,9 @@ public partial class AssetImporterWindow : Window
     private string? _sourcePngPath;
     private SKBitmap? _reducedPreview;
     private bool _isInitialized = false;
+    private int _transparentColorIndex = 0;
+    private int _chosenPaletteSlot = 0;
+    private List<HardwareColor> _oldColors;
 
     /// <summary>
     /// The imported asset entry. Only set after a successful import (DialogResult = true).
@@ -244,7 +250,7 @@ public partial class AssetImporterWindow : Window
 
             // Show source preview
             _sourcePngPath = pngPath;
-            ImgSource.Source = LoadBitmapFromPath(pngPath);
+            ImgSource.Source = ImageProcessing.ConvertSkBitmapToBitmapSource(LoadBitmapFromPath(pngPath));
             ImgSource.Visibility = Visibility.Visible;
             DropHint.Visibility = Visibility.Collapsed;
 
@@ -276,7 +282,7 @@ public partial class AssetImporterWindow : Window
             _reducedPreview?.Dispose();
             _reducedPreview = Services.AssetImporter.ReduceColorsToHardware(pngPath, _target);
 
-            ImgReduced.Source = SkiaBitmapToWpf(_reducedPreview);
+            ImgReduced.Source = ImageProcessing.ConvertSkBitmapToBitmapSource(_reducedPreview);
             ImgReduced.Visibility = Visibility.Visible;
             ReducedHint.Visibility = Visibility.Collapsed;
 
@@ -339,7 +345,7 @@ public partial class AssetImporterWindow : Window
 
         try
         {
-            BitmapSource bitmapSource = LoadBitmapFromPath(_sourcePngPath);
+            SKBitmap skBitmap = LoadBitmapFromPath(_sourcePngPath);
 
             // Determine target color count from target specs
             //int paletteSlotCount = _target.GetPaletteSlotCount();
@@ -348,7 +354,7 @@ public partial class AssetImporterWindow : Window
 
             // Open palette optimization preview window
             var optimizationWindow = new PaletteOptimizationWindow(
-                bitmapSource,
+                skBitmap,
                 targetColorCount,
                 DistanceMode.LAB, // Use LAB color space for better perceptual matching
                 _target);
@@ -365,36 +371,58 @@ public partial class AssetImporterWindow : Window
             var optimizedBitmap = optimizationWindow.OptimizedBitmap;
             var optimizedPalette = optimizationWindow.OptimizedPalette;
 
-            // Convert optimized WPF bitmap back to SKBitmap for import
-            var optimizedSkBitmap = WpfBitmapToSkia(optimizedBitmap);
+            // Get color reduxtion parameters
+            var selectedDiversity = optimizationWindow.SelectedDiversity;
+            var colorSpace = optimizationWindow.ColorSpace;
 
             // Convert to indexed PNG
             var indexedPngService = new Retruxel.Lib.ImageProcessing.IndexedPngService();
-            var skPalette = optimizedPalette.Select(c => new SKColor(c.R, c.G, c.B)).ToList();
-            var indexedData = indexedPngService.ConvertToIndexed(optimizedSkBitmap, skPalette);
+            var palette = optimizedPalette.Select(c => new HardwareColor(c.R, c.G, c.B)).ToList();
 
             // Show palette import dialog if scene is available
             if (_currentScene != null)
             {
-                ShowPaletteImportDialog(indexedData, _currentScene, _target);
+                ShowPaletteImportDialog(palette, _currentScene, _target);
             }
 
-            optimizedSkBitmap.Dispose();
+            optimizedBitmap.Dispose();
 
             var mapIndex = optimizationWindow.MapIndex;
+
+            if (_transparentColorIndex != 0 && _chosenPaletteSlot != -1)
+            {
+                var slot = _currentScene.PaletteSlots[_chosenPaletteSlot];
+                var slotColors = new List<HardwareColor>();
+
+                foreach (var hexColor in slot.Colors)
+                {
+                    slotColors.Add(HardwareColor.FromHex(hexColor));
+                }
+
+                mapIndex = IndexedBitmapRenderer.EncodeFromMapIndex(
+                    mapIndex,
+                    _oldColors,
+                    slotColors,
+                    _reducedPreview.Width,
+                    _reducedPreview.Height);
+            }
 
             // Import using ORIGINAL file (_sourcePngPath)
             // AssetImporter copies original to Assets/Source/
             // Stores AssetGenerationParams (palette, colorSpace, diversity)
             // Editors use AssetProcessorTool to process on-the-fly
             ImportedAsset = Services.AssetImporter.Import(
+                assetName,
                 _sourcePngPath,
                 _projectPath,
                 regionId,
                 _target,
+                _chosenPaletteSlot,
                 mapIndex,
-                skPalette);
-            
+                selectedDiversity,
+                colorSpace,
+                palette);
+
             DialogResult = true;
             Close();
         }
@@ -416,61 +444,10 @@ public partial class AssetImporterWindow : Window
     private void ClearValidation()
         => TxtValidation.Text = string.Empty;
 
-    private static BitmapImage LoadBitmapFromPath(string path)
+    private static SKBitmap? LoadBitmapFromPath(string path)
     {
-        var bmp = new BitmapImage();
-        bmp.BeginInit();
-        bmp.UriSource = new Uri(path);
-        bmp.CacheOption = BitmapCacheOption.OnLoad;
-        bmp.EndInit();
-        bmp.Freeze();
-        return bmp;
-    }
-
-    private static BitmapSource SkiaBitmapToWpf(SKBitmap skiaBitmap)
-    {
-        using var image = SKImage.FromBitmap(skiaBitmap);
-        using var data = image.Encode(SKEncodedImageFormat.Png, 100);
-        using var stream = new MemoryStream(data.ToArray());
-
-        var bmp = new BitmapImage();
-        bmp.BeginInit();
-        bmp.CacheOption = BitmapCacheOption.OnLoad;
-        bmp.StreamSource = stream;
-        bmp.EndInit();
-        bmp.Freeze();
-        return bmp;
-    }
-
-    private static SKBitmap WpfBitmapToSkia(BitmapSource wpfBitmap)
-    {
-        // Convert WPF bitmap to byte array
-        int width = wpfBitmap.PixelWidth;
-        int height = wpfBitmap.PixelHeight;
-
-        var convertedBitmap = wpfBitmap;
-        if (wpfBitmap.Format != System.Windows.Media.PixelFormats.Bgra32)
-        {
-            convertedBitmap = new FormatConvertedBitmap(wpfBitmap, System.Windows.Media.PixelFormats.Bgra32, null, 0);
-        }
-
-        int stride = width * 4;
-        byte[] pixels = new byte[height * stride];
-        convertedBitmap.CopyPixels(pixels, stride, 0);
-
-        // Create SKBitmap and copy pixels
-        var skBitmap = new SKBitmap(width, height, SKColorType.Bgra8888, SKAlphaType.Premul);
-
-        unsafe
-        {
-            var ptr = (byte*)skBitmap.GetPixels();
-            for (int i = 0; i < pixels.Length; i++)
-            {
-                ptr[i] = pixels[i];
-            }
-        }
-
-        return skBitmap;
+        using var stream = File.OpenRead(path);
+        return SKBitmap.Decode(stream);
     }
 
     private static int CountUniqueColors(SKBitmap bitmap)
@@ -493,12 +470,14 @@ public partial class AssetImporterWindow : Window
     }
 
     private void ShowPaletteImportDialog(
-        Retruxel.Lib.ImageProcessing.IndexedPngData indexedData,
+        IReadOnlyList<HardwareColor> palette,
         SceneData currentScene,
         ITarget target)
     {
+        List<string> hexColors = palette.Select(c => c.ToHex()).ToList();
+
         var dialog = new PaletteImportDialog(
-            indexedData.Colors,
+            hexColors,
             currentScene,
             target)
         {
@@ -507,13 +486,27 @@ public partial class AssetImporterWindow : Window
 
         if (dialog.ShowDialog() != true) return;
 
+        _transparentColorIndex = dialog.TransparentColorIndex;
+
         switch (dialog.Result)
         {
             case PaletteImportResult.ReplaceSlot:
                 var slot = currentScene.PaletteSlots[dialog.ChosenSlot];
+
+                _oldColors = new List<HardwareColor>();
+
+                foreach (var hexColor in slot.Colors)
+                {
+                    _oldColors.Add(HardwareColor.FromHex(hexColor));
+                }
+
+                _chosenPaletteSlot = slot.SlotIndex;
+
                 slot.Colors.Clear();
-                for (int i = 0; i < Math.Min(indexedData.Colors.Count, target.GetColorsPerSlot()); i++)
-                    slot.Colors.Add(indexedData.Colors[i]);
+
+                for (int i = 0; i < Math.Min(hexColors.Count, target.GetColorsPerSlot()); i++)
+                    slot.Colors.Add(hexColors[i]);
+
                 break;
 
             case PaletteImportResult.KeepCurrent:

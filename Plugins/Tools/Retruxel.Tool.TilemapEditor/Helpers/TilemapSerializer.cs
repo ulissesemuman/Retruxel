@@ -24,18 +24,18 @@ public static class TilemapSerializer
         {
             var entry = layerData[i];
             int offset = i * 4;
-            
+
             // Bytes 0-1: tileIndex
             ushort tileIndex = entry.TileIndex < 0 ? (ushort)0xFFFF : (ushort)entry.TileIndex;
             bytes[offset] = (byte)(tileIndex & 0xFF);
             bytes[offset + 1] = (byte)((tileIndex >> 8) & 0xFF);
-            
+
             // Byte 2: flags
             byte flags = 0;
             if (entry.FlipH) flags |= 0x01;
             if (entry.FlipV) flags |= 0x02;
             bytes[offset + 2] = flags;
-            
+
             // Byte 3: rotation (0, 90, 180, 270 → 0, 1, 2, 3)
             byte rotation = entry.Rotation switch
             {
@@ -58,22 +58,22 @@ public static class TilemapSerializer
         byte[] bytes = Convert.FromBase64String(base64Data);
         int entryCount = bytes.Length / 4;
         var result = new TileEntry[expectedSize];
-        
+
         for (int i = 0; i < expectedSize; i++)
             result[i] = TileEntry.Empty;
 
         for (int i = 0; i < Math.Min(entryCount, expectedSize); i++)
         {
             int offset = i * 4;
-            
+
             // Bytes 0-1: tileIndex
             ushort tileIndex = (ushort)(bytes[offset] | (bytes[offset + 1] << 8));
-            
+
             // Byte 2: flags
             byte flags = bytes[offset + 2];
             bool flipH = (flags & 0x01) != 0;
             bool flipV = (flags & 0x02) != 0;
-            
+
             // Byte 3: rotation
             byte rotationByte = bytes[offset + 3];
             int rotation = rotationByte switch
@@ -83,7 +83,7 @@ public static class TilemapSerializer
                 3 => 270,
                 _ => 0
             };
-            
+
             result[i] = tileIndex == 0xFFFF
                 ? TileEntry.Empty
                 : new TileEntry

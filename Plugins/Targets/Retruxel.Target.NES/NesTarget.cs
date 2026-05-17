@@ -25,11 +25,11 @@ public class NesTarget : ITarget
 
     public TargetSpecs Specs => new()
     {
-        // ── Screen ───────────────────────────────────────────────────────────
+        // Screen 
         ScreenWidth = 256,
         ScreenHeight = 240,
 
-        // ── Tiles ────────────────────────────────────────────────────────────
+        // Tiles 
         TileWidth = 8,
         TileHeight = 8,
         VramRegions =
@@ -38,7 +38,7 @@ public class NesTarget : ITarget
             new VramRegion("pattern1", "Pattern Table 1", 256, 511)
         ],
 
-        // ── Colors & Palettes ─────────────────────────────────────────────────
+        // Colors & Palettes 
         // NES PPU: fixed 54-color palette, not mathematically calculable
         TotalColors = 54,
         ColorDepthBitsPerChannel = 0,   // N/A — NES palette is fixed hardware output
@@ -48,14 +48,14 @@ public class NesTarget : ITarget
         BgPalettes = 4,
         SpritePalettes = 4,
 
-        // ── Sprites ──────────────────────────────────────────────────────────
+        // Sprites 
         SpritesPerScanline = 8,
         MaxSpritesOnScreen = 64,
         SpriteWidth = 8,
         SpriteHeight = 8,
         SupportsDoubleHeightSprites = true,   // 8×16 sprite mode via PPUCTRL bit
 
-        // ── Memory ───────────────────────────────────────────────────────────
+        // Memory 
         RamBytes = 2048,
         Banks =
         [
@@ -63,20 +63,20 @@ public class NesTarget : ITarget
             new RomBank("chr", "CHR-ROM",   8192)
         ],
 
-        // ── CPU ──────────────────────────────────────────────────────────────
+        // CPU 
         CPU = "MOS 6502",
         CpuClockHz = 1789773,
 
         // Manufacturer
         Manufacturer = "Nintendo",
 
-        // ── Sound ────────────────────────────────────────────────────────────
+        // Sound 
         SoundChip = "2A03",
         SoundToneChannels = 4,
         SoundNoiseChannels = 1
     };
 
-    // ── Hardware palette ──────────────────────────────────────────────────────
+    // Hardware palette 
 
     /// <summary>
     /// NES PPU fixed palette — 54 colors hardcoded from hardware output.
@@ -114,7 +114,7 @@ public class NesTarget : ITarget
             .ToList();
     }
 
-    // ── Toolchain & modules ───────────────────────────────────────────────────
+    // Toolchain & modules 
 
     public IToolchain GetToolchain()
     {
@@ -149,7 +149,7 @@ public class NesTarget : ITarget
         ];
     }
 
-    // ── Templates ─────────────────────────────────────────────────────────────
+    // Templates 
 
     public IEnumerable<ProjectTemplate> GetTemplates() =>
     [
@@ -167,7 +167,7 @@ public class NesTarget : ITarget
         }
     ];
 
-    // ── Settings ──────────────────────────────────────────────────────────────
+    // Settings 
 
     public IEnumerable<ParameterDefinition> GetSettingsDefinitions() =>
     [
@@ -205,7 +205,7 @@ public class NesTarget : ITarget
         new ModuleOverride { ModuleId = "scroll", IsSingleton = true }
     ];
 
-    // ── Code generation ───────────────────────────────────────────────────────
+    // Code generation 
 
     private static Dictionary<string, Type>? _codeGenCache;
 

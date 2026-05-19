@@ -38,69 +38,69 @@ public class EntityModule : ILogicModule
         [
             new ParameterDefinition
             {
-                Name         = "spriteId",
-                DisplayName  = "Sprite (Legacy)",
-                Description  = "[Obsolete] Tile index of the player sprite in VRAM. Use spriteRef instead.",
-                Type         = ParameterType.TileRef,
+                Name = "spriteId",
+                DisplayName = "Sprite (Legacy)",
+                Description = "[Obsolete] Tile index of the player sprite in VRAM. Use spriteRef instead.",
+                Type = ParameterType.TileRef,
                 DefaultValue = 0
             },
             new ParameterDefinition
             {
-                Name         = "spriteRef",
-                DisplayName  = "Sprite",
-                Description  = "Sprite module to render for this entity.",
-                Type         = ParameterType.ModuleReference,
+                Name = "spriteRef",
+                DisplayName = "Sprite",
+                Description = "Sprite module to render for this entity.",
+                Type = ParameterType.ModuleReference,
                 ModuleFilter = "sprite",
-                Required     = true
+                Required = true
             },
             new ParameterDefinition
             {
-                Name         = "animationRef",
-                DisplayName  = "Animation",
-                Description  = "Animation module to drive this entity's frames (optional).",
-                Type         = ParameterType.ModuleReference,
+                Name = "animationRef",
+                DisplayName = "Animation",
+                Description = "Animation module to drive this entity's frames (optional).",
+                Type = ParameterType.ModuleReference,
                 ModuleFilter = "animation",
-                Required     = false
+                Required = false
             },
             new ParameterDefinition
             {
-                Name         = "x",
-                DisplayName  = "Initial X",
-                Description  = "Initial horizontal position in pixels.",
-                Type         = ParameterType.Int,
+                Name = "x",
+                DisplayName = "Initial X",
+                Description = "Initial horizontal position in pixels.",
+                Type = ParameterType.Int,
                 DefaultValue = 32,
-                MinValue     = 0,
-                MaxValue     = 255
+                MinValue = 0,
+                MaxValue = 255
             },
             new ParameterDefinition
             {
-                Name         = "y",
-                DisplayName  = "Initial Y",
-                Description  = "Initial vertical position in pixels.",
-                Type         = ParameterType.Int,
+                Name = "y",
+                DisplayName = "Initial Y",
+                Description = "Initial vertical position in pixels.",
+                Type = ParameterType.Int,
                 DefaultValue = 144,
-                MinValue     = 0,
-                MaxValue     = 191
+                MinValue = 0,
+                MaxValue = 191
             },
             new ParameterDefinition
             {
-                Name         = "speed",
-                DisplayName  = "Speed",
-                Description  = "Movement speed in pixels per frame.",
-                Type         = ParameterType.Int,
+                Name = "speed",
+                DisplayName = "Speed",
+                Description = "Movement speed in pixels per frame.",
+                Type = ParameterType.Int,
                 DefaultValue = 2,
-                MinValue     = 1,
-                MaxValue     = 8
+                MinValue = 1,
+                MaxValue = 8
             },
             new ParameterDefinition
             {
-                Name         = "health",
-                DisplayName  = "Health",
-                Description  = "Initial hit points.",
-                Type         = ParameterType.Int,
+                Name = "health",
+                DisplayName = "Health",
+                Description = "Initial hit points.",
+                Type = ParameterType.Int,
                 DefaultValue = 3,
-                MinValue     = 1,
-                MaxValue     = 16
+                MinValue = 1,
+                MaxValue = 16
             }
         ]
     };

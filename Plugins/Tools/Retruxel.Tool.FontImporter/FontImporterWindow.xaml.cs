@@ -47,7 +47,7 @@ public partial class FontImporterWindow : Window
     // Title bar
 
     private void TitleBar_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
-        => DragMove();
+ => DragMove();
 
     private void CloseButton_Click(object sender, RoutedEventArgs e)
     {

@@ -38,10 +38,10 @@ public partial class TilemapEditorWindow
     // Zoom button menu — canvas 
 
     private void BtnCanvasZoom_Click(object sender, RoutedEventArgs e)
-        => ShowZoomMenu(BtnCanvasZoom, isCanvas: true);
+ => ShowZoomMenu(BtnCanvasZoom, isCanvas: true);
 
     private void BtnTilesetZoom_Click(object sender, RoutedEventArgs e)
-        => ShowZoomMenu(BtnTilesetZoom, isCanvas: false);
+ => ShowZoomMenu(BtnTilesetZoom, isCanvas: false);
 
     private void ShowZoomMenu(Button anchor, bool isCanvas)
     {
@@ -123,10 +123,10 @@ public partial class TilemapEditorWindow
     }
 
     private void UpdateCanvasZoomLabel()
-        => BtnCanvasZoom.Content = $"{_canvasZoom * 100:F0}%";
+ => BtnCanvasZoom.Content = $"{_canvasZoom * 100:F0}%";
 
     private void UpdateTilesetZoomLabel()
-        => BtnTilesetZoom.Content = $"{_tileZoomLevel * 100:F0}%";
+ => BtnTilesetZoom.Content = $"{_tileZoomLevel * 100:F0}%";
 
     // Keyboard shortcuts 
 

@@ -120,12 +120,9 @@
                         <StackPanel Grid.Row="3" Orientation="Horizontal" Margin="16,8,16,8">
                             <TextBlock Text="Zoom:" Style="{StaticResource TextLabel}" 
                                    VerticalAlignment="Center" Margin="0,0,8,0"/>
-                            <Button x:Name="BtnTilesetZoom50" Content="50%" 
-                                Style="{StaticResource ButtonSecondary}" Width="48" Height="24"/>
-                            <Button x:Name="BtnTilesetZoom100" Content="100%" 
-                                Style="{StaticResource ButtonPrimary}" Width="48" Height="24" Margin="4,0,0,0"/>
-                            <Button x:Name="BtnTilesetZoom200" Content="200%" 
-                                Style="{StaticResource ButtonSecondary}" Width="48" Height="24" Margin="4,0,0,0"/>
+                            <Button x:Name="BtnTilesetZoom" Content="100%"
+                                Style="{StaticResource ButtonSecondary}" Width="64" Height="24"
+                                Click="BtnTilesetZoom_Click"/>
                         </StackPanel>
 
                         <ScrollViewer Grid.Row="4" x:Name="TilesetScrollViewer"
@@ -160,14 +157,9 @@
                         <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="16,8,16,8">
                             <TextBlock Text="Zoom:" Style="{StaticResource TextLabel}" 
                                    VerticalAlignment="Center" Margin="0,0,8,0"/>
-                            <Button x:Name="BtnCanvasZoom50" Content="50%" 
-                                Style="{StaticResource ButtonSecondary}" Width="48" Height="24"/>
-                            <Button x:Name="BtnCanvasZoom100" Content="100%" 
-                                Style="{StaticResource ButtonSecondary}" Width="48" Height="24" Margin="4,0,0,0"/>
-                            <Button x:Name="BtnCanvasZoom200" Content="200%" 
-                                Style="{StaticResource ButtonPrimary}" Width="48" Height="24" Margin="4,0,0,0"/>
-                            <Button x:Name="BtnCanvasZoom400" Content="400%" 
-                                Style="{StaticResource ButtonSecondary}" Width="48" Height="24" Margin="4,0,0,0"/>
+                            <Button x:Name="BtnCanvasZoom" Content="200%"
+                                Style="{StaticResource ButtonSecondary}" Width="64" Height="24"
+                                Click="BtnCanvasZoom_Click"/>
                         </StackPanel>
 
                         <ScrollViewer Grid.Row="2" x:Name="CanvasScrollViewer"

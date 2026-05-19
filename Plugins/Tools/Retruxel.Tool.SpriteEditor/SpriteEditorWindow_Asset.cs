@@ -1,4 +1,6 @@
 using Retruxel.Core.Models;
+using Retruxel.Lib.ImageProcessing;
+using Retruxel.Lib.PaletteHelpers;
 using System.Collections.Generic;
 using System.Linq;
 using System.Windows;
@@ -8,6 +10,8 @@ namespace Retruxel.Tool.SpriteEditor;
 
 public partial class SpriteEditorWindow
 {
+    private AssetEntry? _currentAsset;
+
     private void InitializeAssetSelector()
     {
         if (_project == null)
@@ -18,33 +22,24 @@ public partial class SpriteEditorWindow
 
         CmbTilesetAsset.Items.Clear();
 
-        // Add all image assets from project
-        var imageAssets = _project.Assets
-            .OrderBy(a => a.Id);
-
-        foreach (var asset in imageAssets)
+        foreach (var asset in _project.Assets.OrderBy(a => a.Id))
         {
-            var item = new ComboBoxItem
+            CmbTilesetAsset.Items.Add(new ComboBoxItem
             {
                 Content = asset.Id,
-                Tag = asset
-            };
-            CmbTilesetAsset.Items.Add(item);
+                Tag     = asset
+            });
         }
 
-        // Select current asset if available
+        // Restore previously selected asset
         if (!string.IsNullOrEmpty(_tilesetAssetId))
         {
-            var currentAsset = _project.Assets.FirstOrDefault(a => a.Id == _tilesetAssetId);
-            if (currentAsset != null)
+            foreach (ComboBoxItem item in CmbTilesetAsset.Items)
             {
-                foreach (ComboBoxItem item in CmbTilesetAsset.Items)
+                if (item.Tag is AssetEntry asset && asset.Id == _tilesetAssetId)
                 {
-                    if (item.Tag is AssetEntry asset && asset.Id == _tilesetAssetId)
-                    {
-                        CmbTilesetAsset.SelectedItem = item;
-                        break;
-                    }
+                    CmbTilesetAsset.SelectedItem = item;
+                    break;
                 }
             }
         }
@@ -65,29 +60,43 @@ public partial class SpriteEditorWindow
 
     private void LoadTilesetFromAsset(AssetEntry asset)
     {
-        var imagePath = System.IO.Path.Combine(_projectPath, "Assets", asset.RelativePath);
-        System.Diagnostics.Debug.WriteLine($"[SpriteEditor] Loading tileset from: {imagePath}");
+        System.Diagnostics.Debug.WriteLine($"[SpriteEditor] LoadTilesetFromAsset: {asset.Id}");
 
-        if (!System.IO.File.Exists(imagePath))
+        var gp = asset.GenerationParams;
+
+        if (gp?.MapIndex == null || gp.MapIndex.Length == 0)
         {
-            MessageBox.Show($"Tileset image not found:\n{imagePath}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            MessageBox.Show(
+                $"Asset '{asset.Id}' has no MapIndex.\nRe-import the asset to generate it.",
+                "Missing MapIndex", MessageBoxButton.OK, MessageBoxImage.Warning);
             return;
         }
 
-        _indexedData = _indexedPngService.Read(imagePath);
-        _tilesetColumns = _indexedData.Width / 8;
-        _tilesetRows = _indexedData.Height / 8;
-        _totalTiles = _tilesetColumns * _tilesetRows;
-        RefreshTilesetWithPalette();
+        _currentAsset    = asset;
+        _tilesetColumns  = gp.OptimizedWidth  / _target!.Specs.TileWidth;
+        _tilesetRows     = gp.OptimizedHeight / _target.Specs.TileHeight;
+        _totalTiles      = gp.TileCount;
 
+        // Build a lightweight IndexedPngData from the stored MapIndex + Palette
+        var colors = gp.Palette?.Count > 0
+            ? gp.Palette
+            : asset.GenerationParams.Palette ?? new List<string>();
+
+        _indexedData = new IndexedPngData
+        {
+            Width   = gp.OptimizedWidth,
+            Height  = gp.OptimizedHeight,
+            Indices = gp.MapIndex,
+            Colors  = colors
+        };
+
+        RefreshTilesetWithPalette();
         UpdateVramInfo();
     }
 
     private void SaveAssetSelection()
     {
-        if (ModuleData == null)
-            ModuleData = new Dictionary<string, object>();
-
+        ModuleData ??= new Dictionary<string, object>();
         ModuleData["tilesetAssetId"] = _tilesetAssetId ?? "";
     }
 
@@ -95,7 +104,8 @@ public partial class SpriteEditorWindow
     {
         try
         {
-            var assetImporter = new Retruxel.Tool.AssetImporter.AssetImporterWindow(_target!, _projectPath!, _currentScene)
+            var assetImporter = new Tool.AssetImporter.AssetImporterWindow(
+                _target!, _projectPath!, _currentScene)
             {
                 Owner = this
             };
@@ -119,7 +129,8 @@ public partial class SpriteEditorWindow
         }
         catch (System.Exception ex)
         {
-            MessageBox.Show($"Failed to import asset:\n\n{ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            MessageBox.Show($"Failed to import asset:\n\n{ex.Message}", "Error",
+                MessageBoxButton.OK, MessageBoxImage.Error);
         }
     }
 }

@@ -13,12 +13,63 @@ namespace Retruxel.Lib.PaletteHelpers;
 public static class PaletteHelpers
 {
     /// <summary>
-    /// Populates a ComboBox with palette slot items from the target.
+    /// Populates a ComboBox with palette slot items from the target and wires
+    /// up the SelectionChanged and BtnEditPalette click handlers.
+    /// Call this during editor initialization; it removes any previous handlers
+    /// before re-adding them to prevent duplicates on re-init.
     /// </summary>
-    /// <param name="comboBox">ComboBox to populate</param>
-    /// <param name="target">Target platform</param>
-    /// <param name="selectedIndex">Index to select after population</param>
-    public static void PopulatePaletteSlotComboBox(ComboBox comboBox, ITarget target, int selectedIndex = 0)
+    public static void InitializePaletteSlotComboBox(
+        ComboBox comboBox,
+        Button editButton,
+        ITarget target,
+        int defaultSlot,
+        SelectionChangedEventHandler onSelectionChanged,
+        RoutedEventHandler onEditClick,
+        string debugTag = "")
+    {
+        // Hide while rebuilding to avoid layout flicker
+        comboBox.Visibility = Visibility.Collapsed;
+        editButton.Visibility = Visibility.Collapsed;
+        comboBox.Items.Clear();
+
+        // Detach stale handlers
+        comboBox.SelectionChanged -= onSelectionChanged;
+        editButton.Click -= onEditClick;
+
+        var slotCount = target.GetPaletteSlotCount();
+
+        if (!string.IsNullOrEmpty(debugTag))
+            System.Diagnostics.Debug.WriteLine(
+                $"[{debugTag}] InitializePaletteSlotComboBox: {slotCount} slots");
+
+        for (int i = 0; i < slotCount; i++)
+        {
+            var slotType = target.GetPaletteSlotType(i);
+            comboBox.Items.Add($"Slot {i} \u2014 {slotType}");
+        }
+
+        if (comboBox.Items.Count > 0)
+        {
+            int safeIndex = Math.Clamp(defaultSlot, 0, comboBox.Items.Count - 1);
+            comboBox.SelectedIndex = safeIndex;
+            comboBox.SelectionChanged += onSelectionChanged;
+            comboBox.Visibility = Visibility.Visible;
+            editButton.Click += onEditClick;
+            editButton.Visibility = Visibility.Visible;
+        }
+        else if (!string.IsNullOrEmpty(debugTag))
+        {
+            System.Diagnostics.Debug.WriteLine($"[{debugTag}] WARNING: No palette slots added!");
+        }
+    }
+
+    /// <summary>
+    /// Populates a ComboBox with palette slot items from the target (no button overload).
+    /// </summary>
+    public static void PopulatePaletteSlotComboBox(
+        ComboBox comboBox,
+        ITarget target,
+        int selectedIndex = 0)
     {
         comboBox.Items.Clear();
 
@@ -26,22 +77,16 @@ public static class PaletteHelpers
         for (int i = 0; i < slotCount; i++)
         {
             var slotType = target.GetPaletteSlotType(i);
-            var itemText = $"Slot {i} — {slotType}";
-            comboBox.Items.Add(itemText);
+            comboBox.Items.Add($"Slot {i} \u2014 {slotType}");
         }
 
         if (comboBox.Items.Count > 0 && selectedIndex < comboBox.Items.Count)
-        {
             comboBox.SelectedIndex = selectedIndex;
-        }
     }
 
     /// <summary>
     /// Parses the slot index from a ComboBox item text like "Slot 0 — Background".
     /// </summary>
-    /// <param name="itemText">ComboBox item text</param>
-    /// <param name="slotIndex">Parsed slot index</param>
-    /// <returns>True if parsing succeeded</returns>
     public static bool ParseSlotIndexFromComboBoxItem(string itemText, out int slotIndex)
     {
         slotIndex = -1;
@@ -53,17 +98,16 @@ public static class PaletteHelpers
         if (spaceIndex < 0)
             return false;
 
-        var slotNumberStr = itemText.Substring(5, spaceIndex - 5);
-        return int.TryParse(slotNumberStr, out slotIndex);
+        return int.TryParse(itemText.Substring(5, spaceIndex - 5), out slotIndex);
     }
 
     /// <summary>
-    /// Saves the selected palette slot to ModuleData dictionary.
+    /// Saves the selected palette slot index to a ModuleData dictionary.
+    /// Creates the dictionary if null.
     /// </summary>
-    /// <param name="moduleData">ModuleData dictionary (will be created if null)</param>
-    /// <param name="slotIndex">Slot index to save</param>
-    /// <returns>Updated ModuleData dictionary</returns>
-    public static Dictionary<string, object> SavePaletteSlotToModuleData(Dictionary<string, object>? moduleData, int slotIndex)
+    public static Dictionary<string, object> SavePaletteSlotToModuleData(
+        Dictionary<string, object>? moduleData,
+        int slotIndex)
     {
         moduleData ??= new Dictionary<string, object>();
         moduleData["paletteSlot"] = slotIndex;
@@ -71,14 +115,14 @@ public static class PaletteHelpers
     }
 
     /// <summary>
-    /// Opens the PaletteEditorWindow for editing a scene palette slot.
+    /// Opens the PaletteEditorWindow for a scene palette slot.
+    /// Returns true if the user saved changes.
     /// </summary>
-    /// <param name="target">Target platform</param>
-    /// <param name="scene">Current scene</param>
-    /// <param name="slotIndex">Slot index to edit</param>
-    /// <param name="owner">Owner window</param>
-    /// <returns>True if user saved changes</returns>
-    public static bool OpenPaletteEditorForSlot(ITarget target, SceneData scene, int slotIndex, Window owner)
+    public static bool OpenPaletteEditorForSlot(
+        ITarget target,
+        SceneData scene,
+        int slotIndex,
+        Window owner)
     {
         if (slotIndex < 0 || slotIndex >= scene.PaletteSlots.Count)
         {
@@ -92,12 +136,11 @@ public static class PaletteHelpers
 
         try
         {
-            var currentSlot = scene.PaletteSlots[slotIndex];
-            var paletteEditor = new Tool.PaletteEditor.PaletteEditorWindow(target, currentSlot)
+            var paletteEditor = new Tool.PaletteEditor.PaletteEditorWindow(
+                target, scene.PaletteSlots[slotIndex])
             {
                 Owner = owner
             };
-
             return paletteEditor.ShowDialog() == true;
         }
         catch (Exception ex)
@@ -112,21 +155,17 @@ public static class PaletteHelpers
     }
 
     /// <summary>
-    /// Resolves palette slot hex colors to hardware colors by finding closest match in target palette.
+    /// Resolves a palette slot's hex colors to the nearest hardware colors.
     /// </summary>
-    /// <param name="slot">Palette slot data</param>
-    /// <param name="target">Target platform</param>
-    /// <returns>List of hardware colors</returns>
-    public static IReadOnlyList<HardwareColor> ResolvePaletteColors(PaletteSlotData slot, ITarget target)
+    public static IReadOnlyList<HardwareColor> ResolvePaletteColors(
+        PaletteSlotData slot,
+        ITarget target)
     {
         var hardwarePalette = target.GetHardwarePalette();
         var result = new List<HardwareColor>();
 
         foreach (var hexColor in slot.Colors)
-        {
-            var hw = FindClosestHardwareColor(hexColor, hardwarePalette);
-            result.Add(hw);
-        }
+            result.Add(FindClosestHardwareColor(hexColor, hardwarePalette));
 
         if (result.Count == 0)
             result.Add(new HardwareColor(0, 0, 0));
@@ -135,12 +174,11 @@ public static class PaletteHelpers
     }
 
     /// <summary>
-    /// Finds the closest hardware color to a given hex color using Euclidean distance in RGB space.
+    /// Finds the closest hardware color to a hex string using Manhattan distance in RGB.
     /// </summary>
-    /// <param name="hexColor">Hex color string (e.g., "#FF0000")</param>
-    /// <param name="palette">Hardware palette to search</param>
-    /// <returns>Closest hardware color</returns>
-    public static HardwareColor FindClosestHardwareColor(string hexColor, IReadOnlyList<HardwareColor> palette)
+    public static HardwareColor FindClosestHardwareColor(
+        string hexColor,
+        IReadOnlyList<HardwareColor> palette)
     {
         if (palette.Count == 0)
             return new HardwareColor(0, 0, 0);
@@ -163,8 +201,7 @@ public static class PaletteHelpers
                 bestDist = dist;
                 best = hw;
             }
-            if (dist == 0)
-                break;
+            if (dist == 0) break;
         }
 
         return best;

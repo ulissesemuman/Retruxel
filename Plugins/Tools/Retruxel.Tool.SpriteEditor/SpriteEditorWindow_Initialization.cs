@@ -10,13 +10,13 @@ namespace Retruxel.Tool.SpriteEditor;
 public partial class SpriteEditorWindow
 {
     private void TitleBar_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
-        => DragMove();
+ => DragMove();
 
     private void BtnClose_Click(object sender, RoutedEventArgs e)
-        => Close();
+ => Close();
 
     private void BtnCancel_Click(object sender, RoutedEventArgs e)
-        => Close();
+ => Close();
     private void InitializeUI()
     {
         InitializeAnimation();

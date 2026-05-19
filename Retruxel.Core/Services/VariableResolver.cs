@@ -27,20 +27,20 @@ internal class VariableResolver
     /// Sets the current scene for palette slot resolution.
     /// </summary>
     public void SetCurrentScene(Models.SceneData? scene)
-        => _currentScene = scene;
+ => _currentScene = scene;
 
     /// <summary>
     /// Sets global variables available to all CodeGen templates.
     /// Used for injecting TextAnalyzer results (fontStartTile, fontTileData, etc.).
     /// </summary>
     public void SetGlobalVariables(Dictionary<string, object> variables)
-        => _globalVariables = variables;
+ => _globalVariables = variables;
 
     /// <summary>
     /// Updates the target assembly for tool extension discovery.
     /// </summary>
     public void SetTargetAssembly(System.Reflection.Assembly? targetAssembly)
-        => _targetAssembly = targetAssembly;
+ => _targetAssembly = targetAssembly;
 
     public Dictionary<string, object> ResolveForModule(
         Dictionary<string, VariableDefinition> variables,

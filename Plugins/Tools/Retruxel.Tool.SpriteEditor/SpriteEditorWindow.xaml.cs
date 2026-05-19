@@ -19,4 +19,6 @@ namespace Retruxel.Tool.SpriteEditor;
 /// </summary>
 public partial class SpriteEditorWindow : Window
 {
+    private double _canvasZoom = 1.0;
+    private double _tilesetZoom = 2.0;
 }

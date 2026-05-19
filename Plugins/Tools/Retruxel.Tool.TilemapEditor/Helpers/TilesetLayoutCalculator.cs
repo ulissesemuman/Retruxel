@@ -20,7 +20,7 @@ public static class TilesetLayoutCalculator
     /// Calculates tileset width in pixels.
     /// </summary>
     public static int CalculateTilesetWidth(int tileCount, int tileWidth)
-        => CalculateTilesPerRow(tileCount) * tileWidth;
+ => CalculateTilesPerRow(tileCount) * tileWidth;
 
     /// <summary>
     /// Calculates tileset height in pixels.

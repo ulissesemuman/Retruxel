@@ -35,23 +35,23 @@ void physics_{{instanceId}}_init(void) {
 
 void physics_{{instanceId}}_apply_gravity(int16_t* y, int8_t* vy) {
     if (*y < GROUND_Y) {
-        *vy += GRAVITY;
+       *vy += GRAVITY;
         if (*vy > MAX_FALL_SPEED) *vy = MAX_FALL_SPEED;
-        *y += *vy;
+       *y += *vy;
         if (*y >= GROUND_Y) {
-            *y = GROUND_Y;
-            *vy = 0;
+           *y = GROUND_Y;
+           *vy = 0;
         }
     }
 }
 
 void physics_{{instanceId}}_apply_walk(int16_t* x, int8_t direction) {
-    *x += direction * WALK_SPEED;
+   *x += direction * WALK_SPEED;
     if (*x < SCREEN_LEFT) *x = SCREEN_LEFT;
     if (*x > SCREEN_RIGHT) *x = SCREEN_RIGHT;
 }
 
 void physics_{{instanceId}}_jump(int8_t* vy) {
-    *vy = -JUMP_FORCE;
+   *vy = -JUMP_FORCE;
 }
 // @retruxel:end

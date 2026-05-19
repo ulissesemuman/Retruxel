@@ -7,13 +7,13 @@ namespace Retruxel.Target.SMS.Tools;
 /// <summary>
 /// SMS-specific extension for tilemap_preprocessor tool.
 /// Converts ProcessedTileEntry[] to SMS nametable words with hardware-specific bit encoding.
-/// 
+///
 /// SMS nametable word format (16-bit):
-///   Bits 15-9: tile index (0-511, but SMS uses 0-447)
-///   Bit 8: horizontal flip
-///   Bit 7: vertical flip
-///   Bit 4: palette select (0=BG, 1=Sprite)
-///   Bits 3-0: priority (usually 0)
+///   Bits 8-0:  tile index (0-511)
+///   Bit 9:     horizontal flip
+///   Bit 10:    vertical flip
+///   Bit 11:    palette select (0=BG, 1=Sprite)
+///   Bit 12:    priority
 /// </summary>
 public class SmsTilemapPreprocessorExtension : IToolExtension
 {
@@ -57,20 +57,17 @@ public class SmsTilemapPreprocessorExtension : IToolExtension
     /// </summary>
     private int ConvertToSmsNametableWord(ProcessedTileEntry entry, int paletteSlot)
     {
-        // Bits 15-9: tile index (VRAM slot)
+        // Bits 8-0: tile index (9 bits)
         int nametableWord = entry.VramSlot & 0x1FF;
 
-        // Bit 8: horizontal flip
-        if (entry.FlipH) nametableWord |= (1 << 8);
+        // Bit 9: horizontal flip
+        if (entry.FlipH) nametableWord |= (1 << 9);
 
-        // Bit 7: vertical flip
-        if (entry.FlipV) nametableWord |= (1 << 7);
+        // Bit 10: vertical flip
+        if (entry.FlipV) nametableWord |= (1 << 10);
 
-        // Bit 4: palette select (0=BG palette, 1=Sprite palette)
-        if (paletteSlot == 1) nametableWord |= (1 << 4);
-
-        // Rotation: SMS doesn't support rotation by hardware - ignored
-        // (tiles with rotation should already be rotated in pixels by TilePacker)
+        // Bit 11: palette select (0=BG, 1=Sprite)
+        if (paletteSlot == 1) nametableWord |= (1 << 11);
 
         return nametableWord;
     }

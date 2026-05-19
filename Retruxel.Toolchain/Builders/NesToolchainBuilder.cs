@@ -93,10 +93,10 @@ public class NesToolchainBuilder : IToolchainBuilder
                 ".export NES_CHR_BANKS: absolute\n" +
                 ".export NES_MIRRORING: absolute\n" +
                 "\n" +
-                "NES_MAPPER     = 0\n" +
-                "NES_PRG_BANKS  = 2\n" +
-                "NES_CHR_BANKS  = 1\n" +
-                "NES_MIRRORING  = 1\n");
+                "NES_MAPPER = 0\n" +
+                "NES_PRG_BANKS = 2\n" +
+                "NES_CHR_BANKS = 1\n" +
+                "NES_MIRRORING = 1\n");
 
             // Create CHR data file
             var chrPath = Path.Combine(ToolchainPath, "sdks", "nes", "chr", "font.chr");

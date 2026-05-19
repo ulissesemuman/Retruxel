@@ -61,20 +61,20 @@ public class MetaspriteModule : IGraphicModule
         [
             new ParameterDefinition
             {
-                Name         = "startTile",
-                DisplayName  = "Start Tile",
-                Description  = "First VRAM tile slot for this metasprite's graphics (0–511).",
-                Type         = ParameterType.Int,
+                Name = "startTile",
+                DisplayName = "Start Tile",
+                Description = "First VRAM tile slot for this metasprite's graphics (0–511).",
+                Type = ParameterType.Int,
                 DefaultValue = 256,
-                MinValue     = 0,
-                MaxValue     = 511
+                MinValue = 0,
+                MaxValue = 511
             },
             new ParameterDefinition
             {
-                Name         = "tilesAssetId",
-                DisplayName  = "Tiles Asset",
-                Description  = "Asset ID for the sprite tile graphics data.",
-                Type         = ParameterType.String,
+                Name = "tilesAssetId",
+                DisplayName = "Tiles Asset",
+                Description = "Asset ID for the sprite tile graphics data.",
+                Type = ParameterType.String,
                 DefaultValue = string.Empty
             }
         ]

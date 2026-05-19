@@ -52,10 +52,10 @@ public class ModuleRenderer
     }
 
     public void SetModuleRegistry(ModuleRegistry? registry)
-        => _moduleRegistry = registry;
+ => _moduleRegistry = registry;
 
     public bool CanRender(string moduleId, string targetId)
-        => _codeGens.ContainsKey(Key(targetId, moduleId));
+ => _codeGens.ContainsKey(Key(targetId, moduleId));
 
     public GeneratedFile? RenderMainFile(
         string targetId,
@@ -417,7 +417,7 @@ public class ModuleRenderer
     }
 
     public IEnumerable<ITool> GetStandaloneTools()
-        => _tools.Values;
+ => _tools.Values;
 
     /// <summary>
     /// Returns all user-defined modules discovered from CodeGens.
@@ -436,7 +436,7 @@ public class ModuleRenderer
     }
 
     private static string Key(string targetId, string moduleId)
-        => $"{targetId}::{moduleId}".ToLowerInvariant();
+ => $"{targetId}::{moduleId}".ToLowerInvariant();
 
     /// <summary>
     /// Sanitizes a scene name for use in C file names.

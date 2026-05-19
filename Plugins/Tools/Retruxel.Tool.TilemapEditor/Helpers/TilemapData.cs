@@ -45,7 +45,7 @@ public class TilemapData
 
     // Backward-compat overload for simple tile placement (no flip)
     public void SetTile(int layerIndex, int x, int y, int tileIndex)
-        => SetTile(layerIndex, x, y, new TileEntry { TileIndex = tileIndex });
+ => SetTile(layerIndex, x, y, new TileEntry { TileIndex = tileIndex });
 
     public TileEntry GetTile(int layerIndex, int x, int y)
     {
@@ -57,7 +57,7 @@ public class TilemapData
     }
 
     public int GetTileIndex(int layerIndex, int x, int y)
-        => GetTile(layerIndex, x, y).TileIndex;
+ => GetTile(layerIndex, x, y).TileIndex;
 
     public void ClearLayer(int layerIndex)
     {
@@ -75,7 +75,7 @@ public class TilemapData
 
     // Backward-compat overload
     public void FillLayer(int layerIndex, int tileIndex)
-        => FillLayer(layerIndex, new TileEntry { TileIndex = tileIndex });
+ => FillLayer(layerIndex, new TileEntry { TileIndex = tileIndex });
 
     public void Resize(int newWidth, int newHeight)
     {

@@ -192,7 +192,7 @@ public partial class TilemapEditorWindow
             var tileImage = _tilesetRenderer.ExtractTile(entry);
             if (tileImage != null)
             {
-                ImgSelectedTile.Source = ImageProcessing.ConvertSkBitmapToBitmapSource(tileImage);
+                ImgSelectedTile.Source = tileImage;
                 ImgSelectedTile.Stretch = Stretch.Fill;
 
                 string flipInfo = "";
@@ -234,11 +234,9 @@ public partial class TilemapEditorWindow
             {
                 int x = i % width;
                 int y = i / width;
-                var tileImage = _tilesetRenderer.ExtractTile(tileIds[i]);
+                using var tileImage = _tilesetRenderer.ExtractSkTile(tileIds[i]);
                 if (tileImage != null)
-                {
                     canvas.DrawBitmap(tileImage, x * tileSize, y * tileSize);
-                }
             }
         }
 

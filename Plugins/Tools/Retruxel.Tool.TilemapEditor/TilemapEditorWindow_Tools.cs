@@ -14,9 +14,6 @@ namespace Retruxel.Tool.TilemapEditor;
 
 public partial class TilemapEditorWindow
 {
-    // Cached on construction to avoid re-extracting per preview update
-    private readonly List<(byte R, byte G, byte B)> _tilesetPixels;
-
     private void BtnOptimize_Click(object sender, RoutedEventArgs e)
     {
         if (_tilesetRenderer.Image == null || CmbTilesetAsset.SelectedItem == null)
@@ -53,14 +50,14 @@ public partial class TilemapEditorWindow
 
             var input = new Dictionary<string, object>
             {
-                ["indexMap"] = _currentAsset.GenerationParams.MapIndex,
+                ["indexMap"] = _currentAsset!.GenerationParams!.MapIndex,
                 ["imageWidth"] = _currentAsset.SourceWidth,
                 ["imageHeight"] = _currentAsset.SourceHeight,
                 ["tileWidth"] = _target.Specs.TileWidth,
                 ["tileHeight"] = _target.Specs.TileHeight,
                 ["enableFlipH"] = true,
                 ["enableFlipV"] = true,
-                ["enableRotation"] = false
+                ["enableRotation"]= false
             };
 
             var result = tilePackerTool.Execute(input);
@@ -122,7 +119,6 @@ public partial class TilemapEditorWindow
                 var entry = currentLayer[i];
                 if (!entry.IsEmpty && indexMapping.ContainsKey(entry.TileIndex))
                 {
-                    // Remap tile index and apply flip flags from TilePacker
                     entry.TileIndex = indexMapping[entry.TileIndex];
                     entry.FlipH = tilemap[i].FlipH;
                     entry.FlipV = tilemap[i].FlipV;
@@ -133,14 +129,6 @@ public partial class TilemapEditorWindow
             }
 
             await UpdateAssetWithOptimization(uniqueTiles, originalAsset);
-
-            //var optimizedAssetId = await CreateOptimizedTileset(uniqueTiles, originalAsset);
-
-            //if (optimizedAssetId == null)
-            //{
-            //    MessageBox.Show("Failed to create optimized tileset.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-            //    return;
-            //}
 
             LoadAssets();
 
@@ -156,8 +144,7 @@ public partial class TilemapEditorWindow
             RenderCanvas();
 
             MessageBox.Show($"Optimization applied successfully!\n\n" +
-                          $"Tiles remapped: {remappedCount}\n" +
-                          //$"New tileset: {optimizedAssetId}\n\n" +
+                          $"Tiles remapped: {remappedCount}\n\n" +
                           $"Remember to SAVE the tilemap to persist changes.",
                           "Success", MessageBoxButton.OK, MessageBoxImage.Information);
         }
@@ -189,7 +176,7 @@ public partial class TilemapEditorWindow
                     mapIndex[(tileY + py) * imageWidth + (tileX + px)] = tileData[py * tileWidth + px];
         }
 
-        asset.GenerationParams.MapIndex = mapIndex;
+        asset.GenerationParams!.MapIndex = mapIndex;
         asset.GenerationParams.TileCount = uniqueTiles.Count;
         asset.GenerationParams.OptimizedWidth = imageWidth;
         asset.GenerationParams.OptimizedHeight = imageHeight;
@@ -211,7 +198,6 @@ public partial class TilemapEditorWindow
             int imageWidth = tilesPerRow * tileWidth;
             int imageHeight = rows * tileHeight;
 
-            // Monta o indexMap diretamente — sem PNG, sem SKBitmap
             var mapIndex = new byte[imageWidth * imageHeight];
 
             for (int tileIdx = 0; tileIdx < uniqueTiles.Count; tileIdx++)
@@ -230,13 +216,13 @@ public partial class TilemapEditorWindow
             var newAsset = new AssetEntry
             {
                 Id = optimizedAssetId,
-                FileName = $"{optimizedAssetId}.png",  // nome mantido para referência, sem arquivo real
-                RelativePath = originalAsset.RelativePath,  // aponta para o original
-                SourcePath = originalAsset.SourcePath,    // original preservado
+                FileName = $"{optimizedAssetId}.png",
+                RelativePath = originalAsset.RelativePath,
+                SourcePath = originalAsset.SourcePath,
                 VramRegionId = originalAsset.VramRegionId,
                 SourceWidth = imageWidth,
                 SourceHeight = imageHeight,
-                GenerationParams = originalAsset.GenerationParams  // herda params de redução de cores
+                GenerationParams = originalAsset.GenerationParams
             };
 
             if (!_project.Assets.Any(a => a.Id == optimizedAssetId))
@@ -277,7 +263,6 @@ public partial class TilemapEditorWindow
                 int height = int.Parse(TxtHeight.Text);
                 int tileSize = _target.Specs.TileWidth;
 
-                // Create SKBitmap for rendering
                 var bitmap = new SKBitmap(width * tileSize, height * tileSize, SKColorType.Bgra8888, SKAlphaType.Premul);
 
                 using (var canvas = new SKCanvas(bitmap))
@@ -295,22 +280,19 @@ public partial class TilemapEditorWindow
                                 var entry = currentLayer[index];
                                 if (!entry.IsEmpty)
                                 {
-                                    var tileImage = _tilesetRenderer.ExtractTile(entry);
+                                    using var tileImage = _tilesetRenderer.ExtractSkTile(entry.TileIndex);
                                     if (tileImage != null)
-                                    {
                                         canvas.DrawBitmap(tileImage, x * tileSize, y * tileSize);
-                                    }
                                 }
                             }
                         }
                     }
                 }
 
-                // Encode to PNG
                 using var image = SKImage.FromBitmap(bitmap);
                 using var data = image.Encode(SKEncodedImageFormat.Png, 100);
-                using var fileStream = new FileStream(dialog.FileName, FileMode.Create);
-                data.SaveTo(fileStream);
+                using var stream = new FileStream(dialog.FileName, FileMode.Create);
+                data.SaveTo(stream);
 
                 MessageBox.Show($"Tilemap exported to {Path.GetFileName(dialog.FileName)}", "Export PNG", MessageBoxButton.OK, MessageBoxImage.Information);
             }

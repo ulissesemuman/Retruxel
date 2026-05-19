@@ -109,7 +109,7 @@ public class SG1000Target : ITarget
     }
 
     public IFontConverter GetFontConverter()
-        => new Retruxel.Target.SMS.Text.SmsFontConverter();
+ => new Retruxel.Target.SMS.Text.SmsFontConverter();
 
     public IEnumerable<string> GetRequiredToolchainBinaries() =>
     [
@@ -140,16 +140,16 @@ public class SG1000Target : ITarget
     [
         new ProjectTemplate
         {
-            TemplateId     = "sg1000.blank",
-            DisplayName    = "Blank Project",
-            Description    = "Empty SG-1000 project with no pre-configured modules.",
+            TemplateId = "sg1000.blank",
+            DisplayName = "Blank Project",
+            Description = "Empty SG-1000 project with no pre-configured modules.",
             DefaultModules = []
         },
         new ProjectTemplate
         {
-            TemplateId     = "sg1000.platformer",
-            DisplayName    = "Platformer",
-            Description    = "Pre-configured with tiles, sprites, physics and input modules.",
+            TemplateId = "sg1000.platformer",
+            DisplayName = "Platformer",
+            Description = "Pre-configured with tiles, sprites, physics and input modules.",
             DefaultModules = ["tiles", "sprites", "physics", "input"]
         }
     ];
@@ -160,12 +160,12 @@ public class SG1000Target : ITarget
     [
         new ParameterDefinition
         {
-            Name         = "region",
-            DisplayName  = "Region",
-            Description  = "Target region. Affects VBlank timing.",
-            Type         = ParameterType.Enum,
+            Name = "region",
+            DisplayName = "Region",
+            Description = "Target region. Affects VBlank timing.",
+            Type = ParameterType.Enum,
             DefaultValue = "NTSC",
-            EnumOptions  = new() { { "NTSC", "NTSC" }, { "PAL", "PAL" } }
+            EnumOptions = new() { { "NTSC", "NTSC" }, { "PAL", "PAL" } }
         }
     ];
 

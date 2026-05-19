@@ -37,29 +37,29 @@ public class ScrollModule : ILogicModule
         [
             new ParameterDefinition
             {
-                Name         = "speed",
-                DisplayName  = "Speed",
-                Description  = "Scroll speed in pixels per frame.",
-                Type         = ParameterType.Int,
+                Name = "speed",
+                DisplayName = "Speed",
+                Description = "Scroll speed in pixels per frame.",
+                Type = ParameterType.Int,
                 DefaultValue = 1,
-                MinValue     = 1,
-                MaxValue     = 8
+                MinValue = 1,
+                MaxValue = 8
             },
             new ParameterDefinition
             {
-                Name         = "direction",
-                DisplayName  = "Direction",
-                Description  = "Scroll direction.",
-                Type         = ParameterType.Enum,
+                Name = "direction",
+                DisplayName = "Direction",
+                Description = "Scroll direction.",
+                Type = ParameterType.Enum,
                 DefaultValue = "Left",
-                EnumOptions  = new() { { "Left", "Left" }, { "Right", "Right" } }
+                EnumOptions = new() { { "Left", "Left" }, { "Right", "Right" } }
             },
             new ParameterDefinition
             {
-                Name         = "loop",
-                DisplayName  = "Loop",
-                Description  = "Wraps the scroll position after a full screen width.",
-                Type         = ParameterType.Bool,
+                Name = "loop",
+                DisplayName = "Loop",
+                Description = "Wraps the scroll position after a full screen width.",
+                Type = ParameterType.Bool,
                 DefaultValue = true
             }
         ]

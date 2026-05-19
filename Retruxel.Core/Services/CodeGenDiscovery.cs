@@ -141,7 +141,7 @@ internal static class CodeGenDiscovery
     }
 
     private static string Key(string targetId, string moduleId)
-        => $"{targetId}::{moduleId}".ToLowerInvariant();
+ => $"{targetId}::{moduleId}".ToLowerInvariant();
 
     private class CodeGenManifestRaw
     {

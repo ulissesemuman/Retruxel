@@ -59,38 +59,38 @@ public class SpriteModule : IGraphicModule
         [
             new ParameterDefinition
             {
-                Name         = "tilesAssetId",
-                DisplayName  = "Sprite Tiles Asset",
-                Description  = "Asset ID for the sprite CHR graphics data.",
-                Type         = ParameterType.String,
+                Name = "tilesAssetId",
+                DisplayName = "Sprite Tiles Asset",
+                Description = "Asset ID for the sprite CHR graphics data.",
+                Type = ParameterType.String,
                 DefaultValue = string.Empty
             },
             new ParameterDefinition
             {
-                Name         = "startTile",
-                DisplayName  = "Start Tile",
-                Description  = "First VRAM tile slot for sprite graphics (256–511 recommended).",
-                Type         = ParameterType.Int,
+                Name = "startTile",
+                DisplayName = "Start Tile",
+                Description = "First VRAM tile slot for sprite graphics (256–511 recommended).",
+                Type = ParameterType.Int,
                 DefaultValue = 256,
-                MinValue     = 0,
-                MaxValue     = 511
+                MinValue = 0,
+                MaxValue = 511
             },
             new ParameterDefinition
             {
-                Name         = "doubleHeight",
-                DisplayName  = "Double Height (8×16)",
-                Description  = "Enable 8×16 sprite mode. Each sprite entry uses two stacked 8×8 tiles.",
-                Type         = ParameterType.Bool,
+                Name = "doubleHeight",
+                DisplayName = "Double Height (8×16)",
+                Description = "Enable 8×16 sprite mode. Each sprite entry uses two stacked 8×8 tiles.",
+                Type = ParameterType.Bool,
                 DefaultValue = false
             },
             new ParameterDefinition
             {
-                Name         = "paletteRef",
-                DisplayName  = "Palette",
-                Description  = "Palette module to use for this sprite.",
-                Type         = ParameterType.ModuleReference,
+                Name = "paletteRef",
+                DisplayName = "Palette",
+                Description = "Palette module to use for this sprite.",
+                Type = ParameterType.ModuleReference,
                 ModuleFilter = "palette",
-                Required     = true
+                Required = true
             }
         ]
     };

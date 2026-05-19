@@ -127,7 +127,7 @@ public class MetaspritePreprocessorTool : ITool
     }
 
     private static string FormatIntArray(List<int> values)
-        => string.Join(", ", values);
+ => string.Join(", ", values);
 
     private static int GetInt(Dictionary<string, object> dict, string key, int def = 0)
     {

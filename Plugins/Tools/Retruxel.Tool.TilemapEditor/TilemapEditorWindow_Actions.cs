@@ -11,13 +11,13 @@ namespace Retruxel.Tool.TilemapEditor;
 public partial class TilemapEditorWindow
 {
     private void TitleBar_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
-        => DragMove();
+ => DragMove();
 
     private void BtnClose_Click(object sender, RoutedEventArgs e)
-        => Close();
+ => Close();
 
     private void BtnCancel_Click(object sender, RoutedEventArgs e)
-        => Close();
+ => Close();
 
     private async void BtnSave_Click(object sender, RoutedEventArgs e)
     {

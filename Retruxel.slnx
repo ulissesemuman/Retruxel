@@ -48,6 +48,7 @@
   <Project Path="Retruxel.Emulation/Retruxel.Emulation.csproj" />
   <Project Path="Retruxel.Modules/Retruxel.Modules.csproj" />
   <Project Path="Retruxel.SDK/Retruxel.SDK.csproj" Id="77d05622-a6f7-4660-927d-95faa479e4aa" />
+  <Project Path="Retruxel.Splash/Retruxel.Splash.csproj" />
   <Project Path="Retruxel.Toolchain/Retruxel.Toolchain.csproj" Id="d17d81ab-b325-4aa9-9d0d-a41eeb5a9de8" />
   <Project Path="Retruxel/Retruxel.csproj" />
 </Solution>

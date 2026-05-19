@@ -62,5 +62,5 @@ public class SceneElementData
     /// Uses ScopeOverride if set, otherwise falls back to module's DefaultScope.
     /// </summary>
     public ModuleScope GetEffectiveScope(IModule module)
-        => ScopeOverride ?? module.DefaultScope;
+ => ScopeOverride ?? module.DefaultScope;
 }

@@ -129,19 +129,19 @@ public partial class SceneEditorView
     }
 
     private void BtnImportAsset_Click(object sender, RoutedEventArgs e)
-        => OpenAssetImporter("background");
+ => OpenAssetImporter("background");
 
     /// <summary>
     /// Opens asset importer for tiles (background region).
     /// </summary>
     private void BtnImportTiles_Click(object sender, RoutedEventArgs e)
-        => OpenAssetImporter("background");
+ => OpenAssetImporter("background");
 
     /// <summary>
     /// Opens asset importer for sprites.
     /// </summary>
     private void BtnImportSprites_Click(object sender, RoutedEventArgs e)
-        => OpenAssetImporter("sprites");
+ => OpenAssetImporter("sprites");
 
     /// <summary>
     /// Opens the asset importer window with pre-selected VRAM region.

@@ -156,7 +156,7 @@ public partial class PaletteImportDialog : Window
     }
 
     private void BtnCancel_Click(object sender, RoutedEventArgs e)
-        => Close();
+ => Close();
 
     private Rectangle MakeSwatch(string hexColor, int size)
     {

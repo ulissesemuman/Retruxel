@@ -53,12 +53,12 @@ void entity_{{instanceId}}_update(void);
 Entity_{{instanceId}} entity_{{instanceId}};
 
 void entity_{{instanceId}}_init(void) {
-    entity_{{instanceId}}.x      = {{x}};
-    entity_{{instanceId}}.y      = {{y}};
-    entity_{{instanceId}}.vx     = 0;
-    entity_{{instanceId}}.vy     = 0;
+    entity_{{instanceId}}.x = {{x}};
+    entity_{{instanceId}}.y = {{y}};
+    entity_{{instanceId}}.vx = 0;
+    entity_{{instanceId}}.vy = 0;
     entity_{{instanceId}}.health = {{health}};
-    entity_{{instanceId}}.speed  = {{speed}};
+    entity_{{instanceId}}.speed = {{speed}};
 {{#if usePhysics}}
     physics_{{instanceId}}_init();
 {{/if}}

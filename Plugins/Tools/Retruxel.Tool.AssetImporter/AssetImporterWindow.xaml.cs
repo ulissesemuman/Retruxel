@@ -114,13 +114,13 @@ public partial class AssetImporterWindow : Window
 
 
     private void TitleBar_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
-        => DragMove();
+ => DragMove();
 
     private void BtnClose_Click(object sender, RoutedEventArgs e)
-        => Close();
+ => Close();
 
     private void BtnCancel_Click(object sender, RoutedEventArgs e)
-        => Close();
+ => Close();
 
     private void RbSource_Changed(object sender, RoutedEventArgs e)
     {
@@ -439,10 +439,10 @@ public partial class AssetImporterWindow : Window
 
 
     private void ShowValidation(string message)
-        => TxtValidation.Text = message;
+ => TxtValidation.Text = message;
 
     private void ClearValidation()
-        => TxtValidation.Text = string.Empty;
+ => TxtValidation.Text = string.Empty;
 
     private static SKBitmap? LoadBitmapFromPath(string path)
     {

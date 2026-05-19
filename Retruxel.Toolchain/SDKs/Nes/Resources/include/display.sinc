@@ -174,7 +174,7 @@ _oam_meta_spr_clip:
 		; if(sx==128) return;
 
 		; sxx =x+(signed char)sx;
-		; sy  =metasprite[off++]+y;
+		; sy =metasprite[off++]+y;
 		; tile=metasprite[off++];
 		; pal =metasprite[off++];
 

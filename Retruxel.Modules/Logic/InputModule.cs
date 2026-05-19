@@ -50,22 +50,22 @@ public class InputModule : ILogicModule
         [
             new ParameterDefinition
             {
-                Name         = "holdThreshold",
-                DisplayName  = "Hold Threshold (frames)",
-                Description  = "Frames before a button press becomes a hold. 60 ≈ 1 second at 60fps.",
-                Type         = ParameterType.Int,
+                Name = "holdThreshold",
+                DisplayName = "Hold Threshold (frames)",
+                Description = "Frames before a button press becomes a hold. 60 ≈ 1 second at 60fps.",
+                Type = ParameterType.Int,
                 DefaultValue = 60,
-                MinValue     = 10,
-                MaxValue     = 300
+                MinValue = 10,
+                MaxValue = 300
             },
             new ParameterDefinition
             {
-                Name         = "port",
-                DisplayName  = "Joypad Port",
-                Description  = "Joypad port to read (1 or 2).",
-                Type         = ParameterType.Enum,
+                Name = "port",
+                DisplayName = "Joypad Port",
+                Description = "Joypad port to read (1 or 2).",
+                Type = ParameterType.Enum,
                 DefaultValue = "1",
-                EnumOptions  = new() { { "Port 1", "1" }, { "Port 2", "2" } }
+                EnumOptions = new() { { "Port 1", "1" }, { "Port 2", "2" } }
             }
         ]
     };

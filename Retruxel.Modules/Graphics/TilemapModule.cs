@@ -53,104 +53,104 @@ public class TilemapModule : IGraphicModule
         [
             new ParameterDefinition
             {
-                Name         = "tilesAssetId",
-                DisplayName  = "Tiles Asset",
-                Description  = "Asset ID for the tile CHR graphics data.",
-                Type         = ParameterType.String,
+                Name = "tilesAssetId",
+                DisplayName = "Tiles Asset",
+                Description = "Asset ID for the tile CHR graphics data.",
+                Type = ParameterType.String,
                 DefaultValue = string.Empty
             },
             new ParameterDefinition
             {
-                Name         = "mapAssetId",
-                DisplayName  = "Map Asset",
-                Description  = "Asset ID for the nametable layout data.",
-                Type         = ParameterType.String,
+                Name = "mapAssetId",
+                DisplayName = "Map Asset",
+                Description = "Asset ID for the nametable layout data.",
+                Type = ParameterType.String,
                 DefaultValue = string.Empty
             },
             new ParameterDefinition
             {
-                Name         = "startTile",
-                DisplayName  = "Start Tile",
-                Description  = "First VRAM tile slot to load graphics into (0–447).",
-                Type         = ParameterType.Int,
+                Name = "startTile",
+                DisplayName = "Start Tile",
+                Description = "First VRAM tile slot to load graphics into (0–447).",
+                Type = ParameterType.Int,
                 DefaultValue = 0,
-                MinValue     = 0,
-                MaxValue     = 447
+                MinValue = 0,
+                MaxValue = 447
             },
             new ParameterDefinition
             {
-                Name         = "mapX",
-                DisplayName  = "Map X",
-                Description  = "Nametable destination X in tile units.",
-                Type         = ParameterType.Int,
+                Name = "mapX",
+                DisplayName = "Map X",
+                Description = "Nametable destination X in tile units.",
+                Type = ParameterType.Int,
                 DefaultValue = 0,
-                MinValue     = 0,
-                MaxValue     = 31
+                MinValue = 0,
+                MaxValue = 31
             },
             new ParameterDefinition
             {
-                Name         = "mapY",
-                DisplayName  = "Map Y",
-                Description  = "Nametable destination Y in tile units.",
-                Type         = ParameterType.Int,
+                Name = "mapY",
+                DisplayName = "Map Y",
+                Description = "Nametable destination Y in tile units.",
+                Type = ParameterType.Int,
                 DefaultValue = 0,
-                MinValue     = 0,
-                MaxValue     = 23
+                MinValue = 0,
+                MaxValue = 23
             },
             new ParameterDefinition
             {
-                Name         = "mapWidth",
-                DisplayName  = "Map Width",
-                Description  = "Width of the map in tiles (max 32).",
-                Type         = ParameterType.Int,
+                Name = "mapWidth",
+                DisplayName = "Map Width",
+                Description = "Width of the map in tiles (max 32).",
+                Type = ParameterType.Int,
                 DefaultValue = 32,
-                MinValue     = 1,
-                MaxValue     = 32
+                MinValue = 1,
+                MaxValue = 32
             },
             new ParameterDefinition
             {
-                Name         = "mapHeight",
-                DisplayName  = "Map Height",
-                Description  = "Height of the map in tiles (max 24 visible).",
-                Type         = ParameterType.Int,
+                Name = "mapHeight",
+                DisplayName = "Map Height",
+                Description = "Height of the map in tiles (max 24 visible).",
+                Type = ParameterType.Int,
                 DefaultValue = 24,
-                MinValue     = 1,
-                MaxValue     = 28
+                MinValue = 1,
+                MaxValue = 28
             },
             new ParameterDefinition
             {
-                Name         = "mapData",
-                DisplayName  = "Map Data",
-                Description  = "Tile indices for the map layout.",
-                Type         = ParameterType.IntArray,
+                Name = "mapData",
+                DisplayName = "Map Data",
+                Description = "Tile indices for the map layout.",
+                Type = ParameterType.IntArray,
                 DefaultValue = Array.Empty<int>()
             },
             new ParameterDefinition
             {
-                Name         = "solidTiles",
-                DisplayName  = "Solid Tiles",
-                Description  = "List of tile indices that are solid for collision.",
-                Type         = ParameterType.IntArray,
+                Name = "solidTiles",
+                DisplayName = "Solid Tiles",
+                Description = "List of tile indices that are solid for collision.",
+                Type = ParameterType.IntArray,
                 DefaultValue = Array.Empty<int>()
             },
             new ParameterDefinition
             {
-                Name         = "paletteSlot",
-                DisplayName  = "Palette Slot",
-                Description  = "Scene palette slot to use (0 = Background, 1 = Sprite).",
-                Type         = ParameterType.Int,
+                Name = "paletteSlot",
+                DisplayName = "Palette Slot",
+                Description = "Scene palette slot to use (0 = Background, 1 = Sprite).",
+                Type = ParameterType.Int,
                 DefaultValue = 0,
-                MinValue     = 0,
-                MaxValue     = 1
+                MinValue = 0,
+                MaxValue = 1
             },
             new ParameterDefinition
             {
-                Name         = "paletteRef",
-                DisplayName  = "Palette",
-                Description  = "Palette module to use for this tilemap.",
-                Type         = ParameterType.ModuleReference,
+                Name = "paletteRef",
+                DisplayName = "Palette",
+                Description = "Palette module to use for this tilemap.",
+                Type = ParameterType.ModuleReference,
                 ModuleFilter = "palette",
-                Required     = true
+                Required = true
             }
         ]
     };

@@ -19,37 +19,37 @@ public static class DefaultFont
     private static readonly Dictionary<char, byte[]> _glyphs = BuildGlyphs();
 
     public static byte[]? GetGlyph(char c)
-        => _glyphs.TryGetValue(c, out var g) ? g : null;
+ => _glyphs.TryGetValue(c, out var g) ? g : null;
 
     public static bool Supports(char c)
-        => _glyphs.ContainsKey(c);
+ => _glyphs.ContainsKey(c);
 
     public static IReadOnlyCollection<char> SupportedCharacters
-        => _glyphs.Keys;
+ => _glyphs.Keys;
 
     public static IEnumerable<char> GetBasicLatinCharacters()
-        => BasicLatin.Glyphs.Select(g => g.Item1);
+ => BasicLatin.Glyphs.Select(g => g.Item1);
 
     public static IEnumerable<char> GetExtendedLatinCharacters()
-        => ExtendedLatin.Glyphs.Select(g => g.Item1);
+ => ExtendedLatin.Glyphs.Select(g => g.Item1);
 
     public static IEnumerable<char> GetBoxDrawingCharacters()
-        => BoxDrawing.Glyphs.Select(g => g.Item1);
+ => BoxDrawing.Glyphs.Select(g => g.Item1);
 
     public static IEnumerable<char> GetBlockElementsCharacters()
-        => BlockElements.Glyphs.Select(g => g.Item1);
+ => BlockElements.Glyphs.Select(g => g.Item1);
 
     public static IEnumerable<char> GetGreekCharacters()
-        => Greek.Glyphs.Select(g => g.Item1);
+ => Greek.Glyphs.Select(g => g.Item1);
 
     public static IEnumerable<char> GetHiraganaCharacters()
-        => Hiragana.Glyphs.Select(g => g.Item1);
+ => Hiragana.Glyphs.Select(g => g.Item1);
 
     public static IEnumerable<char> GetMiscellaneousCharacters()
-        => Miscellaneous.Glyphs.Select(g => g.Item1);
+ => Miscellaneous.Glyphs.Select(g => g.Item1);
 
     public static IEnumerable<char> GetSGACharacters()
-        => SGA.Glyphs.Select(g => g.Item1);
+ => SGA.Glyphs.Select(g => g.Item1);
 
     /// <summary>
     /// Renders a string to an SKBitmap for preview.

@@ -40,11 +40,11 @@ public class ToolchainManager
     /// Returns true if a toolchain is registered for the given target.
     /// </summary>
     public bool HasToolchain(string targetId)
-        => _toolchains.ContainsKey(targetId);
+ => _toolchains.ContainsKey(targetId);
 
     /// <summary>
     /// Returns all registered target IDs.
     /// </summary>
     public IEnumerable<string> RegisteredTargets
-        => _toolchains.Keys;
+ => _toolchains.Keys;
 }

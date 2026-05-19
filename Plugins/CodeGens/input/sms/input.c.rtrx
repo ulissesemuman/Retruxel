@@ -35,16 +35,16 @@ unsigned char input_{{instanceId}}_btn2_held(void);
 #include "input_{{instanceId}}.h"
 
 // Input state
-static unsigned int  input_{{instanceId}}_keys_current  = 0;
-static unsigned int  input_{{instanceId}}_keys_pressed  = 0;
+static unsigned int  input_{{instanceId}}_keys_current = 0;
+static unsigned int  input_{{instanceId}}_keys_pressed = 0;
 static unsigned char input_{{instanceId}}_btn1_held_frames = 0;
 static unsigned char input_{{instanceId}}_btn2_held_frames = 0;
 
 void input_{{instanceId}}_init(void) {
-    input_{{instanceId}}_keys_current      = 0;
-    input_{{instanceId}}_keys_pressed      = 0;
-    input_{{instanceId}}_btn1_held_frames  = 0;
-    input_{{instanceId}}_btn2_held_frames  = 0;
+    input_{{instanceId}}_keys_current = 0;
+    input_{{instanceId}}_keys_pressed = 0;
+    input_{{instanceId}}_btn1_held_frames = 0;
+    input_{{instanceId}}_btn2_held_frames = 0;
 }
 
 // Call once per VBlank, before any game logic reads input

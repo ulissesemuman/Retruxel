@@ -1,0 +1,18 @@
+{
+  "moduleId": "splash",
+  "targetId": "sms",
+  "displayName": "SMS Splash CodeGen",
+  "description": "Orchestrates splash screen: fade_in → hold → fade_out",
+  "version": "1.0.0",
+  "template": "splash.c.rtrx",
+  "variables": {
+    "fadeInDuration": { "from": "module", "path": "fadeInDuration", "default": 30 },
+    "holdDuration": { "from": "module", "path": "holdDuration", "default": 120 },
+    "fadeOutDuration": { "from": "module", "path": "fadeOutDuration", "default": 30 },
+    "targetSlot": { "from": "module", "path": "targetSlot", "default": 0 },
+    "splashAsset": {
+      "from": "target",
+      "method": "GetSplashAsset"
+    }
+  }
+}

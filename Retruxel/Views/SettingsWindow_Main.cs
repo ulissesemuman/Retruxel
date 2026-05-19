@@ -47,7 +47,7 @@ public partial class SettingsWindow : Window
     }
 
     private void CloseButton_Click(object sender, RoutedEventArgs e)
-        => Close();
+ => Close();
 
     #endregion
 

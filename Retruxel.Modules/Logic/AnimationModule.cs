@@ -51,10 +51,10 @@ public class AnimationModule : ILogicModule
         [
             new ParameterDefinition
             {
-                Name         = "animations",
-                DisplayName  = "Animation Clips",
-                Description  = "List of named animation sequences with frame indices and speed.",
-                Type         = ParameterType.String,
+                Name = "animations",
+                DisplayName = "Animation Clips",
+                Description = "List of named animation sequences with frame indices and speed.",
+                Type = ParameterType.String,
                 DefaultValue = "[]"
             }
         ]

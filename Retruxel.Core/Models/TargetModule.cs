@@ -23,7 +23,7 @@ public class TargetModule : ILogicModule
     public string Serialize() => JsonSerializer.Serialize(_state);
 
     public void Deserialize(string json)
-        => _state = JsonSerializer.Deserialize<Dictionary<string, object>>(json) ?? new();
+ => _state = JsonSerializer.Deserialize<Dictionary<string, object>>(json) ?? new();
 
     public string GetValidationSample() => "{}";
 

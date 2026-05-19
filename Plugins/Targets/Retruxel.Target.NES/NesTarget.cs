@@ -123,7 +123,7 @@ public class NesTarget : ITarget
     }
 
     public IFontConverter GetFontConverter()
-        => null!; // TODO: Implement NES font converter
+ => null!; // TODO: Implement NES font converter
 
     public IEnumerable<string> GetRequiredToolchainBinaries() =>
     [
@@ -155,10 +155,10 @@ public class NesTarget : ITarget
     [
         new ProjectTemplate
         {
-            TemplateId  = "nes.blank",
+            TemplateId = "nes.blank",
             DisplayName = "Blank Project",
             Description = "Empty NES project with basic initialization.",
-            DefaultModules    = [],
+            DefaultModules = [],
             DefaultParameters = new Dictionary<string, object>
             {
                 { "region", "NTSC" },
@@ -173,21 +173,21 @@ public class NesTarget : ITarget
     [
         new ParameterDefinition
         {
-            Name         = "region",
-            DisplayName  = "Region",
-            Description  = "Video standard — affects timing and resolution.",
-            Type         = ParameterType.Enum,
+            Name = "region",
+            DisplayName = "Region",
+            Description = "Video standard — affects timing and resolution.",
+            Type = ParameterType.Enum,
             DefaultValue = "NTSC",
-            EnumOptions  = new() { { "NTSC", "NTSC" }, { "PAL", "PAL" } }
+            EnumOptions = new() { { "NTSC", "NTSC" }, { "PAL", "PAL" } }
         },
         new ParameterDefinition
         {
-            Name         = "mapper",
-            DisplayName  = "Mapper",
-            Description  = "Memory mapper chip used by the cartridge.",
-            Type         = ParameterType.Enum,
+            Name = "mapper",
+            DisplayName = "Mapper",
+            Description = "Memory mapper chip used by the cartridge.",
+            Type = ParameterType.Enum,
             DefaultValue = "NROM",
-            EnumOptions  = new()
+            EnumOptions = new()
             {
                 { "NROM",  "NROM"  },
                 { "MMC1",  "MMC1"  },

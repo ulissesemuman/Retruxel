@@ -1,7 +1,7 @@
 /* **************************************************
    SMSlib - C programming library for the SMS/GG
    ( part of devkitSMS - github.com/sverx/devkitSMS )
-   ************************************************** */
+  ************************************************** */
 
 // #define TARGET_GG
 /* to recompile the library for the GameGear */
@@ -16,7 +16,7 @@
 void SMS_init (void);
 
 /* ***************************************************************** */
-/* VDP features handling                                             */
+/* VDP features handling                                            */
 /* ***************************************************************** */
 
 void SMS_VDPturnOnFeature (unsigned int feature) __z88dk_fastcall;
@@ -62,7 +62,7 @@ void SMS_setSpriteMode (unsigned char mode) __z88dk_fastcall;
 void SMS_waitForVBlank (void);
 
 /* ***************************************************************** */
-/* Cartridge mapper handling                                         */
+/* Cartridge mapper handling                                        */
 /* ***************************************************************** */
 
 /* macro for ROM bankswitching */
@@ -96,7 +96,7 @@ volatile __at (0xfffc) unsigned char SRAM_bank_to_be_mapped_on_slot2;
 __at (0x8000) unsigned char SMS_SRAM[];
 
 /* ***************************************************************** */
-/* Tiles / Background handling                                       */
+/* Tiles / Background handling                                      */
 /* ***************************************************************** */
 
 void SMS_crt0_RST08(unsigned int addr) __z88dk_fastcall __preserves_regs(a,b,d,e,h,l,iyh,iyl);
@@ -182,7 +182,7 @@ void * SMS_saveTileMapColumnatAddr(unsigned int src, void *dst, unsigned int hei
 void SMS_readVRAM(void *dst, unsigned int src, unsigned int size) __naked __z88dk_callee __preserves_regs(iyh,iyl) __sdcccall(1);
 
 /* ***************************************************************** */
-/* Sprites handling                                                  */
+/* Sprites handling                                                 */
 /* ***************************************************************** */
 
 void SMS_initSprites (void);
@@ -216,7 +216,7 @@ void SMS_copySpritestoSAT (void);
 void SMS_addMetaSprite_f (unsigned int origin_yx, void *metasprite) __naked __sdcccall(1);                                     /* doesn't return anything */
 
 /* ***************************************************************** */
-/* Colors / palettes handling                                        */
+/* Colors / palettes handling                                       */
 /* ***************************************************************** */
 
 /* SMS_CRAMAddress define (has address and VDP flags) */
@@ -281,7 +281,7 @@ void SMS_decompressZX7 (const void *src, void *dst) __naked __sdcccall(1);
 void SMS_decompressaPLib (const void *src, void *dst) __naked __sdcccall(1);
 
 /* ***************************************************************** */
-/* Input handling (joypads)                                          */
+/* Input handling (joypads)                                         */
 /* ***************************************************************** */
 
 /* functions to read joypad(s) */
@@ -383,7 +383,7 @@ __sfr __at (0xbf) SMS_VDPControlPort;
 /* alternative version of SMS_setBGScrollX to be used in the line interrupt handler for raster effects */
 #define INLINE_SMS_setBGScrollX(scrollX)      do{SMS_VDPControlPort=(scrollX);SMS_VDPControlPort=0x88;}while(0)
 
-/* Vcount  */
+/* Vcount */
 unsigned char SMS_getVCount (void) __naked __preserves_regs(c,d,e,h,l,iyh,iyl);
 
 /* low level functions */

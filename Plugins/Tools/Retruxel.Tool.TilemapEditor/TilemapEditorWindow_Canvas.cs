@@ -1,15 +1,19 @@
 using Retruxel.Core.Models;
-using Retruxel.Lib.WPFImageProcessing;
+using SkiaSharp;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
+using System.Windows.Media.Imaging;
 using System.Windows.Shapes;
 
 namespace Retruxel.Tool.TilemapEditor;
 
 public partial class TilemapEditorWindow
 {
+    private BitmapSource? GetTileSource(TileEntry entry)
+        => _tilesetRenderer.ExtractTile(entry);
+
     private void RenderCanvas()
     {
         TilemapCanvas.Children.Clear();
@@ -70,37 +74,33 @@ public partial class TilemapEditorWindow
                 };
 
                 Canvas.SetRight(warningLabel, 8);
-                Canvas.SetTop(warningLabel, 8);
+                Canvas.SetTop  (warningLabel, 8);
                 TilemapCanvas.Children.Add(warningLabel);
             }
         }
 
+        // Grid lines
+        var gridBrush = new SolidColorBrush(Color.FromArgb(38, 255, 255, 255));
+        gridBrush.Freeze();
+
         for (int x = 0; x <= width; x++)
         {
-            var line = new Line
+            TilemapCanvas.Children.Add(new Line
             {
-                X1 = x * scaledTileSize,
-                Y1 = 0,
-                X2 = x * scaledTileSize,
-                Y2 = height * scaledTileSize,
-                Stroke = new SolidColorBrush(Color.FromArgb(38, 255, 255, 255)),
-                StrokeThickness = 1
-            };
-            TilemapCanvas.Children.Add(line);
+                X1 = x * scaledTileSize, Y1 = 0,
+                X2 = x * scaledTileSize, Y2 = height * scaledTileSize,
+                Stroke = gridBrush, StrokeThickness = 1
+            });
         }
 
         for (int y = 0; y <= height; y++)
         {
-            var line = new Line
+            TilemapCanvas.Children.Add(new Line
             {
-                X1 = 0,
-                Y1 = y * scaledTileSize,
-                X2 = width * scaledTileSize,
-                Y2 = y * scaledTileSize,
-                Stroke = new SolidColorBrush(Color.FromArgb(38, 255, 255, 255)),
-                StrokeThickness = 1
-            };
-            TilemapCanvas.Children.Add(line);
+                X1 = 0,                    Y1 = y * scaledTileSize,
+                X2 = width * scaledTileSize, Y2 = y * scaledTileSize,
+                Stroke = gridBrush, StrokeThickness = 1
+            });
         }
 
         DrawViewportOverlay(scaledTileSize);
@@ -114,12 +114,10 @@ public partial class TilemapEditorWindow
 
         double rectWidth = viewportWidth * scaledTileSize;
         double rectHeight = viewportHeight * scaledTileSize;
-
-        // Calculate offset position in pixels
         double offsetX = _mapOffsetX * scaledTileSize;
         double offsetY = _mapOffsetY * scaledTileSize;
 
-        var viewportRect = new System.Windows.Shapes.Rectangle
+        var viewportRect = new Rectangle
         {
             Width = rectWidth,
             Height = rectHeight,
@@ -133,7 +131,6 @@ public partial class TilemapEditorWindow
         Canvas.SetTop(viewportRect, offsetY);
         TilemapCanvas.Children.Add(viewportRect);
 
-        // Update footer info
         TxtViewportInfo.Text = $"VIEWPORT: {viewportWidth}×{viewportHeight} | Offset: {_mapOffsetX},{_mapOffsetY}";
     }
 
@@ -141,20 +138,20 @@ public partial class TilemapEditorWindow
     {
         if (_tilesetRenderer.Image == null || entry.IsEmpty) return;
 
-        var tileImage = _tilesetRenderer.ExtractTile(entry);
-        if (tileImage == null) return;
+        var source = GetTileSource(entry);
+        if (source == null) return;
 
         var image = new Image
         {
             Width = scaledTileSize,
             Height = scaledTileSize,
-            Source = ImageProcessing.ConvertSkBitmapToBitmapSource(tileImage),
+            Source = source,
             Stretch = Stretch.Fill
         };
         RenderOptions.SetBitmapScalingMode(image, BitmapScalingMode.NearestNeighbor);
 
         Canvas.SetLeft(image, x * scaledTileSize);
-        Canvas.SetTop(image, y * scaledTileSize);
+        Canvas.SetTop (image, y * scaledTileSize);
         TilemapCanvas.Children.Add(image);
     }
 
@@ -174,7 +171,6 @@ public partial class TilemapEditorWindow
         int tileX = (int)(position.X / scaledTileSize);
         int tileY = (int)(position.Y / scaledTileSize);
 
-        // Paint block if multiple tiles selected, otherwise single tile
         if (_selectedTileIds.Count > 1)
             PlaceTileBlock(tileX, tileY);
         else
@@ -199,13 +195,11 @@ public partial class TilemapEditorWindow
         int width = int.Parse(TxtWidth.Text);
         int height = int.Parse(TxtHeight.Text);
 
-        // Show paint preview if mouse is within bounds
         if (tileX >= 0 && tileX < width && tileY >= 0 && tileY < height)
             ShowPaintPreview(tileX, tileY);
         else
             HidePaintPreview();
 
-        // Paint if mouse button is pressed
         if (_isPainting && e.LeftButton == MouseButtonState.Pressed)
             PaintTile(position);
     }
@@ -222,7 +216,7 @@ public partial class TilemapEditorWindow
     }
 
     private void Canvas_MouseWheel(object sender, MouseWheelEventArgs e)
-        => HandleCanvasMouseWheel(e);
+ => HandleCanvasMouseWheel(e);
 
     private void Canvas_MouseDown(object sender, MouseButtonEventArgs e)
     {
@@ -266,10 +260,8 @@ public partial class TilemapEditorWindow
         int width = int.Parse(TxtWidth.Text);
         int height = int.Parse(TxtHeight.Text);
 
-        if (tileX < 0 || tileX >= width || tileY < 0 || tileY >= height)
-            return;
+        if (tileX < 0 || tileX >= width || tileY < 0 || tileY >= height) return;
 
-        // Create TileEntry with current flip flags
         var entry = new TileEntry
         {
             TileIndex = _selectedTileId,
@@ -280,6 +272,4 @@ public partial class TilemapEditorWindow
         _tilemapData.SetTile(_currentLayerIndex, tileX, tileY, entry);
         RenderCanvas();
     }
-
-
 }

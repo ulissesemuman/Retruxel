@@ -41,13 +41,13 @@ void enemy_{{instanceId}}_update(void);
 static Enemy_{{instanceId}} enemy_{{instanceId}};
 
 void enemy_{{instanceId}}_init(void) {
-    enemy_{{instanceId}}.x            = {{x}};
-    enemy_{{instanceId}}.y            = {{y}};
-    enemy_{{instanceId}}.speed        = {{speed}};
-    enemy_{{instanceId}}.health       = {{health}};
-    enemy_{{instanceId}}.direction    = 1;
+    enemy_{{instanceId}}.x = {{x}};
+    enemy_{{instanceId}}.y = {{y}};
+    enemy_{{instanceId}}.speed = {{speed}};
+    enemy_{{instanceId}}.health = {{health}};
+    enemy_{{instanceId}}.direction = 1;
     enemy_{{instanceId}}.patrolOrigin = {{x}};
-    enemy_{{instanceId}}.patrolRange  = {{patrolRange}};
+    enemy_{{instanceId}}.patrolRange = {{patrolRange}};
 {{#if useAnimation}}
     animation_{{instanceId}}_init();
 {{/if}}
@@ -63,11 +63,11 @@ void enemy_{{instanceId}}_update(void) {
     enemy_{{instanceId}}.x += enemy_{{instanceId}}.speed * enemy_{{instanceId}}.direction;
 
     if (enemy_{{instanceId}}.x >= enemy_{{instanceId}}.patrolOrigin + enemy_{{instanceId}}.patrolRange) {
-        enemy_{{instanceId}}.x         = enemy_{{instanceId}}.patrolOrigin + enemy_{{instanceId}}.patrolRange;
+        enemy_{{instanceId}}.x = enemy_{{instanceId}}.patrolOrigin + enemy_{{instanceId}}.patrolRange;
         enemy_{{instanceId}}.direction = -1;
     }
     if (enemy_{{instanceId}}.x <= enemy_{{instanceId}}.patrolOrigin) {
-        enemy_{{instanceId}}.x         = enemy_{{instanceId}}.patrolOrigin;
+        enemy_{{instanceId}}.x = enemy_{{instanceId}}.patrolOrigin;
         enemy_{{instanceId}}.direction = 1;
     }
 {{/if}}

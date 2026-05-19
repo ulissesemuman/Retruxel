@@ -20,7 +20,7 @@ public partial class SplashScreen : Window
     }
 
     private void Border_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
-        => DragMove();
+ => DragMove();
 
     private static string GetAppVersion()
     {

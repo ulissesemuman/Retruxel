@@ -1,5 +1,6 @@
 using Retruxel.Core.Models;
 using Retruxel.Lib.ImageProcessing;
+using Retruxel.Lib.PaletteHelpers;
 using Retruxel.Lib.WPFImageProcessing;
 using SkiaSharp;
 using System;
@@ -139,13 +140,24 @@ public partial class TilemapEditorWindow
 
     private void RefreshTilesetFromAsset()
     {
-        if (_currentAsset?.GenerationParams?.MapIndex == null || _currentScene == null) return;
+        if (_currentAsset?.GenerationParams?.MapIndex == null) return;
 
-        if (_selectedPaletteSlot >= _currentScene.PaletteSlots.Count)
-            _selectedPaletteSlot = 0;
+        IReadOnlyList<HardwareColor> colors;
 
-        var slot = _currentScene.PaletteSlots[_selectedPaletteSlot];
-        var colors = ResolvePaletteColors(slot);
+        if (_currentScene != null && _currentScene.PaletteSlots.Count > 0)
+        {
+            if (_selectedPaletteSlot >= _currentScene.PaletteSlots.Count)
+                _selectedPaletteSlot = 0;
+
+            var slot = _currentScene.PaletteSlots[_selectedPaletteSlot];
+            colors = PaletteHelpers.ResolvePaletteColors(slot, _target);
+        }
+        else
+        {
+            // No active scene — fall back to raw hardware palette so the
+            // tileset is still visible (e.g. when opening the editor standalone).
+            colors = _target.GetHardwarePalette();
+        }
 
         int tileSize = _target.Specs.TileWidth;
         int rows = (int)Math.Ceiling(_currentAsset.GenerationParams.TileCount / 16.0);
@@ -244,11 +256,9 @@ public partial class TilemapEditorWindow
             {
                 int col = tileId % TilesetColumns;
                 int row = tileId / TilesetColumns;
-                var tileImage = _tilesetRenderer.ExtractTile(tileId);
+                using var tileImage = _tilesetRenderer.ExtractSkTile(tileId);
                 if (tileImage != null)
-                {
                     canvas.DrawBitmap(tileImage, col * tileSize, row * tileSize);
-                }
             }
         }
     }

@@ -107,7 +107,7 @@ public class GgTarget : ITarget
     }
 
     public IFontConverter GetFontConverter()
-        => new Retruxel.Target.SMS.Text.SmsFontConverter();
+ => new Retruxel.Target.SMS.Text.SmsFontConverter();
 
     public IEnumerable<string> GetRequiredToolchainBinaries() =>
     [
@@ -138,7 +138,7 @@ public class GgTarget : ITarget
     [
         new ProjectTemplate
         {
-            TemplateId  = "gg.blank",
+            TemplateId = "gg.blank",
             DisplayName = "Blank Project",
             Description = "Empty Game Gear project with no pre-configured modules.",
             DefaultModules = []
@@ -158,12 +158,12 @@ public class GgTarget : ITarget
     [
         new ParameterDefinition
         {
-            Name         = "romSize",
-            DisplayName  = "ROM Size",
-            Description  = "Maximum ROM size in KB.",
-            Type         = ParameterType.Enum,
+            Name = "romSize",
+            DisplayName = "ROM Size",
+            Description = "Maximum ROM size in KB.",
+            Type = ParameterType.Enum,
             DefaultValue = "32",
-            EnumOptions  = new() { { "32KB", "32" }, { "128KB", "128" }, { "256KB", "256" }, { "512KB", "512" } }
+            EnumOptions = new() { { "32KB", "32" }, { "128KB", "128" }, { "256KB", "256" }, { "512KB", "512" } }
         }
     ];
 

@@ -1,0 +1,36 @@
+// Fade Out Effect - {{duration}} frames
+// Type: {{fadeType}}
+
+#include "retruxel_splash.h"
+
+void fade_out_init(void) {
+    {{#if_eq fadeType "palette"}}
+    // Palette fade-out: start from final palette, fade to black
+    fade_out_frame = 0;
+    fade_out_total_frames = {{duration}};
+    {{/if_eq}}
+    {{#if_eq fadeType "transparency"}}
+    // Transparency fade-out: start fully opaque, fade to transparent
+    fade_out_alpha = 255;
+    fade_out_total_frames = {{duration}};
+    {{/if_eq}}
+}
+
+void fade_out_update(void) {
+    {{#if_eq fadeType "palette"}}
+    // Palette fade-out
+    if (fade_out_frame < fade_out_total_frames) {
+        fade_out_frame++;
+        // Interpolate palette from final colors to black
+        // This is handled by the target-specific implementation
+    }
+    {{/if_eq}}
+    {{#if_eq fadeType "transparency"}}
+    // Transparency fade-out
+    if (fade_out_alpha > 0) {
+        fade_out_alpha -= (255 / fade_out_total_frames);
+        if (fade_out_alpha < 0) fade_out_alpha = 0;
+        // Apply alpha to splash display
+    }
+    {{/if_eq}}
+}

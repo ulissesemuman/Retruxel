@@ -52,6 +52,9 @@ public partial class CodeGenerator
 
         progress?.Report("INIT: Starting code generation...");
 
+        // Inject splash screen if enabled
+        InjectSplash(project);
+
         // Reset renderer state before generation
         _moduleRenderer.ResetState();
 

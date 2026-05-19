@@ -1,0 +1,15 @@
+#ifndef RETRUXEL_FADE_IN_H
+#define RETRUXEL_FADE_IN_H
+
+#include <stdint.h>
+
+// Fade in state
+extern uint8_t fade_in_frame;
+extern uint8_t fade_in_total_frames;
+extern uint8_t fade_in_alpha;
+
+// Functions
+void fade_in_init(void);
+void fade_in_update(void);
+
+#endif // RETRUXEL_FADE_IN_H

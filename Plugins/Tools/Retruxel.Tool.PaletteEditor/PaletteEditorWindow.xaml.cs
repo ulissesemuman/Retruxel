@@ -369,7 +369,7 @@ public partial class PaletteEditorWindow : Window
         public int GridColumns => 8;
 
         public object[] HardwareColors
-            => _target.GetHardwarePalette().Cast<object>().ToArray();
+ => _target.GetHardwarePalette().Cast<object>().ToArray();
 
         public string GetColorFormat(int colorIndex)
         {

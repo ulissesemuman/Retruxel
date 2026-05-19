@@ -1,0 +1,15 @@
+#ifndef RETRUXEL_FADE_OUT_H
+#define RETRUXEL_FADE_OUT_H
+
+#include <stdint.h>
+
+// Fade out state
+extern uint8_t fade_out_frame;
+extern uint8_t fade_out_total_frames;
+extern uint8_t fade_out_alpha;
+
+// Functions
+void fade_out_init(void);
+void fade_out_update(void);
+
+#endif // RETRUXEL_FADE_OUT_H

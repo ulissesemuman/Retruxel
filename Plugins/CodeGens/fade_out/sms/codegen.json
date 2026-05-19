@@ -1,0 +1,21 @@
+{
+  "moduleId": "fade_out",
+  "targetId": "sms",
+  "displayName": "SMS Fade Out",
+  "description": "Fade out effect for splash screen using palette animation",
+  "version": "1.0.0",
+  "template": "fade_out.c.rtrx",
+  "headerTemplate": "fade_out.h.rtrx",
+  "variables": {
+    "duration": {
+      "from": "module",
+      "path": "duration",
+      "default": 60
+    },
+    "fadeType": {
+      "from": "module",
+      "path": "fadeType",
+      "default": "palette"
+    }
+  }
+}

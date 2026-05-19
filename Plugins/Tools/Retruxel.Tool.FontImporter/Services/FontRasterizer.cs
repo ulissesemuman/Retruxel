@@ -112,7 +112,7 @@ public static class FontRasterizer
     // Internals
 
     private static SKTypeface? LoadTypeface(string path)
-        => SKTypeface.FromFile(path);
+ => SKTypeface.FromFile(path);
 
     private static SKFont BuildFont(SKTypeface typeface, int tileHeight, float fontSizeMultiplier = 1.0f)
     {

@@ -39,88 +39,88 @@ public class EnemyModule : ILogicModule
         [
             new ParameterDefinition
             {
-                Name         = "spriteId",
-                DisplayName  = "Sprite (Legacy)",
-                Description  = "[Obsolete] Tile index of the enemy sprite in VRAM. Use spriteRef instead.",
-                Type         = ParameterType.TileRef,
+                Name = "spriteId",
+                DisplayName = "Sprite (Legacy)",
+                Description = "[Obsolete] Tile index of the enemy sprite in VRAM. Use spriteRef instead.",
+                Type = ParameterType.TileRef,
                 DefaultValue = 1
             },
             new ParameterDefinition
             {
-                Name         = "spriteRef",
-                DisplayName  = "Sprite",
-                Description  = "Sprite module to render for this enemy.",
-                Type         = ParameterType.ModuleReference,
+                Name = "spriteRef",
+                DisplayName = "Sprite",
+                Description = "Sprite module to render for this enemy.",
+                Type = ParameterType.ModuleReference,
                 ModuleFilter = "sprite",
-                Required     = true
+                Required = true
             },
             new ParameterDefinition
             {
-                Name         = "animationRef",
-                DisplayName  = "Animation",
-                Description  = "Animation module to drive this enemy's frames (optional).",
-                Type         = ParameterType.ModuleReference,
+                Name = "animationRef",
+                DisplayName = "Animation",
+                Description = "Animation module to drive this enemy's frames (optional).",
+                Type = ParameterType.ModuleReference,
                 ModuleFilter = "animation",
-                Required     = false
+                Required = false
             },
             new ParameterDefinition
             {
-                Name         = "x",
-                DisplayName  = "Initial X",
-                Description  = "Initial horizontal position in pixels.",
-                Type         = ParameterType.Int,
+                Name = "x",
+                DisplayName = "Initial X",
+                Description = "Initial horizontal position in pixels.",
+                Type = ParameterType.Int,
                 DefaultValue = 120,
-                MinValue     = 0,
-                MaxValue     = 255
+                MinValue = 0,
+                MaxValue = 255
             },
             new ParameterDefinition
             {
-                Name         = "y",
-                DisplayName  = "Initial Y",
-                Description  = "Initial vertical position in pixels.",
-                Type         = ParameterType.Int,
+                Name = "y",
+                DisplayName = "Initial Y",
+                Description = "Initial vertical position in pixels.",
+                Type = ParameterType.Int,
                 DefaultValue = 144,
-                MinValue     = 0,
-                MaxValue     = 191
+                MinValue = 0,
+                MaxValue = 191
             },
             new ParameterDefinition
             {
-                Name         = "speed",
-                DisplayName  = "Speed",
-                Description  = "Movement speed in pixels per frame.",
-                Type         = ParameterType.Int,
+                Name = "speed",
+                DisplayName = "Speed",
+                Description = "Movement speed in pixels per frame.",
+                Type = ParameterType.Int,
                 DefaultValue = 1,
-                MinValue     = 1,
-                MaxValue     = 8
+                MinValue = 1,
+                MaxValue = 8
             },
             new ParameterDefinition
             {
-                Name         = "health",
-                DisplayName  = "Health",
-                Description  = "Initial hit points.",
-                Type         = ParameterType.Int,
+                Name = "health",
+                DisplayName = "Health",
+                Description = "Initial hit points.",
+                Type = ParameterType.Int,
                 DefaultValue = 1,
-                MinValue     = 1,
-                MaxValue     = 16
+                MinValue = 1,
+                MaxValue = 16
             },
             new ParameterDefinition
             {
-                Name         = "pattern",
-                DisplayName  = "Pattern",
-                Description  = "Movement pattern.",
-                Type         = ParameterType.Enum,
+                Name = "pattern",
+                DisplayName = "Pattern",
+                Description = "Movement pattern.",
+                Type = ParameterType.Enum,
                 DefaultValue = "Patrol",
-                EnumOptions  = new() { { "Static", "Static" }, { "Patrol", "Patrol" } }
+                EnumOptions = new() { { "Static", "Static" }, { "Patrol", "Patrol" } }
             },
             new ParameterDefinition
             {
-                Name         = "patrolRange",
-                DisplayName  = "Patrol Range",
-                Description  = "Horizontal distance in pixels the enemy patrols.",
-                Type         = ParameterType.Int,
+                Name = "patrolRange",
+                DisplayName = "Patrol Range",
+                Description = "Horizontal distance in pixels the enemy patrols.",
+                Type = ParameterType.Int,
                 DefaultValue = 64,
-                MinValue     = 8,
-                MaxValue     = 255
+                MinValue = 8,
+                MaxValue = 255
             }
         ]
     };

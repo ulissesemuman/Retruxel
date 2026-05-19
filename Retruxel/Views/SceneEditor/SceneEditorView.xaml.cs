@@ -318,7 +318,7 @@ public partial class SceneEditorView : UserControl
 
 
     private void Documentation_Click(object sender, RoutedEventArgs e)
-        => OnAboutRequested?.Invoke();
+ => OnAboutRequested?.Invoke();
 
 
 

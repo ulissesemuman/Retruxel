@@ -11,6 +11,7 @@
 
 	<ItemGroup>
 		<ProjectReference Include="..\..\..\Retruxel.SDK\Retruxel.SDK.csproj" />
+		<ProjectReference Include="..\Retruxel.Lib.PaletteHelpers\Retruxel.Lib.PaletteHelpers.csproj" />
 		<ProjectReference Include="..\Retruxel.Lib.WPFImageProcessing\Retruxel.Lib.WPFImageProcessing.csproj" />
 		<ProjectReference Include="..\Retruxel.Tool.AssetImporter\Retruxel.Tool.AssetImporter.csproj">
 			<Private>false</Private>

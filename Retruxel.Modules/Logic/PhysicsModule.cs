@@ -53,58 +53,58 @@ public class PhysicsModule : ILogicModule
         [
             new ParameterDefinition
             {
-                Name         = "gravity",
-                DisplayName  = "Gravity",
-                Description  = "Downward acceleration per frame (fixed-point units).",
-                Type         = ParameterType.Int,
+                Name = "gravity",
+                DisplayName = "Gravity",
+                Description = "Downward acceleration per frame (fixed-point units).",
+                Type = ParameterType.Int,
                 DefaultValue = 2, MinValue = 1, MaxValue = 16
             },
             new ParameterDefinition
             {
-                Name         = "maxFallSpeed",
-                DisplayName  = "Max Fall Speed",
-                Description  = "Terminal velocity — caps freefall speed (fixed-point units).",
-                Type         = ParameterType.Int,
+                Name = "maxFallSpeed",
+                DisplayName = "Max Fall Speed",
+                Description = "Terminal velocity — caps freefall speed (fixed-point units).",
+                Type = ParameterType.Int,
                 DefaultValue = 24, MinValue = 4, MaxValue = 64
             },
             new ParameterDefinition
             {
-                Name         = "jumpForce",
-                DisplayName  = "Jump Force",
-                Description  = "Upward velocity when jumping (fixed-point units). Higher = higher jump.",
-                Type         = ParameterType.Int,
+                Name = "jumpForce",
+                DisplayName = "Jump Force",
+                Description = "Upward velocity when jumping (fixed-point units). Higher = higher jump.",
+                Type = ParameterType.Int,
                 DefaultValue = 52, MinValue = 16, MaxValue = 128
             },
             new ParameterDefinition
             {
-                Name         = "walkSpeed",
-                DisplayName  = "Walk Speed",
-                Description  = "Horizontal speed when walking (fixed-point units).",
-                Type         = ParameterType.Int,
+                Name = "walkSpeed",
+                DisplayName = "Walk Speed",
+                Description = "Horizontal speed when walking (fixed-point units).",
+                Type = ParameterType.Int,
                 DefaultValue = 8, MinValue = 2, MaxValue = 32
             },
             new ParameterDefinition
             {
-                Name         = "groundY",
-                DisplayName  = "Ground Y (pixels)",
-                Description  = "Ground level Y position in screen pixels.",
-                Type         = ParameterType.Int,
+                Name = "groundY",
+                DisplayName = "Ground Y (pixels)",
+                Description = "Ground level Y position in screen pixels.",
+                Type = ParameterType.Int,
                 DefaultValue = 144, MinValue = 0, MaxValue = 191
             },
             new ParameterDefinition
             {
-                Name         = "screenLeft",
-                DisplayName  = "Screen Left Boundary",
-                Description  = "Leftmost X boundary in screen pixels.",
-                Type         = ParameterType.Int,
+                Name = "screenLeft",
+                DisplayName = "Screen Left Boundary",
+                Description = "Leftmost X boundary in screen pixels.",
+                Type = ParameterType.Int,
                 DefaultValue = 0, MinValue = 0, MaxValue = 255
             },
             new ParameterDefinition
             {
-                Name         = "screenRight",
-                DisplayName  = "Screen Right Boundary",
-                Description  = "Rightmost X boundary in screen pixels.",
-                Type         = ParameterType.Int,
+                Name = "screenRight",
+                DisplayName = "Screen Right Boundary",
+                Description = "Rightmost X boundary in screen pixels.",
+                Type = ParameterType.Int,
                 DefaultValue = 248, MinValue = 0, MaxValue = 255
             }
         ]

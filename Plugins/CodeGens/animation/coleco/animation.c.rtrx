@@ -48,23 +48,23 @@ static const unsigned char * const anim_frames[] = {
 };
 
 // Animation state
-unsigned char coleco_anim_current  = 0;
-unsigned char coleco_anim_frame    = 0;
-unsigned char coleco_anim_timer    = 0;
+unsigned char coleco_anim_current = 0;
+unsigned char coleco_anim_frame = 0;
+unsigned char coleco_anim_timer = 0;
 unsigned char coleco_anim_finished = 0;
 
 void animation_init(void) {
-    coleco_anim_current  = 0;
-    coleco_anim_frame    = 0;
-    coleco_anim_timer    = 0;
+    coleco_anim_current = 0;
+    coleco_anim_frame = 0;
+    coleco_anim_timer = 0;
     coleco_anim_finished = 0;
 }
 
 void animation_play(unsigned char animId) {
     if (animId == coleco_anim_current) return;
-    coleco_anim_current  = animId;
-    coleco_anim_frame    = 0;
-    coleco_anim_timer    = 0;
+    coleco_anim_current = animId;
+    coleco_anim_frame = 0;
+    coleco_anim_timer = 0;
     coleco_anim_finished = 0;
 }
 
@@ -75,7 +75,7 @@ void animation_update(void) {
         coleco_anim_timer = 0;
         coleco_anim_frame++;
         if (coleco_anim_frame >= anim_frame_counts[coleco_anim_current]) {
-            coleco_anim_frame    = 0;
+            coleco_anim_frame = 0;
             coleco_anim_finished = 1;
         }
     }

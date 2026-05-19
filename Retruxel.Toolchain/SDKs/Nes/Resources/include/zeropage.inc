@@ -28,13 +28,13 @@
 
 
 ; The size of the register bank
-regbanksize     = 6
+regbanksize = 6
 
 ; The total amount of zero page space used
-zpspace         = 26
+zpspace = 26
 
 ; The amount of space that needs to be saved by an interrupt handler that
 ; calls C code (does not include the register bank, which is saved by the
 ; generated C code if required).
-zpsavespace     = zpspace - regbanksize
+zpsavespace = zpspace - regbanksize
 

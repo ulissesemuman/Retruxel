@@ -290,10 +290,10 @@ public partial class WelcomeView : UserControl
     }
 
     private void Documentation_Click(object sender, RoutedEventArgs e)
-        => OnAboutRequested?.Invoke();
+ => OnAboutRequested?.Invoke();
 
     private void About_Click(object sender, RoutedEventArgs e)
-        => OnAboutRequested?.Invoke();
+ => OnAboutRequested?.Invoke();
 
     private void NewProject_Click(object sender, RoutedEventArgs e)
     {

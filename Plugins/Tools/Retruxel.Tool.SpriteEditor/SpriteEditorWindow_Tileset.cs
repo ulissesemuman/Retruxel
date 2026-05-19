@@ -18,9 +18,16 @@ public partial class SpriteEditorWindow
     private string? _currentAssetId;
     private int _activePaletteSlot = 1;
 
+    /// <summary>
+    /// Renders the tileset using the active palette slot from the current scene.
+    /// Called whenever the palette selection changes or the asset changes.
+    /// </summary>
     private void RefreshTilesetWithPalette()
     {
         if (_indexedData is null || _currentScene is null) return;
+
+        if (_activePaletteSlot >= _currentScene.PaletteSlots.Count)
+            _activePaletteSlot = 0;
 
         var slot = _currentScene.PaletteSlots[_activePaletteSlot];
         _tilesetImage = _indexedPngService.RenderPreview(_indexedData, slot.Colors, scale: (int)_tileZoomLevel);

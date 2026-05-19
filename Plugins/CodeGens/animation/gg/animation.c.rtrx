@@ -48,23 +48,23 @@ static const unsigned char * const anim_frames[] = {
 };
 
 // Animation state
-unsigned char gg_anim_current  = 0;
-unsigned char gg_anim_frame    = 0;
-unsigned char gg_anim_timer    = 0;
+unsigned char gg_anim_current = 0;
+unsigned char gg_anim_frame = 0;
+unsigned char gg_anim_timer = 0;
 unsigned char gg_anim_finished = 0;
 
 void animation_init(void) {
-    gg_anim_current  = 0;
-    gg_anim_frame    = 0;
-    gg_anim_timer    = 0;
+    gg_anim_current = 0;
+    gg_anim_frame = 0;
+    gg_anim_timer = 0;
     gg_anim_finished = 0;
 }
 
 void animation_play(unsigned char animId) {
     if (animId == gg_anim_current) return;
-    gg_anim_current  = animId;
-    gg_anim_frame    = 0;
-    gg_anim_timer    = 0;
+    gg_anim_current = animId;
+    gg_anim_frame = 0;
+    gg_anim_timer = 0;
     gg_anim_finished = 0;
 }
 
@@ -75,7 +75,7 @@ void animation_update(void) {
         gg_anim_timer = 0;
         gg_anim_frame++;
         if (gg_anim_frame >= anim_frame_counts[gg_anim_current]) {
-            gg_anim_frame    = 0;
+            gg_anim_frame = 0;
             gg_anim_finished = 1;
         }
     }

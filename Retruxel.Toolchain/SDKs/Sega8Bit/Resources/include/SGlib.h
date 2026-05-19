@@ -2,7 +2,7 @@
    SGlib - C programming library for the SEGA SG-1000
    ( part of devkitSMS - github.com/sverx/devkitSMS )
    code: na_th_an, sverx
-   ************************************************** */
+  ************************************************** */
 
 // #define TARGET_CV
 /* to recompile the library for the ColecoVision */

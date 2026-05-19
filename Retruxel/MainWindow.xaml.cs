@@ -318,10 +318,10 @@ public partial class MainWindow : Window
     }
 
     private void MinimizeButton_Click(object sender, RoutedEventArgs e)
-        => WindowState = WindowState.Minimized;
+ => WindowState = WindowState.Minimized;
 
     private void MaximizeButton_Click(object sender, RoutedEventArgs e)
-        => ToggleMaximize();
+ => ToggleMaximize();
 
     private async void CloseButton_Click(object sender, RoutedEventArgs e)
     {
@@ -344,7 +344,7 @@ public partial class MainWindow : Window
     }
 
     private void ToggleMaximize()
-        => WindowState = WindowState == WindowState.Maximized
+ => WindowState = WindowState == WindowState.Maximized
             ? WindowState.Normal
             : WindowState.Maximized;
 

@@ -3,7 +3,6 @@
 using Retruxel.Core.Interfaces;
 using Retruxel.Core.Models;
 using Retruxel.Core.Services;
-using Retruxel.Target.SMS.Modules.Splash;
 using Retruxel.Target.SMS.Text;
 using System;
 using System.Collections.Generic;
@@ -137,7 +136,10 @@ public class SmsTarget : ITarget, IPaletteConverter
             new Retruxel.Modules.Graphics.PaletteModule(),
             new Retruxel.Modules.Graphics.TilemapModule(),
             new Retruxel.Modules.Graphics.SpriteModule(),
-            new Retruxel.Modules.Graphics.TextDisplayModule()
+            new Retruxel.Modules.Graphics.TextDisplayModule(),
+            new Retruxel.Modules.Graphics.FadeInModule(),
+            new Retruxel.Modules.Graphics.FadeOutModule(),
+            new Retruxel.Modules.Graphics.SplashModule()
         ];
     }
 
@@ -147,7 +149,7 @@ public class SmsTarget : ITarget, IPaletteConverter
     [
         new ProjectTemplate
         {
-            TemplateId  = "sms.blank",
+            TemplateId = "sms.blank",
             DisplayName = "Blank Project",
             Description = "Empty SMS project with no pre-configured modules.",
             DefaultModules = []
@@ -174,28 +176,28 @@ public class SmsTarget : ITarget, IPaletteConverter
     [
         new ParameterDefinition
         {
-            Name         = "region",
-            DisplayName  = "Region",
-            Description  = "Target region. Affects VBlank timing.",
-            Type         = ParameterType.Enum,
+            Name = "region",
+            DisplayName = "Region",
+            Description = "Target region. Affects VBlank timing.",
+            Type = ParameterType.Enum,
             DefaultValue = "NTSC",
-            EnumOptions  = new() { { "NTSC", "NTSC" }, { "PAL", "PAL" } }
+            EnumOptions = new() { { "NTSC", "NTSC" }, { "PAL", "PAL" } }
         },
         new ParameterDefinition
         {
-            Name         = "romSize",
-            DisplayName  = "ROM Size",
-            Description  = "Maximum ROM size in KB.",
-            Type         = ParameterType.Enum,
+            Name = "romSize",
+            DisplayName = "ROM Size",
+            Description = "Maximum ROM size in KB.",
+            Type = ParameterType.Enum,
             DefaultValue = "32",
-            EnumOptions  = new() { { "32KB", "32" }, { "128KB", "128" }, { "256KB", "256" }, { "512KB", "512" } }
+            EnumOptions = new() { { "32KB", "32" }, { "128KB", "128" }, { "256KB", "256" }, { "512KB", "512" } }
         },
         new ParameterDefinition
         {
-            Name         = "fmSound",
-            DisplayName  = "FM Sound Unit",
-            Description  = "Enable FM sound support (Japan only).",
-            Type         = ParameterType.Bool,
+            Name = "fmSound",
+            DisplayName = "FM Sound Unit",
+            Description = "Enable FM sound support (Japan only).",
+            Type = ParameterType.Bool,
             DefaultValue = false
         }
     ];
@@ -220,16 +222,9 @@ public class SmsTarget : ITarget, IPaletteConverter
 
     public IEnumerable<GeneratedFile> GenerateSystemFiles()
     {
-        var settings = SettingsService.Load();
-        if (!settings.General.ShowMadeWithSplash)
-            return [];
-
-        var splashGen = new SmsSplashCodeGen();
-        return
-        [
-            splashGen.GenerateHeader(),
-            splashGen.GenerateCode()
-        ];
+        // Splash is now handled via codegen (see Plugins/CodeGens/splash/)
+        // This method no longer generates splash code
+        return [];
     }
 
     public IEnumerable<GeneratedFile> GenerateEngineRuntime()
@@ -270,6 +265,95 @@ public class SmsTarget : ITarget, IPaletteConverter
         1 => PaletteSlotType.Sprite,
         _ => PaletteSlotType.Shared
     };
+
+    public AssetEntry GetSplashAsset()
+    {
+        // Embedded splash asset - MapIndex, MapData and palette from optimized version
+        // Generated using Retruxel with tile deduplication and flip optimization
+        // MapData format: ushort[] with tile index + flip flags (bit 9 = H flip, bit 10 = V flip)
+        return new AssetEntry
+        {
+            Id = "splash",
+            FileName = "splash.png",
+            RelativePath = "Assets/Source/splash.png",
+            SourceWidth = 144,
+            SourceHeight = 112,
+            ImportedAt = new DateTime(2026, 5, 18, 12, 2, 57, 466, DateTimeKind.Local),
+            VramRegionId = "bg",
+            GenerationParams = new AssetGenerationParams
+            {
+                ColorSpace = "LAB",
+                DiversityWeight = 1.25,
+                TargetPalette = 0,
+                ColorCount = 4,
+                Palette = new List<string>
+                {
+                    "#000000",
+                    "#555555",
+                    "#AAFF55",
+                    "#55AA55"
+                },
+                MapIndex = Convert.FromBase64String("AgAAAAIAAAACAAAAAgICAAACAgIAAAACAAAAAAACAAIAAgICAgIAAgAAAgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgICAgAAAAAAAwICAgICAgICAgICAgICAgICAgAAAAAAAAAAAAAAAAMCAgICAgACAgAAAgACAAACAAACAAIAAAAAAAACAAMAAgAAAgAAAAIAAAACAAACAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAgICAAAAAAECAgICAgICAgICAgICAgICAgICAAAAAAAAAAAAAAAAAwICAgIAAgACAAACAAIAAAIAAAIAAgIAAAAAAAIAAgACAAACAAAAAgAAAAICAgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAICAgIAAAAAAwICAgICAgICAgICAgICAgICAgIAAAAAAAAAAAAAAAADAgICAgAAAAIAAwICAgMAAgAAAgACAAAAAAAAAAIAAgAAAAIAAAACAAAAAgAAAgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgICAgAAAAADAgICAgICAgICAgICAgICAgICAgAAAAAAAAAAAAAAAAMCAgICAAAAAgACAAAAAgACAgIAAAICAgAAAAAAAgACAAAAAgAAAAIAAAACAAACAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQMDAwMDAwMDAwMCAgICAAAAAAMCAgICAgICAAAAAAAAAAAAAAAAAAAAAAACAgICAgICAgICAgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAICAgIAAAAAAAAAAAMCAgICAgICAgICAgICAgIAAAAAAwICAgICAgIAAAAAAAAAAAAAAAAAAAAAAAICAgICAgICAgICAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgICAgAAAAAAAAACAgICAgICAgICAgICAgICAgAAAAADAgICAgICAgAAAAAAAAAAAAAAAAAAAAAAAgICAgICAgICAgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAgICAAAAAAAAAgICAgICAgICAgICAgICAgICAAAAAAMCAgICAgICAAAAAAAAAAAAAAAAAAAAAAACAgICAgICAgICAgICAgIAAAAAAAAAAAAAAAACAgICAgICAgAAAAACAgICAgICAwEAAAAAAAICAgICAgAAAAMCAgICAgICAgICAgICAgICAgIDAAICAgMBAAAAAAACAgICAAACAgICAAMCAgIDAAAAAAAAAAAAAAMCAgIDAAICAgICAgAAAgICAgAAAgICAgAAAAAAAAAAAAAAAAICAgICAgICAAAAAAICAgICAgICAgMBAAAAAgICAgICAAAAAwICAgICAgICAgICAgICAgICAgMAAgICAgIDAQAAAAICAgIAAAICAgIAAwICAgIBAAAAAAAAAAABAgICAgMAAgICAgICAAACAgICAAACAgICAAAAAAAAAAAAAAAAAgICAgICAgIAAAAAAgICAgICAgICAgIBAAACAgICAgIAAAADAgICAgICAgICAgICAgICAgICAwACAgICAgICAQAAAgICAgAAAgICAgAAAwICAgMBAAAAAAAAAQMCAgIDAAACAgICAgIAAAICAgIAAAICAgIAAAAAAAAAAAAAAAACAgICAgICAgAAAAACAgICAgICAgICAgMAAAICAgICAgAAAAMCAgICAgICAgICAgICAgICAgIDAAICAgICAgIDAAACAgICAAACAgICAAABAgICAgMAAAAAAAADAgICAgEAAAICAgICAgAAAgICAgAAAgICAgAAAAAAAAAAAAAAAAICAgICAgICAAAAAAAAAAAAAAICAgICAgEAAgICAgAAAAAAAAAAAAAAAAACAgICAAAAAAAAAAAAAAMCAgICAgIBAAICAgIAAAICAgIAAAADAgICAgEAAAAAAQICAgIDAAAAAgICAgAAAAACAgICAAACAgICAAAAAAICAgICAgICAgICAgICAgIAAAAAAAAAAAAAAQMCAgICAwACAgICAAAAAAAAAAAAAAAAAAICAgIAAAAAAAAAAAAAAAEDAgICAgMAAgICAgAAAgICAgAAAAECAgICAwAAAAADAgICAgEAAAACAgICAAAAAAICAgIAAAICAgIAAAAAAgICAgICAgICAgICAgICAgAAAAAAAAAAAAAAAAMCAgICAAICAgIAAAAAAAAAAAAAAAAAAgICAgAAAAAAAAAAAAAAAAEDAgICAgACAgICAAACAgICAAAAAAMCAgICAQAAAQICAgIDAAAAAAICAgIAAAAAAgICAgAAAgICAgAAAAACAgICAgICAgICAgICAgICAAAAAAAAAAAAAAAAAQICAgIAAgICAgAAAAAAAAAAAAAAAAACAgICAAAAAAAAAAAAAAAAAAECAgICAAICAgIAAAICAgIAAAAAAQICAgIDAAADAgICAgEAAAAAAgICAgAAAAACAgICAAAAAAAAAAAAAAAAAAADAgICAgACAgICAAAAAAAAAAAAAAAAAAICAgIAAAAAAQMCAgICAAICAgIAAAABAgICAgMDAgICAgEAAAAAAAICAgIAAAICAgAAAAAAAwACAgICAAADAAICAgIAAAAAAAAAAAAAAgICAgAAAAAAAAICAgIAAAAAAAAAAAAAAAAAAwICAgIDAAICAgIAAAAAAAAAAAAAAAAAAgICAgAAAAEDAgICAgMAAgICAgAAAAADAgICAgICAgIDAAAAAAAAAgICAgAAAgICAAAAAAADAAICAgIAAAMAAwICAgMAAAAAAAAAAAMCAgIDAAAAAAAAAgICAgAAAAAAAAAAAAAAAAMCAgICAwEAAgICAgICAgICAgICAgAAAAACAgICAAABAwICAgIDAQACAgICAAAAAAECAgICAgICAgEAAAAAAAACAgICAgICAgIAAAAAAAMAAgICAgAAAwABAgICAgEAAAAAAAABAgICAgEAAAABAAACAgICAAACAgICAgICAgICAgICAgMBAAACAgICAgICAgICAgICAAAAAAICAgIAAgICAgICAwEAAAICAgIAAAAAAAMCAgICAgIDAAAAAAAAAAICAgICAgICAgAAAAAAAwACAgICAAADAAADAgICAgEAAAAAAQICAgIDAAAAAAMAAAICAgIAAAICAgICAgICAgICAgICAwAAAAICAgICAgICAgICAgIAAAAAAgICAgACAgICAgIDAAAAAgICAgAAAAAAAwICAgICAgMAAAAAAAAAAgICAgICAgICAAAAAAADAAICAgICAgMAAAECAgICAgMBAQMCAgICAgEAAAABAgAAAgICAgICAgICAgICAgICAgICAgICAwAAAgICAgICAgICAgICAgAAAAACAgICAAICAgICAgIDAAACAgICAAAAAAECAgICAgICAgEAAAAAAAACAgICAgICAgIAAAAAAAMAAgICAgICAwAAAAMCAgICAgICAgICAgIDAAAAAAMCAAACAgICAgICAgICAgICAgICAgICAgICAQACAgICAAAAAAAAAAAAAAAAAAICAgIAAgICAgICAgIBAAICAgIAAAAAAwICAgICAgICAwAAAAAAAAICAgIAAAICAgAAAAAAAwACAgICAgIDAAAAAAMCAgICAgICAgICAwAAAAADAgIAAAICAgICAgICAgIAAAAAAAAAAAICAgIDAAICAgIAAAAAAAAAAAAAAAAAAgICAgAAAAAAAgICAgMAAgICAgAAAAECAgICAwMCAgICAQAAAAAAAgICAgAAAgICAAAAAAADAAICAgICAgMAAAAAAAEDAgICAgICAwEAAAAAAAMCAgAAAgICAgIC"),
+                //MapData = new ushort[]
+                //{
+                //    // Row 0
+                //    2, 0, 2, 0, 2, 0, 2, 2, 2, 0, 2, 2, 2, 0, 2, 0, 0, 2, 0, 2, 2, 2, 2, 2, 2, 0, 2, 0, 2, 0, 0, 0,
+                //    // Row 1
+                //    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 2, 2, 2, 0, 0, 3, 2, 2, 2, 2, 2, 2, 2, 2, 2,
+                //    // Row 2
+                //    2, 2, 2, 2, 2, 2, 2, 2, 0, 0, 0, 0, 0, 0, 3, 2, 2, 2, 2, 2, 2, 2, 2, 0, 2, 0, 2, 0, 2, 0, 2, 0,
+                //    // Row 3
+                //    2, 0, 0, 0, 2, 0, 3, 0, 2, 0, 2, 0, 2, 0, 2, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                //    // Row 4
+                //    0, 0, 0, 0, 0, 0, 0, 0, 2, 2, 2, 2, 0, 0, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
+                //    // Row 5
+                //    0, 0, 0, 0, 0, 0, 3, 2, 2, 2, 2, 0, 2, 0, 2, 0, 2, 0, 2, 0, 2, 0, 2, 2, 0, 0, 2, 0, 2, 0, 2, 0,
+                //    // Row 6
+                //    2, 0, 2, 0, 2, 2, 2, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                //    // Row 7
+                //    2, 2, 2, 2, 0, 0, 3, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 0, 0, 0, 0, 0, 0, 3, 2,
+                //    // Row 8
+                //    2, 2, 2, 0, 2, 0, 3, 2, 2, 2, 3, 0, 2, 0, 2, 0, 2, 0, 0, 0, 2, 0, 2, 0, 2, 0, 2, 0, 2, 0, 2, 0,
+                //    // Row 9
+                //    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 2, 2, 2, 0, 0, 3, 2,
+                //    // Row 10
+                //    2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 0, 0, 0, 0, 0, 0, 3, 2, 2, 2, 2, 0, 2, 0, 2, 0,
+                //    // Row 11
+                //    2, 0, 2, 2, 2, 0, 2, 2, 2, 0, 0, 2, 0, 2, 0, 2, 0, 2, 0, 2, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                //    // Row 12
+                //    0, 0, 0, 0, 0, 0, 0, 0, 1, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 2, 2, 2, 2, 0, 0, 3, 2, 2, 2, 2, 2,
+                //    // Row 13
+                //    2, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 0, 0, 0, 0, 0, 0, 0, 0,
+                //    // Row 14
+                //    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 2, 2, 2, 0, 0, 0, 0,
+                //    // Row 15
+                //    3, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 0, 0, 3, 2, 2, 2, 2, 2, 2, 2, 2, 0, 0, 0, 0, 0, 0,
+                //    // Row 16
+                //    0, 0, 0, 0, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                //    // Row 17
+                //    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 2, 2, 2, 0, 0, 0, 2, 2, 2, 2, 2, 2, 2, 2, 2,
+                //    // Row 18
+                //    2, 2, 2, 2, 2, 2, 2, 0, 0, 3, 2, 2, 2, 2, 2, 2, 2, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 2, 2, 2,
+                //    // Row 19
+                //    2, 2, 2, 2, 2, 2, 2, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                //    // Row 20
+                //    2, 2, 2, 2, 0, 0, 0, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 0, 0, 3, 2, 2, 2, 2, 2,
+                //    // Row 21
+                //    2, 2, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 0, 0, 0, 0,
+                //    // Row 22
+                //    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 2, 2, 2, 2, 2, 2, 2,
+                //    // Row 23
+                //    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 0, 0
+                //},
+                OptimizedWidth = 128,
+                OptimizedHeight = 24,
+                TileCount = 48,
+                EnableFlipH = true,
+                EnableFlipV = true,
+                EnableRotation = false
+            }
+        };
+    }
 
     // IPaletteConverter implementation
     byte[] IPaletteConverter.ConvertColors(IEnumerable<string> hexColors)
@@ -329,7 +413,6 @@ public class SmsTarget : ITarget, IPaletteConverter
             .. headers,
             "",
             "void main(void) {",
-            .. (splashEnabled ? new[] { "    splash_show();" } : Array.Empty<string>()),
             .. initCalls,
             .. textDisplayCalls,
             "",

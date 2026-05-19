@@ -35,8 +35,8 @@ void text_display_{{instanceId}}_init(void) {
     }
     g_gameState.ui.text[i] = '\0';
 
-    g_gameState.ui.x     = {{x}};
-    g_gameState.ui.y     = {{y}};
+    g_gameState.ui.x = {{x}};
+    g_gameState.ui.y = {{y}};
     g_gameState.ui.color = 0;
 
     // Static text: mark dirty once. Engine_Render will call SMS_printatXY.

@@ -1,10 +1,10 @@
-﻿{
-  "moduleId": "tilemap",
-  "targetId": "gg",
-  "displayName": "Game Gear Tilemap CodeGen",
-  "description": "Generates C code for Game Gear tilemap with collision detection using bitfield lookup",
+{
+  "moduleId": "plane",
+  "targetId": "sms",
+  "displayName": "SMS Plane CodeGen",
+  "description": "Generates C code for SMS plane with collision detection using bitfield lookup",
   "version": "1.0.0",
-  "template": "tilemap.c.rtrx",
+  "template": "plane.c.rtrx",
   "variables": {
     "tilesAssetId": { "from": "module", "path": "tilesAssetId", "default": "" },
     "mapAssetId": { "from": "module", "path": "mapAssetId", "default": "" },
@@ -16,16 +16,27 @@
     "mapData": { "from": "module", "path": "mapData", "default": [] },
     "solidTiles": { "from": "module", "path": "solidTiles", "default": [] },
     "maxTileSlots": { "from": "module", "path": "maxTileSlots", "default": 448 },
+    "paletteSlot": { "from": "module", "path": "paletteSlot", "default": 0 },
+    "tilesData": {
+      "from": "tool",
+      "tool": "png_to_tiles",
+      "toolInput": {
+        "assetId": "tilesAssetId"
+      }
+    },
     "preprocessed": {
       "from": "tool",
-      "tool": "tilemap_preprocessor",
+      "tool": "plane_preprocessor",
       "toolInput": {
         "solidTiles": "solidTiles",
         "mapData": "mapData",
         "startTile": "startTile",
+        "mapX": "mapX",
+        "mapY": "mapY",
         "mapWidth": "mapWidth",
         "mapHeight": "mapHeight",
-        "maxTileSlots": "maxTileSlots"
+        "maxTileSlots": "maxTileSlots",
+        "paletteSlot": "paletteSlot"
       }
     }
   }

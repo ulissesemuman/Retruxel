@@ -50,8 +50,8 @@ public partial class PaletteEditorWindow : Window
         _project = project;
         _paletteElementId = paletteElementId;
 
-        SelectedConnectorId = callerToolId == "tilemap_editor"
-            ? "palette_to_tilemap"
+        SelectedConnectorId = callerToolId == "plane_editor"
+            ? "palette_to_plane"
             : "palette_to_module";
 
         InitializeComponent();

@@ -42,7 +42,7 @@ public class SmsRenderBackend
         sb.AppendLine("#define NULL ((void*)0)");
         sb.AppendLine("#endif");
         sb.AppendLine();
-        sb.AppendLine("#define MAX_TILEMAP_LAYERS 4");
+        sb.AppendLine("#define MAX_PLANE_LAYERS 4");
         sb.AppendLine();
 
         // GameState structure
@@ -59,14 +59,14 @@ public class SmsRenderBackend
         sb.AppendLine("    int mapY;");
         sb.AppendLine("    unsigned int tileDataSize;");
         sb.AppendLine("    unsigned int mapDataSize;");
-        sb.AppendLine("} TilemapLayerState;");
+        sb.AppendLine("} PlaneLayerState;");
         sb.AppendLine();
 
         sb.AppendLine("typedef struct {");
-        sb.AppendLine("    TilemapLayerState layers[MAX_TILEMAP_LAYERS];");
+        sb.AppendLine("    PlaneLayerState layers[MAX_PLANE_LAYERS];");
         sb.AppendLine("    unsigned char layerCount;");
         sb.AppendLine("    bool dirty;");
-        sb.AppendLine("} TilemapState;");
+        sb.AppendLine("} PlaneState;");
         sb.AppendLine();
 
         sb.AppendLine("typedef struct {");
@@ -92,7 +92,7 @@ public class SmsRenderBackend
         sb.AppendLine();
 
         sb.AppendLine("typedef struct {");
-        sb.AppendLine("    TilemapState tilemaps;");
+        sb.AppendLine("    PlaneState planes;");
         sb.AppendLine("    SpriteLayerState sprites;");
         sb.AppendLine();
         sb.AppendLine("    bool spritesDirty;");
@@ -146,10 +146,10 @@ public class SmsRenderBackend
         sb.AppendLine("    unsigned char i;");
         sb.AppendLine();
 
-        // Tilemap
-        sb.AppendLine("    if (state->tilemaps.dirty) {");
-        sb.AppendLine("        for (i = 0; i < state->tilemaps.layerCount && i < MAX_TILEMAP_LAYERS; i++) {");
-        sb.AppendLine("            TilemapLayerState* layer = &state->tilemaps.layers[i];");
+        // Plane
+        sb.AppendLine("    if (state->planes.dirty) {");
+        sb.AppendLine("        for (i = 0; i < state->planes.layerCount && i < MAX_PLANE_LAYERS; i++) {");
+        sb.AppendLine("            PlaneLayerState* layer = &state->planes.layers[i];");
         sb.AppendLine("            if (layer->tileData != NULL && layer->tileDataSize > 0) {");
         sb.AppendLine("                SMS_loadTiles(layer->tileData, layer->startTile, layer->tileDataSize);");
         sb.AppendLine("            }");
@@ -182,7 +182,7 @@ public class SmsRenderBackend
 
         // Engine_ClearDirtyFlags
         sb.AppendLine("void Engine_ClearDirtyFlags(GameState* state) {");
-        sb.AppendLine("    state->tilemaps.dirty = false;");
+        sb.AppendLine("    state->planes.dirty = false;");
         sb.AppendLine("    state->spritesDirty = false;");
         sb.AppendLine("    state->scrollDirty = false;");
         sb.AppendLine("}");

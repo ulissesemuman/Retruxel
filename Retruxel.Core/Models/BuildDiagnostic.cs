@@ -22,7 +22,7 @@ public class BuildDiagnosticMetric
     /// <summary>Unique identifier for this metric. Ex: "vram.tiles", "ram.usage", "sprites.scanline"</summary>
     public string MetricId { get; }
 
-    /// <summary>Label displayed in the UI. Ex: "VRAM Tiles", "RAM Usage", "Sprites / Scanline"</summary>
+    /// <summary>LayerName displayed in the UI. Ex: "VRAM Tiles", "RAM Usage", "Sprites / Scanline"</summary>
     public string DisplayName { get; }
 
     /// <summary>Category for grouping. Ex: "VRAM", "RAM", "Sprites", "ROM"</summary>

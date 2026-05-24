@@ -1,42 +1,43 @@
 using Retruxel.Core.Interfaces;
 using Retruxel.Core.Models;
-using System;
 
 namespace Retruxel.Core.Services;
 
 /// <summary>
-/// Splash injection - adds splash screen modules to project if enabled.
+/// Splash injection - adds splash screen module to project if enabled.
 /// </summary>
 public partial class CodeGenerator
 {
     /// <summary>
-    /// Injects splash screen modules into project if enabled.
+    /// Injects the splash screen as a project-level module if enabled in settings.
     /// Called at the start of GenerateAsync() before any other processing.
-    /// Does NOT change InitialSceneId - splash is only injected into OnStart.
+    /// Non-destructive: modifies only the in-memory copy, never persisted to disk.
+    /// The splash module runs before any scene by being inserted at index 0 of project.Modules.
     /// </summary>
     private void InjectSplash(RetruxelProject project)
     {
-        // Load settings (global, not project-specific)
         var settings = SettingsService.Load();
-        
-        // Check if splash is enabled
+
         if (!settings.General.ShowMadeWithSplash)
             return;
 
-        // Add splash module to first scene's OnStart modules (or create scene if none exists)
-        if (project.Scenes.Count == 0)
+        // Inject splash as a project-level module (runs before any scene).
+        // Non-destructive: only adds to in-memory copy, never persisted.
+        var splashModule = new ProjectModuleData
         {
-            project.Scenes.Add(new SceneData { SceneId = "main", SceneName = "main" });
-        }
-
-        var firstScene = project.Scenes[0];
-        
-        // Add splash module to scene elements (minimal state - codegen will handle the rest)
-        firstScene.Elements.Add(new SceneElementData
-        {
-            ElementId = Guid.NewGuid().ToString(),
             ModuleId = "splash",
-            ModuleState = System.Text.Json.JsonSerializer.SerializeToElement(new { })
-        });
+            Label    = "Made with Retruxel",
+            Enabled  = true,
+            State    = System.Text.Json.JsonSerializer.SerializeToElement(new
+            {
+                fadeInDuration  = 30,
+                holdDuration    = 120,
+                fadeOutDuration = 30,
+                targetSlot      = 0
+            })
+        };
+
+        // Insert at beginning so it runs first
+        project.Modules.Insert(0, splashModule);
     }
 }

@@ -1,7 +1,7 @@
 <Window x:Class="Retruxel.Tool.TilemapEditor.TilemapEditorWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="TILEMAP EDITOR"
+        Title="PLANE EDITOR"
         Height="720" Width="1280"
         MinHeight="600" MinWidth="1024"
         WindowStartupLocation="CenterOwner"
@@ -42,12 +42,12 @@
                 <Grid Margin="24,0,8,0">
                     <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                         <TextBlock x:Name="TxtTitle"
-                                   Text="TILEMAP EDITOR"
+                                   Text="PLANE EDITOR"
                                    Style="{StaticResource TextHeadline}"
                                    Foreground="{StaticResource BrushPrimary}"
                                    VerticalAlignment="Center"
                                    Margin="0,0,12,0"/>
-                        <TextBlock x:Name="TxtTilemapName"
+                        <TextBlock x:Name="TxtPlaneName"
                                    Text="— bg_map"
                                    Style="{StaticResource TextHeadline}"
                                    Foreground="{StaticResource BrushOnSurface}"
@@ -222,7 +222,7 @@
                             <ScrollViewer x:Name="CanvasScrollViewer"
                                           HorizontalScrollBarVisibility="Auto"
                                           VerticalScrollBarVisibility="Auto">
-                                <Canvas x:Name="TilemapCanvas"
+                                <Canvas x:Name="PlaneCanvas"
                                         Background="Transparent"
                                         MouseLeftButtonDown="Canvas_MouseLeftButtonDown"
                                         MouseMove="Canvas_MouseMove"

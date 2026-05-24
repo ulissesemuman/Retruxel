@@ -22,10 +22,10 @@ public interface IRenderBackend
     void Initialize();
 
     /// <summary>
-    /// Draws a tilemap layer to VRAM.
+    /// Draws a plane layer to VRAM.
     /// Platform-specific: SMS merges layers, SNES uses separate BG layers.
     /// </summary>
-    void DrawTilemap(TilemapLayerState state);
+    void DrawPlane(PlaneLayerState state);
 
     /// <summary>
     /// Draws text to the screen.
@@ -53,7 +53,7 @@ public interface IRenderBackend
 
     /// <summary>
     /// Clears the screen (VRAM).
-    /// Platform-specific: SMS clears nametable, NES clears nametables, SNES clears tilemaps.
+    /// Platform-specific: SMS clears nametable, NES clears nametables, SNES clears planes.
     /// </summary>
     void ClearScreen();
 

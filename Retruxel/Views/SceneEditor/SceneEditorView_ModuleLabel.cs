@@ -1,4 +1,5 @@
 using Retruxel.Core.Interfaces;
+using Retruxel.Views.SceneEditor.Helpers;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
@@ -10,7 +11,7 @@ public partial class SceneEditorView
     /// <summary>
     /// Builds a visual label for a module showing:
     /// - Category icon (colored square)
-    /// - Module type (TEXT, TILEMAP, PALETTE)
+    /// - Module type (TEXT, PLANE, PALETTE)
     /// - Content preview (user ID or property value)
     /// </summary>
     private UIElement BuildModuleLabel(SceneElement element)
@@ -122,7 +123,7 @@ public partial class SceneEditorView
                 return str.Length > 15 ? str[..15] + "..." : str;
             }
 
-            // Tilemap/Sprite: show asset ID
+            // Plane/Sprite: show asset ID
             if (root.TryGetProperty("tilesAssetId", out var assetId))
             {
                 var str = assetId.GetString() ?? "";

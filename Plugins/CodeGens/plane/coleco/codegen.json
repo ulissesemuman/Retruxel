@@ -1,10 +1,10 @@
 {
-  "moduleId": "tilemap",
+  "moduleId": "plane",
   "targetId": "coleco",
-  "displayName": "ColecoVision Tilemap CodeGen",
-  "description": "Generates C code for ColecoVision tilemap with collision detection using bitfield lookup",
+  "displayName": "ColecoVision Plane CodeGen",
+  "description": "Generates C code for ColecoVision plane with collision detection using bitfield lookup",
   "version": "1.0.0",
-  "template": "tilemap.c.rtrx",
+  "template": "plane.c.rtrx",
   "variables": {
     "tilesAssetId": { "from": "module", "path": "tilesAssetId", "default": "" },
     "mapAssetId": { "from": "module", "path": "mapAssetId", "default": "" },
@@ -18,7 +18,7 @@
     "maxTileSlots": { "from": "module", "path": "maxTileSlots", "default": 448 },
     "preprocessed": {
       "from": "tool",
-      "tool": "tilemap_preprocessor",
+      "tool": "plane_preprocessor",
       "toolInput": {
         "solidTiles": "solidTiles",
         "mapData": "mapData",

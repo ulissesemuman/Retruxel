@@ -45,6 +45,8 @@ public class ProjectManager
         Directory.CreateDirectory(Path.Combine(projectPath, "assets"));
         Directory.CreateDirectory(Path.Combine(projectPath, "build"));
 
+        var mainSceneId = Guid.NewGuid().ToString();
+
         var project = new RetruxelProject
         {
             Name = name,
@@ -53,12 +55,11 @@ public class ProjectManager
             TemplateId = template.TemplateId,
             CreatedAt = DateTime.Now,
             ModifiedAt = DateTime.Now,
-            DefaultModules = template.DefaultModules.ToList(),
-            Parameters = new Dictionary<string, object>(template.DefaultParameters),
+            InitialSceneId = mainSceneId,
             Scenes = [
                 new SceneData
                 {
-                    SceneId = Guid.NewGuid().ToString(),
+                    SceneId = mainSceneId,
                     SceneName = "Main",
                     Elements = []
                 }

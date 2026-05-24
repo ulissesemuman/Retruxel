@@ -5,7 +5,7 @@ namespace Retruxel.Core.Interfaces;
 
 /// <summary>
 /// Contract for all graphic modules.
-/// Graphic modules handle visual assets — tiles, sprites, palettes, tilemaps.
+/// Graphic modules handle visual assets — tiles, sprites, palettes, planes.
 /// The host shell uses CreateEditorViewModel() to build the UI dynamically,
 /// keeping WPF dependencies out of the Core library.
 /// </summary>

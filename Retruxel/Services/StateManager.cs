@@ -68,7 +68,7 @@ public class StateManager
         // Register in undo/redo stack if undoable
         if (change.IsUndoable && change.UndoCommand != null)
         {
-            _undoRedo.Push(change.UndoCommand);
+            _undoRedo.PushWithoutExecute(change.UndoCommand);
         }
 
         // Mark as dirty

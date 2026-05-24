@@ -8,14 +8,14 @@ using System.Text.Json;
 namespace Retruxel.Modules.Graphics;
 
 /// <summary>
-/// Tilemap module — loads tile graphics and a nametable layout into the SMS VDP.
+/// Plane module — loads tile graphics and a nametable layout into the SMS VDP.
 ///
 /// The SMS background is a 32×28 grid of 8×8 tiles (only 32×24 visible in Mode 4).
 /// This module references asset IDs that the Asset Manager will resolve to binary data.
 ///
 /// JSON format:
 /// {
-///   "module":       "tilemap",
+///   "module":       "plane",
 ///   "tilesAssetId": "bg_tiles",       // asset ID for CHR tile data
 ///   "mapAssetId":   "bg_map",         // asset ID for nametable layout
 ///   "startTile":    0,                // first VRAM tile slot to load into (0–447)
@@ -25,15 +25,15 @@ namespace Retruxel.Modules.Graphics;
 ///   "mapHeight":    24                // height of the map in tiles
 /// }
 /// </summary>
-public class TilemapModule : IGraphicModule
+public class PlaneModule : IGraphicModule
 {
-    public string ModuleId => "tilemap";
-    public string DisplayName => "Tilemap";
+    public string ModuleId => "plane";
+    public string DisplayName => "Plane";
     public string Category => "Graphics";
     public ModuleType Type => ModuleType.Logic;
     public SingletonPolicy SingletonPolicy => SingletonPolicy.Multiple;
     public string[] Compatibility { get; set; } = [];
-    public string? VisualToolId => "tilemap_editor";
+    public string? VisualToolId => "plane_editor";
     public ModuleScope DefaultScope => ModuleScope.Scene;
 
     private static readonly JsonSerializerOptions _jsonOptions = new()
@@ -42,7 +42,7 @@ public class TilemapModule : IGraphicModule
         PropertyNameCaseInsensitive = true
     };
 
-    private TilemapState _state = new();
+    private PlaneState _state = new();
 
     public ModuleManifest GetManifest() => new()
     {
@@ -147,7 +147,7 @@ public class TilemapModule : IGraphicModule
             {
                 Name = "paletteRef",
                 DisplayName = "Palette",
-                Description = "Palette module to use for this tilemap.",
+                Description = "Palette module to use for this plane.",
                 Type = ParameterType.ModuleReference,
                 ModuleFilter = "palette",
                 Required = true
@@ -174,12 +174,12 @@ public class TilemapModule : IGraphicModule
         var json = JsonSerializer.Serialize(_state, _jsonOptions);
 
         // DEBUG: Log serialized JSON
-        System.Diagnostics.Debug.WriteLine($"[TilemapModule.Serialize] MapData.Length = {_state.MapData.Length}");
+        System.Diagnostics.Debug.WriteLine($"[PlaneModule.Serialize] MapData.Length = {_state.MapData.Length}");
         if (_state.MapData.Length > 0)
         {
-            System.Diagnostics.Debug.WriteLine($"[TilemapModule.Serialize] First item type: {_state.MapData[0]?.GetType().Name}");
-            System.Diagnostics.Debug.WriteLine($"[TilemapModule.Serialize] JSON length: {json.Length}");
-            System.Diagnostics.Debug.WriteLine($"[TilemapModule.Serialize] JSON preview: {json.Substring(0, Math.Min(500, json.Length))}");
+            System.Diagnostics.Debug.WriteLine($"[PlaneModule.Serialize] First item type: {_state.MapData[0]?.GetType().Name}");
+            System.Diagnostics.Debug.WriteLine($"[PlaneModule.Serialize] JSON length: {json.Length}");
+            System.Diagnostics.Debug.WriteLine($"[PlaneModule.Serialize] JSON preview: {json.Substring(0, Math.Min(500, json.Length))}");
         }
 
         return json;
@@ -190,7 +190,7 @@ public class TilemapModule : IGraphicModule
         using var doc = JsonDocument.Parse(json);
         var root = doc.RootElement;
 
-        _state = new TilemapState
+        _state = new PlaneState
         {
             TilesAssetId = root.TryGetProperty("tilesAssetId", out var ta) ? ta.GetString() ?? "" : "",
             MapAssetId = root.TryGetProperty("mapAssetId", out var ma) ? ma.GetString() ?? "" : "",
@@ -262,9 +262,9 @@ public class TilemapModule : IGraphicModule
 
         return result.ToArray();
     }
-    public string GetValidationSample() => JsonSerializer.Serialize(new TilemapState(), _jsonOptions);
+    public string GetValidationSample() => JsonSerializer.Serialize(new PlaneState(), _jsonOptions);
 
-    private class TilemapState
+    private class PlaneState
     {
         public string TilesAssetId { get; set; } = string.Empty;
         public string MapAssetId { get; set; } = string.Empty;

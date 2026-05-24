@@ -9,19 +9,16 @@ using System.Windows.Input;
 namespace Retruxel.Views;
 
 /// <summary>
-/// Partial class handling scene tabs — manages scene creation, deletion, renaming,
-/// and switching between scenes.
+/// Scene tab strip management — create, rename, delete, switch, set-initial.
+/// Tabs are kept in the top bar; the tree left panel shows the active scene expanded.
 /// </summary>
 public partial class SceneEditorView
 {
-    /// <summary>
-    /// Creates a new scene with auto-generated name.
-    /// </summary>
-    private void BtnNewScene_Click(object sender, RoutedEventArgs e)
+    private void BtnNewScene_Click(object? sender = null, RoutedEventArgs? e = null)
     {
-        if (_project is null) return;
+        if (_project is null || _target is null) return;
 
-        var index = _project.Scenes.Count + 1;
+        var index   = _project.Scenes.Count + 1;
         var newName = $"Scene {index}";
         while (_project.Scenes.Any(s => s.SceneName.Equals(newName, StringComparison.OrdinalIgnoreCase)))
         {
@@ -30,43 +27,24 @@ public partial class SceneEditorView
         }
 
         var scene = new SceneData { SceneId = Guid.NewGuid().ToString(), SceneName = newName };
+        InitializePaletteSlots(scene, _target);
 
-        // Initialize palette slots based on target
-        if (_target is not null)
-        {
-            for (int i = 0; i < _target.GetPaletteSlotCount(); i++)
-            {
-                var slot = new PaletteSlotData
-                {
-                    SlotIndex = i,
-                    Label = _target.GetPaletteSlotType(i).ToString(),
-                    Colors = Enumerable.Repeat("#000000", _target.GetColorsPerSlot()).ToList()
-                };
-                scene.PaletteSlots.Add(slot);
-            }
-        }
-
-        // Create state change for new scene (Large change — auto-saves)
         var change = new StateChange
         {
             Description = $"Create scene '{newName}'",
-            Type = ChangeType.Large,
-            Execute = () =>
+            Type        = ChangeType.Large,
+            Execute     = () =>
             {
                 _project.Scenes.Add(scene);
                 RebuildSceneTabs();
                 ActivateScene(scene);
             },
-            IsUndoable = false // Scene creation not undoable (would need to track all elements)
+            IsUndoable = false
         };
 
         _stateManager?.ApplyChange(change);
     }
 
-    /// <summary>
-    /// Rebuilds the scene tab strip from the current project's scene list.
-    /// Called on project load and after adding/removing/renaming scenes.
-    /// </summary>
     private void RebuildSceneTabs()
     {
         if (_project is null) return;
@@ -77,19 +55,16 @@ public partial class SceneEditorView
             SceneTabsPanel.Children.Add(BuildSceneTab(scene));
     }
 
-    /// <summary>
-    /// Builds a single scene tab. Double-click or right-click → Rename/Delete.
-    /// </summary>
     private FrameworkElement BuildSceneTab(SceneData scene)
     {
         var isActive = _currentScene?.SceneId == scene.SceneId;
 
         var border = new Border
         {
-            Padding = new Thickness(16, 0, 16, 0),
-            Cursor = Cursors.Hand,
-            Tag = scene.SceneId,
-            BorderThickness = new Thickness(0, 0, 0, isActive ? 2 : 0),
+            Padding           = new Thickness(16, 0, 16, 0),
+            Cursor            = Cursors.Hand,
+            Tag               = scene.SceneId,
+            BorderThickness   = new Thickness(0, 0, 0, isActive ? 2 : 0),
             VerticalAlignment = VerticalAlignment.Stretch
         };
         border.SetResourceReference(Border.BorderBrushProperty, "BrushPrimary");
@@ -98,51 +73,37 @@ public partial class SceneEditorView
 
         border.Child = BuildLabelForTab(scene);
 
-        // Single click → activate, double click → rename
-        border.MouseLeftButtonDown += (_, e) =>
+        border.MouseLeftButtonDown += (_, ev) =>
         {
-            if (e.ClickCount == 2)
-                StartInlineRename(border, scene);
-            else
-                ActivateScene(scene);
+            if (ev.ClickCount == 2) StartInlineRename(border, scene);
+            else                    ActivateScene(scene);
         };
 
-        // Right-click context menu: Rename / Set as Initial / Delete
-        var menu = new ContextMenu();
-        var menuRename = new MenuItem { Header = "Rename" };
-        var menuSetInitial = new MenuItem { Header = "Set as Initial Scene" };
-        var menuDelete = new MenuItem { Header = "Delete" };
+        var menu         = new ContextMenu();
+        var menuRename   = new MenuItem { Header = "Rename" };
+        var menuInitial  = new MenuItem { Header = "Set as Initial Scene",
+            IsEnabled = _project!.InitialSceneId != scene.SceneId };
+        var menuDelete   = new MenuItem { Header = "Delete",
+            IsEnabled = _project!.Scenes.Count > 1 };
 
-        menuRename.Click += (_, _) => StartInlineRename(border, scene);
-        menuSetInitial.Click += (_, _) => SetInitialScene(scene);
-        menuDelete.Click += (_, _) => DeleteScene(scene);
-
-        // Disable "Set as Initial" if already initial
-        if (_project!.InitialSceneId == scene.SceneId)
-            menuSetInitial.IsEnabled = false;
-
-        // Disable Delete when only one scene remains
-        if (_project!.Scenes.Count <= 1)
-            menuDelete.IsEnabled = false;
+        menuRename.Click  += (_, _) => StartInlineRename(border, scene);
+        menuInitial.Click += (_, _) => SetInitialScene(scene);
+        menuDelete.Click  += (_, _) => DeleteScene(scene);
 
         menu.Items.Add(menuRename);
-        menu.Items.Add(menuSetInitial);
+        menu.Items.Add(menuInitial);
         menu.Items.Add(menuDelete);
         border.ContextMenu = menu;
 
         return border;
     }
 
-    /// <summary>
-    /// Builds the label TextBlock for a scene tab.
-    /// Active scene is highlighted with primary color.
-    /// </summary>
     private TextBlock BuildLabelForTab(SceneData scene)
     {
         var isActive = _currentScene?.SceneId == scene.SceneId;
         var label = new TextBlock
         {
-            Text = scene.SceneName,
+            Text              = scene.SceneName,
             VerticalAlignment = VerticalAlignment.Center
         };
         label.SetResourceReference(TextBlock.StyleProperty, "TextLabel");
@@ -151,53 +112,27 @@ public partial class SceneEditorView
         return label;
     }
 
-    /// <summary>
-    /// Activates a scene — clears the canvas and reloads elements for the selected scene.
-    /// </summary>
-    private void ActivateScene(SceneData scene)
+    internal void ActivateScene(SceneData scene)
     {
-        // Save current scene state before switching
-        SyncProjectModules();
-
-        // Switch active scene
         _currentScene = scene;
-
-        // Clear canvas and element list
-        _elements.Clear();
         SceneCanvas.Children.Clear();
-        SelectElement(null);
-
-        // Clear events panel
-        LoadEvents();
-
-        // Clear undo stack — history is per-session, not per-scene
+        SelectItem(null);
         _undoRedo.Clear();
+        MigrateScene(scene, _target!);
 
-        // Reload elements for the new scene
-        LoadFromProject();
-
-        // Refresh palette — singletons already on canvas must be hidden
-        RefreshModulePalette();
-
-        // Refresh structure panel to show new scene's palettes
-        RefreshStructurePanel();
-
-        // Rebuild tabs to reflect active state
+        RebuildProjectTree();
         RebuildSceneTabs();
+        RefreshPreview();
     }
 
-    /// <summary>
-    /// Starts inline rename — replaces tab label with a TextBox.
-    /// Confirms on Enter or focus loss, cancels on Esc.
-    /// </summary>
     private void StartInlineRename(Border tab, SceneData scene)
     {
         var textBox = new TextBox
         {
-            Text = scene.SceneName,
+            Text              = scene.SceneName,
             VerticalAlignment = VerticalAlignment.Center,
-            MinWidth = 60,
-            MaxWidth = 160
+            MinWidth          = 60,
+            MaxWidth          = 160
         };
         textBox.SetResourceReference(TextBox.StyleProperty, "RetruxelTextBox");
         textBox.SelectAll();
@@ -208,42 +143,32 @@ public partial class SceneEditorView
         void Confirm()
         {
             var newName = textBox.Text.Trim();
-            if (string.IsNullOrEmpty(newName)
-                || _project!.Scenes.Any(s => s.SceneId != scene.SceneId && s.SceneName.Equals(newName, StringComparison.OrdinalIgnoreCase)))
+            if (string.IsNullOrEmpty(newName) ||
+                _project!.Scenes.Any(s => s.SceneId != scene.SceneId &&
+                    s.SceneName.Equals(newName, StringComparison.OrdinalIgnoreCase)))
             {
-                tab.Child = BuildLabelForTab(scene); // revert
+                tab.Child = BuildLabelForTab(scene);
                 return;
             }
 
-            var oldName = scene.SceneName;
-
-            // Create state change for renaming scene (Small change — marks dirty only)
             var change = new StateChange
             {
-                Description = $"Rename scene '{oldName}' to '{newName}'",
-                Type = ChangeType.Small,
-                Execute = () =>
-                {
-                    scene.SceneName = newName;
-                    RebuildSceneTabs();
-                },
-                IsUndoable = false // Scene rename not undoable (low priority)
+                Description = $"Rename scene to '{newName}'",
+                Type        = ChangeType.Small,
+                Execute     = () => { scene.SceneName = newName; RebuildSceneTabs(); RebuildProjectTree(); },
+                IsUndoable  = false
             };
-
             _stateManager?.ApplyChange(change);
         }
 
-        textBox.KeyDown += (_, e) =>
+        textBox.KeyDown  += (_, ev) =>
         {
-            if (e.Key == Key.Return) { Confirm(); e.Handled = true; }
-            if (e.Key == Key.Escape) { tab.Child = BuildLabelForTab(scene); e.Handled = true; }
+            if (ev.Key == Key.Return) { Confirm(); ev.Handled = true; }
+            if (ev.Key == Key.Escape) { tab.Child = BuildLabelForTab(scene); ev.Handled = true; }
         };
         textBox.LostFocus += (_, _) => Confirm();
     }
 
-    /// <summary>
-    /// Sets a scene as the initial scene (entry point for the game).
-    /// </summary>
     private void SetInitialScene(SceneData scene)
     {
         if (_project is null || _project.InitialSceneId == scene.SceneId) return;
@@ -251,42 +176,31 @@ public partial class SceneEditorView
         var change = new StateChange
         {
             Description = $"Set '{scene.SceneName}' as initial scene",
-            Type = ChangeType.Small,
-            Execute = () =>
-            {
-                _project.InitialSceneId = scene.SceneId;
-                RebuildSceneTabs(); // Refresh to update menu state
-            },
-            IsUndoable = false
+            Type        = ChangeType.Small,
+            Execute     = () => { _project.InitialSceneId = scene.SceneId; RebuildSceneTabs(); RebuildProjectTree(); },
+            IsUndoable  = false
         };
-
         _stateManager?.ApplyChange(change);
     }
 
-    /// <summary>
-    /// Deletes a scene. No-op when only one scene remains.
-    /// </summary>
-    private void DeleteScene(SceneData scene)
+    internal void DeleteScene(SceneData scene)
     {
         if (_project is null || _project.Scenes.Count <= 1) return;
 
-        // Create state change for deleting scene (Large change — auto-saves)
         var change = new StateChange
         {
             Description = $"Delete scene '{scene.SceneName}'",
-            Type = ChangeType.Large,
-            Execute = () =>
+            Type        = ChangeType.Large,
+            Execute     = () =>
             {
                 _project.Scenes.Remove(scene);
-
                 if (_currentScene?.SceneId == scene.SceneId)
                     ActivateScene(_project.Scenes[0]);
                 else
-                    RebuildSceneTabs();
+                    { RebuildSceneTabs(); RebuildProjectTree(); }
             },
-            IsUndoable = false // Scene deletion not undoable
+            IsUndoable = false
         };
-
         _stateManager?.ApplyChange(change);
     }
 }

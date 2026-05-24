@@ -9,7 +9,7 @@ namespace Retruxel.Core.Engine;
 /// </summary>
 public enum RenderCommandType
 {
-    DrawTilemap,
+    DrawPlane,
     DrawText,
     DrawSprite,
     SetScroll,
@@ -67,9 +67,9 @@ public class RenderCommandBuffer
 /// <summary>
 /// Render command data structures.
 /// </summary>
-public class DrawTilemapCommand
+public class DrawPlaneCommand
 {
-    public TilemapLayerState State { get; set; } = new();
+    public PlaneLayerState State { get; set; } = new();
 }
 
 public class DrawTextCommand

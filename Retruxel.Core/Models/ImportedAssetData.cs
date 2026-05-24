@@ -16,11 +16,11 @@ public class ImportedAssetData
     public byte[][] Tiles { get; set; } = Array.Empty<byte[]>();
 
     /// <summary>
-    /// Tilemap/nametable data. Array of tile indices arranged in row-major order.
-    /// Format: tilemapData[y * MapWidth + x] = tileIndex
+    /// Plane/nametable data. Array of tile indices arranged in row-major order.
+    /// Format: planeData[y * MapWidth + x] = tileIndex
     /// Value -1 indicates empty/transparent tile.
     /// </summary>
-    public int[] TilemapData { get; set; } = Array.Empty<int>();
+    public int[] PlaneData { get; set; } = Array.Empty<int>();
 
     /// <summary>
     /// Palette data in ARGB format (0xAARRGGBB).
@@ -38,12 +38,12 @@ public class ImportedAssetData
     public int TileHeight { get; set; } = 8;
 
     /// <summary>
-    /// Width of the tilemap in tiles.
+    /// Width of the plane in tiles.
     /// </summary>
     public int MapWidth { get; set; }
 
     /// <summary>
-    /// Height of the tilemap in tiles.
+    /// Height of the plane in tiles.
     /// </summary>
     public int MapHeight { get; set; }
 
@@ -94,15 +94,15 @@ public class ImportedAssetData
             return false;
         }
 
-        if (TilemapData.Length > 0 && (MapWidth <= 0 || MapHeight <= 0))
+        if (PlaneData.Length > 0 && (MapWidth <= 0 || MapHeight <= 0))
         {
             errorMessage = "Invalid map dimensions";
             return false;
         }
 
-        if (TilemapData.Length > 0 && TilemapData.Length != MapWidth * MapHeight)
+        if (PlaneData.Length > 0 && PlaneData.Length != MapWidth * MapHeight)
         {
-            errorMessage = $"Tilemap data size mismatch: expected {MapWidth * MapHeight}, got {TilemapData.Length}";
+            errorMessage = $"Plane data size mismatch: expected {MapWidth * MapHeight}, got {PlaneData.Length}";
             return false;
         }
 

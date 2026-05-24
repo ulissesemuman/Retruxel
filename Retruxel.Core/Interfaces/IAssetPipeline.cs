@@ -10,7 +10,7 @@ namespace Retruxel.Core.Interfaces;
 public interface IAssetPipeline
 {
     /// <summary>
-    /// Unique identifier for this pipeline stage (e.g., "livelink_to_imported", "imported_to_tilemap").
+    /// Unique identifier for this pipeline stage (e.g., "livelink_to_imported", "imported_to_plane").
     /// </summary>
     string PipelineId { get; }
 

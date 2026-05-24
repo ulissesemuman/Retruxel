@@ -32,11 +32,6 @@ public class NesTarget : ITarget
         // Tiles 
         TileWidth = 8,
         TileHeight = 8,
-        VramRegions =
-        [
-            new VramRegion("pattern0", "Pattern Table 0", 0, 255),
-            new VramRegion("pattern1", "Pattern Table 1", 256, 511)
-        ],
 
         // Colors & Palettes 
         // NES PPU: fixed 54-color palette, not mathematically calculable
@@ -143,7 +138,7 @@ public class NesTarget : ITarget
             new Retruxel.Modules.Logic.AnimationModule(),
             new Retruxel.Modules.Logic.ScrollModule(),
             new Retruxel.Modules.Graphics.PaletteModule(),
-            new Retruxel.Modules.Graphics.TilemapModule(),
+            new Retruxel.Modules.Graphics.PlaneModule(),
             new Retruxel.Modules.Graphics.SpriteModule(),
             new Retruxel.Modules.Graphics.TextDisplayModule()
         ];
@@ -158,7 +153,6 @@ public class NesTarget : ITarget
             TemplateId = "nes.blank",
             DisplayName = "Blank Project",
             Description = "Empty NES project with basic initialization.",
-            DefaultModules = [],
             DefaultParameters = new Dictionary<string, object>
             {
                 { "region", "NTSC" },

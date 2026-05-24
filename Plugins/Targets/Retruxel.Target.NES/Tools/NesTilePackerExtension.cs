@@ -6,7 +6,7 @@ namespace Retruxel.Target.NES.Tools;
 
 /// <summary>
 /// NES-specific extension for tile_packer tool.
-/// Enables H/V flip detection and formats tilemap for NES PPU.
+/// Enables H/V flip detection and formats plane for NES PPU.
 /// </summary>
 public class NesTilePackerExtension : IToolExtension
 {
@@ -20,10 +20,10 @@ public class NesTilePackerExtension : IToolExtension
         input["enableRotation"] = false;
 
         // Generic tool already executed, we receive its output
-        var tilemap = input["tilemap"] as List<object> ?? new List<object>();
-        var formattedTilemap = new List<Dictionary<string, object>>();
+        var plane = input["plane"] as List<object> ?? new List<object>();
+        var formattedPlane = new List<Dictionary<string, object>>();
 
-        foreach (var entry in tilemap)
+        foreach (var entry in plane)
         {
             if (entry is not Dictionary<string, object> dict) continue;
 
@@ -34,7 +34,7 @@ public class NesTilePackerExtension : IToolExtension
             // NES attribute byte format: bits 6-7 for flip flags
             var attributeByte = (flipH ? 0x40 : 0) | (flipV ? 0x80 : 0);
 
-            formattedTilemap.Add(new Dictionary<string, object>
+            formattedPlane.Add(new Dictionary<string, object>
             {
                 ["tileIndex"] = tileIndex,
                 ["flipH"] = flipH,
@@ -47,7 +47,7 @@ public class NesTilePackerExtension : IToolExtension
 
         return new Dictionary<string, object>
         {
-            ["tilemap"] = formattedTilemap
+            ["plane"] = formattedPlane
         };
     }
 }

@@ -91,70 +91,180 @@ public partial class CodeGenerator
         var elementToScene = new Dictionary<IModule, string>(); // Track which scene each module belongs to
         var elementIds = new Dictionary<IModule, string>(); // Track element IDs
 
+        // Helper: instantiate and register a module from a moduleId + serialized state
+        void RegisterModuleData(
+            string moduleId,
+            System.Text.Json.JsonElement moduleState,
+            string elementId,
+            string? sceneId,
+            string trigger)
+        {
+            IModule? moduleTemplate = null;
+
+            if (_moduleRegistry.GraphicModules.TryGetValue(moduleId, out var gm))
+                moduleTemplate = gm;
+            else if (_moduleRegistry.LogicModules.TryGetValue(moduleId, out var lm))
+                moduleTemplate = lm;
+            else if (_moduleRegistry.AudioModules.TryGetValue(moduleId, out var am))
+                moduleTemplate = am;
+
+            if (moduleTemplate is null)
+            {
+                progress?.Report($"WARN: Module {moduleId} not found — skipping.");
+                return;
+            }
+
+            var moduleType = moduleTemplate.GetType();
+            var module = (IModule)Activator.CreateInstance(moduleType)!;
+
+            var moduleStateJson = moduleState.ValueKind != System.Text.Json.JsonValueKind.Undefined &&
+                                  moduleState.ValueKind != System.Text.Json.JsonValueKind.Null
+                ? moduleState.GetRawText()
+                : "{}";
+
+            module.Deserialize(moduleStateJson);
+
+            if (!instancesByModule.ContainsKey(moduleId))
+                instancesByModule[moduleId] = new List<IModule>();
+
+            instancesByModule[moduleId].Add(module);
+
+            if (sceneId is not null)
+                elementToScene[module] = sceneId;
+
+            elementIds[module] = elementId;
+
+            // Re-run TextAnalyzer with actual module instances for accurate character extraction
+            if (moduleId == "text.array")
+            {
+                var allTextModules = instancesByModule.ContainsKey("text.array")
+                    ? instancesByModule["text.array"]
+                    : new List<IModule>();
+
+                textModuleJsons = allTextModules.Select(m => m.Serialize()).ToList();
+                textResult = _textAnalyzer.Analyze(textModuleJsons, fontConverter, graphicTilesEnd);
+
+                globalVariables["fontStartTile"] = textResult["fontStartTile"];
+                globalVariables["fontTileCount"] = textResult["fontTileCount"];
+                globalVariables["fontTileData"] = textResult["fontTileData"];
+                globalVariables["fontTranslationTable"] = textResult["fontTranslationTable"];
+
+                _moduleRenderer.SetGlobalVariables(globalVariables);
+            }
+
+            triggersByElement[module] = trigger;
+        }
+
+        // 1. Project-level modules (input, physics, animation, splash, etc.)
+        foreach (var modData in project.Modules)
+        {
+            if (!modData.Enabled) continue;
+
+            var elementIdShort = modData.ModuleId;
+            progress?.Report($"PROC: Loading project module {elementIdShort}...");
+
+            RegisterModuleData(
+                moduleId:    modData.ModuleId,
+                moduleState: modData.State,
+                elementId:   modData.ModuleId,
+                sceneId:     null,
+                trigger:     "OnStart");
+        }
+
+        // 2. Scene-level typed collections + legacy Elements
         foreach (var scene in project.Scenes)
         {
+            // 2a. Scene module overrides
+            foreach (var modData in scene.ModuleOverrides)
+            {
+                if (!modData.Enabled) continue;
+
+                progress?.Report($"PROC: Loading scene override {modData.ModuleId} in '{scene.SceneName}'...");
+
+                RegisterModuleData(
+                    moduleId:    modData.ModuleId,
+                    moduleState: modData.State,
+                    elementId:   modData.ModuleId,
+                    sceneId:     scene.SceneId,
+                    trigger:     "OnStart");
+            }
+
+            // 2b. Typed plane layers → PlaneModule
+            foreach (var plane in scene.Planes)
+            {
+                foreach (var layer in plane.Layers)
+                {
+                    if (!layer.Visible) continue;
+
+                    progress?.Report($"PROC: Loading plane layer '{layer.LayerName}' in '{scene.SceneName}'...");
+
+                    var layerState = System.Text.Json.JsonSerializer.SerializeToElement(new
+                    {
+                        tilesAssetId = layer.AssetId
+                    });
+
+                    RegisterModuleData(
+                        moduleId:    "plane",
+                        moduleState: layerState,
+                        elementId:   layer.LayerId,
+                        sceneId:     scene.SceneId,
+                        trigger:     "OnStart");
+                }
+            }
+
+            // 2c. Typed entities → EntityModule
+            foreach (var entity in scene.Entities)
+            {
+                progress?.Report($"PROC: Loading entity '{entity.Label}' in '{scene.SceneName}'...");
+
+                var entityState = System.Text.Json.JsonSerializer.SerializeToElement(new
+                {
+                    spriteAssetId = entity.SpriteAssetId,
+                    paletteSlot   = entity.PaletteSlot,
+                    startTileX    = entity.StartTileX,
+                    startTileY    = entity.StartTileY
+                });
+
+                RegisterModuleData(
+                    moduleId:    entity.EntityType.Length > 0 ? entity.EntityType : "entity",
+                    moduleState: entityState,
+                    elementId:   entity.EntityId,
+                    sceneId:     scene.SceneId,
+                    trigger:     "OnStart");
+            }
+
+            // 2d. Typed text arrays → TextArrayModule
+            foreach (var textArray in scene.TextArrays)
+            {
+                progress?.Report($"PROC: Loading text array '{textArray.Label}' in '{scene.SceneName}'...");
+
+                var textState = System.Text.Json.JsonSerializer.SerializeToElement(new
+                {
+                    entries = textArray.Entries
+                });
+
+                RegisterModuleData(
+                    moduleId:    "text.array",
+                    moduleState: textState,
+                    elementId:   textArray.TextId,
+                    sceneId:     scene.SceneId,
+                    trigger:     "OnStart");
+            }
+
+            // 2e. Legacy flat Elements — for backward compatibility with pre-refactor project files
             foreach (var elementData in scene.Elements)
             {
                 var elementIdShort = elementData.ElementId.Length > 8
                     ? elementData.ElementId.Substring(0, 8)
                     : elementData.ElementId;
-                progress?.Report($"PROC: Loading element {elementIdShort}...");
+                progress?.Report($"PROC: Loading legacy element {elementIdShort}...");
 
-                IModule? moduleTemplate = null;
-
-                if (_moduleRegistry.GraphicModules.TryGetValue(elementData.ModuleId, out var gm))
-                    moduleTemplate = gm;
-                else if (_moduleRegistry.LogicModules.TryGetValue(elementData.ModuleId, out var lm))
-                    moduleTemplate = lm;
-                else if (_moduleRegistry.AudioModules.TryGetValue(elementData.ModuleId, out var am))
-                    moduleTemplate = am;
-
-                if (moduleTemplate is null)
-                {
-                    progress?.Report($"WARN: Module {elementData.ModuleId} not found — skipping.");
-                    continue;
-                }
-
-                var moduleType = moduleTemplate.GetType();
-                var module = (IModule)Activator.CreateInstance(moduleType)!;
-
-                var moduleStateJson = elementData.ModuleState.ValueKind != System.Text.Json.JsonValueKind.Undefined &&
-                                      elementData.ModuleState.ValueKind != System.Text.Json.JsonValueKind.Null
-                    ? elementData.ModuleState.GetRawText()
-                    : "{}";
-
-                module.Deserialize(moduleStateJson);
-
-                if (!instancesByModule.ContainsKey(elementData.ModuleId))
-                    instancesByModule[elementData.ModuleId] = new List<IModule>();
-
-                instancesByModule[elementData.ModuleId].Add(module);
-
-                // Track which scene this module belongs to
-                elementToScene[module] = scene.SceneId;
-                elementIds[module] = elementData.ElementId;
-
-                // Re-run TextAnalyzer with actual module instances for accurate character extraction
-                if (elementData.ModuleId == "text.array")
-                {
-                    var allTextModules = instancesByModule.ContainsKey("text.array")
-                        ? instancesByModule["text.array"]
-                        : new List<IModule>();
-
-                    textModuleJsons = allTextModules.Select(m => m.Serialize()).ToList();
-                    textResult = _textAnalyzer.Analyze(textModuleJsons, fontConverter, graphicTilesEnd);
-
-                    globalVariables["fontStartTile"] = textResult["fontStartTile"];
-                    globalVariables["fontTileCount"] = textResult["fontTileCount"];
-                    globalVariables["fontTileData"] = textResult["fontTileData"];
-                    globalVariables["fontTranslationTable"] = textResult["fontTranslationTable"];
-
-                    _moduleRenderer.SetGlobalVariables(globalVariables);
-                }
-
-                // Track trigger for this instance (default to OnStart if not set)
-                var trigger = string.IsNullOrEmpty(elementData.Trigger) ? "OnStart" : elementData.Trigger;
-                triggersByElement[module] = trigger;
+                RegisterModuleData(
+                    moduleId:    elementData.ModuleId,
+                    moduleState: elementData.ModuleState,
+                    elementId:   elementData.ElementId,
+                    sceneId:     scene.SceneId,
+                    trigger:     string.IsNullOrEmpty(elementData.Trigger) ? "OnStart" : elementData.Trigger);
             }
         }
 
@@ -254,7 +364,7 @@ public partial class CodeGenerator
             }
         }
 
-        // Validate tile conflicts between tilemap and text.display
+        // Validate tile conflicts between plane and text.display
         ValidateTileConflicts(instancesByModule, progress);
 
         // Generate scene files with only the modules that belong to each scene
@@ -328,10 +438,7 @@ public partial class CodeGenerator
             TargetId = project.TargetId,
             SourceFiles = sourceFiles,
             Assets = assets,
-            OutputDirectory = outputDirectory,
-            BuildParameters = project.Parameters
-                .Where(p => p.Key.StartsWith("target."))
-                .ToDictionary(p => p.Key.Replace("target.", ""), p => p.Value)
+            OutputDirectory = outputDirectory
         };
 
         // Generate build diagnostics if target supports it

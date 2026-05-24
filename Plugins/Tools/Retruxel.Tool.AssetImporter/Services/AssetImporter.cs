@@ -34,7 +34,7 @@ public static class AssetImporter
     /// </summary>
     /// <param name="sourcePngPath">Absolute path to the source PNG file.</param>
     /// <param name="projectPath">Absolute path to the project root folder.</param>
-    /// <param name="vramRegionId">VRAM region ID from target.Specs.VramRegions.</param>
+    /// <param name="planeId">PlaneId from target.Specs.Planes — informational, not stored in AssetEntry.</param>
     /// <param name="target">Active target — provides the hardware palette for color reduction.</param>
     /// <param name="reducedPalette">Reduced color palette from optimization window.</param>
     /// <returns>AssetEntry ready to add to RetruxelProject.Assets.</returns>
@@ -43,7 +43,7 @@ public static class AssetImporter
         string assetId,
         string sourcePngPath,
         string projectPath,
-        string vramRegionId,
+        string planeId,
         ITarget target,
         int paletteSlot,
         byte[] mapIndex,
@@ -61,10 +61,6 @@ public static class AssetImporter
             ?? throw new AssetImportException($"Failed to decode image: {sourcePngPath}");
 
         ValidateDimensions(sourceBitmap, sourcePngPath);
-
-        // 3. Determine output paths
-        var region = target.Specs.VramRegions.FirstOrDefault(r => r.Id == vramRegionId)
-            ?? throw new AssetImportException($"VRAM region '{vramRegionId}' not found in target specs.");
 
         var assetFileName = assetId + ".png";
 
@@ -116,7 +112,6 @@ public static class AssetImporter
             SourcePath = sourceRelativePath,
             SourceWidth = sourceBitmap.Width,
             SourceHeight = sourceBitmap.Height,
-            VramRegionId = vramRegionId,
             ImportedAt = DateTime.Now,
             GenerationParams = generationParams,
         };

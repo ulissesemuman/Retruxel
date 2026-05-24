@@ -4,30 +4,22 @@ public partial class TilemapEditorWindow
 {
     private void InitializeUI()
     {
-        var specs = _target.Specs.Tilemap;
+        var specs = _planeSpecs;
 
         int mapWidth = specs.DefaultWidth * 2;
         int mapHeight = specs.DefaultHeight * 2;
         TxtWidth.Text = mapWidth.ToString();
         TxtHeight.Text = mapHeight.ToString();
 
-        _tilemapData.Initialize(mapWidth, mapHeight, specs.MaxLayers);
+        // Always start with 1 layer — the user can add more freely.
+        // The VramAllocator determines whether there is budget for additional layers.
+        _planeData.Initialize(mapWidth, mapHeight, 1);
 
-        if (specs.MaxLayers > 1)
-        {
-            PanelLayers.Visibility = System.Windows.Visibility.Visible;
-            CmbLayers.Items.Clear();
-            for (int i = 0; i < specs.MaxLayers; i++)
-                CmbLayers.Items.Add($"Layer {i + 1}");
-            CmbLayers.SelectedIndex = 0;
-
-            TxtLayerInfo.Text = $"Layer 1 of {specs.MaxLayers}";
-        }
-        else
-        {
-            PanelLayers.Visibility = System.Windows.Visibility.Collapsed;
-            TxtLayerInfo.Text = "";
-        }
+        PanelLayers.Visibility = System.Windows.Visibility.Visible;
+        CmbLayers.Items.Clear();
+        CmbLayers.Items.Add("Layer 1");
+        CmbLayers.SelectedIndex = 0;
+        TxtLayerInfo.Text = $"Layer 1 of {_planeData.LayerCount}";
 
         InitializePaletteSlotSelector();
         InitializeFlipHotkeys();

@@ -11,25 +11,25 @@ namespace Retruxel.Core.Services;
 public partial class CodeGenerator
 {
     /// <summary>
-    /// Validates tile conflicts between tilemap and text.display modules.
+    /// Validates tile conflicts between plane and text.display modules.
     /// SMS_autoSetUpTextRenderer() loads ASCII font into tiles 0-255.
-    /// If tilemap startTile < 256, it will overwrite the font.
+    /// If plane startTile < 256, it will overwrite the font.
     /// </summary>
     private static void ValidateTileConflicts(
         Dictionary<string, List<IModule>> instancesByModule,
         IProgress<string>? progress)
     {
-        // Check if both tilemap and text.display are present
-        var hasTilemap = instancesByModule.ContainsKey("tilemap");
+        // Check if both plane and text.display are present
+        var hasPlane = instancesByModule.ContainsKey("plane");
         var hasTextDisplay = instancesByModule.ContainsKey("text.display");
 
-        if (!hasTilemap || !hasTextDisplay)
+        if (!hasPlane || !hasTextDisplay)
             return;
 
-        // Check each tilemap instance for startTile < 256
-        foreach (var tilemapModule in instancesByModule["tilemap"])
+        // Check each plane instance for startTile < 256
+        foreach (var planeModule in instancesByModule["plane"])
         {
-            var json = tilemapModule.Serialize();
+            var json = planeModule.Serialize();
             try
             {
                 var node = JsonNode.Parse(json) as JsonObject;
@@ -39,9 +39,9 @@ public partial class CodeGenerator
 
                 if (startTile < 256)
                 {
-                    progress?.Report($"WARN: Tilemap startTile={startTile} conflicts with text.display font (tiles 0-255).");
-                    progress?.Report($"WARN: Set tilemap startTile >= 256 to avoid overwriting the ASCII font.");
-                    progress?.Report($"WARN: Text will appear corrupted if tilemap overwrites font tiles.");
+                    progress?.Report($"WARN: Plane startTile={startTile} conflicts with text.display font (tiles 0-255).");
+                    progress?.Report($"WARN: Set plane startTile >= 256 to avoid overwriting the ASCII font.");
+                    progress?.Report($"WARN: Text will appear corrupted if plane overwrites font tiles.");
                 }
             }
             catch

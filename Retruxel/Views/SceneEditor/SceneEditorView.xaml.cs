@@ -10,182 +10,351 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using System.Windows.Media.Animation;
 
 namespace Retruxel.Views;
 
 public partial class SceneEditorView : UserControl
 {
+    // ── Core state ─────────────────────────────────────────────────────────────
     private RetruxelProject? _project;
-    private ITarget? _target;
-    private SceneData? _currentScene;
-    private readonly List<SceneElement> _elements = [];
-    private SceneElement? _selectedElement;
-    private bool _isDragging;
-    private Point _dragOffset;
-    private SceneElement? _draggedElement;
-    private ProjectManager? _projectManager;
-    private ModuleRegistry? _moduleRegistry;
-    private ModuleRenderer? _moduleRenderer;
-    private StateManager? _stateManager;
-    private bool _isUpdatingUI;
-    private bool _isLoadingProject;
+    private ITarget?         _target;
+    private SceneData?       _currentScene;
+
+    private ProjectManager?  _projectManager;
+    private ModuleRegistry?  _moduleRegistry;
+    private ModuleRenderer?  _moduleRenderer;
+    private StateManager?    _stateManager;
 
     private readonly UndoRedoStack _undoRedo = new();
 
-    // Drag start position — stored when drag begins, used to create MoveElementCommand on release
-    private int _dragStartTileX;
-    private int _dragStartTileY;
+    // ── Selection state ────────────────────────────────────────────────────────
+    // Selection now points to typed model objects, not a generic SceneElement.
+    private object?   _selectedItem;       // PlaneLayerData | EntityData | PaletteSlotData
+    private SceneData? _selectedScene;     // kept for properties panel context
 
-    private const double MinZoom = 0.25;
-    private const double MaxZoom = 4.0;
-    private readonly List<SceneElement> _selectedElements = [];
+    private bool _isUpdatingUI;
+    private bool _isLoadingProject;
 
+    // ── Preview zoom / pan ─────────────────────────────────────────────────────
+    private const double PreviewZoomMin  = 0.25;
+    private const double PreviewZoomMax  = 8.0;
+    private const double PreviewZoomStep = 1.2;
+
+    private double _previewZoom     = 1.0;
+    private double _previewOffsetX  = 0;
+    private double _previewOffsetY  = 0;
+
+    private bool   _isPanning;
+    private Point  _panStartMouse;
+    private double _panStartOffsetX;
+    private double _panStartOffsetY;
+
+    // ── Public events ──────────────────────────────────────────────────────────
     public event Action<RetruxelProject>? OnGenerateRomRequested;
-    public event Action? OnAboutRequested;
+    public event Action?                  OnAboutRequested;
+
+    // ──────────────────────────────────────────────────────────────────────────
 
     public SceneEditorView()
     {
         InitializeComponent();
-        KeyDown += SceneEditorView_KeyDown;
-        Focusable = true;
+        KeyDown     += SceneEditorView_KeyDown;
+        Focusable    = true;
+        SizeChanged += (_, _) => ApplyPreviewTransform();
     }
+
+    // ── Dependency injection ───────────────────────────────────────────────────
 
     public void SetProjectManager(ProjectManager manager)
     {
         _projectManager = manager;
 
-        // Initialize StateManager when ProjectManager is set
         if (_stateManager == null)
         {
             _stateManager = new StateManager(manager, _undoRedo);
             _stateManager.SavingStateChanged += OnSavingStateChanged;
-            _stateManager.StateChanged += () => SyncProjectModules();
+            _stateManager.StateChanged       += () => _projectManager?.MarkDirty();
         }
     }
 
-    /// <summary>
-    /// Animates the save indicator when saving.
-    /// </summary>
+    public void SetModuleRegistry(ModuleRegistry registry) => _moduleRegistry = registry;
+
+    // ── Save indicator ─────────────────────────────────────────────────────────
+
     private void OnSavingStateChanged(bool isSaving)
     {
         Dispatcher.InvokeAsync(() =>
         {
             if (FindName("TxtSaveIndicator") is not TextBlock indicator) return;
-
-            if (isSaving)
+            var anim = new DoubleAnimation
             {
-                // Pulse animation: fade to full opacity
-                var animation = new System.Windows.Media.Animation.DoubleAnimation
-                {
-                    From = 0.3,
-                    To = 1.0,
-                    Duration = TimeSpan.FromMilliseconds(200),
-                    AutoReverse = false
-                };
-                indicator.BeginAnimation(UIElement.OpacityProperty, animation);
-            }
-            else
-            {
-                // Fade back to dim
-                var animation = new System.Windows.Media.Animation.DoubleAnimation
-                {
-                    From = 1.0,
-                    To = 0.3,
-                    Duration = TimeSpan.FromMilliseconds(400),
-                    AutoReverse = false
-                };
-                indicator.BeginAnimation(UIElement.OpacityProperty, animation);
-            }
+                From     = isSaving ? 0.3 : 1.0,
+                To       = isSaving ? 1.0 : 0.3,
+                Duration = TimeSpan.FromMilliseconds(isSaving ? 200 : 400)
+            };
+            indicator.BeginAnimation(UIElement.OpacityProperty, anim);
         });
     }
-    public void SetModuleRegistry(ModuleRegistry registry) => _moduleRegistry = registry;
 
-
+    // ── Undo / redo ────────────────────────────────────────────────────────────
 
     private void BtnUndo_Click(object sender, RoutedEventArgs e) => _undoRedo.Undo();
     private void BtnRedo_Click(object sender, RoutedEventArgs e) => _undoRedo.Redo();
 
-    // Sidebar tab switching 
-
-    private void BtnTabStructure_Click(object sender, RoutedEventArgs e)
+    private void UpdateUndoRedoButtons()
     {
-        PanelStructure.Visibility = Visibility.Visible;
-        PanelModules.Visibility = Visibility.Collapsed;
-        PanelAssets.Visibility = Visibility.Collapsed;
-        BtnTabStructure.Tag = "active";
-        BtnTabModules.Tag = null;
-        BtnTabAssets.Tag = null;
-        RefreshStructurePanel();
+        Dispatcher.InvokeAsync(() =>
+        {
+            if (FindName("BtnUndo") is Button u)
+            {
+                u.IsEnabled = _undoRedo.CanUndo;
+                u.ToolTip   = _undoRedo.CanUndo ? $"Undo: {_undoRedo.NextUndoDescription}" : "Nothing to undo";
+            }
+            if (FindName("BtnRedo") is Button r)
+            {
+                r.IsEnabled = _undoRedo.CanRedo;
+                r.ToolTip   = _undoRedo.CanRedo ? $"Redo: {_undoRedo.NextRedoDescription}" : "Nothing to redo";
+            }
+        });
     }
 
-    private void BtnTabModules_Click(object sender, RoutedEventArgs e)
+    // ── Initialize ─────────────────────────────────────────────────────────────
+
+    public void Initialize(RetruxelProject project, ITarget target)
     {
-        PanelStructure.Visibility = Visibility.Collapsed;
-        PanelModules.Visibility = Visibility.Visible;
-        PanelAssets.Visibility = Visibility.Collapsed;
-        BtnTabStructure.Tag = null;
-        BtnTabModules.Tag = "active";
-        BtnTabAssets.Tag = null;
+        _project = project;
+        _target  = target;
+
+        var pluginsPath = Path.Combine(
+            Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location) ?? "",
+            "plugins");
+        _moduleRenderer = new ModuleRenderer(pluginsPath, target.GetType().Assembly);
+
+        _selectedItem = null;
+        SceneCanvas.Children.Clear();
+
+        var settings = SettingsService.Load();
+        _undoRedo.MaxHistorySize = Math.Clamp(settings.General.UndoHistoryLimit, 20, 100);
+        _undoRedo.Clear();
+        _undoRedo.StateChanged += UpdateUndoRedoButtons;
+
+        // Ensure at least one scene exists
+        _currentScene = project.Scenes.FirstOrDefault();
+        if (_currentScene is null)
+        {
+            _currentScene = new SceneData
+            {
+                SceneId   = Guid.NewGuid().ToString(),
+                SceneName = "Main"
+            };
+            InitializePaletteSlots(_currentScene, target);
+            EnsureDefaultPlanes(_currentScene, target);
+            project.Scenes.Add(_currentScene);
+        }
+        else
+        {
+            MigrateScene(_currentScene, target);
+        }
+
+        ApplyTargetSpecs(target);
+        RebuildSceneTabs();
+        RebuildProjectTree();
+        RefreshPreview();
     }
 
-    private void BtnTabAssets_Click(object sender, RoutedEventArgs e)
+    public void Cleanup()
     {
-        PanelStructure.Visibility = Visibility.Collapsed;
-        PanelModules.Visibility = Visibility.Collapsed;
-        PanelAssets.Visibility = Visibility.Visible;
-        BtnTabStructure.Tag = null;
-        BtnTabModules.Tag = null;
-        BtnTabAssets.Tag = "active";
-        RefreshAssetPanel();
+        _stateManager?.Dispose();
+        _stateManager = null;
     }
 
-    // Asset panel 
+    // ── Target specs ───────────────────────────────────────────────────────────
 
+    private void ApplyTargetSpecs(ITarget target)
+    {
+        var specs = target.Specs;
+        TxtCanvasSize.Text  = $"{specs.ScreenWidth} × {specs.ScreenHeight} px";
+        SceneCanvas.Width   = specs.ScreenWidth;
+        SceneCanvas.Height  = specs.ScreenHeight;
+        ApplyPreviewTransform();
+    }
 
+    // ── Scene / palette / plane initialization ───────────────────────────────
 
+    private static void InitializePaletteSlots(SceneData scene, ITarget target)
+    {
+        scene.PaletteSlots.Clear();
+        for (int i = 0; i < target.GetPaletteSlotCount(); i++)
+        {
+            scene.PaletteSlots.Add(new PaletteSlotData
+            {
+                SlotIndex = i,
+                Label     = target.GetPaletteSlotType(i).ToString(),
+                Colors    = Enumerable.Repeat("#000000", target.GetColorsPerSlot()).ToList()
+            });
+        }
+    }
 
+    /// <summary>
+    /// Ensures one PlaneData exists per PlaneSpecs defined in the target.
+    /// SMS = 1 plane ("bg"), SNES = 4 ("bg1"–"bg4"), etc.
+    /// Each starts with zero layers — user adds layers via the tree.
+    /// Safe to call on existing scenes: only adds planes that are missing.
+    /// </summary>
+    private static void EnsureDefaultPlanes(SceneData scene, ITarget target)
+    {
+        foreach (var planeSpecs in target.Specs.Planes)
+        {
+            if (scene.Planes.Any(p => p.PlaneId == planeSpecs.Id)) continue;
 
+            scene.Planes.Add(new PlaneData
+            {
+                PlaneId = planeSpecs.Id
+            });
+        }
 
+        // Fallback for targets that haven't defined Planes yet
+        if (scene.Planes.Count == 0)
+        {
+            scene.Planes.Add(new PlaneData { PlaneId = "bg" });
+        }
+    }
 
+    private static void MigrateScene(SceneData scene, ITarget target)
+    {
+        if (scene.PaletteSlots.Count == 0)
+            InitializePaletteSlots(scene, target);
 
+        // Migrate legacy flat Elements into typed Planes/Entities if needed
+        if (scene.Elements.Count > 0 && scene.Planes.Count == 0)
+            MigrateLegacyElements(scene);
 
+        // Ensure all hardware planes are present (handles projects saved before
+        // EnsureDefaultPlanes was introduced, or targets with new planes added later).
+        EnsureDefaultPlanes(scene, target);
+    }
 
+    /// <summary>
+    /// One-time migration from the old flat SceneElementData model to the new typed hierarchy.
+    /// Runs only when loading a pre-refactor project file.
+    /// </summary>
+    private static void MigrateLegacyElements(SceneData scene)
+    {
+        System.Diagnostics.Debug.WriteLine(
+            $"[SceneEditor] Migrating {scene.Elements.Count} legacy elements in scene '{scene.SceneName}'");
 
+        // Create a default plane to receive migrated tilemap elements
+        var defaultPlane = new PlaneData { PlaneId = "bg" };
 
+        foreach (var elem in scene.Elements)
+        {
+            if (elem.ModuleId.Contains("plane", StringComparison.OrdinalIgnoreCase))
+            {
+                var layer = new PlaneLayerData
+                {
+                    LayerId   = elem.ElementId,
+                    LayerName = elem.UserId ?? $"Layer {defaultPlane.Layers.Count}",
+                    AssetId   = TryGetAssetId(elem),
+                    Visible   = true
+                };
+                defaultPlane.Layers.Add(layer);
+            }
+            else if (elem.ModuleId is "entity" or "enemy" or "sprite" or "player")
+            {
+                scene.Entities.Add(new EntityData
+                {
+                    EntityId    = elem.ElementId,
+                    Label       = elem.UserId ?? elem.ModuleId,
+                    EntityType  = elem.ModuleId,
+                    SpriteAssetId = TryGetAssetId(elem),
+                    StartTileX  = elem.TileX,
+                    StartTileY  = elem.TileY
+                });
+            }
+        }
 
+        if (defaultPlane.Layers.Count > 0)
+            scene.Planes.Add(defaultPlane);
 
+        // Keep Elements for backward compat serialization but mark as migrated
+        scene.Elements.Clear();
+    }
 
+    private static string TryGetAssetId(SceneElementData elem)
+    {
+        try
+        {
+            if (elem.ModuleState.ValueKind == System.Text.Json.JsonValueKind.Object &&
+                elem.ModuleState.TryGetProperty("tilesAssetId", out var prop))
+                return prop.GetString() ?? string.Empty;
+        }
+        catch { }
+        return string.Empty;
+    }
 
+    // ── Selection ──────────────────────────────────────────────────────────────
 
+    internal void SelectItem(object? item)
+    {
+        _selectedItem = item;
 
+        if (item is null)
+        {
+            ShowPropertiesEmpty();
+            return;
+        }
 
+        if (!_isLoadingProject)
+            ShowPropertiesForItem(item);
 
+        Focus();
+    }
 
+    private void ShowPropertiesEmpty()
+    {
+        TxtNoSelection.Visibility  = Visibility.Visible;
+        PropertiesPanel.Visibility = Visibility.Collapsed;
+    }
 
+    private void ShowPropertiesForItem(object item)
+    {
+        TxtNoSelection.Visibility  = Visibility.Collapsed;
+        PropertiesPanel.Visibility = Visibility.Visible;
+        BuildPropertiesPanel(item);
+    }
+
+    // ── Generate ROM ───────────────────────────────────────────────────────────
+
+    private async void GenerateRom_Click(object sender, RoutedEventArgs e)
+    {
+        await (_stateManager?.SaveNowAsync() ?? Task.CompletedTask);
+        if (_project is not null)
+            OnGenerateRomRequested?.Invoke(_project);
+    }
+
+    // ── Keyboard ───────────────────────────────────────────────────────────────
 
     private void SceneEditorView_KeyDown(object sender, KeyEventArgs e)
     {
-        if (e.Key == Key.Delete && _selectedElement is not null)
+        if (e.Key == Key.Delete && _selectedItem is not null)
         {
-            RemoveElement(_selectedElement);
+            DeleteSelectedItem();
             e.Handled = true;
         }
 
-        // Ctrl+S: Save project
         if (e.Key == Key.S && Keyboard.Modifiers == ModifierKeys.Control)
         {
             _ = _stateManager?.SaveNowAsync();
             e.Handled = true;
         }
 
-        // Undo: Ctrl+Z
         if (e.Key == Key.Z && Keyboard.Modifiers == ModifierKeys.Control)
         {
             _undoRedo.Undo();
             e.Handled = true;
         }
 
-        // Redo: Ctrl+Y or Ctrl+Shift+Z
         if ((e.Key == Key.Y && Keyboard.Modifiers == ModifierKeys.Control) ||
             (e.Key == Key.Z && Keyboard.Modifiers == (ModifierKeys.Control | ModifierKeys.Shift)))
         {
@@ -194,296 +363,19 @@ public partial class SceneEditorView : UserControl
         }
     }
 
-    /// <summary>
-    /// Updates the enabled state of the Undo/Redo buttons in the top bar.
-    /// Subscribed to UndoRedoStack.StateChanged.
-    /// </summary>
-    private void UpdateUndoRedoButtons()
+    private void DeleteSelectedItem()
     {
-        Dispatcher.InvokeAsync(() =>
-        {
-            if (FindName("BtnUndo") is System.Windows.Controls.Button btnUndo)
-            {
-                btnUndo.IsEnabled = _undoRedo.CanUndo;
-                btnUndo.ToolTip = _undoRedo.CanUndo
-                    ? $"Undo: {_undoRedo.NextUndoDescription}"
-                    : "Nothing to undo";
-            }
-
-            if (FindName("BtnRedo") is System.Windows.Controls.Button btnRedo)
-            {
-                btnRedo.IsEnabled = _undoRedo.CanRedo;
-                btnRedo.ToolTip = _undoRedo.CanRedo
-                    ? $"Redo: {_undoRedo.NextRedoDescription}"
-                    : "Nothing to redo";
-            }
-        });
+        if (_selectedItem is PlaneLayerData layer)
+            RemovePlaneLayer(layer);
+        else if (_selectedItem is EntityData entity)
+            RemoveEntity(entity);
     }
-
-    /// <summary>
-    /// Initializes the editor with the given project and target.
-    /// </summary>
-    public void Initialize(RetruxelProject project, ITarget target)
-    {
-        _project = project;
-        _target = target;
-
-        // Initialize ModuleRenderer for user module discovery
-        var pluginsPath = Path.Combine(
-            Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location) ?? "",
-            "plugins");
-        _moduleRenderer = new ModuleRenderer(pluginsPath, target.GetType().Assembly);
-
-        // Clear previous session data
-        _elements.Clear();
-        SceneCanvas.Children.Clear();
-        _selectedElement = null;
-
-        // Apply undo history limit from settings
-        var settings = SettingsService.Load();
-        _undoRedo.MaxHistorySize = Math.Clamp(settings.General.UndoHistoryLimit, 20, 100);
-        _undoRedo.Clear();
-        _undoRedo.StateChanged += UpdateUndoRedoButtons;
-
-        // Get or create main scene
-        _currentScene = project.Scenes.FirstOrDefault();
-        if (_currentScene is null)
-        {
-            _currentScene = new SceneData
-            {
-                SceneId = Guid.NewGuid().ToString(),
-                SceneName = "Main",
-                Elements = []
-            };
-
-            // Initialize palette slots for the first scene
-            for (int i = 0; i < target.GetPaletteSlotCount(); i++)
-            {
-                var slot = new PaletteSlotData
-                {
-                    SlotIndex = i,
-                    Label = target.GetPaletteSlotType(i).ToString(),
-                    Colors = Enumerable.Repeat("#000000", target.GetColorsPerSlot()).ToList()
-                };
-                _currentScene.PaletteSlots.Add(slot);
-            }
-
-            project.Scenes.Add(_currentScene);
-        }
-        else if (_currentScene.PaletteSlots.Count == 0)
-        {
-            // Migrate old projects: add palette slots if missing
-            for (int i = 0; i < target.GetPaletteSlotCount(); i++)
-            {
-                var slot = new PaletteSlotData
-                {
-                    SlotIndex = i,
-                    Label = target.GetPaletteSlotType(i).ToString(),
-                    Colors = Enumerable.Repeat("#000000", target.GetColorsPerSlot()).ToList()
-                };
-                _currentScene.PaletteSlots.Add(slot);
-            }
-        }
-
-        RebuildSceneTabs();
-        ApplyTargetSpecs(target);
-        LoadModulePalette(target);
-        LoadFromProject();
-        RefreshStructurePanel();
-    }
-
-    /// <summary>
-    /// Cleanup when closing the editor.
-    /// </summary>
-    public void Cleanup()
-    {
-        _stateManager?.Dispose();
-        _stateManager = null;
-    }
-
-    private void ApplyTargetSpecs(ITarget target)
-    {
-        var specs = target.Specs;
-        SceneCanvas.Width = specs.ScreenWidth;
-        SceneCanvas.Height = specs.ScreenHeight;
-        TxtCanvasSize.Text = $"{specs.ScreenWidth} × {specs.ScreenHeight} px";
-    }
-
-
-
-
-
-
-
-
 
     private void Documentation_Click(object sender, RoutedEventArgs e)
- => OnAboutRequested?.Invoke();
+        => OnAboutRequested?.Invoke();
 
+    // ── Sidebar tab switching ──────────────────────────────────────────────────
 
-
-
-
-    // ===== EVENTS PANEL =====
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    /// <summary>
-    /// Syncs the current scene elements back to the project model.
-    /// Updates existing elements instead of recreating the list to avoid duplication.
-    /// </summary>
-    private void SyncProjectModules()
-    {
-        if (_project is null || _currentScene is null) return;
-
-        // Update existing elements or add new ones
-        foreach (var element in _elements)
-        {
-            var moduleJson = element.Module is Retruxel.Core.Interfaces.IModule module
-                ? module.Serialize()
-                : "{}";
-
-            var existingData = _currentScene.Elements.FirstOrDefault(e => e.ElementId == element.ElementId);
-
-            if (existingData is not null)
-            {
-                // Update existing element
-                existingData.UserId = element.UserId;
-                existingData.ModuleId = element.ModuleId;
-                existingData.TileX = element.TileX;
-                existingData.TileY = element.TileY;
-                existingData.Trigger = element.Trigger;
-                existingData.ModuleState = System.Text.Json.JsonDocument.Parse(moduleJson).RootElement.Clone();
-            }
-            else
-            {
-                // Add new element
-                _currentScene.Elements.Add(new SceneElementData
-                {
-                    ElementId = element.ElementId,
-                    UserId = element.UserId,
-                    ModuleId = element.ModuleId,
-                    TileX = element.TileX,
-                    TileY = element.TileY,
-                    Trigger = element.Trigger,
-                    ModuleState = System.Text.Json.JsonDocument.Parse(moduleJson).RootElement.Clone()
-                });
-            }
-        }
-
-        // Remove elements that no longer exist in memory
-        var elementIds = _elements.Select(e => e.ElementId).ToHashSet();
-        _currentScene.Elements.RemoveAll(e => !elementIds.Contains(e.ElementId));
-
-        _project.DefaultModules = _elements
-            .Select(e => e.ModuleId)
-            .Distinct()
-            .ToList();
-
-        _projectManager?.MarkDirty();
-    }
-
-    private async void GenerateRom_Click(object sender, RoutedEventArgs e)
-    {
-        // Save before building ROM
-        await (_stateManager?.SaveNowAsync() ?? Task.CompletedTask);
-
-        if (_project is not null)
-            OnGenerateRomRequested?.Invoke(_project);
-    }
-
-    /// <summary>
-    /// Loads scene elements from the project and reconstructs the UI.
-    /// </summary>
-    private void LoadFromProject()
-    {
-        if (_currentScene is null || _currentScene.Elements.Count == 0)
-            return;
-
-        _isLoadingProject = true;
-
-        foreach (var elementData in _currentScene.Elements)
-        {
-            AddElementFromData(elementData);
-        }
-
-        _isLoadingProject = false;
-
-        // If there are elements, select the first one and show properties
-        if (_elements.Count > 0)
-        {
-            SelectElement(_elements[0]);
-            BuildPropertiesPanel(_elements[0]);
-        }
-
-        RefreshStructurePanel();
-    }
-
-
-
-
-
-
-
-
-}
-
-/// <summary>
-/// Represents an element placed in the scene — a module instance with position and visuals.
-/// </summary>
-public class SceneElement
-{
-    public string ElementId { get; set; } = string.Empty;
-    public string UserId { get; set; } = string.Empty;
-    public string ModuleId { get; set; } = string.Empty;
-    public object? Module { get; set; }
-    public int TileX { get; set; }
-    public int TileY { get; set; }
-    public string Trigger { get; set; } = "OnStart";
-    public UIElement? CanvasVisual { get; set; }
-    public UIElement? EventVisual { get; set; }
-    public SceneElementData Data { get; set; } = new();
-
-    public string DisplayLabel
-    {
-        get
-        {
-            if (!string.IsNullOrEmpty(UserId))
-                return $"[{UserId}]";
-
-            // Fallback to ElementId (first 8 chars)
-            var shortId = ElementId.Length > 8 ? ElementId[..8] : ElementId;
-            return $"[{shortId}...]";
-        }
-    }
+    private void BtnImportAsset_Click(object sender, RoutedEventArgs e)
+        => OpenAssetImporter("bg");
 }

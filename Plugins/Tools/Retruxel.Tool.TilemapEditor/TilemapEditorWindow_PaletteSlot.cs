@@ -139,7 +139,7 @@ public partial class TilemapEditorWindow
             }
 
             var paletteEditor = new Tool.PaletteEditor.PaletteEditorWindow(
-                paletteProvider, "tilemap_editor", initialColors, null, _project)
+                paletteProvider, "plane_editor", initialColors, null, _project)
             {
                 Owner = this
             };

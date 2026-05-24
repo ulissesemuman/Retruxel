@@ -9,7 +9,7 @@ using System.Windows.Media.Imaging;
 namespace Retruxel.Tool.LiveLink;
 
 /// <summary>
-/// Preview rendering: tilemap with nametable, tileset grid fallback.
+/// Preview rendering: plane with nametable, tileset grid fallback.
 /// </summary>
 public partial class LiveLinkWindow
 {
@@ -21,14 +21,14 @@ public partial class LiveLinkWindow
             return;
         }
 
-        // If we have nametable AND palette, render the full scene (tilemap)
+        // If we have nametable AND palette, render the full scene (plane)
         if (capture.Nametable != null && capture.NametableWidth > 0 && capture.NametableHeight > 0 && capture.Palette != null)
         {
             var sceneBitmap = CreatePreviewBitmap(capture);
             if (sceneBitmap != null)
             {
                 ImgPreview.Source = ImageProcessing.ConvertSkBitmapToBitmapSource(sceneBitmap);
-                LogInfo("Preview: Rendered tilemap (nametable + tiles + palette)");
+                LogInfo("Preview: Rendered plane (nametable + tiles + palette)");
                 return;
             }
         }

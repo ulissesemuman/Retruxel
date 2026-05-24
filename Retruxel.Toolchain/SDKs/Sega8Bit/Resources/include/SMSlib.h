@@ -120,7 +120,7 @@ void SMS_crt0_RST18(unsigned int tile) __z88dk_fastcall __preserves_regs(b,c,d,e
 /* macro for turning tile numbers into VRAM addr for writing */
 #define TILEtoADDR(tile)          (SMS_VDPVRAMWrite|((tile)*32))
 
-/* handy defines for tilemaps entry */
+/* handy defines for planes entry */
 #define TILE_FLIPPED_X            0x0200
 #define TILE_FLIPPED_Y            0x0400
 #define TILE_USE_SPRITE_PALETTE   0x0800
@@ -147,7 +147,7 @@ void SMS_decompressZX7toVRAM (const void *src, unsigned int dst) __naked __sdccc
 #define UNSAFE_SMS_loadaPLibcompressedTiles(src,tilefrom) UNSAFE_SMS_loadaPLibcompressedTilesatAddr((src),TILEtoADDR(tilefrom))
 void UNSAFE_SMS_loadaPLibcompressedTilesatAddr (const void *src, unsigned int dst) __naked __sdcccall(1);
 
-/* functions for the tilemap */
+/* functions for the plane */
 #define SMS_loadTileMap(x,y,src,size)               SMS_VRAMmemcpy (XYtoADDR((x),(y)),(src),(size))
 
 void SMS_loadTileMapAreaatAddr (unsigned int dst, const void *src, unsigned char width, unsigned char height) __naked __z88dk_callee __sdcccall(1);
@@ -175,7 +175,7 @@ unsigned int SMS_getTile(void) __naked __z88dk_fastcall __preserves_regs(b,c,d,e
 
 #define SMS_getTileatXY(x,y)         (SMS_setAddr(XYtoREADADDR((x),(y))),SMS_getTile())
 
-/* Functions for reading back tilemap and VRAM */
+/* Functions for reading back plane and VRAM */
 void SMS_saveTileMapArea(unsigned char x, unsigned char y, void *dst, unsigned char width, unsigned char height);
 void * SMS_saveTileMapColumnatAddr(unsigned int src, void *dst, unsigned int height) __naked __z88dk_callee __sdcccall(1);
 #define SMS_saveTileMapColumn(x,y,dst,height)   SMS_saveTileMapColumnatAddr(XYtoADDR((x),(y)),(dst),(height))

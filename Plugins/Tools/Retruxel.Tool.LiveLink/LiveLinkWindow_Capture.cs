@@ -278,7 +278,7 @@ public partial class LiveLinkWindow
     private async Task CaptureGameBoyTiles(CaptureResult capture, Retruxel.Core.Models.TargetSpecs specs, int bpp, int bytesPerTile)
     {
         // GB/GBC: 8KB VRAM (384 tiles), 2bpp
-        int totalTiles = specs.MaxTilesInVram;
+        int totalTiles = specs.VramBytesForTiles / bytesPerTile;
         int vramSize = totalTiles * bytesPerTile;
 
         LogInfo($"VRAM calculation: {totalTiles} tiles × {bytesPerTile} bytes/tile = {vramSize} bytes");
@@ -308,7 +308,7 @@ public partial class LiveLinkWindow
     private async Task CaptureSmsTiles(CaptureResult capture, Retruxel.Core.Models.TargetSpecs specs, int bpp, int bytesPerTile)
     {
         // SMS/GG: 4bpp, line-interleaved
-        int totalTiles = specs.MaxTilesInVram;
+        int totalTiles = specs.VramBytesForTiles / bytesPerTile;
         int vramSize = totalTiles * bytesPerTile;
 
         LogInfo($"VRAM calculation: {totalTiles} tiles × {bytesPerTile} bytes/tile = {vramSize} bytes");
@@ -338,7 +338,7 @@ public partial class LiveLinkWindow
     private async Task CaptureSg1000Tiles(CaptureResult capture, Retruxel.Core.Models.TargetSpecs specs, int bytesPerTile)
     {
         // SG-1000: 1bpp (TMS9918), tile-interleaved
-        int totalTiles = specs.MaxTilesInVram;
+        int totalTiles = specs.VramBytesForTiles / bytesPerTile;
         int vramSize = totalTiles * bytesPerTile;
 
         LogInfo($"VRAM calculation: {totalTiles} tiles × {bytesPerTile} bytes/tile = {vramSize} bytes");

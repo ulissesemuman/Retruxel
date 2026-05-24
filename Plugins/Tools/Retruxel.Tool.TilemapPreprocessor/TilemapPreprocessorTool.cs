@@ -5,27 +5,27 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text.Json;
 
-namespace Retruxel.Tool.TilemapPreprocessor;
+namespace Retruxel.Tool.PlanePreprocessor;
 
 /// <summary>
-/// Generic tilemap preprocessor tool.
-/// Processes collision bitfield and map data for any tilemap-based console.
+/// Generic plane preprocessor tool.
+/// Processes collision bitfield and map data for any plane-based console.
 /// Returns raw numeric arrays - the CodeGen template decides the format.
 /// </summary>
-public class TilemapPreprocessorTool : ITool
+public class PlanePreprocessorTool : ITool
 {
-    public string ToolId => "tilemap_preprocessor";
-    public string DisplayName => "Tilemap Preprocessor";
-    public string Description => "Generates collision bitfield and processes map data for tilemap modules";
+    public string ToolId => "plane_preprocessor";
+    public string DisplayName => "Plane Preprocessor";
+    public string Description => "Generates collision bitfield and processes map data for plane modules";
     public string Category => "Graphics";
     public string? TargetId => null;
-    public string? ModuleId => "tilemap";
+    public string? ModuleId => "plane";
     public object? Icon => null;
     public string? Shortcut => null;
     public bool IsStandalone => false;
     public bool IsSingleton => true;
     public bool RequiresProject => false;
-    public string? TargetExtensionId => "tilemap_preprocessor";
+    public string? TargetExtensionId => "plane_preprocessor";
 
     public IEnumerable<string> Validate(Dictionary<string, object> input)
     {
@@ -52,14 +52,14 @@ public class TilemapPreprocessorTool : ITool
         var mapDataObj = input.ContainsKey("mapData") ? input["mapData"] : null;
 
         // DEBUG: Log input
-        System.Diagnostics.Debug.WriteLine($"[TilemapPreprocessor] ===== EXECUTE START =====");
-        System.Diagnostics.Debug.WriteLine($"[TilemapPreprocessor] mapDataObj type: {mapDataObj?.GetType().Name ?? "null"}");
+        System.Diagnostics.Debug.WriteLine($"[PlanePreprocessor] ===== EXECUTE START =====");
+        System.Diagnostics.Debug.WriteLine($"[PlanePreprocessor] mapDataObj type: {mapDataObj?.GetType().Name ?? "null"}");
 
         // Convert JsonElement to object[] if needed
         if (mapDataObj is JsonElement jsonElement && jsonElement.ValueKind == JsonValueKind.Array)
         {
             var arrayLength = jsonElement.GetArrayLength();
-            System.Diagnostics.Debug.WriteLine($"[TilemapPreprocessor] mapDataObj is JsonElement array with {arrayLength} items");
+            System.Diagnostics.Debug.WriteLine($"[PlanePreprocessor] mapDataObj is JsonElement array with {arrayLength} items");
 
             var objArray = new object[arrayLength];
             int idx = 0;
@@ -71,15 +71,15 @@ public class TilemapPreprocessorTool : ITool
 
             if (arrayLength > 0)
             {
-                System.Diagnostics.Debug.WriteLine($"[TilemapPreprocessor] First item type: {objArray[0]?.GetType().Name}");
+                System.Diagnostics.Debug.WriteLine($"[PlanePreprocessor] First item type: {objArray[0]?.GetType().Name}");
             }
         }
         else if (mapDataObj is object[] objArr)
         {
-            System.Diagnostics.Debug.WriteLine($"[TilemapPreprocessor] mapDataObj is object[] with {objArr.Length} items");
+            System.Diagnostics.Debug.WriteLine($"[PlanePreprocessor] mapDataObj is object[] with {objArr.Length} items");
             if (objArr.Length > 0)
             {
-                System.Diagnostics.Debug.WriteLine($"[TilemapPreprocessor] First item type: {objArr[0]?.GetType().Name}");
+                System.Diagnostics.Debug.WriteLine($"[PlanePreprocessor] First item type: {objArr[0]?.GetType().Name}");
             }
         }
 
@@ -87,12 +87,12 @@ public class TilemapPreprocessorTool : ITool
         var mapData = ConvertToTileEntryArray(mapDataObj);
 
         // DEBUG: Log mapData info
-        System.Diagnostics.Debug.WriteLine($"[TilemapPreprocessor] mapData converted: Length={mapData.Length}");
+        System.Diagnostics.Debug.WriteLine($"[PlanePreprocessor] mapData converted: Length={mapData.Length}");
         if (mapData.Length > 0)
         {
-            System.Diagnostics.Debug.WriteLine($"[TilemapPreprocessor] First entry: TileIndex={mapData[0].TileIndex}, FlipH={mapData[0].FlipH}, FlipV={mapData[0].FlipV}");
+            System.Diagnostics.Debug.WriteLine($"[PlanePreprocessor] First entry: TileIndex={mapData[0].TileIndex}, FlipH={mapData[0].FlipH}, FlipV={mapData[0].FlipV}");
             if (mapData.Length > 1)
-                System.Diagnostics.Debug.WriteLine($"[TilemapPreprocessor] Second entry: TileIndex={mapData[1].TileIndex}, FlipH={mapData[1].FlipH}, FlipV={mapData[1].FlipV}");
+                System.Diagnostics.Debug.WriteLine($"[PlanePreprocessor] Second entry: TileIndex={mapData[1].TileIndex}, FlipH={mapData[1].FlipH}, FlipV={mapData[1].FlipV}");
         }
 
         var startTile = GetInt(input, "startTile", 0);
@@ -103,7 +103,7 @@ public class TilemapPreprocessorTool : ITool
         var maxTileSlots = GetInt(input, "maxTileSlots", 448);
         var paletteSlot = GetInt(input, "paletteSlot", 0);
 
-        // Only apply clipping if mapX < 0 or mapY < 0 (tilemap starts off-screen)
+        // Only apply clipping if mapX < 0 or mapY < 0 (plane starts off-screen)
         bool needsClipping = mapX < 0 || mapY < 0;
 
         TileEntry[] processedMapData;
@@ -123,7 +123,7 @@ public class TilemapPreprocessorTool : ITool
         }
         else
         {
-            // No clipping needed - use full tilemap
+            // No clipping needed - use full plane
             processedMapData = mapData;
             finalWidth = mapWidth;
             finalHeight = mapHeight;
@@ -226,7 +226,7 @@ public class TilemapPreprocessorTool : ITool
     }
 
     /// <summary>
-    /// Applies clipping to the tilemap when it starts off-screen (negative mapX or mapY).
+    /// Applies clipping to the plane when it starts off-screen (negative mapX or mapY).
     /// Returns only the visible portion by skipping the off-screen tiles.
     /// </summary>
     private (TileEntry[] clippedData, int width, int height, int drawX, int drawY) ApplyClipping(
@@ -239,7 +239,7 @@ public class TilemapPreprocessorTool : ITool
         int drawWidth = mapWidth;
         int drawHeight = mapHeight;
 
-        // Handle negative X offset (tilemap starts off-screen to the left)
+        // Handle negative X offset (plane starts off-screen to the left)
         if (mapX < 0)
         {
             sourceOffsetX = -mapX;
@@ -247,7 +247,7 @@ public class TilemapPreprocessorTool : ITool
             drawWidth = mapWidth - sourceOffsetX;
         }
 
-        // Handle negative Y offset (tilemap starts off-screen at the top)
+        // Handle negative Y offset (plane starts off-screen at the top)
         if (mapY < 0)
         {
             sourceOffsetY = -mapY;

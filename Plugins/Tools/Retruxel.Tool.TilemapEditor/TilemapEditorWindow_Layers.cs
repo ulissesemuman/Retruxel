@@ -8,7 +8,7 @@ public partial class TilemapEditorWindow
     private void CmbLayers_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
         _currentLayerIndex = CmbLayers.SelectedIndex;
-        TxtLayerInfo.Text = $"Layer {_currentLayerIndex + 1} of {_target.Specs.Tilemap.MaxLayers}";
+        TxtLayerInfo.Text = $"Layer {_currentLayerIndex + 1} of {_planeData.LayerCount}";
         RenderCanvas();
     }
 

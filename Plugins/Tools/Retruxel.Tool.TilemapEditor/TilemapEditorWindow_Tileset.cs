@@ -22,17 +22,13 @@ public partial class TilemapEditorWindow
     {
         CmbTilesetAsset.Items.Clear();
 
-        var bgAssets = _project.Assets
-            .Where(a => a.VramRegionId == "bg" || a.VramRegionId == "background")
-            .ToList();
-
-        if (bgAssets.Count == 0)
+        if (_project.Assets.Count == 0)
         {
-            TxtVramRegionInfo.Text = "No background assets found. Click IMPORT ASSET to add one.";
+            TxtVramRegionInfo.Text = "No assets found. Click IMPORT ASSET to add one.";
             return;
         }
 
-        foreach (var asset in bgAssets)
+        foreach (var asset in _project.Assets)
             CmbTilesetAsset.Items.Add(asset.Id);
 
         TxtTilesetInfo.Text = "Select a tileset asset to begin";
@@ -101,7 +97,7 @@ public partial class TilemapEditorWindow
 
             if (newTileCount < oldTileCount)
             {
-                var currentLayer = _tilemapData.GetLayer(_currentLayerIndex);
+                var currentLayer = _planeData.GetLayer(_currentLayerIndex);
                 // Check tile indices
                 int tilesAboveLimit = currentLayer.Count(entry =>
                     !entry.IsEmpty && entry.TileIndex >= newTileCount);
@@ -110,7 +106,7 @@ public partial class TilemapEditorWindow
                 {
                     var result = MessageBox.Show(
                         $"Warning: The new tileset '{asset.Id}' has only {newTileCount} tiles.\n\n" +
-                        $"Your current tilemap uses {tilesAboveLimit} tile(s) with indices above {newTileCount - 1}.\n" +
+                        $"Your current plane uses {tilesAboveLimit} tile(s) with indices above {newTileCount - 1}.\n" +
                         $"These tiles will appear as black placeholders and will be lost if you save.\n\n" +
                         $"Do you want to continue?",
                         "Tileset Size Warning",
@@ -128,9 +124,9 @@ public partial class TilemapEditorWindow
 
         TxtTilesetInfo.Text = $"{asset.FileName} ({asset.GenerationParams.TileCount} tiles)";
 
-        var region = _target.Specs.VramRegions.FirstOrDefault(r => r.Id == asset.VramRegionId);
-        if (region != null)
-            TxtVramRegionInfo.Text = $"{region.Label}: {region.StartTile}-{region.EndTile} ({region.TileCount} tiles)";
+        var tileCount = asset.GenerationParams?.TileCount ?? 0;
+        var bytesPerTile = _target.Specs.Planes.FirstOrDefault()?.BytesPerTile ?? 32;
+        TxtVramRegionInfo.Text = $"{tileCount} tiles · {tileCount * bytesPerTile} bytes";
 
         LoadTilesetImage(asset);
     }

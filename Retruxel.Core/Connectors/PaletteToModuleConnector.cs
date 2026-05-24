@@ -29,11 +29,11 @@ public class PaletteToModuleConnector : IToolConnector
             return;
         }
 
-        // Generate unique palette ID
+        // Generate unique palette ID — check both typed ModuleOverrides and legacy Elements
         var existingPalettes = context.CurrentProject.Scenes
-            .SelectMany(s => s.Elements)
-            .Where(e => e.ModuleId == "palette")
-            .Select(e => e.ElementId)
+            .SelectMany(s => s.ModuleOverrides.Select(m => m.ModuleId == "palette" ? m.ModuleId : null)
+                .Concat(s.Elements.Where(e => e.ModuleId == "palette").Select(e => e.ElementId)))
+            .Where(id => id != null)
             .ToHashSet();
 
         int paletteIndex = 0;

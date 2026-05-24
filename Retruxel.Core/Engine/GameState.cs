@@ -9,8 +9,8 @@ namespace Retruxel.Core.Engine;
 public class GameState
 {
     // Layer states
-    public TilemapLayerState Background { get; set; } = new();
-    public TilemapLayerState? Foreground { get; set; } // Future: SNES
+    public PlaneLayerState Background { get; set; } = new();
+    public PlaneLayerState? Foreground { get; set; } // Future: SNES
     public SpriteLayerState Sprites { get; set; } = new();
 
     // Dirty flags (optimization)
@@ -36,9 +36,9 @@ public class GameState
 }
 
 /// <summary>
-/// Tilemap layer state (background or foreground).
+/// Plane layer state (background or foreground).
 /// </summary>
-public class TilemapLayerState
+public class PlaneLayerState
 {
     public byte[]? TileData { get; set; }
     public ushort[]? MapData { get; set; }
@@ -78,7 +78,7 @@ public class SpriteLayerState
 /// </summary>
 public enum LayerType
 {
-    Background,   // Main tilemap
+    Background,   // Main plane
     Foreground,   // Future: SNES BG2
     Sprites       // Entities
 }

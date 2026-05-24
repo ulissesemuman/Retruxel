@@ -35,10 +35,6 @@ public class ColecoVisionTarget : ITarget
         // Tiles
         TileWidth = 8,
         TileHeight = 8,
-        VramRegions =
-        [
-            new VramRegion("background", "Background", 0, 255)
-        ],
 
         // Colors & Palettes
         // TMS9918A: fixed 15-color palette (+ transparent)
@@ -128,7 +124,7 @@ public class ColecoVisionTarget : ITarget
             new Retruxel.Modules.Logic.AnimationModule(),
             new Retruxel.Modules.Logic.ScrollModule(),
             new Retruxel.Modules.Graphics.PaletteModule(),
-            new Retruxel.Modules.Graphics.TilemapModule(),
+            new Retruxel.Modules.Graphics.PlaneModule(),
             new Retruxel.Modules.Graphics.SpriteModule(),
             new Retruxel.Modules.Graphics.TextDisplayModule()
         ];
@@ -142,15 +138,13 @@ public class ColecoVisionTarget : ITarget
         {
             TemplateId = "coleco.blank",
             DisplayName = "Blank Project",
-            Description = "Empty ColecoVision project with no pre-configured modules.",
-            DefaultModules = []
+            Description = "Empty ColecoVision project with no pre-configured modules."
         },
         new ProjectTemplate
         {
             TemplateId = "coleco.platformer",
             DisplayName = "Platformer",
-            Description = "Pre-configured with tiles, sprites, physics and input modules.",
-            DefaultModules = ["tiles", "sprites", "physics", "input"]
+            Description = "Pre-configured with tiles, sprites, physics and input modules."
         }
     ];
 

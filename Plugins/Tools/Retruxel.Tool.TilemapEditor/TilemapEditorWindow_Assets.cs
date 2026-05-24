@@ -63,7 +63,7 @@ public partial class TilemapEditorWindow
             {
                 ["mode"] = "capture",
                 ["targetId"] = _target.TargetId,
-                ["callerId"] = "tilemap_editor"
+                ["callerId"] = "plane_editor"
             };
 
             var liveLinkWindow = (Window)liveLinkTool.CreateWindow(liveLinkInput);
@@ -82,7 +82,7 @@ public partial class TilemapEditorWindow
 
                 var importedData = (ImportedAssetData)moduleData["importedAssetData"];
 
-                var pipeline = new Pipelines.ImportedAssetToTilemapPipeline();
+                var pipeline = new Pipelines.ImportedAssetToPlanePipeline();
                 var pipelineOptions = new Dictionary<string, object>
                 {
                     ["project"] = _project,
@@ -90,14 +90,14 @@ public partial class TilemapEditorWindow
                     ["target"] = _target
                 };
 
-                var tilemapData = pipeline.ProcessTyped(importedData, pipelineOptions);
+                var planeData = pipeline.ProcessTyped(importedData, pipelineOptions);
 
                 if (_saveProjectCallback != null)
                     await _saveProjectCallback.Invoke();
 
                 LoadAssets();
 
-                var assetId = tilemapData["tilesAssetId"].ToString()!;
+                var assetId = planeData["tilesAssetId"].ToString()!;
                 for (int i = 0; i < CmbTilesetAsset.Items.Count; i++)
                 {
                     if (CmbTilesetAsset.Items[i].ToString() == assetId)
@@ -107,31 +107,30 @@ public partial class TilemapEditorWindow
                     }
                 }
 
-                int width = (int)tilemapData["mapWidth"];
-                int height = (int)tilemapData["mapHeight"];
+                int width = (int)planeData["mapWidth"];
+                int height = (int)planeData["mapHeight"];
 
                 if (width == 0 || height == 0)
                 {
-                    var specs = _target.Specs.Tilemap;
-                    width = specs.DefaultWidth * 2;
-                    height = specs.DefaultHeight * 2;
+                    width  = _planeSpecs.DefaultWidth  * 2;
+                    height = _planeSpecs.DefaultHeight * 2;
                 }
 
                 TxtWidth.Text = width.ToString();
                 TxtHeight.Text = height.ToString();
 
-                _tilemapData.Resize(width, height);
+                _planeData.Resize(width, height);
 
-                var mapData = (TileEntry[])tilemapData["mapData"];
+                var mapData = (TileEntry[])planeData["mapData"];
                 if (mapData.Length > 0)
                 {
-                    var currentLayer = _tilemapData.GetLayer(_currentLayerIndex);
+                    var currentLayer = _planeData.GetLayer(_currentLayerIndex);
                     Array.Copy(mapData, currentLayer, Math.Min(mapData.Length, currentLayer.Length));
                 }
 
                 RenderCanvas();
 
-                var palette = (uint[])tilemapData["palette"];
+                var palette = (uint[])planeData["palette"];
                 if (palette.Length > 0)
                 {
                     var result = MessageBox.Show(
@@ -142,13 +141,13 @@ public partial class TilemapEditorWindow
 
                     if (result == MessageBoxResult.Yes)
                     {
-                        var asset = (AssetEntry)tilemapData["asset"];
+                        var asset = (AssetEntry)planeData["asset"];
                         OpenPaletteEditor(asset);
                     }
                 }
 
                 MessageBox.Show(
-                    $"Successfully imported tilemap from LiveLink!\n\n" +
+                    $"Successfully imported plane from LiveLink!\n\n" +
                     $"Tiles: {importedData.Tiles.Length}\n" +
                     $"Map: {width}x{height}\n" +
                     $"Palette: {palette.Length} colors",

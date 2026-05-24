@@ -6,7 +6,7 @@ namespace Retruxel.Target.SMS.Tools;
 
 /// <summary>
 /// SMS-specific extension for tile_packer tool.
-/// Enables H/V flip detection and formats tilemap for SMS VDP.
+/// Enables H/V flip detection and formats plane for SMS VDP.
 /// </summary>
 public class SmsTilePackerExtension : IToolExtension
 {
@@ -22,10 +22,10 @@ public class SmsTilePackerExtension : IToolExtension
     public Dictionary<string, object> Execute(Dictionary<string, object> input)
     {
         // input already contains the output from TilePackerTool with flipH/flipV correctly applied
-        var tilemap = input["tilemap"] as List<object> ?? new List<object>();
-        var formattedTilemap = new List<Dictionary<string, object>>();
+        var plane = input["plane"] as List<object> ?? new List<object>();
+        var formattedPlane = new List<Dictionary<string, object>>();
 
-        foreach (var entry in tilemap)
+        foreach (var entry in plane)
         {
             if (entry is not Dictionary<string, object> dict) continue;
 
@@ -39,7 +39,7 @@ public class SmsTilePackerExtension : IToolExtension
             // bit 10:    flip V
             var vdpValue = tileIndex | (flipH ? 0x200 : 0) | (flipV ? 0x400 : 0);
 
-            formattedTilemap.Add(new Dictionary<string, object>
+            formattedPlane.Add(new Dictionary<string, object>
             {
                 ["tileIndex"] = tileIndex,
                 ["flipH"] = flipH,
@@ -52,7 +52,7 @@ public class SmsTilePackerExtension : IToolExtension
 
         return new Dictionary<string, object>
         {
-            ["tilemap"] = formattedTilemap
+            ["plane"] = formattedPlane
         };
     }
 }

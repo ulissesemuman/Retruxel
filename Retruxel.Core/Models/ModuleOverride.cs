@@ -10,14 +10,14 @@ namespace Retruxel.Core.Models;
 public class ModuleOverride
 {
     /// <summary>
-    /// Module ID to override (e.g., "palette", "tilemap", "scroll").
+    /// Module ID to override (e.g., "palette", "plane", "scroll").
     /// </summary>
     public string ModuleId { get; init; } = string.Empty;
 
     /// <summary>
     /// Override singleton behavior.
     /// - true: Only one instance allowed per project (e.g., SMS palette with 32 fixed colors)
-    /// - false: Multiple instances allowed (e.g., multiple tilemaps for layers)
+    /// - false: Multiple instances allowed (e.g., multiple planes for layers)
     /// - null: Use module's default IsSingleton value
     /// </summary>
     public bool? IsSingleton { get; init; }

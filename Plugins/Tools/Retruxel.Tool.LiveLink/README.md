@@ -4,7 +4,7 @@ Real-time emulator connection for capturing tiles, nametables, and palettes dire
 
 ## Purpose
 
-LiveLink allows you to extract graphics from existing ROMs by connecting to emulator debug APIs. This is particularly useful for porting games like Kung Fu Master from NES to SMS — you can capture the exact tiles and tilemaps from the original game.
+LiveLink allows you to extract graphics from existing ROMs by connecting to emulator debug APIs. This is particularly useful for porting games like Kung Fu Master from NES to SMS — you can capture the exact tiles and planes from the original game.
 
 ## Supported Emulators
 
@@ -55,12 +55,12 @@ LiveLink allows you to extract graphics from existing ROMs by connecting to emul
 
 **VramDecoder** — Converts raw VRAM back to tiles (inverse of TileConverter)
 - `DecodePlanarTiles()` — Decode 4bpp planar tiles
-- `DecodeNametable()` — Decode nametable/tilemap
+- `DecodeNametable()` — Decode nametable/plane
 
 **CaptureResult** — Captured data container
 - `Tiles` — Decoded tile data
 - `Palette` — Color palette
-- `Nametable` — Tilemap data
+- `Nametable` — Plane data
 
 ### Implementations
 
@@ -74,7 +74,7 @@ LiveLink allows you to extract graphics from existing ROMs by connecting to emul
 | Region | Address | Size | Description |
 |---|---|---|---|
 | VRAM Tiles | 0x0000 | 16KB | Tile pattern data (4bpp planar) |
-| VRAM Nametable | 0x3800 | 1792 bytes | 32×28 tilemap (2 bytes per entry) |
+| VRAM Nametable | 0x3800 | 1792 bytes | 32×28 plane (2 bytes per entry) |
 | CRAM Palette | 0xC000 | 32 bytes | 16 colors × 2 palettes (RGB222) |
 
 ### NES
@@ -82,7 +82,7 @@ LiveLink allows you to extract graphics from existing ROMs by connecting to emul
 | Region | Address | Size | Description |
 |---|---|---|---|
 | CHR ROM | 0x0000 | 8KB | Tile pattern data (2bpp planar) |
-| Nametable | 0x2000 | 1KB | 32×30 tilemap |
+| Nametable | 0x2000 | 1KB | 32×30 plane |
 | Palette | 0x3F00 | 32 bytes | Background + sprite palettes |
 
 ### SNES
@@ -90,7 +90,7 @@ LiveLink allows you to extract graphics from existing ROMs by connecting to emul
 | Region | Address | Size | Description |
 |---|---|---|---|
 | VRAM | 0x0000 | 64KB | Tile pattern data (2/4/8bpp) |
-| Tilemap | Variable | Variable | Mode-dependent tilemap |
+| Plane | Variable | Variable | Mode-dependent plane |
 | CGRAM | 0x0000 | 512 bytes | 256 colors (RGB555) |
 
 ### Game Boy / Game Boy Color
@@ -98,7 +98,7 @@ LiveLink allows you to extract graphics from existing ROMs by connecting to emul
 | Region | Address | Size | Description |
 |---|---|---|---|
 | VRAM Tiles | 0x8000 | 6KB | Tile pattern data (2bpp planar, interleaved) |
-| Tilemap | 0x9800 | 1KB | 32×32 tilemap |
+| Plane | 0x9800 | 1KB | 32×32 plane |
 | Palette (GB) | Hardware | 4 shades | Grayscale only |
 | Palette (GBC) | 0xFF68 | 64 bytes | 8 palettes × 4 colors (RGB555) |
 
@@ -107,7 +107,7 @@ LiveLink allows you to extract graphics from existing ROMs by connecting to emul
 | Region | Address | Size | Description |
 |---|---|---|---|
 | VRAM | 0x06000000 | 96KB | Tile + bitmap data |
-| Tilemap | Variable | Variable | Mode-dependent |
+| Plane | Variable | Variable | Mode-dependent |
 | Palette | 0x05000000 | 1KB | 512 colors (RGB555) |
 
 ## Workflow Example: Kung Fu Master Port
@@ -119,8 +119,8 @@ LiveLink allows you to extract graphics from existing ROMs by connecting to emul
 4. Capture tiles + nametable + palette
 5. Export as PNG
 6. Import PNG into Retruxel SMS project
-7. Use TilemapReducer to optimize tileset
-8. Generate SMS code with TilemapModule
+7. Use PlaneReducer to optimize tileset
+8. Generate SMS code with PlaneModule
 ```
 
 ## Future Enhancements

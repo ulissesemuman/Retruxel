@@ -26,12 +26,6 @@ public class ProjectTemplate
     public string PreviewImagePath { get; set; } = string.Empty;
 
     /// <summary>
-    /// List of ModuleIds pre-configured by this template.
-    /// The shell loads and initializes these modules when the project is created.
-    /// </summary>
-    public string[] DefaultModules { get; set; } = Array.Empty<string>();
-
-    /// <summary>
     /// Default parameter values applied when this template is used.
     /// Key is "ModuleId.ParameterName", value is the default.
     /// Ex: { "sms.physics.gravityStrength": 8 }

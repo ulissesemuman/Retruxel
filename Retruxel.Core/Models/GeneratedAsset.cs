@@ -41,8 +41,8 @@ public enum GeneratedAssetType
     /// <summary>Color palette data</summary>
     Palette,
 
-    /// <summary>Tilemap / nametable layout data</summary>
-    Tilemap,
+    /// <summary>Plane / nametable layout data</summary>
+    Plane,
 
     /// <summary>Sprite sheet data</summary>
     Sprites,

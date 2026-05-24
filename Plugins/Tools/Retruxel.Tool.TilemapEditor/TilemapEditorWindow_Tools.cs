@@ -74,7 +74,7 @@ public partial class TilemapEditorWindow
                          $"Original tiles: {originalCount}\n" +
                          $"Optimized tiles: {optimizedCount}\n" +
                          $"Saved: {savedTiles} tiles ({savedPercent:F1}%)\n\n" +
-                         $"Apply optimization to current tilemap?";
+                         $"Apply optimization to current plane?";
 
             var dialogResult = MessageBox.Show(message, "Tile Optimization", MessageBoxButton.YesNo, MessageBoxImage.Question);
 
@@ -97,32 +97,32 @@ public partial class TilemapEditorWindow
                 return;
             }
 
-            var tilemap = packResult.Tilemap;
+            var plane = packResult.Plane;
             var uniqueTiles = packResult.UniqueTiles;
 
             // Build index mapping
             var indexMapping = new Dictionary<int, int>();
             int tilesPerRow = originalAsset.SourceWidth / _target.Specs.TileWidth;
 
-            foreach (var entry in tilemap)
+            foreach (var entry in plane)
             {
                 int oldTileIndex = entry.Y * tilesPerRow + entry.X;
                 indexMapping[oldTileIndex] = entry.TileIndex;
             }
 
             // Apply optimization to current layer
-            var currentLayer = _tilemapData.GetLayer(_currentLayerIndex);
+            var currentLayer = _planeData.GetLayer(_currentLayerIndex);
             int remappedCount = 0;
 
-            for (int i = 0; i < currentLayer.Length && i < tilemap.Count; i++)
+            for (int i = 0; i < currentLayer.Length && i < plane.Count; i++)
             {
                 var entry = currentLayer[i];
                 if (!entry.IsEmpty && indexMapping.ContainsKey(entry.TileIndex))
                 {
                     entry.TileIndex = indexMapping[entry.TileIndex];
-                    entry.FlipH = tilemap[i].FlipH;
-                    entry.FlipV = tilemap[i].FlipV;
-                    entry.Rotation = tilemap[i].Rotation;
+                    entry.FlipH = plane[i].FlipH;
+                    entry.FlipV = plane[i].FlipV;
+                    entry.Rotation = plane[i].Rotation;
                     currentLayer[i] = entry;
                     remappedCount++;
                 }
@@ -145,7 +145,7 @@ public partial class TilemapEditorWindow
 
             MessageBox.Show($"Optimization applied successfully!\n\n" +
                           $"Tiles remapped: {remappedCount}\n\n" +
-                          $"Remember to SAVE the tilemap to persist changes.",
+                          $"Remember to SAVE the plane to persist changes.",
                           "Success", MessageBoxButton.OK, MessageBoxImage.Information);
         }
         catch (Exception ex)
@@ -219,7 +219,6 @@ public partial class TilemapEditorWindow
                 FileName = $"{optimizedAssetId}.png",
                 RelativePath = originalAsset.RelativePath,
                 SourcePath = originalAsset.SourcePath,
-                VramRegionId = originalAsset.VramRegionId,
                 SourceWidth = imageWidth,
                 SourceHeight = imageHeight,
                 GenerationParams = originalAsset.GenerationParams
@@ -252,7 +251,7 @@ public partial class TilemapEditorWindow
         var dialog = new Microsoft.Win32.SaveFileDialog
         {
             Filter = "PNG Image|*.png",
-            FileName = "tilemap.png"
+            FileName = "plane.png"
         };
 
         if (dialog.ShowDialog() == true)
@@ -269,7 +268,7 @@ public partial class TilemapEditorWindow
                 {
                     canvas.Clear(SKColors.Transparent);
 
-                    var currentLayer = _tilemapData.GetLayer(_currentLayerIndex);
+                    var currentLayer = _planeData.GetLayer(_currentLayerIndex);
                     for (int y = 0; y < height; y++)
                     {
                         for (int x = 0; x < width; x++)
@@ -294,7 +293,7 @@ public partial class TilemapEditorWindow
                 using var stream = new FileStream(dialog.FileName, FileMode.Create);
                 data.SaveTo(stream);
 
-                MessageBox.Show($"Tilemap exported to {Path.GetFileName(dialog.FileName)}", "Export PNG", MessageBoxButton.OK, MessageBoxImage.Information);
+                MessageBox.Show($"Plane exported to {Path.GetFileName(dialog.FileName)}", "Export PNG", MessageBoxButton.OK, MessageBoxImage.Information);
             }
             catch (Exception ex)
             {

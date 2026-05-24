@@ -36,7 +36,7 @@ These Lua scripts enable the LiveLink debug API for each emulator.
 5. The script will run automatically and enable the LiveLink API
 
 **Commands:**
-- `GET_TILEMAP` - Returns 2KB tilemap data from VRAM $0000
+- `GET_PLANE` - Returns 2KB plane data from VRAM $0000
 - `GET_PALETTE` - Returns 512 bytes palette data from CGRAM
 - `GET_CHR` - Returns 64KB CHR data from VRAM
 
@@ -53,7 +53,7 @@ These Lua scripts enable the LiveLink debug API for each emulator.
 5. The script will run automatically and enable the LiveLink API
 
 **Commands:**
-- `GET_TILEMAP` - Returns 1KB tilemap data from $9800
+- `GET_PLANE` - Returns 1KB plane data from $9800
 - `GET_PALETTE` - Returns 5 bytes palette data from $FF47
 - `GET_TILES` - Returns 6KB tile data from $8000
 
@@ -70,7 +70,7 @@ These Lua scripts enable the LiveLink debug API for each emulator.
 5. The script will run automatically and enable the LiveLink API
 
 **Commands:**
-- `GET_TILEMAP` - Returns 2KB tilemap data from VRAM $06000000
+- `GET_PLANE` - Returns 2KB plane data from VRAM $06000000
 - `GET_PALETTE` - Returns 512 bytes palette data from Palette RAM
 - `GET_TILES` - Returns 64KB tile data from VRAM
 

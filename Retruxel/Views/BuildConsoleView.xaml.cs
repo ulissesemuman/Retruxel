@@ -82,14 +82,6 @@ public partial class BuildConsoleView : UserControl
         ((IProgress<string>)progress).Report($"DEBUG: Directory exists = {Directory.Exists(pluginsPath)}");
         var moduleRenderer = new ModuleRenderer(pluginsPath, null, progress);
 
-        // Register universal modules present in the project that weren't
-        // covered by built-ins or plugins (e.g. text.display from Retruxel.Modules)
-        foreach (var moduleId in project.DefaultModules.Distinct())
-        {
-            if (moduleId == "text.display" && !moduleRegistry.GraphicModules.ContainsKey(moduleId))
-                moduleRegistry.RegisterGraphicModule(new Retruxel.Modules.Graphics.TextDisplayModule());
-        }
-
         var codeGen = new CodeGenerator(moduleRegistry, moduleRenderer, target);
 
         var outputDir = Path.Combine(project.ProjectPath, "build");
@@ -114,7 +106,12 @@ public partial class BuildConsoleView : UserControl
         if (_lastResult.Success)
         {
             var elapsedTime = DateTime.Now - _buildStartTime;
-            var totalElements = project.Scenes.Sum(s => s.Elements.Count);
+            var totalElements = project.Scenes.Sum(s =>
+                s.Planes.Sum(t => t.Layers.Count) +
+                s.Entities.Count +
+                s.TextArrays.Count +
+                s.ModuleOverrides.Count +
+                s.Elements.Count); // legacy compat
 
             if (_lastResult.RomPath != null)
                 AppendLog($"SAVED: {_lastResult.RomPath}");
@@ -241,7 +238,7 @@ public partial class BuildConsoleView : UserControl
             var errorBrush = (Brush)FindResource("BrushError");
 
 
-            // Label row
+            // LayerName row
             var labelGrid = new Grid { Margin = new Thickness(0, 0, 0, 4) };
             labelGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
             labelGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });

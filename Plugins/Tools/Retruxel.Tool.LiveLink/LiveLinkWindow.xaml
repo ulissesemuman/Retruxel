@@ -278,7 +278,7 @@
                                         <TextBlock Text="Nametable"
                                                    Style="{StaticResource TextBody}"
                                                    Foreground="{StaticResource BrushOnSurface}"/>
-                                        <TextBlock Text="Capture tilemap layout"
+                                        <TextBlock Text="Capture plane layout"
                                                    Style="{StaticResource TextLabel}"
                                                    TextWrapping="Wrap"/>
                                     </StackPanel>

@@ -5,7 +5,7 @@ using System.Linq;
 namespace Retruxel.Target.SMS.Tools;
 
 /// <summary>
-/// SMS-specific extension for tilemap_preprocessor tool.
+/// SMS-specific extension for plane_preprocessor tool.
 /// Converts ProcessedTileEntry[] to SMS nametable words with hardware-specific bit encoding.
 ///
 /// SMS nametable word format (16-bit):
@@ -15,9 +15,9 @@ namespace Retruxel.Target.SMS.Tools;
 ///   Bit 11:    palette select (0=BG, 1=Sprite)
 ///   Bit 12:    priority
 /// </summary>
-public class SmsTilemapPreprocessorExtension : IToolExtension
+public class SmsPlanePreprocessorExtension : IToolExtension
 {
-    public string ToolId => "tilemap_preprocessor";
+    public string ToolId => "plane_preprocessor";
 
     public Dictionary<string, object> GetDefaultParameters() => new()
     {
@@ -135,7 +135,7 @@ public class SmsTilemapPreprocessorExtension : IToolExtension
 }
 
 /// <summary>
-/// Represents a processed tile entry (from TilemapPreprocessorTool).
+/// Represents a processed tile entry (from PlanePreprocessorTool).
 /// </summary>
 internal class ProcessedTileEntry
 {

@@ -84,12 +84,12 @@ public partial class LiveLinkWindow
             LogInfo($"User selected diversity: {selectedDiversity:F2}");
             LogInfo($"Optimized palette: {optimizedPalette.Count} colors");
 
-            // Check if capture has nametable (tilemap) or is tileset-only
+            // Check if capture has nametable (plane) or is tileset-only
             bool hasNametable = _lastCapture.Nametable != null &&
                                _lastCapture.NametableWidth > 0 &&
                                _lastCapture.NametableHeight > 0;
 
-            LogInfo($"Capture type: {(hasNametable ? "Tilemap (with nametable)" : "Tileset only (no nametable)")}");
+            LogInfo($"Capture type: {(hasNametable ? "Plane (with nametable)" : "Tileset only (no nametable)")}");
 
             CaptureResult optimizedCapture;
 

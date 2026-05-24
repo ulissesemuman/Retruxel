@@ -21,7 +21,7 @@ public class CaptureToImportedAssetPipeline : AssetPipelineBase<CaptureResult, I
         var result = new ImportedAssetData
         {
             Tiles = input.Tiles,
-            TilemapData = ConvertNametableToTilemapData(input.Nametable),
+            PlaneData = ConvertNametableToPlaneData(input.Nametable),
             Palette = input.Palette,
             TileWidth = input.TileWidth,
             TileHeight = input.TileHeight,
@@ -60,17 +60,17 @@ public class CaptureToImportedAssetPipeline : AssetPipelineBase<CaptureResult, I
         return result;
     }
 
-    private int[] ConvertNametableToTilemapData(ushort[] nametable)
+    private int[] ConvertNametableToPlaneData(ushort[] nametable)
     {
-        // Convert ushort nametable entries to int tilemap data
-        var tilemapData = new int[nametable.Length];
+        // Convert ushort nametable entries to int plane data
+        var planeData = new int[nametable.Length];
 
         for (int i = 0; i < nametable.Length; i++)
         {
             // Use full ushort value (0-65535) to support large tile counts
-            tilemapData[i] = nametable[i];
+            planeData[i] = nametable[i];
         }
 
-        return tilemapData;
+        return planeData;
     }
 }

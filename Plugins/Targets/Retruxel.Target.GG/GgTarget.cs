@@ -33,11 +33,6 @@ public class GgTarget : ITarget
         // Tiles
         TileWidth = 8,
         TileHeight = 8,
-        VramRegions =
-        [
-            new VramRegion("background", "Background", 0, 255),
-            new VramRegion("sprites", "Sprites", 256, 447)
-        ],
 
         // Colors & Palettes
         // GG VDP: 4 bits per channel (R, G, B) ? 16 levels per channel ? 4096 total colors
@@ -126,7 +121,7 @@ public class GgTarget : ITarget
             new Retruxel.Modules.Logic.AnimationModule(),
             new Retruxel.Modules.Logic.ScrollModule(),
             new Retruxel.Modules.Graphics.PaletteModule(),
-            new Retruxel.Modules.Graphics.TilemapModule(),
+            new Retruxel.Modules.Graphics.PlaneModule(),
             new Retruxel.Modules.Graphics.SpriteModule(),
             new Retruxel.Modules.Graphics.TextDisplayModule()
         ];
@@ -140,15 +135,13 @@ public class GgTarget : ITarget
         {
             TemplateId = "gg.blank",
             DisplayName = "Blank Project",
-            Description = "Empty Game Gear project with no pre-configured modules.",
-            DefaultModules = []
+            Description = "Empty Game Gear project with no pre-configured modules."
         },
         new ProjectTemplate
         {
             TemplateId = "gg.platformer",
             DisplayName = "Platformer",
-            Description = "Pre-configured with tiles, sprites, physics and input modules.",
-            DefaultModules = ["tiles", "sprites", "physics", "input"]
+            Description = "Pre-configured with tiles, sprites, physics and input modules."
         }
     ];
 

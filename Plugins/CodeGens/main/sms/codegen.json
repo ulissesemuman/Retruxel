@@ -22,7 +22,7 @@
     },
     "headers": {
       "from": "moduleFiles",
-      "path": "fileType == 'Header' && sourceModuleId != 'retruxel.core' && sourceModuleId != 'retruxel.splash' && sourceModuleId != 'retruxel.engine' && sourceModuleId != 'scene' && sourceModuleId != 'tilemap' && sourceModuleId != 'palette' && sourceModuleId != 'text.display'",
+      "path": "fileType == 'Header' && sourceModuleId != 'retruxel.core' && sourceModuleId != 'retruxel.splash' && sourceModuleId != 'retruxel.engine' && sourceModuleId != 'scene' && sourceModuleId != 'plane' && sourceModuleId != 'palette' && sourceModuleId != 'text.display'",
       "transform": "#include \"{{fileName}}\""
     },
     "hasTextDisplay": {

@@ -2,7 +2,7 @@
   "moduleId": "scene",
   "targetId": "sms",
   "displayName": "SMS Scene CodeGen",
-  "description": "Generates scene initialization functions with palette, tilemap, and static text modules",
+  "description": "Generates scene initialization functions with palette, plane, and static text modules",
   "version": "1.0.0",
   "template": "scene.c.rtrx",
   "variables": {
@@ -25,9 +25,9 @@
       "from": "scenePaletteSlot",
       "slotIndex": 1
     },
-    "tilemapInits": {
+    "planeInits": {
       "from": "sceneModules",
-      "filter": "moduleId == 'tilemap'",
+      "filter": "moduleId == 'plane'",
       "transform": "initCall"
     },
     "textStaticInits": {
@@ -37,7 +37,7 @@
     },
     "hasGraphicModules": {
       "from": "sceneModules",
-      "filter": "moduleId == 'tilemap' || (moduleId == 'text.display' && !dynamic)",
+      "filter": "moduleId == 'plane' || (moduleId == 'text.display' && !dynamic)",
       "transform": "hasAny"
     }
   }

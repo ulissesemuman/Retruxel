@@ -1,4 +1,5 @@
 using Retruxel.Core.Interfaces;
+using Retruxel.Core.Models;
 using Retruxel.Core.Services;
 using System;
 using System.Windows;
@@ -82,6 +83,7 @@ public class SceneElement
     public string Trigger { get; set; } = "OnStart";
     public UIElement? CanvasVisual { get; set; }
     public UIElement? EventVisual { get; set; }
+    public SceneElementData Data { get; set; } = new();
 
     public string DisplayLabel
     {

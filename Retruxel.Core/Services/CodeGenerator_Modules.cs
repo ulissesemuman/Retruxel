@@ -18,7 +18,7 @@ public partial class CodeGenerator
     /// Current flags injected:
     ///   entity → "usePhysics", "useInput", "useAnimation"
     ///   enemy  → "useAnimation"
-    ///   physics → "useTilemap"
+    ///   physics → "usePlane"
     ///
     /// The wrapper only modifies Serialize() — all other IModule members
     /// delegate to the original module unchanged.
@@ -53,12 +53,12 @@ public partial class CodeGenerator
 
         if (module.ModuleId == "physics")
         {
-            var useTilemap = presentModuleIds.Contains("tilemap");
+            var usePlane = presentModuleIds.Contains("plane");
 
-            if (useTilemap)
+            if (usePlane)
                 return new ContextualModule(module, json => InjectFlags(json, new()
                 {
-                    ["useTilemap"] = useTilemap
+                    ["usePlane"] = usePlane
                 }));
         }
 

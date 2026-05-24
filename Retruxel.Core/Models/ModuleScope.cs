@@ -15,7 +15,7 @@ public enum ModuleScope
     /// <summary>
     /// Module is initialized inside scene_X_init().
     /// Reloaded every time the scene is entered.
-    /// Example: Palette, Tilemap, Scroll, Text.display (static), Enemy, Sprite (boss)
+    /// Example: Palette, Plane, Scroll, Text.display (static), Enemy, Sprite (boss)
     /// </summary>
     Scene
 }

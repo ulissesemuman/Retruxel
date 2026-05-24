@@ -146,11 +146,11 @@ public interface ITarget
     HudStrategy GetHudStrategy() => HudStrategy.None;
 
     /// <summary>
-    /// Returns the maximum number of palettes that can be assigned to a single tilemap.
+    /// Returns the maximum number of palettes that can be assigned to a single plane.
     /// Used by SceneEditor to validate palette assignments.
     /// Example: SMS returns 2 (one for each half of the screen).
     /// </summary>
-    int GetMaxPalettesPerTilemap() => int.MaxValue;
+    int GetMaxPalettesPerPlane() => int.MaxValue;
 
     /// <summary>
     /// Number of palette slots available per scene on this hardware.

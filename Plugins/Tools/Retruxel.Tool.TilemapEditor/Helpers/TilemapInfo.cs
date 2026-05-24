@@ -5,9 +5,9 @@ using System.Collections.Generic;
 namespace Retruxel.Tool.TilemapEditor.Helpers;
 
 /// <summary>
-/// Manages tilemap layer data and operations.
+/// Manages plane layer data and operations.
 /// </summary>
-public class TilemapData
+public class PlaneInfo
 {
     private List<TileEntry[]> _layers = new();
     private int _width;

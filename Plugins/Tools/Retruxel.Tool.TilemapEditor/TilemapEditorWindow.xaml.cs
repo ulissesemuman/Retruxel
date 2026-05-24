@@ -3,8 +3,11 @@ using Retruxel.Core.Models;
 using Retruxel.Core.Services;
 using Retruxel.Lib.ImageProcessing;
 using Retruxel.Tool.TilemapEditor.Helpers;
+using TilemapEditorData = Retruxel.Tool.TilemapEditor.Helpers.PlaneInfo;
+using Retruxel.Core.Models;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Windows;
 
 namespace Retruxel.Tool.TilemapEditor;
@@ -17,7 +20,7 @@ public enum ToolMode
 
 /// <summary>
 /// Tilemap Editor Window - 100% target-agnostic.
-/// Generates UI dynamically based on target.Specs.Tilemap.
+/// Generates UI dynamically based on target.Specs.Plane.
 /// </summary>
 public partial class TilemapEditorWindow : Window
 {
@@ -27,8 +30,9 @@ public partial class TilemapEditorWindow : Window
     private readonly ToolRegistry? _toolRegistry;
     private readonly Func<System.Threading.Tasks.Task>? _saveProjectCallback;
     private readonly object? _sceneEditor;
+    private readonly PlaneSpecs _planeSpecs;  // specs of the plane being edited
 
-    private readonly TilemapData _tilemapData = new();
+    private readonly TilemapEditorData _planeData = new();
     private readonly TilesetRenderer _tilesetRenderer = new();
     private readonly IndexedPngService _indexedPngService = new();
 
@@ -49,7 +53,7 @@ public partial class TilemapEditorWindow : Window
 
     public Dictionary<string, object>? ModuleData { get; private set; }
 
-    public TilemapEditorWindow(ITarget target, RetruxelProject project, string projectPath, ToolRegistry? toolRegistry = null, Func<System.Threading.Tasks.Task>? saveProjectCallback = null, object? sceneEditor = null)
+    public TilemapEditorWindow(ITarget target, RetruxelProject project, string projectPath, ToolRegistry? toolRegistry = null, Func<System.Threading.Tasks.Task>? saveProjectCallback = null, object? sceneEditor = null, string? planeId = null)
     {
         InitializeComponent();
 
@@ -67,6 +71,15 @@ public partial class TilemapEditorWindow : Window
                 System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
             _currentScene = sceneField?.GetValue(sceneEditor) as SceneData;
         }
+
+        // Resolve PlaneSpecs for the plane being edited.
+        // If planeId is provided (from VisualToolInvoker via planeData), use it.
+        // Otherwise fall back to the first plane defined by the target.
+        _planeSpecs = (planeId is not null
+            ? target.Specs.Planes.FirstOrDefault(p => p.Id == planeId)
+            : null)
+            ?? target.Specs.Planes.FirstOrDefault()
+            ?? new PlaneSpecs();
 
         TxtTargetLabel.Text = target.DisplayName.ToUpper();
 

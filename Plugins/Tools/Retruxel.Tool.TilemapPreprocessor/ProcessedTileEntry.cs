@@ -1,4 +1,4 @@
-namespace Retruxel.Tool.TilemapPreprocessor;
+namespace Retruxel.Tool.PlanePreprocessor;
 
 /// <summary>
 /// Represents a processed tile entry ready for code generation.

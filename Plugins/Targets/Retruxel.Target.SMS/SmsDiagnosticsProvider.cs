@@ -16,14 +16,18 @@ public class SmsDiagnosticsProvider
     {
         var metrics = new List<BuildDiagnosticMetric>();
 
-        // VRAM.Tiles — count unique tiles in generated source files
-        var tileCount = CountTiles(input.SourceFiles);
+        // VRAM.Tiles — count unique tiles in generated source files.
+        // SMS tiles are 32 bytes each (4bpp planar 8x8).
+        // Derive max tiles from VramBytesForTiles / BytesPerTile of the first BG plane.
+        var bytesPerTile = input.Specs.Planes.FirstOrDefault()?.BytesPerTile ?? 32;
+        var maxTiles     = bytesPerTile > 0 ? input.Specs.VramBytesForTiles / bytesPerTile : 0;
+        var tileCount    = CountTiles(input.SourceFiles);
         metrics.Add(new BuildDiagnosticMetric.Builder()
             .WithMetricId("vram.tiles")
             .WithDisplayName("VRAM Tiles")
             .WithCategory("VRAM")
             .WithCurrent(tileCount)
-            .WithMax(input.Specs.MaxTilesInVram)
+            .WithMax(maxTiles)
             .WithWarningThreshold(0.80)
             .WithErrorThreshold(1.0)
             .Build());
@@ -72,7 +76,7 @@ public class SmsDiagnosticsProvider
     /// <summary>
     /// Counts tiles in generated source files.
     /// Each 32 bytes = 1 tile (SMS 4bpp planar 8×8).
-    /// Looks for "const unsigned char" array declarations in tilemap/sprite modules.
+    /// Looks for "const unsigned char" array declarations in plane/sprite modules.
     /// </summary>
     private int CountTiles(IReadOnlyList<GeneratedFile> sourceFiles)
     {
@@ -80,9 +84,9 @@ public class SmsDiagnosticsProvider
         {
             var totalBytes = 0;
 
-            // Look for tile data in tilemap and sprite modules
+            // Look for tile data in plane and sprite modules
             var tileFiles = sourceFiles.Where(f =>
-                f.SourceModuleId.Contains("tilemap", StringComparison.OrdinalIgnoreCase) ||
+                f.SourceModuleId.Contains("plane", StringComparison.OrdinalIgnoreCase) ||
                 f.SourceModuleId.Contains("sprite", StringComparison.OrdinalIgnoreCase));
 
             foreach (var file in tileFiles)

@@ -14,7 +14,7 @@ using System.Windows.Shapes;
 namespace Retruxel.Tool.TilemapEditor;
 
 /// <summary>
-/// Handles rectangular selection in tileset and tilemap, plus paint preview.
+/// Handles rectangular selection in tileset and plane, plus paint preview.
 /// </summary>
 public partial class TilemapEditorWindow
 {
@@ -46,8 +46,8 @@ public partial class TilemapEditorWindow
             IsHitTestVisible = false
         };
 
-        // Add to tilemap canvas (will be positioned in RenderCanvas)
-        if (TilemapCanvas.Parent is ScrollViewer sv)
+        // Add to plane canvas (will be positioned in RenderCanvas)
+        if (PlaneCanvas.Parent is ScrollViewer sv)
         {
             // Canvas is inside ScrollViewer, we need to overlay it
             // This will be handled in Canvas_MouseMove
@@ -258,8 +258,8 @@ public partial class TilemapEditorWindow
         double scaledSize = tileSize * _canvasZoom;
 
         // Remove old preview
-        if (_paintPreviewRect != null && TilemapCanvas.Children.Contains(_paintPreviewRect))
-            TilemapCanvas.Children.Remove(_paintPreviewRect);
+        if (_paintPreviewRect != null && PlaneCanvas.Children.Contains(_paintPreviewRect))
+            PlaneCanvas.Children.Remove(_paintPreviewRect);
 
         // Create new preview rectangle
         _paintPreviewRect = new Rectangle
@@ -276,7 +276,7 @@ public partial class TilemapEditorWindow
         Canvas.SetTop(_paintPreviewRect, tileY * scaledSize);
         Canvas.SetZIndex(_paintPreviewRect, 1000); // Always on top
 
-        TilemapCanvas.Children.Add(_paintPreviewRect);
+        PlaneCanvas.Children.Add(_paintPreviewRect);
     }
 
     /// <summary>
@@ -284,15 +284,15 @@ public partial class TilemapEditorWindow
     /// </summary>
     private void HidePaintPreview()
     {
-        if (_paintPreviewRect != null && TilemapCanvas.Children.Contains(_paintPreviewRect))
+        if (_paintPreviewRect != null && PlaneCanvas.Children.Contains(_paintPreviewRect))
         {
-            TilemapCanvas.Children.Remove(_paintPreviewRect);
+            PlaneCanvas.Children.Remove(_paintPreviewRect);
             _paintPreviewRect = null;
         }
     }
 
     /// <summary>
-    /// Places a block of tiles on the tilemap.
+    /// Places a block of tiles on the plane.
     /// </summary>
     private void PlaceTileBlock(int startX, int startY)
     {
@@ -305,11 +305,11 @@ public partial class TilemapEditorWindow
             int targetX = startX + localX;
             int targetY = startY + localY;
 
-            if (targetX >= 0 && targetX < _tilemapData.Width &&
-                targetY >= 0 && targetY < _tilemapData.Height)
+            if (targetX >= 0 && targetX < _planeData.Width &&
+                targetY >= 0 && targetY < _planeData.Height)
             {
-                int index = targetY * _tilemapData.Width + targetX;
-                var currentLayer = _tilemapData.GetLayer(_currentLayerIndex);
+                int index = targetY * _planeData.Width + targetX;
+                var currentLayer = _planeData.GetLayer(_currentLayerIndex);
                 if (index >= 0 && index < currentLayer.Length)
                 {
                     // Block selection always without flip

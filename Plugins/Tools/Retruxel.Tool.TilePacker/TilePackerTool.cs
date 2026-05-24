@@ -35,7 +35,7 @@ public class TilePackerTool : ITool
 {
     public string ToolId => "retruxel.tool.tilepacker";
     public string DisplayName => "Tile Packer";
-    public string Description => "Platform-agnostic tilemap optimizer — deduplicates tiles by palette index";
+    public string Description => "Platform-agnostic plane optimizer — deduplicates tiles by palette index";
     public object? Icon => null;
     public string Category => "Optimization";
     public string? Shortcut => null;
@@ -87,7 +87,7 @@ public class TilePackerTool : ITool
         int totalTiles = tilesX * tilesY;
 
         var uniqueTiles = new List<byte[]>(totalTiles);
-        var tilemap = new List<TileEntry>(totalTiles);
+        var plane = new List<TileEntry>(totalTiles);
         var tileHashes = new Dictionary<string, int>(totalTiles);
 
         for (int ty = 0; ty < tilesY; ty++)
@@ -101,7 +101,7 @@ public class TilePackerTool : ITool
                                   uniqueTiles, tileHashes,
                                   enableFlipH, enableFlipV, enableRotation);
 
-                tilemap.Add(new TileEntry
+                plane.Add(new TileEntry
                 {
                     TileIndex = tileIndex,
                     X = tx,
@@ -117,9 +117,9 @@ public class TilePackerTool : ITool
         return new TilePackResult
         {
             UniqueTiles = uniqueTiles,
-            Tilemap = tilemap,
-            TilemapWidth = tilesX,
-            TilemapHeight = tilesY,
+            Plane = plane,
+            PlaneWidth = tilesX,
+            PlaneHeight = tilesY,
             OriginalTileCount = totalTiles,
             OptimizedTileCount = uniqueTiles.Count,
             CompressionRatio = totalTiles > 0 ? (double)uniqueTiles.Count / totalTiles : 0

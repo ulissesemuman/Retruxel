@@ -13,7 +13,7 @@ namespace Retruxel.Modules.Graphics;
 /// 2. pause - hold the logo visible
 /// 3. fade_out - gradually hide the logo
 /// 
-/// The splash uses a tilemap with an asset provided by the target
+/// The splash uses a plane with an asset provided by the target
 /// (via ITarget.GetSplashAsset()). The target can embed the asset
 /// in its assembly for a "Made with Retruxel" logo.
 /// 

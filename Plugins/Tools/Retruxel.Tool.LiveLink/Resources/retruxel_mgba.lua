@@ -10,8 +10,8 @@ function update()
         local line = client:receive()
         
         if line then
-            if line == "GET_TILEMAP" then
-                -- GBA: BG0 tilemap at 0x06000000
+            if line == "GET_PLANE" then
+                -- GBA: BG0 plane at 0x06000000
                 local data = emu.readBytes(0x06000000, 0x800, emu.memType.vram)
                 client:send(data)
             elseif line == "GET_PALETTE" then

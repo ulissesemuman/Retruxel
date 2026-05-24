@@ -4,13 +4,13 @@ using System;
 namespace Retruxel.Tool.TilemapEditor.Helpers;
 
 /// <summary>
-/// Handles tilemap data serialization to/from Base64.
+/// Handles plane data serialization to/from Base64.
 /// Uses 4 bytes per tile entry to store TileIndex + FlipH + FlipV + Rotation.
 /// </summary>
-public static class TilemapSerializer
+public static class PlaneSerializer
 {
     /// <summary>
-    /// Serializes tilemap data to Base64.
+    /// Serializes plane data to Base64.
     /// Format: 4 bytes per entry
     ///   Byte 0-1: tileIndex as ushort little-endian (0xFFFF = empty)
     ///   Byte 2: flags — bit 0 = flipH, bit 1 = flipV
@@ -51,7 +51,7 @@ public static class TilemapSerializer
     }
 
     /// <summary>
-    /// Deserializes tilemap data from Base64.
+    /// Deserializes plane data from Base64.
     /// </summary>
     public static TileEntry[] FromBase64(string base64Data, int expectedSize)
     {

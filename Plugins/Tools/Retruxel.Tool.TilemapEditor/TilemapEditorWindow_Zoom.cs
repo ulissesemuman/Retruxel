@@ -7,7 +7,7 @@ using System.Windows.Input;
 namespace Retruxel.Tool.TilemapEditor;
 
 /// <summary>
-/// Zoom and pan logic for both the tilemap canvas and the tileset canvas.
+/// Zoom and pan logic for both the plane canvas and the tileset canvas.
 /// Each canvas has independent zoom state. Both use the same Tiled-style
 /// multiplicative zoom step (factor 1.2 per mousewheel tick).
 /// </summary>
@@ -134,7 +134,7 @@ public partial class TilemapEditorWindow
     {
         base.OnKeyDown(e);
 
-        bool canvas = TilemapCanvas.IsMouseOver || CanvasScrollViewer.IsMouseOver;
+        bool canvas = PlaneCanvas.IsMouseOver || CanvasScrollViewer.IsMouseOver;
         bool tileset = TilesetCanvas.IsMouseOver || TilesetScrollViewer.IsMouseOver;
         bool any = canvas || tileset;
 
@@ -192,7 +192,7 @@ public partial class TilemapEditorWindow
         if (Keyboard.Modifiers == ModifierKeys.Control)
         {
             // Zoom centered on mouse position
-            Point mousePos = e.GetPosition(TilemapCanvas);
+            Point mousePos = e.GetPosition(PlaneCanvas);
             ZoomCanvasAtPoint(ticks > 0 ? _canvasZoom * ZoomStep : _canvasZoom / ZoomStep, mousePos);
             e.Handled = true;
         }
@@ -239,8 +239,8 @@ public partial class TilemapEditorWindow
         _panStartMouse = e.GetPosition(CanvasScrollViewer);
         _panStartScrollH = CanvasScrollViewer.HorizontalOffset;
         _panStartScrollV = CanvasScrollViewer.VerticalOffset;
-        TilemapCanvas.CaptureMouse();
-        TilemapCanvas.Cursor = Cursors.SizeAll;
+        PlaneCanvas.CaptureMouse();
+        PlaneCanvas.Cursor = Cursors.SizeAll;
     }
 
     internal void HandleCanvasPanMove(MouseEventArgs e)
@@ -257,8 +257,8 @@ public partial class TilemapEditorWindow
     {
         if (!_isPanning) return;
         _isPanning = false;
-        TilemapCanvas.ReleaseMouseCapture();
-        TilemapCanvas.Cursor = Cursors.Arrow;
+        PlaneCanvas.ReleaseMouseCapture();
+        PlaneCanvas.Cursor = Cursors.Arrow;
     }
 
     // Tileset mousewheel 

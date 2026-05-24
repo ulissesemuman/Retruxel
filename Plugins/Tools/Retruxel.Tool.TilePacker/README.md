@@ -1,6 +1,6 @@
 # Tile Packer
 
-Platform-agnostic tilemap optimizer that analyzes images and detects tile patterns.
+Platform-agnostic plane optimizer that analyzes images and detects tile patterns.
 
 ## Architecture
 
@@ -59,7 +59,7 @@ Wrappers configure the base tool and format output for specific hardware.
 }
 ```
 
-Automatically enables H/V flip (VDP supports both) and formats tilemap with VDP attribute flags.
+Automatically enables H/V flip (VDP supports both) and formats plane with VDP attribute flags.
 
 ### NES Wrapper
 
@@ -75,7 +75,7 @@ Automatically enables H/V flip (VDP supports both) and formats tilemap with VDP 
 }
 ```
 
-Automatically enables H/V flip (PPU supports both) and formats tilemap with attribute bytes.
+Automatically enables H/V flip (PPU supports both) and formats plane with attribute bytes.
 
 ### ColecoVision Wrapper
 
@@ -109,14 +109,14 @@ Disables all transformations (TMS9918 VDP has no flip/rotation support).
 | Field | Type | Description |
 |-------|------|-------------|
 | `uniqueTiles` | List<byte[]> | Array of unique tile data (RGBA) |
-| `tilemap` | List<TilemapEntry> | Tilemap with tile indices and transformation flags |
-| `tilemapWidth` | int | Width of tilemap in tiles |
-| `tilemapHeight` | int | Height of tilemap in tiles |
+| `plane` | List<PlaneEntry> | Plane with tile indices and transformation flags |
+| `planeWidth` | int | Width of plane in tiles |
+| `planeHeight` | int | Height of plane in tiles |
 | `originalTileCount` | int | Total number of tiles before optimization |
 | `optimizedTileCount` | int | Number of unique tiles after optimization |
 | `compressionRatio` | double | Ratio of unique tiles to original tiles (0.0 - 1.0) |
 
-### TilemapEntry Structure (Base Tool)
+### PlaneEntry Structure (Base Tool)
 
 ```csharp
 {
@@ -124,8 +124,8 @@ Disables all transformations (TMS9918 VDP has no flip/rotation support).
     FlipH: bool,       // Horizontal flip flag
     FlipV: bool,       // Vertical flip flag
     Rotation: int,     // Rotation angle (0, 90, 180, 270)
-    X: int,            // X position in tilemap
-    Y: int             // Y position in tilemap
+    X: int,            // X position in plane
+    Y: int             // Y position in plane
 }
 ```
 
@@ -222,10 +222,10 @@ public class TilePackerMyConsoleTool : ITool
 
         var result = _baseTool.Execute(input);
 
-        // Format tilemap for your console's video chip
-        var tilemap = (List<object>)result["tilemap"];
-        var formatted = FormatForMyConsole(tilemap);
-        result["tilemap"] = formatted;
+        // Format plane for your console's video chip
+        var plane = (List<object>)result["plane"];
+        var formatted = FormatForMyConsole(plane);
+        result["plane"] = formatted;
 
         return result;
     }

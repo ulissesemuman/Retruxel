@@ -1,7 +1,7 @@
-namespace Retruxel.Tool.TilemapPreprocessor;
+namespace Retruxel.Tool.PlanePreprocessor;
 
 /// <summary>
-/// Represents a single tile placement in the tilemap.
+/// Represents a single tile placement in the plane.
 /// Stores tile identity and transformation intent — no hardware-specific encoding.
 /// </summary>
 public class TileEntry

@@ -9,7 +9,7 @@ namespace Retruxel.Core.Interfaces;
 ///
 /// Naming convention (enforced by reflection lookup):
 ///   Class name must be: {TargetPrefix}{ToolId_PascalCase}Extension
-///   Ex: SmsTilemapPreprocessorExtension, NesPngToTilesExtension
+///   Ex: SmsPlanePreprocessorExtension, NesPngToTilesExtension
 ///
 /// The ModuleRenderer calls Execute() after the generic tool's Execute(),
 /// and merges the results — extension keys overwrite generic keys on conflict.

@@ -16,7 +16,7 @@ void scene_{{sceneName}}_init(void);
 #include "SMSlib.h"
 #include "engine.h"
 #include "scene_{{sceneName}}.h"
-{{#each tilemapInits}}
+{{#each planeInits}}
 #include "{{this.header}}"
 {{/each}}
 {{#each textStaticInits}}
@@ -41,8 +41,8 @@ void scene_{{sceneName}}_init(void) {
     SMS_loadBGPalette(scene_{{sceneName}}_palette_0);
     SMS_loadSpritePalette(scene_{{sceneName}}_palette_1);
 
-    // Tilemap layers
-{{#each tilemapInits}}
+    // Plane layers
+{{#each planeInits}}
     {{this.call}}();
     Engine_Render(&g_gameState);
     Engine_ClearDirtyFlags(&g_gameState);

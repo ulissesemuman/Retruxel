@@ -82,7 +82,7 @@ internal static class EventCallGenerator
 
         var graphicModuleIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
         {
-            "tilemap", "sprite", "text.display", "palette", "background", "animation"
+            "plane", "sprite", "text.display", "palette", "background", "animation"
         };
 
         var allCalls = new List<(string fileName, string moduleId, string baseName, bool isGraphic, bool isTextDisplay, bool isPalette)>();

@@ -1,10 +1,10 @@
 ﻿{
-  "moduleId": "tilemap",
-  "targetId": "sg1000",
-  "displayName": "SG-1000 Tilemap CodeGen",
-  "description": "Generates C code for SG-1000 tilemap with collision detection using bitfield lookup",
+  "moduleId": "plane",
+  "targetId": "gg",
+  "displayName": "Game Gear Plane CodeGen",
+  "description": "Generates C code for Game Gear plane with collision detection using bitfield lookup",
   "version": "1.0.0",
-  "template": "tilemap.c.rtrx",
+  "template": "plane.c.rtrx",
   "variables": {
     "tilesAssetId": { "from": "module", "path": "tilesAssetId", "default": "" },
     "mapAssetId": { "from": "module", "path": "mapAssetId", "default": "" },
@@ -18,7 +18,7 @@
     "maxTileSlots": { "from": "module", "path": "maxTileSlots", "default": 448 },
     "preprocessed": {
       "from": "tool",
-      "tool": "tilemap_preprocessor",
+      "tool": "plane_preprocessor",
       "toolInput": {
         "solidTiles": "solidTiles",
         "mapData": "mapData",

@@ -30,11 +30,6 @@ public class SmsTarget : ITarget, IPaletteConverter
         // Tiles
         TileWidth = 8,
         TileHeight = 8,
-        VramRegions =
-        [
-            new VramRegion("bg",     "Background", 0,   255),
-            new VramRegion("sprite", "Sprites",    256, 447)
-        ],
 
         // Colors & Palettes
         // SMS VDP: 2 bits per channel (R, G, B) → 4 levels per channel → 64 total colors
@@ -46,20 +41,34 @@ public class SmsTarget : ITarget, IPaletteConverter
         BgPalettes = 2,   // both palettes available for BG tiles
         SpritePalettes = 2,   // both palettes available for sprites
 
-        // Tilemap
-        Tilemap = new TilemapSpecs
-        {
-            MaxLayers = 1,
-            SupportsHorizontalFlip = true,
-            SupportsVerticalFlip = true,
-            SupportsRotation = false,
-            PaletteMode = PaletteMode.PerTile,
-            PaletteBitsPerTile = 1,  // 2 palettes (0 or 1)
-            DefaultWidth = 32,
-            DefaultHeight = 28,
-            MaxWidth = 64,
-            MaxHeight = 64
-        },
+        // BG Planes
+        // SMS has a single scrollable BG plane (Name Table).
+        // Sprites are implicit — controlled by MaxSpritesOnScreen/SpritesPerScanline.
+        Planes =
+        [
+            new PlaneSpecs
+            {
+                Id                   = "bg",
+                Label                = "Background",
+                SupportsHorizontalFlip = true,
+                SupportsVerticalFlip   = true,
+                SupportsRotation       = false,
+                PaletteMode            = PaletteMode.PerTile,
+                BitsPerPixel           = 4,   // 16-color → 4bpp → 32 bytes per tile
+                PaletteBitsPerTile     = 1,   // 1 bit → 2 palettes (0 or 1)
+                DefaultWidth           = 32,
+                DefaultHeight          = 28,
+                MaxWidth               = 64,
+                MaxHeight              = 64,
+            }
+        ],
+
+        // VRAM
+        // SMS VRAM: 16 KB total
+        //   Name Table:  32×28 × 2 bytes = 1792 bytes
+        //   SAT:         256 bytes (64 sprites × 4 bytes)
+        //   Tiles:       remaining ≈ 14336 bytes → 448 tiles × 32 bytes
+        VramBytesForTiles = 14336,
 
         // Sprites
         SpritesPerScanline = 8,
@@ -134,7 +143,7 @@ public class SmsTarget : ITarget, IPaletteConverter
             new Retruxel.Modules.Logic.AnimationModule(),
             new Retruxel.Modules.Logic.ScrollModule(),
             new Retruxel.Modules.Graphics.PaletteModule(),
-            new Retruxel.Modules.Graphics.TilemapModule(),
+            new Retruxel.Modules.Graphics.PlaneModule(),
             new Retruxel.Modules.Graphics.SpriteModule(),
             new Retruxel.Modules.Graphics.TextDisplayModule(),
             new Retruxel.Modules.Graphics.FadeInModule(),
@@ -151,22 +160,19 @@ public class SmsTarget : ITarget, IPaletteConverter
         {
             TemplateId = "sms.blank",
             DisplayName = "Blank Project",
-            Description = "Empty SMS project with no pre-configured modules.",
-            DefaultModules = []
+            Description = "Empty SMS project with no pre-configured modules."
         },
         new ProjectTemplate
         {
             TemplateId = "sms.platformer",
             DisplayName = "Platformer",
-            Description = "Pre-configured with tiles, sprites, physics and input modules.",
-            DefaultModules = []
+            Description = "Pre-configured with tiles, sprites, physics and input modules."
         },
         new ProjectTemplate
         {
             TemplateId = "sms.beatemup",
             DisplayName = "Beat Em Up",
-            Description = "Pre-configured for side-scrolling beat em up games.",
-            DefaultModules = []
+            Description = "Pre-configured for side-scrolling beat em up games."
         }
     ];
 
@@ -279,7 +285,6 @@ public class SmsTarget : ITarget, IPaletteConverter
             SourceWidth = 144,
             SourceHeight = 112,
             ImportedAt = new DateTime(2026, 5, 18, 12, 2, 57, 466, DateTimeKind.Local),
-            VramRegionId = "bg",
             GenerationParams = new AssetGenerationParams
             {
                 ColorSpace = "LAB",
@@ -381,15 +386,14 @@ public class SmsTarget : ITarget, IPaletteConverter
             .ToList();
 
         // Modules that have init functions (not text.display)
-        var modulesWithInit = new HashSet<string> { "entity", "enemy", "scroll", "palette", "tilemap", "sprite", "input", "physics", "animation" };
+        var modulesWithInit = new HashSet<string> { "entity", "enemy", "scroll", "palette", "plane", "sprite", "input", "physics", "animation" };
+        // Modules that have update functions
+        var modulesWithUpdate = new HashSet<string> { "entity", "enemy", "scroll", "input", "physics", "animation" };
 
         // Generate init calls - one per module type
         var initCalls = moduleGroups
             .Where(g => modulesWithInit.Contains(g.Key))
             .Select(g => $"    {g.Key.Replace(".", "_")}_init();");
-
-        // Modules that have update functions
-        var modulesWithUpdate = new HashSet<string> { "entity", "enemy", "scroll", "input", "physics", "animation" };
 
         var updateCalls = moduleGroups
             .Where(g => modulesWithUpdate.Contains(g.Key))

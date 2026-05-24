@@ -10,7 +10,7 @@ function update()
         local line = client:receive()
         
         if line then
-            if line == "GET_TILEMAP" then
+            if line == "GET_PLANE" then
                 local data = emu.readBytes(0x0000, 0x800, emu.memType.snesVram)
                 client:send(data)
             elseif line == "GET_PALETTE" then

@@ -9,7 +9,7 @@ public interface IUndoableCommand
 {
     /// <summary>
     /// Human-readable description shown in the undo/redo history.
-    /// Ex: "Move Player Entity", "Change speed to 4", "Add Tilemap"
+    /// Ex: "Move Player Entity", "Change speed to 4", "Add Plane"
     /// </summary>
     string Description { get; }
 

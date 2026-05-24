@@ -56,7 +56,7 @@ public class ParameterDefinition
     /// <summary>Internal parameter name. Used as JSON key. Ex: "gravityStrength"</summary>
     public string Name { get; set; } = string.Empty;
 
-    /// <summary>Label shown in the UI. Ex: "Gravity Strength"</summary>
+    /// <summary>LayerName shown in the UI. Ex: "Gravity Strength"</summary>
     public string DisplayName { get; set; } = string.Empty;
 
     /// <summary>Helper text shown as tooltip in the UI.</summary>

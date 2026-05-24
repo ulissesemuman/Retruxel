@@ -13,7 +13,7 @@ function update()
         local line = client:receive()
         
         if line then
-            if line == "GET_TILEMAP" then
+            if line == "GET_PLANE" then
                 -- BGB: Background map at 0x9800-0x9BFF
                 local data = emu.readBytes(0x9800, 0x400, emu.memType.vram)
                 client:send(data)

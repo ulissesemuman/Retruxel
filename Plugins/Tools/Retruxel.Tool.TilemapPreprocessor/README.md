@@ -1,10 +1,10 @@
-# Tilemap Preprocessor Tool
+# Plane Preprocessor Tool
 
-Generic tool for processing tilemap collision and map data.
+Generic tool for processing plane collision and map data.
 
 ## Purpose
 
-This tool processes raw tilemap data and returns numeric arrays that CodeGen templates can format as needed. It's completely **target-agnostic** and reusable across multiple consoles.
+This tool processes raw plane data and returns numeric arrays that CodeGen templates can format as needed. It's completely **target-agnostic** and reusable across multiple consoles.
 
 ## What It Does
 
@@ -50,7 +50,7 @@ Returns a dictionary with processed data:
     "maxTileSlots": { "from": "module", "path": "maxTileSlots", "default": 448 },
     "preprocessed": {
       "from": "tool",
-      "tool": "tilemap_preprocessor",
+      "tool": "plane_preprocessor",
       "toolInput": {
         "solidTiles": "solidTiles",
         "mapData": "mapData",

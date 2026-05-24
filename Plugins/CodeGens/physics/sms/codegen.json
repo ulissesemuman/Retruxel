@@ -11,6 +11,6 @@
     "groundY": { "from": "module", "path": "groundY", "default": 160 },
     "screenLeft": { "from": "module", "path": "screenLeft", "default": 0 },
     "screenRight": { "from": "module", "path": "screenRight", "default": 240 },
-    "useTilemap": { "from": "module", "path": "useTilemap", "default": false }
+    "usePlane": { "from": "module", "path": "usePlane", "default": false }
   }
 }

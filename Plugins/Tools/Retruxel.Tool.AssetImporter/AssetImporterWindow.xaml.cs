@@ -36,7 +36,7 @@ public partial class AssetImporterWindow : Window
     private readonly ITarget _target;
     private readonly string _projectPath;
     private readonly SceneData? _currentScene;
-    private readonly List<RadioButton> _regionRadioButtons = new();
+    private readonly List<RadioButton> _planeRadioButtons = new();
 
     private string? _sourcePngPath;
     private SKBitmap? _reducedPreview;
@@ -59,7 +59,7 @@ public partial class AssetImporterWindow : Window
         _currentScene = currentScene;
 
         TxtTargetLabel.Text = target.DisplayName.ToUpper();
-        GenerateRegionControls();
+        GeneratePlaneControls();
         ApplyLocalization();
 
         _isInitialized = true;
@@ -72,45 +72,68 @@ public partial class AssetImporterWindow : Window
         // Labels already set in XAML
     }
 
-    private void GenerateRegionControls()
+    /// <summary>
+    /// Generates one radio button per hardware plane defined in the target.
+    /// Falls back to a single "BG" button if the target has no planes defined.
+    /// </summary>
+    private void GeneratePlaneControls()
     {
-        var regions = _target.Specs.VramRegions;
-        if (regions == null || regions.Length == 0) return;
-
-        for (int i = 0; i < regions.Length; i++)
+        var planes = _target.Specs.Planes;
+        if (planes == null || planes.Length == 0)
         {
-            var region = regions[i];
+            // Fallback: single generic BG plane
             var rb = new RadioButton
             {
-                Content = region.Label.ToUpper(),
-                GroupName = "VramRegion",
+                Content = "BG",
+                GroupName = "PlaneSelector",
+                IsChecked = true,
+                Style = (Style)FindResource("SegmentedRadio"),
+                Margin = new Thickness(0, 0, 8, 0),
+                Tag = "bg"
+            };
+            _planeRadioButtons.Add(rb);
+            RegionSelector.Children.Add(rb);
+            return;
+        }
+
+        for (int i = 0; i < planes.Length; i++)
+        {
+            var plane = planes[i];
+            var rb = new RadioButton
+            {
+                Content = plane.Label.ToUpper(),
+                GroupName = "PlaneSelector",
                 IsChecked = i == 0,
                 Style = (Style)FindResource("SegmentedRadio"),
                 Margin = new Thickness(0, 0, 8, 0),
-                Tag = region.Id
+                Tag = plane.Id
             };
-            _regionRadioButtons.Add(rb);
+            _planeRadioButtons.Add(rb);
             RegionSelector.Children.Add(rb);
         }
     }
 
-    private string GetSelectedRegionId()
+    /// <summary>Returns the PlaneId of the currently selected plane radio button.</summary>
+    private string GetSelectedPlaneId()
     {
-        var selected = _regionRadioButtons.FirstOrDefault(rb => rb.IsChecked == true);
-        return selected?.Tag as string ?? _target.Specs.VramRegions[0].Id;
+        var selected = _planeRadioButtons.FirstOrDefault(rb => rb.IsChecked == true);
+        return selected?.Tag as string ?? _target.Specs.Planes.FirstOrDefault()?.Id ?? "bg";
     }
 
-    /// <summary>Pre-selects a specific VRAM region by ID before the window is shown.</summary>
-    public void PreSelectRegion(string regionId)
+    /// <summary>Pre-selects a specific plane by PlaneId before the window is shown.</summary>
+    public void PreSelectPlane(string planeId)
     {
-        var rb = _regionRadioButtons.FirstOrDefault(r => r.Tag as string == regionId);
+        var rb = _planeRadioButtons.FirstOrDefault(r => r.Tag as string == planeId);
         if (rb != null)
         {
             rb.IsChecked = true;
-            foreach (var other in _regionRadioButtons.Where(r => r != rb))
+            foreach (var other in _planeRadioButtons.Where(r => r != rb))
                 other.IsChecked = false;
         }
     }
+
+    /// <summary>Backward-compatible overload — maps a legacy regionId to the closest PlaneId.</summary>
+    public void PreSelectRegion(string regionId) => PreSelectPlane(regionId);
 
 
     private void TitleBar_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
@@ -341,7 +364,7 @@ public partial class AssetImporterWindow : Window
         if (_sourcePngPath is null || _reducedPreview is null) return;
 
         var assetName = TxtAssetName.Text.Trim();
-        var regionId = GetSelectedRegionId();
+        var planeId   = GetSelectedPlaneId();
 
         try
         {
@@ -415,7 +438,7 @@ public partial class AssetImporterWindow : Window
                 assetName,
                 _sourcePngPath,
                 _projectPath,
-                regionId,
+                planeId,
                 _target,
                 _chosenPaletteSlot,
                 mapIndex,

@@ -134,7 +134,7 @@ public partial class CodeGenerator
     private static int CalculateGraphicTilesEnd(RetruxelProject project)
     {
         // Simple heuristic: reserve 256 tiles for graphics
-        // In production, this would scan tilemap/sprite modules for actual usage
+        // In production, this would scan plane/sprite modules for actual usage
         return 256;
     }
 }

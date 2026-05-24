@@ -1,0 +1,123 @@
+Compacting your chat history, this may take a moment.
+
+Conversation Summary
+SceneEditorView UI Improvements : Added separator above BtnNewScene button and created Documentation button below it with separator. Restructured bottom section using StackPanel with proper spacing and Grid layout for icon/text separation in Documentation button.
+
+BuildConsoleView Statistics : Added TotalAssetsLabel and TxtElapsedTimeLabel with localization keys. Implemented build statistics display showing total project elements and build duration. Fixed XAML structure using StackPanel for vertical layout with labels on top and values below.
+
+Landing Page Version Automation : Implemented automatic version fetching from GitHub API (ulissesemuman/Retruxel) in landing page. Updated hero meta to show dynamic version from latest release/tag with fallback to hardcoded v0.6.0-alpha. Fixed GitHub repository links.
+
+Release v0.7.0-alpha Creation : Incremented version from 0.6.0 to 0.7.0-alpha in Retruxel.csproj and installer.iss. Created comprehensive RELEASE_v0.7.0-alpha.md with features (Undo/Redo system, build statistics), bug fixes (TextDisplayModule interface, duplicate entity.c), and UI improvements. Merged dev to master, created annotated tag, pushed to GitHub.
+
+Release Notes Organization : Created releases/ folder for historical release notes. Moved RELEASE_v0.4.0, v0.5.0, v0.6.0 to releases folder. Updated .gitignore to allow releases/ folder. Created releases/README.md documenting the structure.
+
+Installer.iss Syntax Fix : Corrected [Run] section by removing invalid Name: parameter. The section should only have Filename:, Description:, and Flags: parameters.
+
+GitHub Actions Workflow Fixes : Added permissions: contents: write to workflow. Changed trigger from branches: master to tags: v*. Fixed version extraction to use tag name instead of csproj. Removed tag existence check. Added file verification step. Updated to action-gh-release@v2. Fixed installer output path.
+
+Version Increment to 0.7.1-alpha : Bumped version to 0.7.1-alpha to avoid release conflicts. Created RELEASE_v0.7.1-alpha.md as hotfix release. Moved RELEASE_v0.7.0-alpha.md to releases/ folder. Created and pushed v0.7.1-alpha tag successfully.
+
+README Screenshot Update : Changed screenshot reference from docs/screenshot.png to docs/builder.png.
+
+Social Media Publishing Discussion : Explored options for automating Discord and Reddit posts. Determined that direct API access is not possible from the AI. Proposed creating external Retruxel.SocialPublisher console application that can be called via executeBash. Provided complete specification including Discord Webhook API, Reddit OAuth2 API, configuration structure, command-line interface, templates, and implementation details.
+
+Landing Page Download Section : Discussed where "Get Started" button should point. Recommended GitHub releases/latest for immediate use, with future enhancement to create dedicated download section with automatic version detection via GitHub API.
+
+Files and Code Summary
+Retruxel.csproj ( F:\Junior\Desenvolvimento de Jogos\Ports\Master System\Retruxel\Retruxel\Retruxel.csproj): Version updated to 0.7.1-alpha with AssemblyVersion 0.7.1.0
+
+installer.iss ( F:\Junior\Desenvolvimento de Jogos\Ports\Master System\Retruxel\installer.iss): Version 0.7.1-alpha. Fixed [Run] section syntax by removing Name: parameter, keeping only Filename:, Description:, and Flags:
+
+SceneEditorView.xaml ( F:\Junior\Desenvolvimento de Jogos\Ports\Master System\Retruxel\Retruxel\Views\SceneEditorView.xaml): Bottom section (Grid.Row="2") changed from single Button to StackPanel containing: Separator, BtnNewScene, Separator, BtnDocumentation (with Grid layout for icon/text separation using 14px and * columns)
+
+BuildConsoleView.xaml ( F:\Junior\Desenvolvimento de Jogos\Ports\Master System\Retruxel\Retruxel\Views\BuildConsoleView.xaml): Added TotalAssetsPanel and ElapsedTimePanel Borders with StackPanel layout. Labels on top, values below with 8px margin. Both panels have Visibility="Collapsed" initially.
+
+BuildConsoleView.xaml.cs ( F:\Junior\Desenvolvimento de Jogos\Ports\Master System\Retruxel\Retruxel\Views\BuildConsoleView.xaml.cs): Added _buildStartTime field. Captures start time in BuildAsync. Added ShowBuildStats method calculating total elements via project.Scenes.Sum(s => s.Elements.Count) and elapsed time. Displays in format "X.XXs". Added localization for TotalAssetsLabel and TxtElapsedTimeLabel.
+
+en.json & pt-BR.json ( F:\Junior\Desenvolvimento de Jogos\Ports\Master System\Retruxel\Retruxel\Assets\Localization\): Added keys: buildconsole.total_assets ("TOTAL ASSETS"/"TOTAL DE ASSETS"), buildconsole.elapsed_time ("ELAPSED TIME"/"TEMPO DECORRIDO")
+
+index.html ( F:\Junior\Desenvolvimento de Jogos\Ports\Master System\retruxel-landing-page\index.html): Added id="version-display" to version span. Implemented JavaScript to fetch latest release from GitHub API (ulissesemuman/Retruxel) with fallback to tags. Updated GitHub links to point to actual repository. Hero meta shows v0.6.0-alpha as fallback.
+
+release-with-installer.yml ( F:\Junior\Desenvolvimento de Jogos\Ports\Master System\Retruxel\.github\workflows\release-with-installer.yml): Added permissions: contents: write. Changed trigger to tags: v*. Extract version from github.ref_name. Removed check_tag step. Added "Verify files before release" step showing file sizes. Added "Rename installer" step moving from Output/ to root. Updated to softprops/action-gh-release@v2.
+
+README.md ( F:\Junior\Desenvolvimento de Jogos\Ports\Master System\Retruxel\README.md): Screenshot reference changed from docs/screenshot.png to docs/builder.png
+
+RELEASE_v0.7.1-alpha.md ( F:\Junior\Desenvolvimento de Jogos\Ports\Master System\Retruxel\RELEASE_v0.7.1-alpha.md): Hotfix release notes documenting CI/CD fixes, installer syntax correction, README update, and includes all v0.7.0-alpha features
+
+releases/ folder structure: Contains RELEASE_v0.4.0-alpha.md, RELEASE_v0.5.0-alpha.md, RELEASE_v0.6.0-alpha.md, RELEASE_v0.7.0-alpha.md, and README.md documenting the archive
+
+Key Insights
+INSIGHT : User prefers Portuguese responses when communicating in Portuguese
+
+INSIGHT : Retruxel is a visual IDE for retro game development targeting Sega Master System, NES, Game Gear, SG-1000, and ColecoVision
+
+INSIGHT : Project uses .NET 10 WPF with custom "Neo-Technical Archive" design system
+
+INSIGHT : Release workflow uses GitHub Actions with Inno Setup for installer creation
+
+INSIGHT : Naming convention for UI controls: concise and consistent (e.g., TotalAssets, TxtElapsedTime)
+
+INSIGHT : Layout pattern: Grid with Height="*" for expandable content and Height="Auto" for fixed sections
+
+INSIGHT : Inno Setup [Run] section does not support Name: parameter - only Filename:, Description:, and Flags:
+
+INSIGHT : GitHub Actions requires explicit permissions: contents: write to create releases
+
+INSIGHT : Tag-based releases (tags: v*) are preferred over branch-based triggers for release workflows
+
+INSIGHT : User wants to automate social media posts for releases but AI cannot directly access external APIs
+
+INSIGHT : Solution is to create external executable (Retruxel.SocialPublisher) that AI can call via executeBash
+
+INSIGHT : Discord uses Webhooks (simpler) or Bot API; Reddit uses OAuth2 API
+
+INSIGHT : Repository: https://github.com/ulissesemuman/Retruxel
+
+INSIGHT : Local path: F:\Junior\Desenvolvimento de Jogos\Ports\Master System\Retruxel
+
+INSIGHT : Current version: 0.7.1-alpha
+
+Most Recent Topic
+Topic : Landing page "Get Started" button destination and social media automation
+
+Progress :
+
+Discussed where "Get Started" button should point on landing page
+
+Recommended GitHub releases/latest as immediate solution
+
+Proposed future enhancement with dedicated download section using GitHub API for automatic version detection
+
+Explored social media automation options (Discord and Reddit)
+
+Determined AI cannot directly access external APIs
+
+Proposed creating external Retruxel.SocialPublisher console application
+
+Provided comprehensive specification document for the publisher application
+
+Tools Used :
+
+fsRead (landing page index.html) : Verified current structure and links
+
+Discussion : Analyzed three options for "Get Started" destination: GitHub Releases (recommended now), #download section (needs implementation), dedicated /download page (future)
+
+Specification Creation : Provided complete technical specification for Retruxel.SocialPublisher including:
+
+Command-line interface design (release, post, test, dry-run commands)
+
+Configuration file structure (social-config.json with Discord webhook and Reddit OAuth2)
+
+API integration details (Discord Webhook API, Reddit API with OAuth2)
+
+Template system for Discord embeds and Reddit markdown posts
+
+RELEASE_*.md parsing logic
+
+Error handling and logging requirements
+
+Project structure with Publishers/, Models/, Templates/, Utils/ folders
+
+NuGet packages: System.CommandLine, Newtonsoft.Json, Reddit.NET
+
+Example usage: Retruxel.SocialPublisher.exe release --version 0.7.1-alpha

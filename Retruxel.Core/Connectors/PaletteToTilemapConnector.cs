@@ -8,9 +8,9 @@ namespace Retruxel.Core.Connectors;
 /// Connector that passes palette data back to TilemapEditor (or other calling tool).
 /// Does NOT create a module — just returns temporary data for the caller to use.
 /// </summary>
-public class PaletteToTilemapConnector : IToolConnector
+public class PaletteToPlaneConnector : IToolConnector
 {
-    public string ConnectorId => "palette_to_tilemap";
+    public string ConnectorId => "palette_to_plane";
 
     public void Connect(Dictionary<string, object> toolOutput, ToolExecutionContext context)
     {

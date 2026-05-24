@@ -181,4 +181,130 @@ public static class VisualToolInvoker
 
         return true;
     }
+
+    /// <summary>
+    /// Opens the tilemap editor for a typed PlaneLayerData.
+    /// Persists changes back to the layer's AssetId and tile data.
+    /// </summary>
+    public static bool OpenTilemapEditor(
+        PlaneLayerData layer,
+        ITarget target,
+        RetruxelProject project,
+        string projectPath,
+        SceneData scene,
+        Func<Task>? saveProjectCallback = null,
+        object? sceneEditor = null)
+    {
+        if (_toolRegistry is null) return false;
+
+        var visualTool = _toolRegistry.GetVisualTool("plane_editor");
+        if (visualTool is null) return false;
+
+        // Find the PlaneData that owns this layer so the editor knows which PlaneSpecs to use
+        var planeData = scene.Planes.FirstOrDefault(p => p.Layers.Contains(layer));
+
+        var input = new Dictionary<string, object>
+        {
+            ["target"]      = target,
+            ["project"]     = project,
+            ["projectPath"] = projectPath,
+            ["scene"]       = scene,
+            ["layer"]       = layer,
+            ["toolRegistry"]= _toolRegistry
+        };
+
+        if (planeData is not null)           input["planeData"]           = planeData;
+        if (saveProjectCallback is not null) input["saveProjectCallback"] = saveProjectCallback;
+        if (sceneEditor is not null)         input["sceneEditor"]         = sceneEditor;
+
+        var window = visualTool.CreateWindow(input);
+        if (window is not Window wpfWindow) return false;
+
+        wpfWindow.Owner = Application.Current.MainWindow;
+        var result = wpfWindow.ShowDialog();
+        if (result != true) return false;
+
+        // Persist layer data from window
+        var moduleDataProp = window.GetType().GetProperty("ModuleData");
+        if (moduleDataProp?.GetValue(window) is Dictionary<string, object> moduleData)
+        {
+            if (moduleData.TryGetValue("tilesAssetId", out var assetIdObj))
+                layer.AssetId = assetIdObj?.ToString() ?? layer.AssetId;
+
+            // Update layer dimensions so the preview renders at the correct size.
+            if (moduleData.TryGetValue("mapWidth", out var wObj) && wObj is int w)
+                layer.Width = w;
+            if (moduleData.TryGetValue("mapHeight", out var hObj) && hObj is int h)
+                layer.Height = h;
+
+            // PaletteSlot belongs to PlaneData (the hardware plane), not to the layer.
+            if (planeData is not null &&
+                moduleData.TryGetValue("paletteSlot", out var slotObj) &&
+                slotObj is int slot)
+            {
+                planeData.PaletteSlot = slot;
+            }
+
+            // Rebuild Tiles from mapData if present.
+            // mapData is an object[] of anonymous objects {tileIndex, flipH, flipV, rotation}.
+            // Serialize to JSON first so TileEntry's JsonPropertyName attributes are respected.
+            if (moduleData.TryGetValue("mapData", out var mapDataObj))
+            {
+                var json    = System.Text.Json.JsonSerializer.Serialize(mapDataObj);
+                var entries = System.Text.Json.JsonSerializer.Deserialize<List<TileEntry>>(json);
+                if (entries is not null)
+                    layer.Tiles = entries;
+            }
+        }
+
+        saveProjectCallback?.Invoke();
+        return true;
+    }
+
+    /// <summary>
+    /// Opens the sprite editor for a typed EntityData.
+    /// Persists changes back to the entity's SpriteAssetId.
+    /// </summary>
+    public static bool OpenSpriteEditor(
+        EntityData entity,
+        ITarget target,
+        RetruxelProject project,
+        string projectPath,
+        SceneData scene,
+        Func<Task>? saveProjectCallback = null,
+        object? sceneEditor = null)
+    {
+        if (_toolRegistry is null) return false;
+
+        var visualTool = _toolRegistry.GetVisualTool("sprite-editor");
+        if (visualTool is null) return false;
+
+        var input = new Dictionary<string, object>
+        {
+            ["target"]      = target,
+            ["project"]     = project,
+            ["projectPath"] = projectPath,
+            ["scene"]       = scene,
+            ["entity"]      = entity,
+            ["toolRegistry"]= _toolRegistry
+        };
+
+        if (saveProjectCallback is not null) input["saveProjectCallback"] = saveProjectCallback;
+        if (sceneEditor is not null)         input["sceneEditor"]         = sceneEditor;
+
+        var window = visualTool.CreateWindow(input);
+        if (window is not Window wpfWindow) return false;
+
+        wpfWindow.Owner = Application.Current.MainWindow;
+        var result = wpfWindow.ShowDialog();
+        if (result != true) return false;
+
+        // Persist entity data from window
+        var entityDataProp = window.GetType().GetProperty("EntityData");
+        if (entityDataProp?.GetValue(window) is EntityData updated)
+            entity.SpriteAssetId = updated.SpriteAssetId;
+
+        saveProjectCallback?.Invoke();
+        return true;
+    }
 }

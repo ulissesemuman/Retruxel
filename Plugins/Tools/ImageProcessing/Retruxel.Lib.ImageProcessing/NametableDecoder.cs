@@ -1,7 +1,7 @@
 namespace Retruxel.Lib.ImageProcessing;
 
 /// <summary>
-/// Decodes nametable/tilemap data from VRAM.
+/// Decodes nametable/plane data from VRAM.
 /// </summary>
 public static class NametableDecoder
 {

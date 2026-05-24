@@ -241,8 +241,8 @@ public class ModuleRenderer
             })
             .ToList();
 
-        var tilemapInits = moduleFiles
-            .Where(f => f.FileType == GeneratedFileType.Header && f.SourceModuleId == "tilemap")
+        var planeInits = moduleFiles
+            .Where(f => f.FileType == GeneratedFileType.Header && f.SourceModuleId == "plane")
             .Select(f => new Dictionary<string, object>
             {
                 ["header"] = f.FileName,
@@ -260,9 +260,9 @@ public class ModuleRenderer
             .ToList();
 
         variables["paletteInits"] = paletteInits;
-        variables["tilemapInits"] = tilemapInits;
+        variables["planeInits"] = planeInits;
         variables["textStaticInits"] = textStaticInits;
-        variables["hasGraphicModules"] = paletteInits.Count > 0 || tilemapInits.Count > 0 || textStaticInits.Count > 0;
+        variables["hasGraphicModules"] = paletteInits.Count > 0 || planeInits.Count > 0 || textStaticInits.Count > 0;
 
         var template = File.ReadAllText(manifest.TemplatePath);
 

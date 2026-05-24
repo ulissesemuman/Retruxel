@@ -23,7 +23,7 @@ public enum SingletonPolicy
 
     /// <summary>
     /// Multiple instances allowed anywhere.
-    /// Example default: Tilemap, Sprite, Enemy, GameVar, TextDisplay
+    /// Example default: Plane, Sprite, Enemy, GameVar, TextDisplay
     /// </summary>
     Multiple
 }

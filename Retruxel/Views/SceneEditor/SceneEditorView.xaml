@@ -1,24 +1,24 @@
 ﻿<UserControl x:Class="Retruxel.Views.SceneEditorView"
-             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:loc="clr-namespace:Retruxel.Localization"
-             Background="{StaticResource BrushSurface}">
-
+          xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+          xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+          xmlns:loc="clr-namespace:Retruxel.Localization"
+          Background="{StaticResource BrushSurface}">
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="40"/>
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="200"/>
+            <ColumnDefinition Width="260" MinWidth="180" MaxWidth="420"/>
+            <ColumnDefinition Width="Auto"/>
             <ColumnDefinition Width="*"/>
-            <ColumnDefinition Width="240"/>
+            <ColumnDefinition Width="260"/>
         </Grid.ColumnDefinitions>
 
         <!-- ===== TOP BAR ===== -->
-        <Border Grid.Row="0" Grid.ColumnSpan="3"
-                Background="{StaticResource BrushSurfaceContainerLow}"
-                Padding="0">
+        <Border Grid.Row="0" Grid.ColumnSpan="4"
+            Background="{StaticResource BrushSurfaceContainerLow}"
+            Padding="0">
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"/>
@@ -28,206 +28,165 @@
 
                 <!-- Scene tabs -->
                 <ScrollViewer Grid.Column="0"
-                              HorizontalScrollBarVisibility="Hidden"
-                              VerticalScrollBarVisibility="Disabled"
-                              VerticalAlignment="Stretch">
+                          HorizontalScrollBarVisibility="Hidden"
+                          VerticalScrollBarVisibility="Disabled"
+                          VerticalAlignment="Stretch">
                     <StackPanel x:Name="SceneTabsPanel"
-                                Orientation="Horizontal"
-                                VerticalAlignment="Stretch"/>
+                            Orientation="Horizontal"
+                            VerticalAlignment="Stretch"/>
                 </ScrollViewer>
 
-                <!-- Coordinates display -->
-                <TextBlock Grid.Column="1"
-                           x:Name="TxtCoordinates"
+                <!-- Zoom + coordinates -->
+                <StackPanel Grid.Column="1" Orientation="Horizontal"
+                        VerticalAlignment="Center" Margin="8,0">
+                    <TextBlock x:Name="TxtCoordinates"
                            Text="X: 0 | Y: 0"
                            Style="{StaticResource TextLabel}"
                            VerticalAlignment="Center"
-                           Margin="16 0"/>
+                           Margin="0,0,16,0"/>
+                    <Button x:Name="BtnPreviewZoom"
+                        Content="100%"
+                        Style="{StaticResource ButtonGhost}"
+                        Width="64" Height="24"
+                        Padding="0"
+                        Click="BtnPreviewZoom_Click"
+                        ToolTip="Zoom options"/>
+                </StackPanel>
 
-                <!-- Generate ROM -->
+                <!-- Right controls -->
                 <StackPanel Grid.Column="2" Orientation="Horizontal"
-                            VerticalAlignment="Center"
-                            Margin="0 0 12 0">
-                    
-                    <!-- Save indicator -->
+                        VerticalAlignment="Center"
+                        Margin="0,0,12,0">
                     <TextBlock x:Name="TxtSaveIndicator"
-                               Text="💾"
-                               FontSize="14"
-                               VerticalAlignment="Center"
-                               Margin="0 0 8 0"
-                               Opacity="0.3"
-                               ToolTip="Auto-save"/>
-                    
+                           Text="💾"
+                           FontSize="14"
+                           VerticalAlignment="Center"
+                           Margin="0,0,8,0"
+                           Opacity="0.3"
+                           ToolTip="Auto-save"/>
                     <Button x:Name="BtnUndo"
-                            Content="↩"
-                            IsEnabled="False"
-                            ToolTip="Nothing to undo"
-                            Style="{StaticResource ButtonTitleBar}"
-                            Click="BtnUndo_Click"/>
+                        Content="↩"
+                        IsEnabled="False"
+                        ToolTip="Nothing to undo"
+                        Style="{StaticResource ButtonTitleBar}"
+                        Click="BtnUndo_Click"/>
                     <Button x:Name="BtnRedo"
-                            Content="↪"
-                            IsEnabled="False"
-                            ToolTip="Nothing to redo"
-                            Style="{StaticResource ButtonTitleBar}"
-                            Click="BtnRedo_Click"/>
+                        Content="↪"
+                        IsEnabled="False"
+                        ToolTip="Nothing to redo"
+                        Style="{StaticResource ButtonTitleBar}"
+                        Click="BtnRedo_Click"/>
                     <Button x:Name="BtnGenerateRom"
-                            Content="{loc:Tr Key='scene.generate_rom'}"
-                            Style="{StaticResource ButtonPrimary}"
-                            Padding="16,0" Height="28"
-                            Click="GenerateRom_Click"/>
+                        Content="{loc:Tr Key='scene.generate_rom'}"
+                        Style="{StaticResource ButtonPrimary}"
+                        Padding="16,0" Height="28"
+                        Click="GenerateRom_Click"/>
                 </StackPanel>
             </Grid>
         </Border>
 
-        <!-- ===== LEFT — SIDEBAR ===== -->
-        <Border Grid.Row="1" Grid.Column="0" Grid.RowSpan="2"
-                Background="{StaticResource BrushSurfaceContainerLow}">
-            <Grid>
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="40"/>
-                    <RowDefinition Height="*"/>
-                    <RowDefinition Height="Auto"/>
-                </Grid.RowDefinitions>
-
-                <!-- Tab headers -->
-                <Grid Grid.Row="0" Background="{StaticResource BrushSurface}">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*"/>
-                        <ColumnDefinition Width="*"/>
-                        <ColumnDefinition Width="*"/>
-                    </Grid.ColumnDefinitions>
-
-                    <Button x:Name="BtnTabStructure"
-                            Grid.Column="0"
-                            Content="STRUCTURE"
-                            Click="BtnTabStructure_Click"
-                            Tag="active"
-                            Style="{StaticResource SidebarTab}"/>
-
-                    <Button x:Name="BtnTabModules"
-                            Grid.Column="1"
-                            Content="{loc:Tr Key='scene.modules'}"
-                            Click="BtnTabModules_Click"
-                            Style="{StaticResource SidebarTab}"/>
-
-                    <Button x:Name="BtnTabAssets"
-                            Grid.Column="2"
-                            Content="{loc:Tr Key='scene.assets'}"
-                            Click="BtnTabAssets_Click"
-                            Style="{StaticResource SidebarTab}"/>
-                </Grid>
-
-                <!-- STRUCTURE panel -->
-                <ScrollViewer x:Name="PanelStructure"
-                              Grid.Row="1"
-                              VerticalScrollBarVisibility="Auto">
-                    <StackPanel x:Name="StructurePanel" Margin="0 8 0 0"/>
-                </ScrollViewer>
-
-                <!-- MODULES panel -->
-                <ScrollViewer x:Name="PanelModules"
-                              Grid.Row="1"
-                              Visibility="Collapsed"
-                              VerticalScrollBarVisibility="Auto">
-                    <StackPanel Margin="0 8 0 0">
-                        <TextBlock Text="{loc:Tr Key='scene.system_status'}"
-                                   Style="{StaticResource TextLabel}"
-                                   Foreground="{StaticResource BrushPrimary}"
-                                   Margin="12,4,12,16"
-                                   FontSize="9"/>
-
-                        <TextBlock Text="{loc:Tr Key='scene.modules'}"
-                                   Style="{StaticResource TextLabel}"
-                                   Foreground="{StaticResource BrushPrimary}"
-                                   Margin="12,0,12,8"/>
-
-                        <StackPanel x:Name="ModulePalettePanel"/>
-                    </StackPanel>
-                </ScrollViewer>
-
-                <!-- ASSETS panel -->
-                <ScrollViewer x:Name="PanelAssets"
-                              Grid.Row="1"
-                              Visibility="Collapsed"
-                              VerticalScrollBarVisibility="Auto">
-                    <StackPanel Margin="0 8 0 0">
-                        <Button Content="{loc:Tr Key='scene.import_asset'}"
-                                Style="{StaticResource ButtonSecondary}"
-                                Margin="12,4,12,8"
-                                Click="BtnImportAsset_Click"/>
-                        <StackPanel x:Name="AssetPanel"/>
-                    </StackPanel>
-                </ScrollViewer>
-
-            </Grid>
+        <!-- ===== LEFT — PROJECT TREE ===== -->
+        <Border Grid.Row="1" Grid.Column="0"
+            Background="{StaticResource BrushSurfaceContainerLow}">
+            <ScrollViewer VerticalScrollBarVisibility="Auto"
+                      HorizontalScrollBarVisibility="Disabled">
+                <StackPanel x:Name="ProjectTreePanel" Margin="0,8,0,8"/>
+            </ScrollViewer>
         </Border>
 
-        <!-- ===== CENTER — CANVAS ===== -->
-        <ScrollViewer Grid.Row="1" Grid.Column="1"
-                      HorizontalScrollBarVisibility="Auto"
-                      VerticalScrollBarVisibility="Auto"
-                      Background="{StaticResource BrushSurface}">
-            <Grid HorizontalAlignment="Center"
-                  VerticalAlignment="Center"
-                  Margin="40">
+        <!-- SPLITTER -->
+        <GridSplitter Grid.Row="1" Grid.Column="1"
+                  Width="4"
+                  HorizontalAlignment="Stretch"
+                  VerticalAlignment="Stretch"
+                  Background="{StaticResource BrushSurface}"
+                  ShowsPreview="False"/>
 
-                <!-- Canvas outer glow border -->
-                <Border BorderBrush="{StaticResource BrushGhostBorder}"
-                        BorderThickness="1"
-                        Padding="1">
+        <!-- ===== CENTER — SCENE PREVIEW ===== -->
+        <Border Grid.Row="1" Grid.Column="2"
+            Background="{StaticResource BrushSurface}"
+            ClipToBounds="True"
+            x:Name="PreviewHost"
+            MouseWheel="PreviewHost_MouseWheel"
+            MouseLeftButtonDown="PreviewHost_MouseLeftButtonDown"
+            MouseMove="PreviewHost_MouseMove"
+            MouseLeftButtonUp="PreviewHost_MouseLeftButtonUp"
+            MouseDown="PreviewHost_MouseDown"
+            MouseUp="PreviewHost_MouseUp">
+            <Grid>
 
-                    <!-- Screen area — size set dynamically from target specs -->
+                <Canvas x:Name="PreviewCanvas"
+                    HorizontalAlignment="Left"
+                    VerticalAlignment="Top">
+
+                    <Canvas.Background>
+                        <DrawingBrush TileMode="Tile"
+                                  Viewport="0,0,16,16"
+                                  ViewportUnits="Absolute">
+                            <DrawingBrush.Drawing>
+                                <DrawingGroup>
+                                    <GeometryDrawing Brush="#FF0D0D0D">
+                                        <GeometryDrawing.Geometry>
+                                            <RectangleGeometry Rect="0,0,16,16"/>
+                                        </GeometryDrawing.Geometry>
+                                    </GeometryDrawing>
+                                    <GeometryDrawing Brush="#FF111111">
+                                        <GeometryDrawing.Geometry>
+                                            <GeometryGroup>
+                                                <RectangleGeometry Rect="0,0,8,8"/>
+                                                <RectangleGeometry Rect="8,8,8,8"/>
+                                            </GeometryGroup>
+                                        </GeometryDrawing.Geometry>
+                                    </GeometryDrawing>
+                                </DrawingGroup>
+                            </DrawingBrush.Drawing>
+                        </DrawingBrush>
+                    </Canvas.Background>
+
+                    <Rectangle x:Name="ScreenBorder"
+                           Stroke="#3a3a3a"
+                           StrokeThickness="1"
+                           Fill="Transparent"
+                           IsHitTestVisible="False"/>
+
                     <Canvas x:Name="SceneCanvas"
-                            ClipToBounds="True"
-                            MouseMove="Canvas_MouseMove"
-                            MouseLeftButtonDown="Canvas_MouseLeftButtonDown"
-                            AllowDrop="True"
-                            Drop="Canvas_Drop"
-                            DragOver="Canvas_DragOver">
+                        IsHitTestVisible="False"/>
 
-                        <!-- Checkerboard pattern via DrawingBrush -->
-                        <Canvas.Background>
-                            <DrawingBrush TileMode="Tile"
-                                          Viewport="0,0,16,16"
-                                          ViewportUnits="Absolute">
-                                <DrawingBrush.Drawing>
-                                    <DrawingGroup>
-                                        <GeometryDrawing Brush="#FF0D0D0D">
-                                            <GeometryDrawing.Geometry>
-                                                <RectangleGeometry Rect="0,0,16,16"/>
-                                            </GeometryDrawing.Geometry>
-                                        </GeometryDrawing>
-                                        <GeometryDrawing Brush="#FF111111">
-                                            <GeometryDrawing.Geometry>
-                                                <GeometryGroup>
-                                                    <RectangleGeometry Rect="0,0,8,8"/>
-                                                    <RectangleGeometry Rect="8,8,8,8"/>
-                                                </GeometryGroup>
-                                            </GeometryDrawing.Geometry>
-                                        </GeometryDrawing>
-                                    </DrawingGroup>
-                                </DrawingBrush.Drawing>
-                            </DrawingBrush>
-                        </Canvas.Background>
+                </Canvas>
 
-                        <!-- Canvas elements added here dynamically -->
-
-                    </Canvas>
-                </Border>
+                <!-- Empty state overlay -->
+                <StackPanel x:Name="PreviewEmptyState"
+                        HorizontalAlignment="Center"
+                        VerticalAlignment="Center"
+                        Visibility="Collapsed">
+                    <TextBlock Text="SCENE PREVIEW"
+                           Style="{StaticResource TextLabelCaps}"
+                           Foreground="{StaticResource BrushOnSurfaceVariant}"
+                           HorizontalAlignment="Center"
+                           Margin="0,0,0,8"/>
+                    <TextBlock Text="Add planes and entities in the project tree to see them here."
+                           Style="{StaticResource TextBody}"
+                           Foreground="{StaticResource BrushOnSurfaceVariant}"
+                           HorizontalAlignment="Center"
+                           TextWrapping="Wrap"
+                           MaxWidth="240"
+                           TextAlignment="Center"/>
+                </StackPanel>
 
                 <!-- Canvas size label -->
                 <TextBlock x:Name="TxtCanvasSize"
-                           Style="{StaticResource TextLabel}"
-                           HorizontalAlignment="Right"
-                           VerticalAlignment="Bottom"
-                           Margin="0,4,0,-16"/>
+                       Style="{StaticResource TextLabel}"
+                       HorizontalAlignment="Right"
+                       VerticalAlignment="Bottom"
+                       Margin="0,0,8,8"
+                       Foreground="{StaticResource BrushOnSurfaceVariant}"/>
             </Grid>
-        </ScrollViewer>
+        </Border>
 
         <!-- ===== RIGHT — PROPERTIES ===== -->
-        <Border Grid.Row="1" Grid.Column="2"
-                Background="{StaticResource BrushSurfaceContainerLow}"
-                Padding="16">
+        <Border Grid.Row="1" Grid.Column="3"
+            Background="{StaticResource BrushSurfaceContainerLow}"
+            Padding="16">
             <Grid>
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto"/>
@@ -235,25 +194,25 @@
                 </Grid.RowDefinitions>
 
                 <TextBlock Grid.Row="0"
-                           Text="{loc:Tr Key='scene.properties'}"
-                           Style="{StaticResource TextLabel}"
-                           Foreground="{StaticResource BrushPrimary}"
-                           Margin="0,0,0,16"/>
+                       x:Name="TxtPropertiesTitle"
+                       Text="PROPERTIES"
+                       Style="{StaticResource TextLabelCaps}"
+                       Foreground="{StaticResource BrushOnSurfaceVariant}"
+                       Margin="0,0,0,16"/>
 
                 <ScrollViewer Grid.Row="1"
-                              VerticalScrollBarVisibility="Auto"
-                              HorizontalScrollBarVisibility="Disabled">
+                          VerticalScrollBarVisibility="Auto"
+                          HorizontalScrollBarVisibility="Disabled">
                     <StackPanel>
-                        <!-- Empty state -->
-                        <TextBlock Text="{loc:Tr Key='scene.no_selection'}"
-                                   x:Name="TxtNoSelection"
-                                   Style="{StaticResource TextBody}"
-                                   TextWrapping="Wrap"
-                                   Visibility="Visible"/>
+                        <TextBlock x:Name="TxtNoSelection"
+                               Text="{loc:Tr Key='scene.no_selection'}"
+                               Style="{StaticResource TextBody}"
+                               TextWrapping="Wrap"
+                               Foreground="{StaticResource BrushOnSurfaceVariant}"
+                               Visibility="Visible"/>
 
-                        <!-- Properties content — shown when element selected -->
                         <StackPanel x:Name="PropertiesPanel"
-                                    Visibility="Collapsed"/>
+                                Visibility="Collapsed"/>
                     </StackPanel>
                 </ScrollViewer>
             </Grid>

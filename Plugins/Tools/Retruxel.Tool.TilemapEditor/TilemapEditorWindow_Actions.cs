@@ -36,9 +36,9 @@ public partial class TilemapEditorWindow
 
         SavePaletteSlotSelection();
 
-        var base64Data = TilemapSerializer.ToBase64(_tilemapData.GetLayer(_currentLayerIndex));
+        var base64Data = PlaneSerializer.ToBase64(_planeData.GetLayer(_currentLayerIndex));
         var bytes = Convert.FromBase64String(base64Data);
-        var entries = TilemapSerializer.FromBase64(base64Data, bytes.Length / 4);
+        var entries = PlaneSerializer.FromBase64(base64Data, bytes.Length / 4);
 
         // Convert TileEntry[] to array of objects for JSON serialization
         var mapDataArray = entries.Select(e => new
@@ -51,7 +51,7 @@ public partial class TilemapEditorWindow
 
         ModuleData = new Dictionary<string, object>
         {
-            ["moduleId"] = "tilemap",
+            ["moduleId"] = "plane",
             ["mapWidth"] = int.Parse(TxtWidth.Text),
             ["mapHeight"] = int.Parse(TxtHeight.Text),
             ["tilesAssetId"] = CmbTilesetAsset.SelectedItem.ToString()!,
@@ -78,7 +78,7 @@ public partial class TilemapEditorWindow
 
         if (result == MessageBoxResult.Yes)
         {
-            _tilemapData.ClearLayer(_currentLayerIndex);
+            _planeData.ClearLayer(_currentLayerIndex);
             RenderCanvas();
         }
     }
@@ -93,7 +93,7 @@ public partial class TilemapEditorWindow
             FlipV = _selectedFlipV
         };
 
-        _tilemapData.FillLayer(_currentLayerIndex, entry);
+        _planeData.FillLayer(_currentLayerIndex, entry);
         RenderCanvas();
     }
 
@@ -120,13 +120,13 @@ public partial class TilemapEditorWindow
             int tileCount = asset.GenerationParams.TileCount;
             int rows = (int)Math.Ceiling((double)tileCount / columns);
 
-            // Resize tilemap to match tileset dimensions
+            // Resize plane to match tileset dimensions
             TxtWidth.Text = columns.ToString();
             TxtHeight.Text = rows.ToString();
-            _tilemapData.Resize(columns, rows);
+            _planeData.Resize(columns, rows);
 
-            // Fill tilemap with tiles in order (0, 1, 2, ...) - no flip
-            var currentLayer = _tilemapData.GetLayer(_currentLayerIndex);
+            // Fill plane with tiles in order (0, 1, 2, ...) - no flip
+            var currentLayer = _planeData.GetLayer(_currentLayerIndex);
             for (int i = 0; i < currentLayer.Length && i < tileCount; i++)
             {
                 currentLayer[i] = new TileEntry { TileIndex = i };
@@ -135,9 +135,9 @@ public partial class TilemapEditorWindow
             RenderCanvas();
 
             MessageBox.Show(
-                $"Tileset imported as {columns}×{rows} tilemap.\n\n" +
+                $"Tileset imported as {columns}×{rows} plane.\n\n" +
                 $"Total tiles: {tileCount}\n\n" +
-                $"You can now edit the tilemap and save it.",
+                $"You can now edit the plane and save it.",
                 "Import Complete",
                 MessageBoxButton.OK,
                 MessageBoxImage.Information);
@@ -205,7 +205,7 @@ public partial class TilemapEditorWindow
         int width = int.Parse(TxtWidth.Text);
         int height = int.Parse(TxtHeight.Text);
 
-        _tilemapData.Resize(width, height);
+        _planeData.Resize(width, height);
 
         if (moduleData.ContainsKey("tilesAssetId"))
         {
@@ -228,7 +228,7 @@ public partial class TilemapEditorWindow
             {
                 if (jsonEl.ValueKind == System.Text.Json.JsonValueKind.Array)
                 {
-                    var currentLayer = _tilemapData.GetLayer(_currentLayerIndex);
+                    var currentLayer = _planeData.GetLayer(_currentLayerIndex);
                     int index = 0;
 
                     foreach (var item in jsonEl.EnumerateArray())
@@ -266,7 +266,7 @@ public partial class TilemapEditorWindow
             }
             else if (mapDataObj is object[] objArray)
             {
-                var currentLayer = _tilemapData.GetLayer(_currentLayerIndex);
+                var currentLayer = _planeData.GetLayer(_currentLayerIndex);
                 for (int i = 0; i < Math.Min(objArray.Length, currentLayer.Length); i++)
                 {
                     // Handle anonymous objects from BtnSave
@@ -298,8 +298,8 @@ public partial class TilemapEditorWindow
 
     private void LoadFromBase64(string base64Data)
     {
-        var entries = TilemapSerializer.FromBase64(base64Data, _tilemapData.Width * _tilemapData.Height);
-        var currentLayer = _tilemapData.GetLayer(_currentLayerIndex);
+        var entries = PlaneSerializer.FromBase64(base64Data, _planeData.Width * _planeData.Height);
+        var currentLayer = _planeData.GetLayer(_currentLayerIndex);
         Array.Copy(entries, currentLayer, Math.Min(entries.Length, currentLayer.Length));
         RenderCanvas();
     }

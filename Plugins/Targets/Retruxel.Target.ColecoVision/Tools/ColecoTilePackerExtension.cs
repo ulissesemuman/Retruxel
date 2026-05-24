@@ -20,16 +20,16 @@ public class ColecoTilePackerExtension : IToolExtension
         input["enableRotation"] = false;
 
         // Generic tool already executed, we receive its output
-        var tilemap = input["tilemap"] as List<object> ?? new List<object>();
-        var formattedTilemap = new List<Dictionary<string, object>>();
+        var plane = input["plane"] as List<object> ?? new List<object>();
+        var formattedPlane = new List<Dictionary<string, object>>();
 
-        foreach (var entry in tilemap)
+        foreach (var entry in plane)
         {
             if (entry is not Dictionary<string, object> dict) continue;
 
             var tileIndex = Convert.ToInt32(dict["TileIndex"]);
 
-            formattedTilemap.Add(new Dictionary<string, object>
+            formattedPlane.Add(new Dictionary<string, object>
             {
                 ["tileIndex"] = tileIndex,
                 ["x"] = dict["X"],
@@ -39,7 +39,7 @@ public class ColecoTilePackerExtension : IToolExtension
 
         return new Dictionary<string, object>
         {
-            ["tilemap"] = formattedTilemap
+            ["plane"] = formattedPlane
         };
     }
 }

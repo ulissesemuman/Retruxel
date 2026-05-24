@@ -49,12 +49,6 @@ public class AssetEntry
     public DateTime ImportedAt { get; set; }
 
     /// <summary>
-    /// VRAM region ID from target.Specs.VramRegions.
-    /// Ex: "background", "sprites", "plane_a", "plane_b"
-    /// </summary>
-    public string VramRegionId { get; set; } = string.Empty;
-
-    /// <summary>
     /// Parameters used to generate the processed image from source.
     /// Null for legacy assets imported before this system.
     /// </summary>

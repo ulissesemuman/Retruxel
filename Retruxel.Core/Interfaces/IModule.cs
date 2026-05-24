@@ -39,7 +39,7 @@ public interface IModule
     /// <summary>
     /// Optional: ID of the visual tool associated with this module.
     /// If set, double-clicking the module or selecting "Edit" from context menu
-    /// opens the visual editor window (e.g., "tilemap_editor", "palette_editor").
+    /// opens the visual editor window (e.g., "plane_editor", "palette_editor").
     /// The tool must implement IVisualTool and be registered in the ToolRegistry.
     /// Returns null if the module has no visual editor.
     /// </summary>

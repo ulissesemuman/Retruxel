@@ -12,11 +12,11 @@ namespace Retruxel.Tool.TilemapEditor.Pipelines;
 
 /// <summary>
 /// Converts ImportedAssetData to Tilemap Editor format.
-/// Saves tiles as asset and prepares tilemap data for editor.
+/// Saves tiles as asset and prepares plane data for editor.
 /// </summary>
-public class ImportedAssetToTilemapPipeline : AssetPipelineBase<ImportedAssetData, Dictionary<string, object>>
+public class ImportedAssetToPlanePipeline : AssetPipelineBase<ImportedAssetData, Dictionary<string, object>>
 {
-    public override string PipelineId => "imported_to_tilemap_editor";
+    public override string PipelineId => "imported_to_plane_editor";
     public override string DisplayName => "Imported Asset → Tilemap Editor";
     public override string Description => "Converts imported asset data to tilemap editor format";
 
@@ -50,7 +50,6 @@ public class ImportedAssetToTilemapPipeline : AssetPipelineBase<ImportedAssetDat
             Id = assetId,
             FileName = Path.GetFileName(assetPath),
             RelativePath = Path.GetRelativePath(projectPath, assetPath).Replace('\\', '/'),
-            VramRegionId = "background",
             GenerationParams = new AssetGenerationParams
             {
                 OptimizedWidth = input.Tiles.Length > 0 ? CalculateTilesetWidth(input.Tiles.Length, input.TileWidth) : 0,
@@ -64,24 +63,24 @@ public class ImportedAssetToTilemapPipeline : AssetPipelineBase<ImportedAssetDat
         // Map RGB palette to target hardware colors
         bool useLab = options.ContainsKey("useLab") && (bool)options["useLab"];
         uint[] mappedPalette = MapToTargetHardware(input.Palette, target, useLab);
-        System.Diagnostics.Debug.WriteLine($"[ImportedAssetToTilemapPipeline] Palette mapped to {targetId.ToUpper()} hardware using {(useLab ? "LAB" : "RGB")} color space");
+        System.Diagnostics.Debug.WriteLine($"[ImportedAssetToPlanePipeline] Palette mapped to {targetId.ToUpper()} hardware using {(useLab ? "LAB" : "RGB")} color space");
 
         // Return data for tilemap editor
         // TileEntry now comes from Core.Models (via TilePacker)
         TileEntry[] mapData;
-        if (input.Metadata.ContainsKey("tilemap") && input.Metadata["tilemap"] is System.Collections.IList tilemapList)
+        if (input.Metadata.ContainsKey("plane") && input.Metadata["plane"] is System.Collections.IList planeList)
         {
             // New format from TilePackerTool - already TileEntry from Core
-            mapData = new TileEntry[tilemapList.Count];
-            for (int i = 0; i < tilemapList.Count; i++)
+            mapData = new TileEntry[planeList.Count];
+            for (int i = 0; i < planeList.Count; i++)
             {
-                mapData[i] = (TileEntry)tilemapList[i];
+                mapData[i] = (TileEntry)planeList[i];
             }
         }
         else
         {
             // Old format - plain tile indices
-            mapData = input.TilemapData.Select(x => new TileEntry { TileIndex = (int)x }).ToArray();
+            mapData = input.PlaneData.Select(x => new TileEntry { TileIndex = (int)x }).ToArray();
         }
 
         return new Dictionary<string, object>
@@ -131,7 +130,7 @@ public class ImportedAssetToTilemapPipeline : AssetPipelineBase<ImportedAssetDat
             return SaveBitmapDirectly(optimizedBitmap, originalPalette, project, projectPath, assetId, targetId);
         }
 
-        // Original reconstruction logic for tilemap mode
+        // Original reconstruction logic for plane mode
         return SaveTilesReconstructed(input, project, projectPath, assetId, targetId, options);
     }
 
@@ -161,7 +160,7 @@ public class ImportedAssetToTilemapPipeline : AssetPipelineBase<ImportedAssetDat
 
 
     /// <summary>
-    /// Reconstructs tiles from ImportedAssetData and saves as PNG (tilemap mode).
+    /// Reconstructs tiles from ImportedAssetData and saves as PNG (plane mode).
     /// </summary>
     private string SaveTilesReconstructed(ImportedAssetData input, RetruxelProject project, string projectPath, string assetId, string targetId, Dictionary<string, object>? options = null)
     {
@@ -194,12 +193,12 @@ public class ImportedAssetToTilemapPipeline : AssetPipelineBase<ImportedAssetDat
         if (input.Metadata.ContainsKey("colorTable") && input.Metadata["colorTable"] is byte[] ct)
         {
             colorTable = ct;
-            System.Diagnostics.Debug.WriteLine($"[ImportedAssetToTilemapPipeline] Color Table found: {ct.Length} bytes");
-            System.Diagnostics.Debug.WriteLine($"[ImportedAssetToTilemapPipeline] First 16 bytes: {string.Join(" ", ct.Take(16).Select(b => b.ToString("X2")))}");
+            System.Diagnostics.Debug.WriteLine($"[ImportedAssetToPlanePipeline] Color Table found: {ct.Length} bytes");
+            System.Diagnostics.Debug.WriteLine($"[ImportedAssetToPlanePipeline] First 16 bytes: {string.Join(" ", ct.Take(16).Select(b => b.ToString("X2")))}");
         }
         else
         {
-            System.Diagnostics.Debug.WriteLine($"[ImportedAssetToTilemapPipeline] No Color Table in metadata");
+            System.Diagnostics.Debug.WriteLine($"[ImportedAssetToPlanePipeline] No Color Table in metadata");
         }
 
         // Draw tiles to bitmap

@@ -40,7 +40,7 @@ void text_display_{{instanceId}}_init(void) {
 // Only marks dirty when called — does NOT mark dirty every VBlank.
 // FIX: The previous _update() marked uiDirty every frame, which caused
 // Engine_Render to call SMS_printatXY every VBlank. Because Engine_Render
-// also re-renders tilemap when tilemaps.dirty is set, the two renders
+// also re-renders plane when planes.dirty is set, the two renders
 // were racing. Text now persists in the nametable until explicitly changed.
 void text_display_{{instanceId}}_set(unsigned char x, unsigned char y, const char* text) {
     extern GameState g_gameState;

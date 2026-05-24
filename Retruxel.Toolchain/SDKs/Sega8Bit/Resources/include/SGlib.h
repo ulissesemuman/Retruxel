@@ -93,7 +93,7 @@ void SG_loadTilePatterns (void *src, unsigned int tilefrom, unsigned int size);
 void SG_loadTileColours (void *src, unsigned int tilefrom, unsigned int size);
 void SG_loadSpritePatterns (void *src, unsigned int tilefrom, unsigned int size);
 
-/* functions for the tilemap */
+/* functions for the plane */
 void SG_loadTileMap (unsigned char x, unsigned char y, void *src, unsigned int size);
 void SG_loadTileMapArea (unsigned char x, unsigned char y, void *src, unsigned char width, unsigned char height);
 void SG_setNextTileatXY (unsigned char x, unsigned char y);

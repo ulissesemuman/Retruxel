@@ -1,6 +1,6 @@
 using Retruxel.Core.Models;
-using Retruxel.Lib.ImageProcessing;
 using Retruxel.Lib.PaletteHelpers;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Windows;
@@ -10,7 +10,7 @@ namespace Retruxel.Tool.SpriteEditor;
 
 public partial class SpriteEditorWindow
 {
-    private AssetEntry? _currentAsset;
+    // ── Asset selector ─────────────────────────────────────────────────────
 
     private void InitializeAssetSelector()
     {
@@ -20,47 +20,51 @@ public partial class SpriteEditorWindow
             return;
         }
 
+        // Unsubscribe first to avoid double-registration on re-init
+        CmbTilesetAsset.SelectionChanged -= CmbTilesetAsset_SelectionChanged;
         CmbTilesetAsset.Items.Clear();
 
         foreach (var asset in _project.Assets.OrderBy(a => a.Id))
-        {
-            CmbTilesetAsset.Items.Add(new ComboBoxItem
-            {
-                Content = asset.Id,
-                Tag     = asset
-            });
-        }
+            CmbTilesetAsset.Items.Add(asset.Id);
 
-        // Restore previously selected asset
+        CmbTilesetAsset.SelectionChanged += CmbTilesetAsset_SelectionChanged;
+
+        // Restore previously selected asset.
+        // Call LoadTilesetImage directly because _isInitializing is still true here.
         if (!string.IsNullOrEmpty(_tilesetAssetId))
         {
-            foreach (ComboBoxItem item in CmbTilesetAsset.Items)
+            for (int i = 0; i < CmbTilesetAsset.Items.Count; i++)
             {
-                if (item.Tag is AssetEntry asset && asset.Id == _tilesetAssetId)
+                if (CmbTilesetAsset.Items[i]?.ToString() == _tilesetAssetId)
                 {
-                    CmbTilesetAsset.SelectedItem = item;
+                    CmbTilesetAsset.SelectedIndex = i;
+                    var asset = _project.Assets.FirstOrDefault(a => a.Id == _tilesetAssetId);
+                    if (asset != null) LoadTilesetImage(asset);
                     break;
                 }
             }
         }
-
-        CmbTilesetAsset.SelectionChanged += CmbTilesetAsset_SelectionChanged;
     }
 
     private void CmbTilesetAsset_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
-        if (CmbTilesetAsset.SelectedItem is not ComboBoxItem item) return;
-        if (item.Tag is not AssetEntry asset) return;
-        if (_isInitializing) return;
+        if (CmbTilesetAsset.SelectedItem == null) return;
 
-        _tilesetAssetId = asset.Id;
-        LoadTilesetFromAsset(asset);
+        string assetId = CmbTilesetAsset.SelectedItem.ToString()!;
+        var asset = _project?.Assets.FirstOrDefault(a => a.Id == assetId);
+        if (asset == null) return;
+
+        _tilesetAssetId = assetId;
+        LoadTilesetImage(asset);
         SaveAssetSelection();
     }
 
-    private void LoadTilesetFromAsset(AssetEntry asset)
+    /// <summary>
+    /// Loads a tileset asset — identical pipeline to TilemapEditor.LoadTilesetImage().
+    /// </summary>
+    private void LoadTilesetImage(AssetEntry asset)
     {
-        System.Diagnostics.Debug.WriteLine($"[SpriteEditor] LoadTilesetFromAsset: {asset.Id}");
+        System.Diagnostics.Debug.WriteLine($"[SpriteEditor] LoadTilesetImage: {asset.Id}");
 
         var gp = asset.GenerationParams;
 
@@ -72,26 +76,23 @@ public partial class SpriteEditorWindow
             return;
         }
 
-        _currentAsset    = asset;
-        _tilesetColumns  = gp.OptimizedWidth  / _target!.Specs.TileWidth;
-        _tilesetRows     = gp.OptimizedHeight / _target.Specs.TileHeight;
-        _totalTiles      = gp.TileCount;
+        _currentAsset = asset;
 
-        // Build a lightweight IndexedPngData from the stored MapIndex + Palette
-        var colors = gp.Palette?.Count > 0
-            ? gp.Palette
-            : asset.GenerationParams.Palette ?? new List<string>();
-
-        _indexedData = new IndexedPngData
+        // Defer tileset rendering until after WPF layout has calculated actual sizes.
+        // If called during initialization (ActualWidth == 0), the canvas has no size yet.
+        if (TilesetCanvas.ActualWidth > 0)
         {
-            Width   = gp.OptimizedWidth,
-            Height  = gp.OptimizedHeight,
-            Indices = gp.MapIndex,
-            Colors  = colors
-        };
-
-        RefreshTilesetWithPalette();
-        UpdateVramInfo();
+            RefreshTilesetFromAsset();
+            RenderCanvas();
+        }
+        else
+        {
+            Dispatcher.InvokeAsync(() =>
+            {
+                RefreshTilesetFromAsset();
+                RenderCanvas();
+            }, System.Windows.Threading.DispatcherPriority.Loaded);
+        }
     }
 
     private void SaveAssetSelection()
@@ -99,6 +100,8 @@ public partial class SpriteEditorWindow
         ModuleData ??= new Dictionary<string, object>();
         ModuleData["tilesetAssetId"] = _tilesetAssetId ?? "";
     }
+
+    // ── Browse / import ────────────────────────────────────────────────────
 
     private void BtnBrowseTileset_Click(object sender, RoutedEventArgs e)
     {
@@ -114,20 +117,21 @@ public partial class SpriteEditorWindow
             if (assetImporter.ShowDialog() == true && assetImporter.ImportedAsset != null)
             {
                 _project!.Assets.Add(assetImporter.ImportedAsset);
+                var newId = assetImporter.ImportedAsset.Id;
                 InitializeAssetSelector();
 
-                var newAsset = assetImporter.ImportedAsset;
-                foreach (ComboBoxItem item in CmbTilesetAsset.Items)
+                // Select the newly imported asset
+                for (int i = 0; i < CmbTilesetAsset.Items.Count; i++)
                 {
-                    if (item.Tag is AssetEntry asset && asset.Id == newAsset.Id)
+                    if (CmbTilesetAsset.Items[i]?.ToString() == newId)
                     {
-                        CmbTilesetAsset.SelectedItem = item;
+                        CmbTilesetAsset.SelectedIndex = i;
                         break;
                     }
                 }
             }
         }
-        catch (System.Exception ex)
+        catch (Exception ex)
         {
             MessageBox.Show($"Failed to import asset:\n\n{ex.Message}", "Error",
                 MessageBoxButton.OK, MessageBoxImage.Error);

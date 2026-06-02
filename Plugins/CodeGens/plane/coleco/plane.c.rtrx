@@ -44,14 +44,14 @@ const unsigned char coleco_plane_collision[{{preprocessed.collisionBytes}}] = {
 const unsigned char coleco_plane_placeholder_tiles[] = { 0 };
 
 {{/ifnot}}
-{{#if mapData.length > 0}}
+{{#if tiles.length > 0}}
 // Nametable map — {{mapWidth}}×{{mapHeight}} = {{preprocessed.mapEntryCount}} entries
 const unsigned int bg_map[{{preprocessed.mapEntryCount}}] = {
 {{preprocessed.processedMapHex}}
 };
 
 {{/if}}
-{{#if mapData.length == 0}}
+{{#if tiles.length == 0}}
 {{#ifnot mapAssetId}}
 // Placeholder nametable map
 const unsigned int coleco_plane_placeholder_map[{{mapWidth * mapHeight}}] = { 0 };
@@ -68,10 +68,10 @@ void coleco_plane_init(void) {
 {{/ifnot}}
 
     // Load nametable map at position ({{mapX}}, {{mapY}})
-{{#if mapData.length > 0}}
+{{#if tiles.length > 0}}
     SMS_loadTileMap({{mapX}}, {{mapY}}, bg_map, sizeof(bg_map));
 {{/if}}
-{{#if mapData.length == 0}}
+{{#if tiles.length == 0}}
 {{#if mapAssetId}}
     SMS_loadTileMap({{mapX}}, {{mapY}}, {{mapAssetId}}, sizeof({{mapAssetId}}));
 {{/if}}

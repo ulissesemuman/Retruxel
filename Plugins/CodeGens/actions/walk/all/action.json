@@ -1,0 +1,11 @@
+{
+  "type": "action",
+  "actionId": "walk",
+  "displayName": "Walk",
+  "category": "Movement",
+  "parameters": [
+    { "name": "speed",        "type": "int",  "default": 2,     "label": "Speed (pixels/frame)"  },
+    { "name": "acceleration", "type": "bool", "default": false, "label": "Use Acceleration"      },
+    { "name": "accelRate",    "type": "int",  "default": 1,     "label": "Acceleration Rate"     }
+  ]
+}

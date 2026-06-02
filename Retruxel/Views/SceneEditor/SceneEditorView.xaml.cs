@@ -25,6 +25,7 @@ public partial class SceneEditorView : UserControl
     private ModuleRegistry?  _moduleRegistry;
     private ModuleRenderer?  _moduleRenderer;
     private StateManager?    _stateManager;
+    private Core.Services.ActionRegistry? _actionRegistry;
 
     private readonly UndoRedoStack _undoRedo = new();
 
@@ -129,7 +130,8 @@ public partial class SceneEditorView : UserControl
         var pluginsPath = Path.Combine(
             Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location) ?? "",
             "plugins");
-        _moduleRenderer = new ModuleRenderer(pluginsPath, target.GetType().Assembly);
+        _moduleRenderer  = new ModuleRenderer(pluginsPath, target.GetType().Assembly);
+        _actionRegistry  = Core.Services.ActionRegistry.Discover(pluginsPath);
 
         _selectedItem = null;
         SceneCanvas.Children.Clear();
@@ -156,6 +158,8 @@ public partial class SceneEditorView : UserControl
         {
             MigrateScene(_currentScene, target);
         }
+
+        EnsureInputPorts(project, target);
 
         ApplyTargetSpecs(target);
         RebuildSceneTabs();
@@ -192,6 +196,32 @@ public partial class SceneEditorView : UserControl
                 SlotIndex = i,
                 Label     = target.GetPaletteSlotType(i).ToString(),
                 Colors    = Enumerable.Repeat("#000000", target.GetColorsPerSlot()).ToList()
+            });
+        }
+    }
+
+    /// <summary>
+    /// Initializes project-level input port bindings from the target's hardware defaults.
+    /// Only adds ports that are not already present — safe to call on existing projects.
+    /// </summary>
+    private static void EnsureInputPorts(RetruxelProject project, ITarget target)
+    {
+        var defaults = target.GetInputPorts();
+        foreach (var port in defaults)
+        {
+            if (project.InputPorts.Any(p => p.Id == port.Id)) continue;
+
+            project.InputPorts.Add(new InputPortBinding
+            {
+                Id      = port.Id,
+                Label   = port.Label,
+                Type    = port.Type,
+                Buttons = port.Buttons.Select(b => new InputButtonBinding
+                {
+                    Id          = b.Id,
+                    Label       = b.Label,
+                    DevkitConst = b.DevkitConst
+                }).ToList()
             });
         }
     }

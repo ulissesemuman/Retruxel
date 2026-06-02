@@ -1,8 +1,6 @@
 using Retruxel.Core.Interfaces;
 using System;
 using System.Collections.Generic;
-using System.IO;
-using System.Text.Json;
 
 namespace Retruxel.Tool.PngToTiles;
 
@@ -11,10 +9,14 @@ namespace Retruxel.Tool.PngToTiles;
 /// Reads the asset's MapIndex (pre-computed color indices from AssetImporter)
 /// and passes raw index data to the target extension for hardware-specific encoding.
 ///
+/// The asset data is always provided in-memory by the VariableResolver — this tool
+/// never reads files from disk. The RetruxelProject in memory is the single source
+/// of truth; the .rtrxproject file on disk is persistence-only.
+///
 /// Flow:
-///   1. Resolve assetId → load project → find asset entry
-///   2. Read MapIndex (base64 byte[] of color indices) + optimized dimensions
-///   3. Pass indices + dimensions to target extension (e.g. SmsPngToTilesExtension)
+///   1. VariableResolver injects inMemoryMapIndex/Width/Height/TileCount from project.Assets
+///   2. This tool packages the data into a standard result dict
+///   3. The target extension (e.g. SmsPngToTilesExtension) converts indices → tilesHex
 /// </summary>
 public class PngToTilesTool : ITool
 {
@@ -40,74 +42,38 @@ public class PngToTilesTool : ITool
         if (string.IsNullOrEmpty(assetId))
             throw new ArgumentException("assetId is required");
 
-        var assetEntry = ResolveAsset(assetId, input);
-        if (assetEntry == null)
-            throw new InvalidOperationException($"Asset '{assetId}' not found in project");
+        // All assets are injected in-memory by VariableResolver before this tool is called.
+        // Keys: "inMemoryMapIndex" (byte[]), "inMemoryWidth" (int), "inMemoryHeight" (int),
+        //       "inMemoryTileCount" (int).
+        if (!input.TryGetValue("inMemoryMapIndex", out var rawMapIndex) || rawMapIndex is not byte[] indices)
+            throw new InvalidOperationException(
+                $"Asset '{assetId}' was not found in the in-memory asset registry. " +
+                $"Ensure CodeGenerator.GenerateAsync populates inMemoryAssets with all project.Assets before rendering.");
 
-        if (!assetEntry.Value.TryGetProperty("GenerationParams", out var genParams))
-            throw new InvalidOperationException($"Asset '{assetId}' has no GenerationParams");
-
-        if (!genParams.TryGetProperty("MapIndex", out var mapIndexProp))
-            throw new InvalidOperationException($"Asset '{assetId}' has no MapIndex");
-
-        var mapIndexBase64 = mapIndexProp.GetString() ?? "";
-        var indices = Convert.FromBase64String(mapIndexBase64);
-
-        var width = genParams.TryGetProperty("OptimizedWidth", out var wProp) ? wProp.GetInt32() : 0;
-        var height = genParams.TryGetProperty("OptimizedHeight", out var hProp) ? hProp.GetInt32() : 0;
-        var tileCount = genParams.TryGetProperty("TileCount", out var tcProp) ? tcProp.GetInt32() : (width / 8) * (height / 8);
+        var width     = GetInt(input, "inMemoryWidth",     0);
+        var height    = GetInt(input, "inMemoryHeight",    0);
+        var tileCount = GetInt(input, "inMemoryTileCount", (width / 8) * (height / 8));
 
         System.Diagnostics.Debug.WriteLine($"Asset '{assetId}': {width}x{height}, {tileCount} tiles, {indices.Length} index bytes");
         System.Diagnostics.Debug.WriteLine("=== PngToTilesTool.Execute END ===");
 
         return new Dictionary<string, object>
         {
-            ["indices"] = indices,
-            ["width"] = width,
-            ["height"] = height,
-            ["tileCount"] = tileCount,
-            ["tilesX"] = width / 8,
-            ["tilesY"] = height / 8,
-            ["tileWidth"] = 8,
+            ["indices"]    = indices,
+            ["width"]      = width,
+            ["height"]     = height,
+            ["tileCount"]  = tileCount,
+            ["tilesX"]     = width  / 8,
+            ["tilesY"]     = height / 8,
+            ["tileWidth"]  = 8,
             ["tileHeight"] = 8
         };
     }
 
-    private JsonElement? ResolveAsset(string assetId, Dictionary<string, object> input)
-    {
-        var projectPath = GetString(input, "projectPath");
-        if (string.IsNullOrEmpty(projectPath)) return null;
-
-        var projectFile = Path.Combine(projectPath, Path.GetFileName(projectPath) + ".rtrxproject");
-        if (!File.Exists(projectFile)) return null;
-
-        try
-        {
-            var json = File.ReadAllText(projectFile);
-            using var doc = JsonDocument.Parse(json);
-            var root = doc.RootElement;
-
-            if (root.TryGetProperty("Assets", out var assets))
-            {
-                foreach (var asset in assets.EnumerateArray())
-                {
-                    if (asset.TryGetProperty("Id", out var id) && id.GetString() == assetId)
-                        return asset.Clone();
-                }
-            }
-        }
-        catch (Exception ex)
-        {
-            System.Diagnostics.Debug.WriteLine($"ResolveAsset error: {ex.Message}");
-        }
-
-        return null;
-    }
-
-    private string? GetString(Dictionary<string, object> input, string key)
+    private static string? GetString(Dictionary<string, object> input, string key)
         => input.TryGetValue(key, out var value) ? value as string : null;
 
-    private int GetInt(Dictionary<string, object> input, string key, int defaultValue)
+    private static int GetInt(Dictionary<string, object> input, string key, int defaultValue)
     {
         if (input.TryGetValue(key, out var value))
         {
@@ -120,8 +86,8 @@ public class PngToTilesTool : ITool
 
     public Dictionary<string, object> GetDefaultParameters() => new()
     {
-        ["assetId"] = "",
-        ["tileWidth"] = 8,
+        ["assetId"]    = "",
+        ["tileWidth"]  = 8,
         ["tileHeight"] = 8
     };
 }

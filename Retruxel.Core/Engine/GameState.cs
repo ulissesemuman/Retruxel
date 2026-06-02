@@ -41,7 +41,7 @@ public class GameState
 public class PlaneLayerState
 {
     public byte[]? TileData { get; set; }
-    public ushort[]? MapData { get; set; }
+    public ushort[]? Tiles { get; set; }
     public byte MapWidth { get; set; }
     public byte MapHeight { get; set; }
     public byte StartTile { get; set; }

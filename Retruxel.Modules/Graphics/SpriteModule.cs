@@ -36,7 +36,7 @@ public class SpriteModule : IGraphicModule
     public string ModuleId => "sprite";
     public string DisplayName => "Sprite";
     public string Category => "Graphics";
-    public ModuleType Type => ModuleType.Graphics;
+    public ModuleType Type => ModuleType.Entity;
     public SingletonPolicy SingletonPolicy => SingletonPolicy.Multiple;
     public string[] Compatibility { get; set; } = [];
     public string? VisualToolId => "sprite_editor";

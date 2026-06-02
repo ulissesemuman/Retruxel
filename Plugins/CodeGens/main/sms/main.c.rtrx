@@ -4,6 +4,7 @@
 
 #include "SMSlib.h"
 #include "engine.h"
+#include "scene_{{initialScene}}.h"
 {{#if hasGameVars}}
 #include "gamevars.h"
 {{/if}}
@@ -59,8 +60,8 @@ void main(void) {
 {{/each}}
 
         // OnVBlank: Game logic modules
-{{#each onVBlankModules}}
-        {{this}}_update();
+{{#each onVBlankCalls}}
+        {{this}}
 {{/each}}
 
         // Render: Apply state changes to VRAM

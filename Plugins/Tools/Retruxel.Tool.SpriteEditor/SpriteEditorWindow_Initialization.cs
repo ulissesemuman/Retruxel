@@ -128,7 +128,7 @@ public partial class SpriteEditorWindow
     private void BtnSave_Click(object sender, RoutedEventArgs e)
     {
         ModuleData = SaveModuleData();
-        _ = _saveProjectCallback?.Invoke();
+        DialogResult = true;
         Close();
     }
 

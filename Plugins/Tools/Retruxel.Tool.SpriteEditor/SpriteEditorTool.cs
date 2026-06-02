@@ -34,6 +34,7 @@ public class SpriteEditorTool : IVisualTool
         var target = (ITarget)input["target"];
         var project = (RetruxelProject)input["project"];
         var projectPath = (string)input["projectPath"];
+        var scene = input.ContainsKey("scene") ? input["scene"] as SceneData : null;
         var toolRegistry = input.ContainsKey("toolRegistry") ? (Core.Services.ToolRegistry)input["toolRegistry"] : null;
         var saveProjectCallback = input.ContainsKey("saveProjectCallback") ? (Func<System.Threading.Tasks.Task>)input["saveProjectCallback"] : null;
         var sceneEditor = input.ContainsKey("sceneEditor") ? input["sceneEditor"] : null;
@@ -43,7 +44,7 @@ public class SpriteEditorTool : IVisualTool
             ? (Dictionary<string, object>)input["moduleData"]
             : null;
 
-        var window = new SpriteEditorWindow(target, project, projectPath, toolRegistry, saveProjectCallback, sceneEditor);
+        var window = new SpriteEditorWindow(target, project, projectPath, scene, toolRegistry, saveProjectCallback, sceneEditor);
 
         // If editing existing module, load its data
         if (moduleData != null)

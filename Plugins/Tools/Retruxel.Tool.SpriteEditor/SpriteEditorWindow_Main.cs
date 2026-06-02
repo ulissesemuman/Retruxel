@@ -2,53 +2,69 @@ using Retruxel.Core.Interfaces;
 using Retruxel.Core.Models;
 using Retruxel.Lib.ImageProcessing;
 using Retruxel.Tool.SpriteEditor.Models;
+using Retruxel.Lib.TilesetHelpers;
 using SkiaSharp;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using System.Windows.Media.Imaging;
 using System.Windows.Threading;
 
 namespace Retruxel.Tool.SpriteEditor;
 
 public partial class SpriteEditorWindow
 {
+    // ── Core state ─────────────────────────────────────────────────────────
     private readonly SpriteState _state = new();
-    private SKBitmap _tilesetImage;
     private bool _isInitializing = true;
     private string _tilesetAssetId = string.Empty;
     private SceneData? _currentScene;
+    private AssetEntry? _currentAsset;
     private RetruxelProject? _project;
     private ITarget? _target;
     private string? _projectPath;
     private Core.Services.ToolRegistry? _toolRegistry;
     private Func<Task>? _saveProjectCallback;
+
+    // ── Tileset rendering (same helpers as TilemapEditor) ──────────────────
+    private readonly TilesetRenderer _tilesetRenderer = new();
+    private SKBitmap? _tilesetBitmap;          // full tileset grid bitmap (scaled)
+    private double _tileZoomLevel = 1.0;       // tileset zoom (matches _tilesetZoom)
+
+    // ── Animation ──────────────────────────────────────────────────────────
     private DispatcherTimer? _animationTimer;
     private int _animationFrameIndex;
-    private IndexedPngData? _indexedData;
-    private readonly IndexedPngService _indexedPngService = new();
+
+    // ── Selection ──────────────────────────────────────────────────────────
     private int _selectedTileIndex = -1;
 
+    // ── Output ─────────────────────────────────────────────────────────────
     public Dictionary<string, object>? ModuleData { get; set; }
+
+    // ── Constructor ────────────────────────────────────────────────────────
 
     public SpriteEditorWindow(
         ITarget target,
         RetruxelProject project,
         string projectPath,
+        SceneData? scene,
         Core.Services.ToolRegistry? toolRegistry,
         Func<Task>? saveProjectCallback,
         object? sceneEditor)
     {
         InitializeComponent();
 
-        _target = target;
-        _project = project;
+        _target      = target;
+        _project     = project;
         _projectPath = projectPath;
-        _toolRegistry = toolRegistry;
+        _toolRegistry        = toolRegistry;
         _saveProjectCallback = saveProjectCallback;
 
-        // Extract _currentScene from sceneEditor via reflection
-        if (sceneEditor != null)
+        // Prefer the explicitly passed scene; fall back to reflection on sceneEditor
+        if (scene != null)
+        {
+            _currentScene = scene;
+        }
+        else if (sceneEditor != null)
         {
             var sceneField = sceneEditor.GetType().GetField("_currentScene",
                 System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
@@ -59,12 +75,14 @@ public partial class SpriteEditorWindow
         InitializePaletteSlotSelector();
         InitializeZoomControls();
 
-        // Initialize with one empty frame
+        // Start with one empty frame
         _state.Frames.Add(new SpriteFrame { Name = "Frame 1" });
 
         _isInitializing = false;
         InitializeUI();
     }
+
+    // ── Helpers ────────────────────────────────────────────────────────────
 
     private void OnSpriteChanged()
     {

@@ -1,5 +1,6 @@
 using Retruxel.Core.Interfaces;
 using Retruxel.Core.Models;
+using Retruxel.Core.Services;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -17,24 +18,24 @@ namespace Retruxel.Views;
 ///
 ///  ▼ PROJECT
 ///      ▼ ASSETS              [+ Import]
-///          forest_tiles      [✕]
+///          forest_tiles      [✖]
 ///      ▼ MODULES  global     [+ Add]
-///          Physics           [···] [✕]
-///          Input             [···] [✕]
+///          Physics           [···] [✖]
+///          Input             [···] [✖]
 ///      ▼ SCENES              [+ Add]
 ///          ▶ Scene1  (initial)
-///          ▼ Scene2  ← current, expanded
+///          ▼ Scene2  ↑  current, expanded
 ///              ▼ PALETTE     (fixed by target)
 ///                  BG        [EDIT]
 ///                  SP        [EDIT]
 ///              ▼ PLANES    (count fixed by target)
 ///                  ▼ Plane 0           [+ Add Layer]
-///                      Layer 0           [···] [✕]
+///                      Layer 0           [···] [✖]
 ///              ▼ MODULES  scene overrides [+ Add]
-///                  Physics override      [···] [✕]
+///                  Physics override      [···] [✖]
 ///              ▼ ENTITIES               [+ Add]
-///                  Player               [···] [✕]
-///                  Enemy                [···] [✕]
+///                  Player               [···] [✖]
+///                  Enemy                [···] [✖]
 /// </summary>
 public partial class SceneEditorView
 {
@@ -62,6 +63,7 @@ public partial class SceneEditorView
 
         BuildAssetsSection();
         BuildGlobalModulesSection();
+        BuildPrefabsSection();
         BuildScenesSection();
     }
 
@@ -91,6 +93,79 @@ public partial class SceneEditorView
                 onClick:  null,
                 onDelete: () => DeleteAsset(asset));
         }
+    }
+
+    // ── PREFABS ────────────────────────────────────────────────────────────────
+
+    private void BuildPrefabsSection()
+    {
+        AddTreeSubSection("PREFABS", "prefabs", indent: 1,
+            onAdd: () => ShowPrefabPickerDialog());
+
+        if (!IsExpanded("prefabs") || _project is null) return;
+
+        if (_project.Prefabs.Count == 0)
+        {
+            AddTreeEmpty("No prefabs — click + to create", indent: 2);
+            return;
+        }
+
+        foreach (var prefab in _project.Prefabs)
+        {
+            var p = prefab;
+            AddTreeLeafWithEdit(
+                label:    string.IsNullOrEmpty(p.DisplayName) ? p.PrefabId : p.DisplayName,
+                sublabel: p.PrefabId,
+                indent:   2,
+                onEdit:   () => OpenPrefabEditor(p),
+                onDelete: () => RemovePrefab(p));
+        }
+    }
+
+    private void OpenPrefabEditor(PrefabData prefab)
+    {
+        if (_project is null || _target is null || _actionRegistry is null) return;
+
+        Dispatcher.BeginInvoke(() =>
+        {
+            var window = new Retruxel.Tool.PrefabEditor.PrefabEditorWindow(
+                prefab, _project, _target, _actionRegistry,
+                saveCallback: saved =>
+                {
+                    var idx = _project.Prefabs.FindIndex(p => p.PrefabId == saved.PrefabId
+                                                           || p.PrefabId == prefab.PrefabId);
+                    if (idx >= 0) _project.Prefabs[idx] = saved;
+                    else          _project.Prefabs.Add(saved);
+                    _projectManager?.MarkDirty();
+                    RebuildProjectTree();
+                    RefreshPreview();
+                },
+                owner: Window.GetWindow(this));
+            window.ShowDialog();
+        }, System.Windows.Threading.DispatcherPriority.Input);
+    }
+
+    private void RemovePrefab(PrefabData prefab)
+    {
+        if (_project is null) return;
+
+        // Check if any entity in any scene references this prefab
+        var inUse = _project.Scenes
+            .SelectMany(s => s.Entities)
+            .Any(e => e.PrefabId == prefab.PrefabId);
+
+        if (inUse)
+        {
+            System.Windows.MessageBox.Show(
+                $"Prefab '{prefab.PrefabId}' is used by one or more entities and cannot be deleted.",
+                "Retruxel", System.Windows.MessageBoxButton.OK,
+                System.Windows.MessageBoxImage.Warning);
+            return;
+        }
+
+        _project.Prefabs.Remove(prefab);
+        _projectManager?.MarkDirty();
+        RebuildProjectTree();
     }
 
     // ── GLOBAL MODULES ─────────────────────────────────────────────────────────
@@ -197,6 +272,7 @@ public partial class SceneEditorView
         BuildPlanesSection(scene);
         BuildSceneModulesSection(scene);
         BuildEntitiesSection(scene);
+        BuildVramUsageBar(scene);
     }
 
     // ── PALETTE ────────────────────────────────────────────────────────────────
@@ -320,9 +396,9 @@ public partial class SceneEditorView
 
         var grid = new Grid();
         grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
-        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto }); // ✏
-        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto }); // 👁
-        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto }); // ✕
+        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto }); // ✍
+        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto }); // 👀
+        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto }); // ✖
 
         // Label + sublabel
         var textStack = new StackPanel();
@@ -340,10 +416,12 @@ public partial class SceneEditorView
         Grid.SetColumn(textStack, 0);
         grid.Children.Add(textStack);
 
-        // ✏ Edit button — opens PlaneEditor for this layer
+        // ✍ Edit button — opens PlaneEditor for this layer
         var editBtn = new TextBlock
         {
-            Text = "✏", FontSize = 11, Cursor = Cursors.Hand,
+            Text = "✍",
+            FontSize = 11,
+            Cursor = Cursors.Hand,
             VerticalAlignment = VerticalAlignment.Center,
             Margin = new Thickness(6, 0, 4, 0)
         };
@@ -352,10 +430,12 @@ public partial class SceneEditorView
         Grid.SetColumn(editBtn, 1);
         grid.Children.Add(editBtn);
 
-        // 👁 Visibility toggle
+        // 👀 Visibility toggle
         var visBtn = new TextBlock
         {
-            Text = layer.Visible ? "👁" : "□", FontSize = 10, Cursor = Cursors.Hand,
+            Text = layer.Visible ? "👀" : "□",
+            FontSize = 10,
+            Cursor = Cursors.Hand,
             VerticalAlignment = VerticalAlignment.Center,
             Margin = new Thickness(0, 0, 4, 0)
         };
@@ -372,10 +452,12 @@ public partial class SceneEditorView
         Grid.SetColumn(visBtn, 2);
         grid.Children.Add(visBtn);
 
-        // ✕ Delete button
+        // ✖ Delete button
         var delBtn = new TextBlock
         {
-            Text = "✕", FontSize = 10, Cursor = Cursors.Hand,
+            Text = "✖",
+            FontSize = 10,
+            Cursor = Cursors.Hand,
             VerticalAlignment = VerticalAlignment.Center
         };
         delBtn.SetResourceReference(TextBlock.ForegroundProperty, "BrushOnSurfaceVariant");
@@ -466,24 +548,353 @@ public partial class SceneEditorView
     private void BuildEntitiesSection(SceneData scene)
     {
         AddTreeSubSection("ENTITIES", "entities", indent: 3,
-            onAdd: () => ShowEntityPickerDialog());
-        if (!IsExpanded("entities")) return;
+            onAdd: () => ShowPrefabPickerDialog());
 
-        if (scene.Entities.Count == 0)
+        if (IsExpanded("entities"))
         {
-            AddTreeEmpty("No entities", indent: 4);
-            return;
+            // Group entities by EntityType — each type is a collapsible parent node.
+            var byType = scene.Entities
+                .GroupBy(e => string.IsNullOrEmpty(e.EntityType) ? "entity" : e.EntityType)
+                .ToList();
+
+            if (byType.Count == 0)
+                AddTreeEmpty("No entities", indent: 4);
+            else
+                foreach (var group in byType)
+                    BuildEntityTypeGroup(group.Key, group.ToList(), scene, indent: 4);
         }
 
-        foreach (var entity in scene.Entities)
+        var maxSprites  = _target?.Specs.MaxSpritesOnScreen ?? 64;
+        var usedSprites = scene.Entities
+            .Where(e => !string.IsNullOrEmpty(e.SpriteAssetId ?? e.PrefabId))
+            .Sum(e =>
+            {
+                var prefab = _project?.Prefabs.FirstOrDefault(p => p.PrefabId == e.PrefabId);
+                return (prefab?.WidthTiles ?? e.WidthTiles ?? 2) *
+                       (prefab?.HeightTiles ?? e.HeightTiles ?? 2);
+            });
+        BuildSpriteUsageBar(usedSprites, maxSprites, indent: 3);
+    }
+
+    /// <summary>
+    /// Renders one entity type group: a collapsible parent row showing the type name,
+    /// asset and dimensions, followed by variant rows (one per EntityData instance).
+    /// </summary>
+    private void BuildEntityTypeGroup(string entityType, List<EntityData> variants,
+        SceneData scene, int indent)
+    {
+        // Use the first variant to read shared type-level data (asset, dimensions).
+        var first = variants[0];
+        var typeKey = $"entity_type_{entityType}";
+
+        // ── Parent row ────────────────────────────────────────────────────────
+        var parentRow = new Border
         {
-            AddTreeLeafWithEdit(
-                label:    entity.Label,
-                sublabel: entity.EntityType,
-                indent:   4,
-                onEdit:   () => OpenEntityEditor(entity),
-                onDelete: () => RemoveEntity(entity));
+            Padding = new Thickness(indent * 8, 3, 8, 3),
+            Cursor  = Cursors.Hand
+        };
+
+        var parentGrid = new Grid();
+        parentGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+        parentGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto }); // ✍ sprite editor
+        parentGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto }); // + variant
+        parentGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto }); // ✖ delete type
+
+        // Arrow + type name + sublabel
+        var typeStack = new StackPanel();
+        var typeHeader = new StackPanel { Orientation = Orientation.Horizontal };
+        var arrow = new TextBlock
+        {
+            Text = IsExpanded(typeKey) ? "▼" : "▶",
+            FontSize = 8, VerticalAlignment = VerticalAlignment.Center,
+            Margin = new Thickness(0, 0, 5, 0)
+        };
+        arrow.SetResourceReference(TextBlock.ForegroundProperty, "BrushOnSurfaceVariant");
+        var typeLbl = new TextBlock { Text = entityType, FontSize = 11 };
+        typeLbl.SetResourceReference(TextBlock.StyleProperty, "TextBody");
+        typeLbl.SetResourceReference(TextBlock.ForegroundProperty, "BrushOnSurface");
+        typeHeader.Children.Add(arrow);
+        typeHeader.Children.Add(typeLbl);
+        typeStack.Children.Add(typeHeader);
+
+        var assetSublabel = new TextBlock
+        {
+            Text = string.IsNullOrEmpty(first.SpriteAssetId ?? first.PrefabId)
+                ? "no asset assigned"
+                : $"{first.SpriteAssetId ?? first.PrefabId}  ·  {(first.WidthTiles ?? 2) * 8}×{(first.HeightTiles ?? 2) * 8}px",
+            FontSize = 9
+        };
+        assetSublabel.SetResourceReference(TextBlock.ForegroundProperty, "BrushOnSurfaceVariant");
+        typeStack.Children.Add(assetSublabel);
+        Grid.SetColumn(typeStack, 0);
+        parentGrid.Children.Add(typeStack);
+
+        // ✍ Open sprite editor for the type (uses first variant's asset)
+        var editBtn = MakeIconButton("✍", 11, "BrushPrimary",
+            () => OpenEntityEditor(first));
+        Grid.SetColumn(editBtn, 1);
+        parentGrid.Children.Add(editBtn);
+
+        // + Add variant
+        var addVariantBtn = MakeIconButton("+", 13, "BrushPrimary",
+            () => AddEntityVariant(entityType, first, scene));
+        Grid.SetColumn(addVariantBtn, 2);
+        parentGrid.Children.Add(addVariantBtn);
+
+        // ✖ Delete entire type (all variants)
+        var delTypeBtn = MakeIconButton("✖", 10, "BrushOnSurfaceVariant",
+            () => RemoveEntityType(entityType, variants, scene), hoverColor: "BrushError");
+        Grid.SetColumn(delTypeBtn, 3);
+        parentGrid.Children.Add(delTypeBtn);
+
+        parentRow.Child = parentGrid;
+        parentRow.MouseLeftButtonDown += (_, e) =>
+        {
+            if (e.Source is TextBlock tb && (tb.Text == "✍" || tb.Text == "+" || tb.Text == "✖"))
+                return;
+            ToggleExpand(typeKey);
+            RebuildProjectTree();
+            e.Handled = true;
+        };
+
+        // Click on type row → show type-level properties
+        parentRow.MouseLeftButtonDown += (_, e) =>
+        {
+            if (e.ClickCount == 1 && e.Source is not TextBlock)
+            {
+                SelectItem(first);
+                ShowPropertiesForItem(first);
+            }
+        };
+
+        ProjectTreePanel.Children.Add(parentRow);
+
+        // ── Variant rows ──────────────────────────────────────────────────────
+        if (!IsExpanded(typeKey)) return;
+
+        foreach (var variant in variants)
+            BuildEntityVariantRow(variant, indent + 1);
+    }
+
+    /// <summary>
+    /// Renders one variant row under an entity type group.
+    /// Shows: label | palette slot badge | 👀 | ⚙ | ✖
+    /// </summary>
+    private void BuildEntityVariantRow(EntityData entity, int indent)
+    {
+        var row = new Border { Padding = new Thickness(indent * 8, 2, 8, 2), Cursor = Cursors.Hand };
+
+        var grid = new Grid();
+        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto }); // palette badge
+        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto }); // 👀
+        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto }); // ⚙
+        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto }); // ✖
+
+        // Label + position sublabel
+        var textStack = new StackPanel();
+        var lbl = new TextBlock { Text = entity.Label, FontSize = 11 };
+        lbl.SetResourceReference(TextBlock.StyleProperty, "TextBody");
+        lbl.SetResourceReference(TextBlock.ForegroundProperty,
+            entity.Visible ? "BrushOnSurface" : "BrushOnSurfaceVariant");
+        textStack.Children.Add(lbl);
+
+        var posLabel = new TextBlock
+        {
+            Text = $"x:{entity.StartTileX}  y:{entity.StartTileY}",
+            FontSize = 9
+        };
+        posLabel.SetResourceReference(TextBlock.ForegroundProperty, "BrushOnSurfaceVariant");
+        textStack.Children.Add(posLabel);
+        Grid.SetColumn(textStack, 0);
+        grid.Children.Add(textStack);
+
+        // Palette slot badge
+        var paletteBadge = new Border
+        {
+            Background = new SolidColorBrush(Color.FromRgb(0x26, 0x26, 0x26)),
+            Padding = new Thickness(4, 1, 4, 1),
+            Margin = new Thickness(4, 0, 0, 0),
+            VerticalAlignment = VerticalAlignment.Center
+        };
+        var paletteLbl = new TextBlock
+        {
+            Text = $"P{entity.PaletteSlot ?? 1}",
+            FontSize = 9,
+            VerticalAlignment = VerticalAlignment.Center
+        };
+        paletteLbl.SetResourceReference(TextBlock.ForegroundProperty, "BrushPrimary");
+        paletteBadge.Child = paletteLbl;
+        Grid.SetColumn(paletteBadge, 1);
+        grid.Children.Add(paletteBadge);
+
+        // 👀 Visibility toggle
+        var visBtn = MakeIconButton(entity.Visible ? "👀" : "□", 10,
+            entity.Visible ? "BrushOnSurface" : "BrushOnSurfaceVariant",
+            () =>
+            {
+                entity.Visible = !entity.Visible;
+                _projectManager?.MarkDirty();
+                RebuildProjectTree();
+                RefreshPreview();
+            });
+        Grid.SetColumn(visBtn, 2);
+        grid.Children.Add(visBtn);
+
+        // ⚙ Properties
+        var propBtn = MakeIconButton("⚙", 11, "BrushOnSurfaceVariant",
+                    () => { SelectItem(entity); ShowPropertiesForItem(entity); });
+        Grid.SetColumn(propBtn, 3);
+        grid.Children.Add(propBtn);
+
+        // ✖ Delete variant
+        var delBtn = MakeIconButton("✖", 10, "BrushOnSurfaceVariant",
+            () => RemoveEntity(entity), hoverColor: "BrushError");
+        Grid.SetColumn(delBtn, 4);
+        grid.Children.Add(delBtn);
+
+        row.Child = grid;
+        row.MouseLeftButtonDown += (_, e) =>
+        {
+            if (e.ClickCount == 2) { e.Handled = true; StartInlineEntityRename(row, lbl, entity); }
+            else if (e.Source is not TextBlock)
+            {
+                SelectItem(entity);
+                ShowPropertiesForItem(entity);
+            }
+        };
+        ProjectTreePanel.Children.Add(row);
+    }
+
+    private void BuildVramUsageBar(SceneData scene)
+    {
+        if (_project is null || _target is null) return;
+
+        var fontTileCount = _project.Modules
+            .Concat(_currentScene?.ModuleOverrides ?? [])
+            .Any(m => m.ModuleId == "text.display" || m.ModuleId == "text.array")
+            ? 128 : 0;
+
+        var report = VramAllocator.Analyze(scene, _target, _project.Assets, fontTileCount);
+
+        var ratio    = report.TotalBytesAvailable > 0
+            ? Math.Min((double)report.TotalBytesUsed / report.TotalBytesAvailable, 1.0)
+            : 0;
+        var colorKey = ratio < 0.5 ? "BrushSuccess" : ratio < 0.75 ? "BrushWarning" : "BrushError";
+        var prefix = ratio >= 1.0 ? "✖ " : ratio >= 0.75 ? "⚠ " : "";
+
+        var usedKb = report.TotalBytesUsed / 1024.0;
+        var maxKb  = report.TotalBytesAvailable / 1024.0;
+        var countText = $"  {usedKb:F1} KB / {maxKb:F1} KB";
+
+        var container = new StackPanel { Margin = new Thickness(2 * 8, 4, 8, 4) };
+
+        var header = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 0, 0, 2) };
+        var prefixBlock = new TextBlock { Text = $"{prefix}VRAM:", FontSize = 9 };
+        prefixBlock.SetResourceReference(TextBlock.ForegroundProperty,
+            ratio >= 0.75 ? colorKey : "BrushOnSurfaceVariant");
+        var countBlock = new TextBlock { Text = countText, FontSize = 9 };
+        countBlock.SetResourceReference(TextBlock.ForegroundProperty,
+            ratio >= 0.75 ? colorKey : "BrushOnSurfaceVariant");
+        header.Children.Add(prefixBlock);
+        header.Children.Add(countBlock);
+        container.Children.Add(header);
+
+        var bar = new ProgressBar
+        {
+            Minimum = 0,
+            Maximum = report.TotalBytesAvailable,
+            Value   = report.TotalBytesUsed,
+            Height  = 4
+        };
+        bar.SetResourceReference(ProgressBar.ForegroundProperty, colorKey);
+        container.Children.Add(bar);
+
+        ProjectTreePanel.Children.Add(container);
+    }
+
+    private void BuildSpriteUsageBar(int used, int max, int indent)
+    {
+        var ratio = max > 0 ? Math.Min((double)used / max, 1.0) : 0;
+        var colorKey = ratio < 0.5 ? "BrushSuccess" : ratio < 0.75 ? "BrushWarning" : "BrushError";
+        var prefix = ratio >= 1.0 ? "✖ " : ratio >= 0.75 ? "⚠ " : "";
+
+        var container = new StackPanel { Margin = new Thickness(indent * 8, 4, 8, 4) };
+
+        var header = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 0, 0, 2) };
+
+        var prefixBlock = new TextBlock { Text = $"{prefix}Sprites:", FontSize = 9 };
+        prefixBlock.SetResourceReference(TextBlock.ForegroundProperty,
+            ratio >= 0.75 ? colorKey : "BrushOnSurfaceVariant");
+
+        var countBlock = new TextBlock { Text = $"  {used} / {max}", FontSize = 9 };
+        countBlock.SetResourceReference(TextBlock.ForegroundProperty,
+            ratio >= 0.75 ? colorKey : "BrushOnSurfaceVariant");
+
+        header.Children.Add(prefixBlock);
+        header.Children.Add(countBlock);
+        container.Children.Add(header);
+
+        var bar = new ProgressBar
+        {
+            Minimum = 0,
+            Maximum = max,
+            Value   = used,
+            Height  = 4
+        };
+        bar.SetResourceReference(ProgressBar.ForegroundProperty, colorKey);
+        container.Children.Add(bar);
+
+        ProjectTreePanel.Children.Add(container);
+    }
+
+    private void StartInlineEntityRename(Border row, TextBlock lbl, EntityData entity)
+    {
+        var textBox = new TextBox
+        {
+            Text = entity.Label,
+            FontSize = 11,
+            VerticalAlignment = VerticalAlignment.Center,
+            MinWidth = 80
+        };
+        textBox.SetResourceReference(TextBox.StyleProperty, "RetruxelTextBox");
+        textBox.SelectAll();
+
+        var grid = (Grid)row.Child;
+        grid.Children.RemoveAt(0);
+        Grid.SetColumn(textBox, 0);
+        grid.Children.Insert(0, textBox);
+        textBox.Focus();
+
+        void Confirm()
+        {
+            var name = textBox.Text.Trim();
+            if (!string.IsNullOrEmpty(name)) entity.Label = name;
+            _projectManager?.MarkDirty();
+            RebuildProjectTree();
         }
+
+        textBox.KeyDown  += (_, e) => { if (e.Key == Key.Return) { Confirm(); e.Handled = true; } if (e.Key == Key.Escape) { RebuildProjectTree(); e.Handled = true; } };
+        textBox.LostFocus += (_, _) => Confirm();
+    }
+
+    private TextBlock MakeIconButton(string icon, int fontSize, string colorKey,
+        Action onClick, string? hoverColor = null)
+    {
+        var btn = new TextBlock
+        {
+            Text = icon, FontSize = fontSize, Cursor = Cursors.Hand,
+            VerticalAlignment = VerticalAlignment.Center,
+            Margin = new Thickness(4, 0, 0, 0)
+        };
+        btn.SetResourceReference(TextBlock.ForegroundProperty, colorKey);
+        if (hoverColor is not null)
+        {
+            btn.MouseEnter += (_, _) => btn.SetResourceReference(TextBlock.ForegroundProperty, hoverColor);
+            btn.MouseLeave += (_, _) => btn.SetResourceReference(TextBlock.ForegroundProperty, colorKey);
+        }
+        btn.MouseLeftButtonDown += (_, e) => { e.Handled = true; onClick(); };
+        return btn;
     }
 
     // ── TREE PRIMITIVES ────────────────────────────────────────────────────────
@@ -615,7 +1026,7 @@ public partial class SceneEditorView
 
         if (onDelete != null)
         {
-            var del = new TextBlock { Text = "✕", FontSize = 10, Cursor = Cursors.Hand, VerticalAlignment = VerticalAlignment.Center };
+            var del = new TextBlock { Text = "✖", FontSize = 10, Cursor = Cursors.Hand, VerticalAlignment = VerticalAlignment.Center };
             del.SetResourceReference(TextBlock.ForegroundProperty, "BrushOnSurfaceVariant");
             del.MouseEnter += (_, _) => del.SetResourceReference(TextBlock.ForegroundProperty, "BrushError");
             del.MouseLeave += (_, _) => del.SetResourceReference(TextBlock.ForegroundProperty, "BrushOnSurfaceVariant");
@@ -655,16 +1066,100 @@ public partial class SceneEditorView
 
     private void ShowModulePickerDialog(bool isGlobal)
     {
-        // TODO: replace with a picker window listing available modules
-        MessageBox.Show(
-            isGlobal ? "Select a module to add as a global default."
-                     : "Select a module to add as a scene override.",
-            "Add Module", MessageBoxButton.OK, MessageBoxImage.Information);
+        if (_moduleRegistry is null || _project is null || _currentScene is null) return;
+
+        var scope = isGlobal ? ModuleScope.Project : ModuleScope.Scene;
+
+        // IDs already present at the target level
+        var existing = isGlobal
+            ? _project.Modules.Select(m => m.ModuleId).ToList()
+            : _currentScene.ModuleOverrides.Select(m => m.ModuleId).ToList();
+
+        // IDs already added at project level (for OVERRIDE badge in scene context)
+        var projectModules = _project.Modules.Select(m => m.ModuleId).ToList();
+
+        // Defer to after the current mouse event is fully processed.
+        // ShowDialog() called directly from MouseLeftButtonDown can cause
+        // a Win32 reentrancy issue when the owner has AllowsTransparency=True.
+        Dispatcher.BeginInvoke(() =>
+        {
+            ModulePickerWindow.Open(
+                registry:       _moduleRegistry,
+                scope:          scope,
+                existing:       existing,
+                projectModules: projectModules,
+                onSelected:     moduleId => AddModuleAndOpenProperties(moduleId, isGlobal),
+                owner:          Window.GetWindow(this));
+        }, System.Windows.Threading.DispatcherPriority.Input);
     }
 
-    private void ShowEntityPickerDialog()
+    private void AddModuleAndOpenProperties(string moduleId, bool isGlobal)
     {
-        // TODO: replace with an entity type picker
-        AddEntity("entity");
+        AddProjectModule(moduleId, isGlobal);
+
+        // Open properties panel for the newly added module
+        Dispatcher.InvokeAsync(() =>
+        {
+            var mod = isGlobal
+                ? _project?.Modules.LastOrDefault(m => m.ModuleId == moduleId)
+                : _currentScene?.ModuleOverrides.LastOrDefault(m => m.ModuleId == moduleId);
+
+            if (mod is not null)
+            {
+                SelectItem(mod);
+                ShowPropertiesForItem(mod);
+            }
+        }, System.Windows.Threading.DispatcherPriority.Background);
+    }
+
+    private void ShowPrefabPickerDialog()
+    {
+        if (_project is null || _currentScene is null) return;
+
+        Dispatcher.BeginInvoke(() =>
+        {
+            var picker = new Retruxel.Tool.PrefabEditor.PrefabPickerDialog(
+                _project,
+                onSelected: prefabId =>
+                {
+                    AddEntityFromPrefab(prefabId);
+                },
+                onCreateNew: (prefabId, displayName, assetId, w, h) =>
+                {
+                    var newPrefab = new PrefabData
+                    {
+                        PrefabId      = prefabId,
+                        DisplayName   = displayName,
+                        SpriteAssetId = assetId,
+                        WidthTiles    = w,
+                        HeightTiles   = h
+                    };
+                    _project.Prefabs.Add(newPrefab);
+                    _projectManager?.MarkDirty();
+                    AddEntityFromPrefab(prefabId);
+                    RebuildProjectTree();
+                },
+                owner: Window.GetWindow(this));
+            picker.ShowDialog();
+        }, System.Windows.Threading.DispatcherPriority.Input);
+    }
+
+    private void AddEntityFromPrefab(string prefabId)
+    {
+        if (_currentScene is null) return;
+
+        var entity = new EntityData
+        {
+            EntityId = Guid.NewGuid().ToString(),
+            Label    = prefabId,
+            PrefabId = prefabId,
+            Visible  = true
+        };
+
+        _currentScene.Entities.Add(entity);
+        _projectManager?.MarkDirty();
+        RebuildProjectTree();
+        SelectItem(entity);
+        ShowPropertiesForItem(entity);
     }
 }

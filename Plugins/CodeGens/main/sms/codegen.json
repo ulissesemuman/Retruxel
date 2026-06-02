@@ -3,7 +3,7 @@
   "targetId": "sms",
   "displayName": "SMS Main File Generator",
   "description": "Generates main.c entry point for Sega Master System",
-  "version": "3.0.0",
+  "version": "3.1.0",
   "template": "main.c.rtrx",
   "isSystemModule": true,
   "variables": {
@@ -54,10 +54,8 @@
       "path": "moduleId == 'input'",
       "transform": "moduleId"
     },
-    "onVBlankModules": {
-      "from": "projectModules",
-      "path": "moduleId == 'entity' || moduleId == 'enemy' || moduleId == 'scroll'",
-      "transform": "moduleId"
+    "onVBlankCalls": {
+      "from": "onVBlankCalls"
     },
     "splashEnabled": {
       "from": "settings",

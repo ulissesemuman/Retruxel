@@ -3,6 +3,7 @@ using Retruxel.Core.Models;
 using Retruxel.Core.Services;
 using Retruxel.Services;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -89,12 +90,17 @@ public partial class SceneEditorView
     {
         if (_currentScene is null) return;
 
+        // First variant gets a default label matching the type name.
+        // Subsequent variants added via AddEntityVariant get "Variant N".
         var entity = new EntityData
         {
             EntityId    = Guid.NewGuid().ToString(),
             Label       = entityType,
             EntityType  = entityType,
-            PaletteSlot = 1
+            PaletteSlot = 1,
+            WidthTiles  = 2,
+            HeightTiles = 2,
+            Visible     = true
         };
 
         var change = new StateChange
@@ -106,12 +112,102 @@ public partial class SceneEditorView
                 _currentScene.Entities.Add(entity);
                 _projectManager?.MarkDirty();
                 RebuildProjectTree();
+                // Auto-select the new variant so the user can configure it immediately
+                SelectItem(entity);
+                ShowPropertiesForItem(entity);
             },
             IsUndoable  = true,
             UndoCommand = new AddElementCommand(
                 description: $"Add entity '{entityType}'",
                 add:    () => { _currentScene.Entities.Add(entity);    _projectManager?.MarkDirty(); RebuildProjectTree(); },
                 remove: () => { _currentScene.Entities.Remove(entity); _projectManager?.MarkDirty(); RebuildProjectTree(); })
+        };
+
+        _stateManager?.ApplyChange(change);
+    }
+
+    /// <summary>
+    /// Adds a new variant to an existing entity type.
+    /// Copies SpriteAssetId, WidthTiles, HeightTiles from the reference variant.
+    /// The new variant gets the next available palette slot (capped by target SpritePalettes).
+    /// </summary>
+    internal void AddEntityVariant(string entityType, EntityData reference, SceneData scene)
+    {
+        if (_currentScene is null) return;
+
+        // Count existing variants to pick a default palette slot
+        var existingVariants = scene.Entities
+            .Where(e => e.EntityType == entityType)
+            .ToList();
+
+        var maxPaletteSlots = _target?.Specs.SpritePalettes ?? 2;
+        var nextSlot = existingVariants.Count % maxPaletteSlots;
+        var variantNumber = existingVariants.Count + 1;
+
+        var variant = new EntityData
+        {
+            EntityId      = Guid.NewGuid().ToString(),
+            Label         = $"Variant {variantNumber}",
+            EntityType    = entityType,
+            SpriteAssetId = reference.SpriteAssetId,
+            PaletteSlot   = nextSlot,
+            WidthTiles    = reference.WidthTiles,
+            HeightTiles   = reference.HeightTiles,
+            StartTileX    = reference.StartTileX,
+            StartTileY    = reference.StartTileY,
+            Visible       = true
+        };
+
+        var change = new StateChange
+        {
+            Description = $"Add variant to '{entityType}'",
+            Type        = ChangeType.Large,
+            Execute     = () =>
+            {
+                _currentScene.Entities.Add(variant);
+                _projectManager?.MarkDirty();
+                RebuildProjectTree();
+                SelectItem(variant);
+                ShowPropertiesForItem(variant);
+            },
+            IsUndoable  = true,
+            UndoCommand = new AddElementCommand(
+                description: $"Add variant to '{entityType}'",
+                add:    () => { _currentScene.Entities.Add(variant);    _projectManager?.MarkDirty(); RebuildProjectTree(); },
+                remove: () => { _currentScene.Entities.Remove(variant); _projectManager?.MarkDirty(); RebuildProjectTree(); })
+        };
+
+        _stateManager?.ApplyChange(change);
+    }
+
+    /// <summary>
+    /// Removes all variants of an entity type from the scene.
+    /// </summary>
+    internal void RemoveEntityType(string entityType, List<EntityData> variants, SceneData scene)
+    {
+        if (_currentScene is null) return;
+
+        var toRemove = variants.ToList(); // snapshot
+
+        var change = new StateChange
+        {
+            Description = $"Remove entity type '{entityType}'",
+            Type        = ChangeType.Large,
+            Execute     = () =>
+            {
+                foreach (var v in toRemove)
+                {
+                    _currentScene.Entities.Remove(v);
+                    if (_selectedItem == v) SelectItem(null);
+                }
+                _projectManager?.MarkDirty();
+                RebuildProjectTree();
+            },
+            IsUndoable  = true,
+            UndoCommand = new AddElementCommand(
+                description: $"Remove entity type '{entityType}'",
+                add:    () => { foreach (var v in toRemove) _currentScene.Entities.Remove(v); _projectManager?.MarkDirty(); RebuildProjectTree(); },
+                remove: () => { foreach (var v in toRemove) _currentScene.Entities.Add(v);    _projectManager?.MarkDirty(); RebuildProjectTree(); })
         };
 
         _stateManager?.ApplyChange(change);

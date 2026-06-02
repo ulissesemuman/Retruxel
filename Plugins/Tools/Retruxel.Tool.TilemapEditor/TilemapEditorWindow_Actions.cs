@@ -1,4 +1,5 @@
 using Retruxel.Core.Models;
+using Retruxel.Lib.TilesetHelpers;
 using Retruxel.Tool.TilemapEditor.Helpers;
 using System;
 using System.Collections.Generic;
@@ -36,32 +37,31 @@ public partial class TilemapEditorWindow
 
         SavePaletteSlotSelection();
 
-        var base64Data = PlaneSerializer.ToBase64(_planeData.GetLayer(_currentLayerIndex));
-        var bytes = Convert.FromBase64String(base64Data);
-        var entries = PlaneSerializer.FromBase64(base64Data, bytes.Length / 4);
+        // Snapshot the current layer directly — no Base64 round-trip needed.
+        var layerSnapshot = _planeData.GetLayer(_currentLayerIndex);
 
-        // Convert TileEntry[] to array of objects for JSON serialization
-        var mapDataArray = entries.Select(e => new
+        // Convert TileEntry[] to a typed array for clean JSON serialization.
+        var tilesArray = layerSnapshot.Select(e => new
         {
             tileIndex = e.TileIndex,
-            flipH = e.FlipH,
-            flipV = e.FlipV,
-            rotation = e.Rotation
+            flipH     = e.FlipH,
+            flipV     = e.FlipV,
+            rotation  = e.Rotation
         }).ToArray();
 
         ModuleData = new Dictionary<string, object>
         {
-            ["moduleId"] = "plane",
-            ["mapWidth"] = int.Parse(TxtWidth.Text),
-            ["mapHeight"] = int.Parse(TxtHeight.Text),
+            ["moduleId"]     = "plane",
+            ["mapWidth"]     = _planeData.Width,
+            ["mapHeight"]    = _planeData.Height,
             ["tilesAssetId"] = CmbTilesetAsset.SelectedItem.ToString()!,
-            ["paletteSlot"] = _selectedPaletteSlot,
-            ["mapData"] = mapDataArray,
-            ["mapAssetId"] = "",
-            ["startTile"] = 0,
-            ["mapX"] = _mapOffsetX,
-            ["mapY"] = _mapOffsetY,
-            ["solidTiles"] = Array.Empty<int>()
+            ["paletteSlot"]  = _selectedPaletteSlot,
+            ["tiles"]      = tilesArray,
+            ["mapAssetId"]   = "",
+            ["startTile"]    = 0,
+            ["mapX"]         = _mapOffsetX,
+            ["mapY"]         = _mapOffsetY,
+            ["solidTiles"]   = Array.Empty<int>()
         };
 
         DialogResult = true;
@@ -220,11 +220,11 @@ public partial class TilemapEditorWindow
             }
         }
 
-        if (moduleData.ContainsKey("mapData"))
+        if (moduleData.ContainsKey("tiles"))
         {
-            var mapDataObj = moduleData["mapData"];
+            var tilesObj = moduleData["tiles"];
 
-            if (mapDataObj is System.Text.Json.JsonElement jsonEl)
+            if (tilesObj is System.Text.Json.JsonElement jsonEl)
             {
                 if (jsonEl.ValueKind == System.Text.Json.JsonValueKind.Array)
                 {
@@ -264,7 +264,7 @@ public partial class TilemapEditorWindow
                         LoadFromBase64(base64Data);
                 }
             }
-            else if (mapDataObj is object[] objArray)
+            else if (tilesObj is object[] objArray)
             {
                 var currentLayer = _planeData.GetLayer(_currentLayerIndex);
                 for (int i = 0; i < Math.Min(objArray.Length, currentLayer.Length); i++)

@@ -30,7 +30,7 @@ public class PlaneModule : IGraphicModule
     public string ModuleId => "plane";
     public string DisplayName => "Plane";
     public string Category => "Graphics";
-    public ModuleType Type => ModuleType.Logic;
+    public ModuleType Type => ModuleType.Plane;
     public SingletonPolicy SingletonPolicy => SingletonPolicy.Multiple;
     public string[] Compatibility { get; set; } = [];
     public string? VisualToolId => "plane_editor";
@@ -119,7 +119,7 @@ public class PlaneModule : IGraphicModule
             },
             new ParameterDefinition
             {
-                Name = "mapData",
+                Name = "tiles",
                 DisplayName = "Map Data",
                 Description = "Tile indices for the map layout.",
                 Type = ParameterType.IntArray,
@@ -174,10 +174,10 @@ public class PlaneModule : IGraphicModule
         var json = JsonSerializer.Serialize(_state, _jsonOptions);
 
         // DEBUG: Log serialized JSON
-        System.Diagnostics.Debug.WriteLine($"[PlaneModule.Serialize] MapData.Length = {_state.MapData.Length}");
-        if (_state.MapData.Length > 0)
+        System.Diagnostics.Debug.WriteLine($"[PlaneModule.Serialize] Tiles.Length = {_state.Tiles.Length}");
+        if (_state.Tiles.Length > 0)
         {
-            System.Diagnostics.Debug.WriteLine($"[PlaneModule.Serialize] First item type: {_state.MapData[0]?.GetType().Name}");
+            System.Diagnostics.Debug.WriteLine($"[PlaneModule.Serialize] First item type: {_state.Tiles[0]?.GetType().Name}");
             System.Diagnostics.Debug.WriteLine($"[PlaneModule.Serialize] JSON length: {json.Length}");
             System.Diagnostics.Debug.WriteLine($"[PlaneModule.Serialize] JSON preview: {json.Substring(0, Math.Min(500, json.Length))}");
         }
@@ -204,21 +204,21 @@ public class PlaneModule : IGraphicModule
             SolidTiles = root.TryGetProperty("solidTiles", out var solid) && solid.ValueKind == JsonValueKind.Array
                 ? solid.EnumerateArray().Select(e => e.GetInt32()).ToArray()
                 : Array.Empty<int>(),
-            MapData = ParseMapData(root)
+            Tiles = ParseTiles(root)
         };
     }
 
-    private static object[] ParseMapData(JsonElement root)
+    private static object[] ParseTiles(JsonElement root)
     {
-        if (!root.TryGetProperty("mapData", out var mapDataProp))
+        if (!root.TryGetProperty("tiles", out var tilesProp))
             return Array.Empty<object>();
 
-        if (mapDataProp.ValueKind != JsonValueKind.Array)
+        if (tilesProp.ValueKind != JsonValueKind.Array)
             return Array.Empty<object>();
 
         var result = new List<object>();
 
-        foreach (var item in mapDataProp.EnumerateArray())
+        foreach (var item in tilesProp.EnumerateArray())
         {
             // New format: object with tileIndex, flipH, flipV, rotation
             if (item.ValueKind == JsonValueKind.Object)
@@ -273,7 +273,7 @@ public class PlaneModule : IGraphicModule
         public int MapY { get; set; } = 0;
         public int MapWidth { get; set; } = 32;
         public int MapHeight { get; set; } = 24;
-        public object[] MapData { get; set; } = []; // Array of objects with tileIndex, flipH, flipV, rotation
+        public object[] Tiles { get; set; } = []; // Array of objects with tileIndex, flipH, flipV, rotation
         public int[] SolidTiles { get; set; } = [];
         public int PaletteSlot { get; set; } = 0;
 

@@ -67,20 +67,20 @@ public class ImportedAssetToPlanePipeline : AssetPipelineBase<ImportedAssetData,
 
         // Return data for tilemap editor
         // TileEntry now comes from Core.Models (via TilePacker)
-        TileEntry[] mapData;
+        TileEntry[] tiles;
         if (input.Metadata.ContainsKey("plane") && input.Metadata["plane"] is System.Collections.IList planeList)
         {
             // New format from TilePackerTool - already TileEntry from Core
-            mapData = new TileEntry[planeList.Count];
+            tiles = new TileEntry[planeList.Count];
             for (int i = 0; i < planeList.Count; i++)
             {
-                mapData[i] = (TileEntry)planeList[i];
+                tiles[i] = (TileEntry)planeList[i];
             }
         }
         else
         {
             // Old format - plain tile indices
-            mapData = input.PlaneData.Select(x => new TileEntry { TileIndex = (int)x }).ToArray();
+            tiles = input.PlaneData.Select(x => new TileEntry { TileIndex = (int)x }).ToArray();
         }
 
         return new Dictionary<string, object>
@@ -88,7 +88,7 @@ public class ImportedAssetToPlanePipeline : AssetPipelineBase<ImportedAssetData,
             ["tilesAssetId"] = assetId,
             ["mapWidth"] = input.MapWidth,
             ["mapHeight"] = input.MapHeight,
-            ["mapData"] = mapData,
+            ["tiles"] = tiles,
             ["palette"] = mappedPalette,
             ["asset"] = asset
         };

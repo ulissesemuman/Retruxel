@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Text.Json;
 using System.Text.Json.Serialization;
 
 namespace Retruxel.Core.Models;
@@ -57,6 +58,20 @@ public class RetruxelProject
     /// Modules reference assets by Id.
     /// </summary>
     public List<AssetEntry> Assets { get; set; } = [];
+
+    /// <summary>
+    /// Reusable entity definitions (Prefabs).
+    /// EntityData instances reference a Prefab by PrefabId.
+    /// </summary>
+    public List<PrefabData> Prefabs { get; set; } = [];
+
+    /// <summary>
+    /// Remappable input port bindings for this project.
+    /// Initialized from the target's default InputPort definitions when the project is created.
+    /// The user can remap individual buttons here — changes are persisted in the project file.
+    /// Index in this list is the "input slot" referenced by EntityData.InputSlot.
+    /// </summary>
+    public List<InputPortBinding> InputPorts { get; set; } = [];
 }
 
 /// <summary>
@@ -81,36 +96,37 @@ public class ProjectModuleData
     /// Deserialized by the module itself via IModule.Deserialize().
     /// </summary>
     [JsonPropertyName("state")]
-    public System.Text.Json.JsonElement State { get; set; }
+    public JsonElement State { get; set; } = JsonDocument.Parse("{}").RootElement;
 }
 
 /// <summary>
-/// Represents a game entity (player, enemy, NPC) in a scene.
-/// Entities reference project-level modules (Input, Physics, Animation)
-/// and can override their parameters individually.
+/// A placed instance of a Prefab in a scene.
+/// Carries only instance-specific data: position, label, and action parameter overrides.
+/// All shared properties (sprite, palette, actions, input) live in the referenced PrefabData.
 /// </summary>
 public class EntityData
 {
     [JsonPropertyName("entityId")]
     public string EntityId { get; set; } = string.Empty;
 
+    /// <summary>Human-readable label shown in the editor tree. Ex: "Player", "Goblin #3"</summary>
     [JsonPropertyName("label")]
     public string Label { get; set; } = string.Empty;
 
     /// <summary>
-    /// Entity type identifier.
-    /// Ex: "player", "enemy", "npc"
+    /// References PrefabData.PrefabId.
+    /// Determines sprite, palette, actions, and input mapping for this instance.
     /// </summary>
-    [JsonPropertyName("entityType")]
-    public string EntityType { get; set; } = string.Empty;
+    [JsonPropertyName("prefabId")]
+    public string PrefabId { get; set; } = string.Empty;
 
-    /// <summary>Sprite asset Id used by this entity.</summary>
-    [JsonPropertyName("spriteAssetId")]
-    public string SpriteAssetId { get; set; } = string.Empty;
-
-    /// <summary>Palette slot used to render this entity's sprite.</summary>
-    [JsonPropertyName("paletteSlot")]
-    public int PaletteSlot { get; set; } = 1;
+    /// <summary>
+    /// Per-instance action parameter overrides, keyed by ActionId.
+    /// Overrides the corresponding ActionInstance parameters defined in the Prefab.
+    /// Ex: { "jump": { "jumpHeight": 8 } } makes this instance jump higher than the Prefab default.
+    /// </summary>
+    [JsonPropertyName("actionOverrides")]
+    public Dictionary<string, Dictionary<string, object>> ActionOverrides { get; set; } = new();
 
     /// <summary>Initial tile position X in the scene.</summary>
     [JsonPropertyName("startTileX")]
@@ -120,19 +136,35 @@ public class EntityData
     [JsonPropertyName("startTileY")]
     public int StartTileY { get; set; }
 
-    /// <summary>
-    /// Entity-level module overrides.
-    /// Takes precedence over both scene and project module definitions.
-    /// Ex: an enemy with different physics than the player.
-    /// </summary>
-    [JsonPropertyName("moduleOverrides")]
-    public List<ProjectModuleData> ModuleOverrides { get; set; } = [];
+    /// <summary>Whether this entity is visible in the scene preview.</summary>
+    [JsonPropertyName("visible")]
+    public bool Visible { get; set; } = true;
 
-    /// <summary>
-    /// Serialized entity-specific state (health, speed, behavior params, etc).
-    /// </summary>
-    [JsonPropertyName("state")]
-    public System.Text.Json.JsonElement State { get; set; }
+    // ── Legacy fields — kept for migration only, do not use in new code ──────
+
+    /// <summary>Legacy: entity type string. Migrated to PrefabId on load.</summary>
+    [JsonPropertyName("entityType")]
+    public string? EntityType { get; set; }
+
+    /// <summary>Legacy: sprite asset on the instance. Migrated to PrefabData on load.</summary>
+    [JsonPropertyName("spriteAssetId")]
+    public string? SpriteAssetId { get; set; }
+
+    /// <summary>Legacy: palette slot on the instance. Migrated to PrefabData on load.</summary>
+    [JsonPropertyName("paletteSlot")]
+    public int? PaletteSlot { get; set; }
+
+    /// <summary>Legacy: width in tiles on the instance. Migrated to PrefabData on load.</summary>
+    [JsonPropertyName("widthTiles")]
+    public int? WidthTiles { get; set; }
+
+    /// <summary>Legacy: height in tiles on the instance. Migrated to PrefabData on load.</summary>
+    [JsonPropertyName("heightTiles")]
+    public int? HeightTiles { get; set; }
+
+    /// <summary>Legacy: input slot index. Migrated to PrefabData.InputMapping on load.</summary>
+    [JsonPropertyName("inputSlot")]
+    public int? InputSlot { get; set; }
 }
 
 /// <summary>
@@ -201,7 +233,7 @@ public class PaletteEffectData
     public int TargetSlot { get; set; }
 
     [JsonPropertyName("state")]
-    public System.Text.Json.JsonElement State { get; set; }
+    public JsonElement State { get; set; } = JsonDocument.Parse("{}").RootElement;
 }
 
 /// <summary>
@@ -222,7 +254,7 @@ public class BackgroundScrollData
     public int SpeedY { get; set; }
 
     [JsonPropertyName("state")]
-    public System.Text.Json.JsonElement State { get; set; }
+    public JsonElement State { get; set; } = JsonDocument.Parse("{}").RootElement;
 }
 
 /// <summary>

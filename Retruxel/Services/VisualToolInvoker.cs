@@ -147,11 +147,11 @@ public static class VisualToolInvoker
 
         System.Diagnostics.Debug.WriteLine($"[VisualToolInvoker] Received module data, keys: {string.Join(", ", moduleData.Keys)}");
 
-        // Log mapData size if present
-        if (moduleData.ContainsKey("mapData") && moduleData["mapData"] is int[] mapData)
+        // Log tiles size if present
+        if (moduleData.ContainsKey("tiles") && moduleData["tiles"] is int[] tiles)
         {
-            System.Diagnostics.Debug.WriteLine($"[VisualToolInvoker] mapData array length: {mapData.Length}");
-            int nonEmpty = mapData.Count(t => t >= 0);
+            System.Diagnostics.Debug.WriteLine($"[VisualToolInvoker] tiles array length: {tiles.Length}");
+            int nonEmpty = tiles.Count(t => t >= 0);
             System.Diagnostics.Debug.WriteLine($"[VisualToolInvoker] Non-empty tiles: {nonEmpty}");
         }
 
@@ -232,26 +232,23 @@ public static class VisualToolInvoker
                 layer.AssetId = assetIdObj?.ToString() ?? layer.AssetId;
 
             // Update layer dimensions so the preview renders at the correct size.
-            if (moduleData.TryGetValue("mapWidth", out var wObj) && wObj is int w)
-                layer.Width = w;
-            if (moduleData.TryGetValue("mapHeight", out var hObj) && hObj is int h)
-                layer.Height = h;
+            if (moduleData.TryGetValue("mapWidth", out var wObj))
+                layer.Width = Convert.ToInt32(wObj);
+            if (moduleData.TryGetValue("mapHeight", out var hObj))
+                layer.Height = Convert.ToInt32(hObj);
 
             // PaletteSlot belongs to PlaneData (the hardware plane), not to the layer.
-            if (planeData is not null &&
-                moduleData.TryGetValue("paletteSlot", out var slotObj) &&
-                slotObj is int slot)
-            {
-                planeData.PaletteSlot = slot;
-            }
+            if (planeData is not null && moduleData.TryGetValue("paletteSlot", out var slotObj))
+                planeData.PaletteSlot = Convert.ToInt32(slotObj);
 
-            // Rebuild Tiles from mapData if present.
-            // mapData is an object[] of anonymous objects {tileIndex, flipH, flipV, rotation}.
+            // Rebuild Tiles from tiles if present.
+            // tiles is an object[] of anonymous objects {tileIndex, flipH, flipV, rotation}.
             // Serialize to JSON first so TileEntry's JsonPropertyName attributes are respected.
-            if (moduleData.TryGetValue("mapData", out var mapDataObj))
+            if (moduleData.TryGetValue("tiles", out var tilesObj))
             {
-                var json    = System.Text.Json.JsonSerializer.Serialize(mapDataObj);
-                var entries = System.Text.Json.JsonSerializer.Deserialize<List<TileEntry>>(json);
+                var opts    = new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+                var json    = System.Text.Json.JsonSerializer.Serialize(tilesObj);
+                var entries = System.Text.Json.JsonSerializer.Deserialize<List<TileEntry>>(json, opts);
                 if (entries is not null)
                     layer.Tiles = entries;
             }
@@ -276,7 +273,7 @@ public static class VisualToolInvoker
     {
         if (_toolRegistry is null) return false;
 
-        var visualTool = _toolRegistry.GetVisualTool("sprite-editor");
+        var visualTool = _toolRegistry.GetVisualTool("sprite_editor");
         if (visualTool is null) return false;
 
         var input = new Dictionary<string, object>
@@ -299,10 +296,19 @@ public static class VisualToolInvoker
         var result = wpfWindow.ShowDialog();
         if (result != true) return false;
 
-        // Persist entity data from window
-        var entityDataProp = window.GetType().GetProperty("EntityData");
-        if (entityDataProp?.GetValue(window) is EntityData updated)
-            entity.SpriteAssetId = updated.SpriteAssetId;
+        // Persist entity data from window.
+        // SpriteEditorWindow exposes ModuleData (not EntityData).
+        // Extract tilesetAssetId from ModuleData and write it back to entity.SpriteAssetId.
+        var moduleDataProp = window.GetType().GetProperty("ModuleData");
+        if (moduleDataProp?.GetValue(window) is Dictionary<string, object> moduleData)
+        {
+            if (moduleData.TryGetValue("tilesetAssetId", out var assetIdObj) &&
+                assetIdObj is string assetId &&
+                !string.IsNullOrEmpty(assetId))
+            {
+                entity.SpriteAssetId = assetId;
+            }
+        }
 
         saveProjectCallback?.Invoke();
         return true;

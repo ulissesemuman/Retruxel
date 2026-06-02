@@ -137,7 +137,6 @@ public class NesTarget : ITarget
             new Retruxel.Modules.Logic.InputModule(),
             new Retruxel.Modules.Logic.AnimationModule(),
             new Retruxel.Modules.Logic.ScrollModule(),
-            new Retruxel.Modules.Graphics.PaletteModule(),
             new Retruxel.Modules.Graphics.PlaneModule(),
             new Retruxel.Modules.Graphics.SpriteModule(),
             new Retruxel.Modules.Graphics.TextDisplayModule()

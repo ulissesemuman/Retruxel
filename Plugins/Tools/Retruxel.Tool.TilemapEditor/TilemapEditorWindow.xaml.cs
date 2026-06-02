@@ -2,9 +2,9 @@ using Retruxel.Core.Interfaces;
 using Retruxel.Core.Models;
 using Retruxel.Core.Services;
 using Retruxel.Lib.ImageProcessing;
+using Retruxel.Lib.TilesetHelpers;
 using Retruxel.Tool.TilemapEditor.Helpers;
 using TilemapEditorData = Retruxel.Tool.TilemapEditor.Helpers.PlaneInfo;
-using Retruxel.Core.Models;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -34,7 +34,7 @@ public partial class TilemapEditorWindow : Window
 
     private readonly TilemapEditorData _planeData = new();
     private readonly TilesetRenderer _tilesetRenderer = new();
-    private readonly IndexedPngService _indexedPngService = new();
+    private readonly MapIndexService _indexedPngService = new();
 
     private int _selectedTileId = 0;
     private bool _selectedFlipH = false;
@@ -48,7 +48,6 @@ public partial class TilemapEditorWindow : Window
     private int _mapOffsetY = 0;
     private ToolMode _currentToolMode = ToolMode.Paint;
 
-    private IndexedPngData? _indexedData;
     private SceneData? _currentScene;
 
     public Dictionary<string, object>? ModuleData { get; private set; }

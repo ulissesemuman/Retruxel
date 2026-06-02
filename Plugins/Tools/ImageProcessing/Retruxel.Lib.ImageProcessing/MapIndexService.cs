@@ -15,7 +15,7 @@ namespace Retruxel.Lib.ImageProcessing;
 /// the same indexed PNG can be rendered with different color palettes
 /// without modifying the asset file.
 /// </summary>
-public class IndexedPngService
+public class MapIndexService
 {
     /// <summary>
     /// Reads a PNG and returns pixel indices and palette colors.

@@ -121,11 +121,11 @@ public partial class TilemapEditorWindow
 
                 _planeData.Resize(width, height);
 
-                var mapData = (TileEntry[])planeData["mapData"];
-                if (mapData.Length > 0)
+                var tiles = (TileEntry[])planeData["tiles"];
+                if (tiles.Length > 0)
                 {
                     var currentLayer = _planeData.GetLayer(_currentLayerIndex);
-                    Array.Copy(mapData, currentLayer, Math.Min(mapData.Length, currentLayer.Length));
+                    Array.Copy(tiles, currentLayer, Math.Min(tiles.Length, currentLayer.Length));
                 }
 
                 RenderCanvas();

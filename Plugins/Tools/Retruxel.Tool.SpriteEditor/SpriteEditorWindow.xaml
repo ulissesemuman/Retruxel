@@ -127,14 +127,12 @@
 
                         <ScrollViewer Grid.Row="4" x:Name="TilesetScrollViewer"
                                   VerticalScrollBarVisibility="Auto"
-                                  HorizontalScrollBarVisibility="Disabled">
-                            <ItemsControl x:Name="TilesetItemsControl">
-                                <ItemsControl.ItemsPanel>
-                                    <ItemsPanelTemplate>
-                                        <WrapPanel Orientation="Horizontal" Width="208"/>
-                                    </ItemsPanelTemplate>
-                                </ItemsControl.ItemsPanel>
-                            </ItemsControl>
+                                  HorizontalScrollBarVisibility="Auto">
+                            <Canvas x:Name="TilesetCanvas"
+                                    Background="{StaticResource BrushSurface}"
+                                    MouseLeftButtonDown="TilesetCanvas_MouseLeftButtonDown"
+                                    MouseMove="TilesetCanvas_MouseMove"
+                                    MouseLeftButtonUp="TilesetCanvas_MouseLeftButtonUp"/>
                         </ScrollViewer>
                     </Grid>
                 </Border>
@@ -165,7 +163,9 @@
                         <ScrollViewer Grid.Row="2" x:Name="CanvasScrollViewer"
                                   HorizontalScrollBarVisibility="Auto"
                                   VerticalScrollBarVisibility="Auto">
-                            <Canvas x:Name="CompositionCanvas" 
+                            <Canvas x:Name="CompositionCanvas"
+                                    MouseLeftButtonDown="CompositionCanvas_MouseLeftButtonDown"
+                                    
                                 Width="512" Height="512"
                                 Background="{StaticResource BrushSurfaceContainerHigh}"
                                 AllowDrop="True"
@@ -279,7 +279,7 @@
 
                 <!-- Status Bar -->
                 <Border Grid.Row="1" Background="{StaticResource BrushSurfaceContainerLow}" 
-                    BorderBrush="{StaticResource BrushOutlineVariant}" BorderThickness="0,1,0,0">
+                    BorderBrush="{StaticResource BrushGhostBorder}" BorderThickness="0,1,0,0">
                     <Grid Margin="16,0">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*"/>
@@ -299,7 +299,7 @@
                                  Text="100" TextAlignment="Center"
                                  Background="{StaticResource BrushSurfaceContainerHigh}"
                                  Foreground="{StaticResource BrushOnSurface}"
-                                 BorderBrush="{StaticResource BrushOutlineVariant}"
+                                 BorderBrush="{StaticResource BrushGhostBorder}"
                                  TextChanged="TxtFrameDuration_TextChanged"/>
                             <TextBlock Text="ms" Style="{StaticResource TextLabel}" 
                                    Foreground="{StaticResource BrushOnSurfaceVariant}" Margin="4,0,16,0"/>

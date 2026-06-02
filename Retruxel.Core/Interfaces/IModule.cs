@@ -17,8 +17,12 @@ public interface IModule
     /// <summary>Category for UI grouping. Ex: "Background", "Sprites", "Physics", "Music"</summary>
     string Category { get; }
 
-    /// <summary>Module type — determines which specialized interface it implements.</summary>
-    ModuleType Type { get; }
+    /// <summary>
+    /// Determines where this module appears in the scene editor.
+    /// Plane and Entity modules have dedicated tree sections and
+    /// are excluded from the general module picker.
+    /// </summary>
+    ModuleType Type => ModuleType.Logic;
 
     /// <summary>
     /// List of target IDs this module is compatible with.
@@ -66,10 +70,40 @@ public interface IModule
     string GetValidationSample();
 }
 
-/// <summary>Module type classification.</summary>
+/// <summary>
+/// Determines where a module appears in the scene editor.
+/// Plane and Entity modules have dedicated tree sections and
+/// are excluded from the general module picker.
+/// </summary>
 public enum ModuleType
 {
-    Graphics,
-    Logic,
-    Audio
+    Logic,    // Physics, Input, Animation, Scroll
+    Graphics, // Palette, Fade, Text, HUD
+    Audio,    // Sound, Music
+    Plane,    // PlaneModule — exclusive to the PLANES section
+    Entity    // EntityModule, EnemyModule — exclusive to the ENTITIES section
+}
+
+/// <summary>
+/// Contract for modules that represent a background plane layer.
+/// Modules implementing this interface appear in the PLANES section
+/// of the scene tree and open the plane editor on click.
+/// </summary>
+public interface IPlaneModule : IModule
+{
+    string AssetId { get; }
+    int    Width   { get; }
+    int    Height  { get; }
+}
+
+/// <summary>
+/// Contract for modules that represent a game entity (player, enemy, NPC).
+/// Modules implementing this interface appear in the ENTITIES section
+/// of the scene tree and contribute to the sprite usage counter.
+/// </summary>
+public interface IEntityModule : IModule
+{
+    string SpriteAssetId { get; }
+    int    WidthTiles    { get; }
+    int    HeightTiles   { get; }
 }

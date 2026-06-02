@@ -49,17 +49,17 @@ public class PlanePreprocessorTool : ITool
     {
         // Extract parameters
         var solidTiles = GetIntArray(input, "solidTiles");
-        var mapDataObj = input.ContainsKey("mapData") ? input["mapData"] : null;
+        var tilesObj = input.ContainsKey("tiles") ? input["tiles"] : null;
 
         // DEBUG: Log input
         System.Diagnostics.Debug.WriteLine($"[PlanePreprocessor] ===== EXECUTE START =====");
-        System.Diagnostics.Debug.WriteLine($"[PlanePreprocessor] mapDataObj type: {mapDataObj?.GetType().Name ?? "null"}");
+        System.Diagnostics.Debug.WriteLine($"[PlanePreprocessor] tilesObj type: {tilesObj?.GetType().Name ?? "null"}");
 
         // Convert JsonElement to object[] if needed
-        if (mapDataObj is JsonElement jsonElement && jsonElement.ValueKind == JsonValueKind.Array)
+        if (tilesObj is JsonElement jsonElement && jsonElement.ValueKind == JsonValueKind.Array)
         {
             var arrayLength = jsonElement.GetArrayLength();
-            System.Diagnostics.Debug.WriteLine($"[PlanePreprocessor] mapDataObj is JsonElement array with {arrayLength} items");
+            System.Diagnostics.Debug.WriteLine($"[PlanePreprocessor] tilesObj is JsonElement array with {arrayLength} items");
 
             var objArray = new object[arrayLength];
             int idx = 0;
@@ -67,32 +67,32 @@ public class PlanePreprocessorTool : ITool
             {
                 objArray[idx++] = item;
             }
-            mapDataObj = objArray;
+            tilesObj = objArray;
 
             if (arrayLength > 0)
             {
                 System.Diagnostics.Debug.WriteLine($"[PlanePreprocessor] First item type: {objArray[0]?.GetType().Name}");
             }
         }
-        else if (mapDataObj is object[] objArr)
+        else if (tilesObj is object[] objArr)
         {
-            System.Diagnostics.Debug.WriteLine($"[PlanePreprocessor] mapDataObj is object[] with {objArr.Length} items");
+            System.Diagnostics.Debug.WriteLine($"[PlanePreprocessor] tilesObj is object[] with {objArr.Length} items");
             if (objArr.Length > 0)
             {
                 System.Diagnostics.Debug.WriteLine($"[PlanePreprocessor] First item type: {objArr[0]?.GetType().Name}");
             }
         }
 
-        // Convert mapData to TileEntry[] if it's an object array
-        var mapData = ConvertToTileEntryArray(mapDataObj);
+        // Convert tiles to TileEntry[] if it's an object array
+        var tiles = ConvertToTileEntryArray(tilesObj);
 
-        // DEBUG: Log mapData info
-        System.Diagnostics.Debug.WriteLine($"[PlanePreprocessor] mapData converted: Length={mapData.Length}");
-        if (mapData.Length > 0)
+        // DEBUG: Log tiles info
+        System.Diagnostics.Debug.WriteLine($"[PlanePreprocessor] tiles converted: Length={tiles.Length}");
+        if (tiles.Length > 0)
         {
-            System.Diagnostics.Debug.WriteLine($"[PlanePreprocessor] First entry: TileIndex={mapData[0].TileIndex}, FlipH={mapData[0].FlipH}, FlipV={mapData[0].FlipV}");
-            if (mapData.Length > 1)
-                System.Diagnostics.Debug.WriteLine($"[PlanePreprocessor] Second entry: TileIndex={mapData[1].TileIndex}, FlipH={mapData[1].FlipH}, FlipV={mapData[1].FlipV}");
+            System.Diagnostics.Debug.WriteLine($"[PlanePreprocessor] First entry: TileIndex={tiles[0].TileIndex}, FlipH={tiles[0].FlipH}, FlipV={tiles[0].FlipV}");
+            if (tiles.Length > 1)
+                System.Diagnostics.Debug.WriteLine($"[PlanePreprocessor] Second entry: TileIndex={tiles[1].TileIndex}, FlipH={tiles[1].FlipH}, FlipV={tiles[1].FlipV}");
         }
 
         var startTile = GetInt(input, "startTile", 0);
@@ -106,7 +106,7 @@ public class PlanePreprocessorTool : ITool
         // Only apply clipping if mapX < 0 or mapY < 0 (plane starts off-screen)
         bool needsClipping = mapX < 0 || mapY < 0;
 
-        TileEntry[] processedMapData;
+        TileEntry[] processedTiles;
         int finalWidth;
         int finalHeight;
         int drawX;
@@ -114,8 +114,8 @@ public class PlanePreprocessorTool : ITool
 
         if (needsClipping)
         {
-            var clippingResult = ApplyClipping(mapData, mapWidth, mapHeight, mapX, mapY);
-            processedMapData = clippingResult.clippedData;
+            var clippingResult = ApplyClipping(tiles, mapWidth, mapHeight, mapX, mapY);
+            processedTiles = clippingResult.clippedData;
             finalWidth = clippingResult.width;
             finalHeight = clippingResult.height;
             drawX = clippingResult.drawX;
@@ -124,7 +124,7 @@ public class PlanePreprocessorTool : ITool
         else
         {
             // No clipping needed - use full plane
-            processedMapData = mapData;
+            processedTiles = tiles;
             finalWidth = mapWidth;
             finalHeight = mapHeight;
             drawX = mapX;
@@ -139,7 +139,7 @@ public class PlanePreprocessorTool : ITool
         var collisionHex = string.Join(", ", collisionArray.Select(b => $"0x{b:X2}"));
 
         // Process map data - convert to ProcessedTileEntry[] with VRAM slots
-        var processedMap = ProcessMapData(processedMapData, startTile, finalWidth, finalHeight, maxTileSlots);
+        var processedMap = ProcessTiles(processedTiles, startTile, finalWidth, finalHeight, maxTileSlots);
 
         var result = new Dictionary<string, object>
         {
@@ -171,19 +171,19 @@ public class PlanePreprocessorTool : ITool
     }
 
     /// <summary>
-    /// Converts mapData object to TileEntry array.
+    /// Converts tiles object to TileEntry array.
     /// Supports: TileEntry[], JsonElement array, anonymous objects, int[] (backward compat).
     /// </summary>
-    private TileEntry[] ConvertToTileEntryArray(object? mapDataObj)
+    private TileEntry[] ConvertToTileEntryArray(object? tilesObj)
     {
-        if (mapDataObj == null) return Array.Empty<TileEntry>();
+        if (tilesObj == null) return Array.Empty<TileEntry>();
 
         // Already TileEntry[]
-        if (mapDataObj is TileEntry[] entries)
+        if (tilesObj is TileEntry[] entries)
             return entries;
 
         // JsonElement or anonymous objects from JSON
-        if (mapDataObj is object[] objArray)
+        if (tilesObj is object[] objArray)
         {
             return objArray.Select(obj =>
             {
@@ -217,7 +217,7 @@ public class PlanePreprocessorTool : ITool
         }
 
         // Backward compat: int[] (plain tile indices)
-        if (mapDataObj is int[] intArray)
+        if (tilesObj is int[] intArray)
         {
             return intArray.Select(i => new TileEntry { TileIndex = i }).ToArray();
         }
@@ -230,7 +230,7 @@ public class PlanePreprocessorTool : ITool
     /// Returns only the visible portion by skipping the off-screen tiles.
     /// </summary>
     private (TileEntry[] clippedData, int width, int height, int drawX, int drawY) ApplyClipping(
-        TileEntry[] mapData, int mapWidth, int mapHeight, int mapX, int mapY)
+        TileEntry[] tiles, int mapWidth, int mapHeight, int mapX, int mapY)
     {
         int sourceOffsetX = 0;
         int sourceOffsetY = 0;
@@ -271,8 +271,8 @@ public class PlanePreprocessorTool : ITool
                 }
 
                 int sourceIndex = sourceY * mapWidth + sourceX;
-                if (sourceIndex < mapData.Length)
-                    clippedData[y * drawWidth + x] = mapData[sourceIndex];
+                if (sourceIndex < tiles.Length)
+                    clippedData[y * drawWidth + x] = tiles[sourceIndex];
                 else
                     clippedData[y * drawWidth + x] = TileEntry.Empty;
             }
@@ -302,20 +302,20 @@ public class PlanePreprocessorTool : ITool
     /// Processes map data by adding startTile offset to create VRAM slots.
     /// Returns ProcessedTileEntry[] with transformation flags - no hardware-specific encoding.
     /// </summary>
-    private ProcessedTileEntry[] ProcessMapData(TileEntry[] mapData, int startTile, int mapWidth, int mapHeight, int maxTileSlots)
+    private ProcessedTileEntry[] ProcessTiles(TileEntry[] tiles, int startTile, int mapWidth, int mapHeight, int maxTileSlots)
     {
         var totalCells = mapWidth * mapHeight;
         var result = new ProcessedTileEntry[totalCells];
 
         for (int i = 0; i < totalCells; i++)
         {
-            if (i >= mapData.Length)
+            if (i >= tiles.Length)
             {
                 result[i] = new ProcessedTileEntry { VramSlot = 0 };
                 continue;
             }
 
-            var entry = mapData[i];
+            var entry = tiles[i];
 
             // Empty cell → VRAM slot 0
             if (entry.IsEmpty)

@@ -12,7 +12,6 @@ namespace Retruxel.Tool.TextArrayEditor;
 public partial class TextArrayEditorWindow : Window
 {
     private readonly TextArrayModule _module;
-    private readonly string _projectPath;
     private TextArrayState _state;
     private int _activeLanguageIndex = 0;
     private int _selectedStringIndex = -1;
@@ -26,7 +25,7 @@ public partial class TextArrayEditorWindow : Window
     {
         InitializeComponent();
         _module = module;
-        _projectPath = projectPath;
+        _ = projectPath; // parameter kept for API compatibility
 
         // Deserialize module state
         var json = _module.Serialize();

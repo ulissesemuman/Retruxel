@@ -77,6 +77,25 @@ internal static class EventCallGenerator
         string targetTrigger,
         ModuleRegistry? moduleRegistry)
     {
+        // Determine the function suffix based on the trigger type.
+        // OnStart → _init(), OnVBlank → _update(), OnInput → _update()
+        var callSuffix = targetTrigger switch
+        {
+            "OnVBlank" => "_update",
+            "OnInput"  => "_update",
+            _          => "_init"
+        };
+
+        return GenerateEventCallsInternal(files, triggersByElement, targetTrigger, moduleRegistry, callSuffix);
+    }
+
+    private static List<object> GenerateEventCallsInternal(
+        List<GeneratedFile> files,
+        Dictionary<IModule, string> triggersByElement,
+        string targetTrigger,
+        ModuleRegistry? moduleRegistry,
+        string callSuffix)
+    {
         var calls = new List<object>();
         var processedFiles = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
@@ -129,7 +148,7 @@ internal static class EventCallGenerator
         {
             calls.Add(new Dictionary<string, object>
             {
-                ["call"] = $"    {baseName}_init();",
+                ["call"] = $"    {baseName}{callSuffix}();",
                 ["isGraphicModule"] = isGraphic,
                 ["isTextDisplay"] = isTextDisplay
             });

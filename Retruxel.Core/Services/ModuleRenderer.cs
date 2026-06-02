@@ -23,6 +23,9 @@ public class ModuleRenderer
     private Dictionary<string, object> _globalVariables = new();
 
     private readonly Dictionary<string, int> _instanceCounters = new();
+    // Tracks which sprite asset arrays have already been emitted to avoid duplicates
+    // across multiple entity instances sharing the same asset.
+    private readonly HashSet<string> _emittedSpriteAssets = new(StringComparer.OrdinalIgnoreCase);
 
     public ModuleRenderer(string pluginsPath, Assembly? targetAssembly = null, IProgress<string>? progress = null)
     {
@@ -33,7 +36,11 @@ public class ModuleRenderer
         _variableResolver = new VariableResolver(_tools, targetAssembly);
     }
 
-    public void ResetState() => _instanceCounters.Clear();
+    public void ResetState()
+    {
+        _instanceCounters.Clear();
+        _emittedSpriteAssets.Clear();
+    }
 
     /// <summary>
     /// Sets global variables available to all CodeGen templates.
@@ -53,6 +60,16 @@ public class ModuleRenderer
 
     public void SetModuleRegistry(ModuleRegistry? registry)
  => _moduleRegistry = registry;
+
+    public void SetTarget(ITarget? target)
+ => _variableResolver.SetTarget(target);
+
+    /// <summary>
+    /// Registers virtual (in-memory) assets so tools can resolve them without reading disk.
+    /// Used for merged plane assets created at code-gen time.
+    /// </summary>
+    public void SetInMemoryAssets(Dictionary<string, Models.AssetEntry> assets)
+ => _variableResolver.SetInMemoryAssets(assets);
 
     public bool CanRender(string moduleId, string targetId)
  => _codeGens.ContainsKey(Key(targetId, moduleId));
@@ -259,10 +276,23 @@ public class ModuleRenderer
             })
             .ToList();
 
+        // Entity inits — called once per scene to load tiles into VRAM and set up SAT
+        var entityInits = moduleFiles
+            .Where(f => f.FileType == GeneratedFileType.Header &&
+                        (f.SourceModuleId == "entity" || f.SourceModuleId == "enemy"))
+            .Select(f => new Dictionary<string, object>
+            {
+                ["header"] = f.FileName,
+                ["call"] = Path.GetFileNameWithoutExtension(f.FileName) + "_init"
+            })
+            .ToList();
+
         variables["paletteInits"] = paletteInits;
         variables["planeInits"] = planeInits;
         variables["textStaticInits"] = textStaticInits;
+        variables["entityInits"] = entityInits;
         variables["hasGraphicModules"] = paletteInits.Count > 0 || planeInits.Count > 0 || textStaticInits.Count > 0;
+        variables["hasEntities"] = entityInits.Count > 0;
 
         var template = File.ReadAllText(manifest.TemplatePath);
 
@@ -315,7 +345,45 @@ public class ModuleRenderer
 
             var instanceId = _instanceCounters[key]++;
             variables["instanceId"] = instanceId;
-            variables["isFirstInstance"] = instanceId == 0;
+
+            // isFirstInstance for tile array emission:
+            // For entity/enemy modules, track by spriteAssetId so that two entities
+            // sharing the same asset only emit the tile array once (the first one).
+            // For all other Multiple modules, fall back to instanceId == 0.
+            if (variables.TryGetValue("spriteAssetId", out var assetObj) &&
+                AsStringOrEmpty(assetObj) is string assetId && !string.IsNullOrEmpty(assetId))
+            {
+                var isFirst = _emittedSpriteAssets.Add(assetId);
+                variables["isFirstInstance"]         = isFirst;
+                variables["isFirstInstanceWithAsset"]    = isFirst;
+                variables["isFirstInstanceWithoutAsset"] = false;
+                variables["isNotFirstInstanceWithAsset"] = !isFirst;
+            }
+            else
+            {
+                var isFirst = instanceId == 0;
+                variables["isFirstInstance"]             = isFirst;
+                variables["isFirstInstanceWithAsset"]    = false;
+                variables["isFirstInstanceWithoutAsset"] = isFirst;
+                variables["isNotFirstInstanceWithAsset"] = false;
+            }
+
+            // Pre-compute VRAM half selection to avoid nested conditionals in templates.
+            // SMS SAT reads tiles 0-255 when useFirstHalf=1, tiles 256-511 when useFirstHalf=0.
+            if (variables.TryGetValue("startTile", out var startTileObj))
+            {
+                var startTileVal = startTileObj switch
+                {
+                    int i    => i,
+                    double d => (int)d,
+                    _        => 256
+                };
+                variables["useFirstHalfTiles"] = startTileVal < 256 ? 1 : 0;
+            }
+            else
+            {
+                variables["useFirstHalfTiles"] = 0; // default: tiles 256-511
+            }
         }
 
         var template = File.ReadAllText(manifest.TemplatePath);
@@ -437,6 +505,14 @@ public class ModuleRenderer
 
     private static string Key(string targetId, string moduleId)
  => $"{targetId}::{moduleId}".ToLowerInvariant();
+
+    private static string AsStringOrEmpty(object? value) => value switch
+    {
+        string s => s,
+        System.Text.Json.JsonElement j when j.ValueKind == System.Text.Json.JsonValueKind.String
+            => j.GetString() ?? "",
+        _ => ""
+    };
 
     /// <summary>
     /// Sanitizes a scene name for use in C file names.

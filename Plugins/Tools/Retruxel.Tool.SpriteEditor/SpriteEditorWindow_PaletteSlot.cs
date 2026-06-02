@@ -34,7 +34,7 @@ public partial class SpriteEditorWindow
         _activePaletteSlot   = CmbPaletteSlot.SelectedIndex;
         SavePaletteSlotSelection();
 
-        RefreshTilesetWithPalette();
+        RefreshTilesetFromAsset();
         RenderCanvas();
     }
 
@@ -62,7 +62,7 @@ public partial class SpriteEditorWindow
 
         if (PaletteHelpers.OpenPaletteEditorForSlot(_target, _currentScene, slotIndex, this))
         {
-            RefreshTilesetWithPalette();
+            RefreshTilesetFromAsset();
             RenderCanvas();
         }
     }

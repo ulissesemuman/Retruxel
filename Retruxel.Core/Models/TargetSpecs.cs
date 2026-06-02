@@ -142,6 +142,17 @@ public class TargetSpecs
 
     /// <summary>Number of noise channels on the sound chip.</summary>
     public int SoundNoiseChannels { get; set; }
+
+    // ── Input ─────────────────────────────────────────────────────────────────
+
+    /// <summary>
+    /// Physical input ports available on this target hardware.
+    /// Each port describes its type (controller, keyboard, light gun) and
+    /// the buttons it exposes, including the DevkitConst used by CodeGen.
+    ///
+    /// Ex: SMS has two controller ports (port1/port2), each with D-pad + 2 buttons.
+    /// </summary>
+    public InputPort[] InputPorts { get; set; } = Array.Empty<InputPort>();
 }
 
 /// <summary>

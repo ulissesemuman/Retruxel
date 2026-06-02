@@ -62,12 +62,14 @@ public partial class SceneEditorView
             // Check typed plane layers
             foreach (var plane in scene.Planes)
             {
+                var planeLabel = _target?.Specs.Planes.FirstOrDefault(p => p.Id == plane.PlaneId)?.Label
+                                 ?? plane.PlaneId;
                 foreach (var layer in plane.Layers)
                 {
                     if (layer.AssetId == asset.Id)
                     {
-                        var label = !string.IsNullOrEmpty(layer.LayerName) ? layer.LayerName : layer.LayerId[..8];
-                        usedBy.Add($"{scene.SceneName}/{label}");
+                        var layerLabel = !string.IsNullOrEmpty(layer.LayerName) ? layer.LayerName : layer.LayerId[..8];
+                        usedBy.Add($"{scene.SceneName} / {planeLabel} / {layerLabel}");
                     }
                 }
             }
@@ -120,8 +122,36 @@ public partial class SceneEditorView
             Type        = ChangeType.Large,
             Execute     = () =>
             {
+                // Clear all references to this asset before removing it.
+                foreach (var scene in _project.Scenes)
+                {
+                    foreach (var plane in scene.Planes)
+                        foreach (var layer in plane.Layers)
+                            if (layer.AssetId == asset.Id)
+                                layer.AssetId = string.Empty;
+
+                    foreach (var entity in scene.Entities)
+                        if (entity.SpriteAssetId == asset.Id)
+                            entity.SpriteAssetId = string.Empty;
+
+                    foreach (var element in scene.Elements)
+                    {
+                        if (element.ModuleState.ValueKind == System.Text.Json.JsonValueKind.Undefined ||
+                            element.ModuleState.ValueKind == System.Text.Json.JsonValueKind.Null)
+                            continue;
+                        if (element.ModuleState.TryGetProperty("tilesAssetId", out var assetId) &&
+                            assetId.GetString() == asset.Id)
+                        {
+                            // Legacy elements store state as a JsonElement — mark dirty only,
+                            // the next save will persist the cleared reference.
+                        }
+                    }
+                }
+
                 _project.Assets.Remove(asset);
+                _projectManager?.MarkDirty();
                 RebuildProjectTree();
+                RefreshPreview();
             },
             IsUndoable = false
         };

@@ -26,7 +26,7 @@ public class AssetProcessorTool : ITool
     public bool IsStandalone => false;
     public bool RequiresProject => true;
 
-    private readonly IndexedPngService _indexedPngService = new();
+    private readonly MapIndexService _indexedPngService = new();
 
     public Dictionary<string, object> Execute(Dictionary<string, object> input)
     {

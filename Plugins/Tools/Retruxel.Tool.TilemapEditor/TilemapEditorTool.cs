@@ -55,7 +55,7 @@ public class TilemapEditorTool : IVisualTool
                 ["mapWidth"]     = layer.Width,
                 ["mapHeight"]    = layer.Height,
                 ["tilesAssetId"] = layer.AssetId ?? string.Empty,
-                ["mapData"]      = layer.Tiles.Select(t => new
+                ["tiles"]      = layer.Tiles.Select(t => new
                 {
                     tileIndex = t.TileIndex,
                     flipH     = t.FlipH,

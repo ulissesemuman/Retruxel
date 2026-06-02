@@ -42,33 +42,15 @@ public partial class TilemapEditorWindow
             _currentAsset = asset;
 
             int tileSize = _target.Specs.TileWidth;
-            int calculatedColumns = asset.GenerationParams.OptimizedWidth / tileSize; // always 16?
+            int calculatedColumns = asset.GenerationParams.OptimizedWidth / tileSize;
             TxtImportColumns.Text = calculatedColumns.ToString();
 
             if (asset.GenerationParams.MapIndex == null || asset.GenerationParams.MapIndex.Length == 0)
             {
-                if (asset.GenerationParams != null)
-                {
-                    var assetProcessorTool = _toolRegistry?.GetTool("asset_processor")
-                        as Retruxel.Tool.AssetProcessor.AssetProcessorTool;
-
-                    if (assetProcessorTool != null)
-                    {
-                        _indexedData = assetProcessorTool.ProcessAsset(asset, _projectPath);
-                        if (_indexedData != null)
-                        {
-                            asset.GenerationParams.MapIndex = _indexedData.Indices;
-                        }
-                    }
-                }
-
-                if (asset.GenerationParams.MapIndex == null || asset.GenerationParams.MapIndex.Length == 0)
-                {
-                    MessageBox.Show(
-                        $"Asset '{asset.Id}' has no MapIndex. Re-import the asset to generate it.",
-                        "Missing MapIndex", MessageBoxButton.OK, MessageBoxImage.Warning);
-                    return;
-                }
+                MessageBox.Show(
+                    $"Asset '{asset.Id}' has no MapIndex. Re-import the asset to generate it.",
+                    "Missing MapIndex", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
             }
 
             RefreshTilesetFromAsset();

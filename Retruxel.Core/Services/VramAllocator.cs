@@ -1,5 +1,6 @@
 using Retruxel.Core.Interfaces;
 using Retruxel.Core.Models;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -18,12 +19,22 @@ public static class VramAllocator
     /// Analyzes VRAM usage for a scene without assigning addresses.
     /// Safe to call on every tree refresh — reads only, never mutates.
     /// </summary>
-    public static VramUsageReport Analyze(SceneData scene, ITarget target)
+    public static VramUsageReport Analyze(
+        SceneData scene,
+        ITarget target,
+        IReadOnlyList<AssetEntry> assets,
+        int fontTileCount = 0)
     {
         var specs      = target.Specs;
         var available  = specs.VramBytesForTiles;
         var planeUsages = new List<PlaneUsage>();
         int totalUsed  = 0;
+
+        // Default bytes-per-tile from the first plane spec (fallback: 32 bytes = SMS 4bpp)
+        int defaultBytesPerTile = specs.Planes.FirstOrDefault()?.BytesPerTile ?? 32;
+
+        // Track counted assets to avoid double-counting shared assets
+        var counted = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
         foreach (var plane in scene.Planes)
         {
@@ -36,10 +47,10 @@ public static class VramAllocator
 
             foreach (var layer in plane.Layers)
             {
-                // Tile count comes from the asset's generation params.
-                // If the asset has no params yet (not imported), count = 0.
-                int tileCount = GetTileCount(layer.AssetId, scene);
-                int bytes     = tileCount * bytesPerTile;
+                if (string.IsNullOrEmpty(layer.AssetId)) continue;
+
+                int tileCount = GetTileCount(layer.AssetId, assets);
+                int bytes     = counted.Add(layer.AssetId) ? tileCount * bytesPerTile : 0;
 
                 layerUsages.Add(new LayerUsage
                 {
@@ -54,15 +65,28 @@ public static class VramAllocator
 
             planeUsages.Add(new PlaneUsage
             {
-                PlaneId    = plane.PlaneId,
-                PlaneLabel = planeSpecs.Label,
+                PlaneId      = plane.PlaneId,
+                PlaneLabel   = planeSpecs.Label,
                 BytesPerTile = bytesPerTile,
-                BytesUsed  = planeBytes,
-                Layers     = layerUsages
+                BytesUsed    = planeBytes,
+                Layers       = layerUsages
             });
 
             totalUsed += planeBytes;
         }
+
+        // Entity sprite assets
+        foreach (var entity in scene.Entities)
+        {
+            if (string.IsNullOrEmpty(entity.SpriteAssetId)) continue;
+            if (!counted.Add(entity.SpriteAssetId)) continue;
+
+            int tileCount = GetTileCount(entity.SpriteAssetId, assets);
+            totalUsed += tileCount * defaultBytesPerTile;
+        }
+
+        // Font tiles (text system)
+        totalUsed += fontTileCount * defaultBytesPerTile;
 
         return new VramUsageReport
         {
@@ -111,7 +135,21 @@ public static class VramAllocator
             }
         }
 
-        int totalBytesUsed = CalculateTotalBytes(scene, target, assets);
+        // Entity sprite assets — allocated after plane assets
+        int defaultBytesPerTile = specs.Planes.FirstOrDefault()?.BytesPerTile ?? 32;
+        foreach (var entity in scene.Entities)
+        {
+            if (string.IsNullOrEmpty(entity.SpriteAssetId)) continue;
+            if (offsets.ContainsKey(entity.SpriteAssetId)) continue;
+
+            var asset     = assets.FirstOrDefault(a => a.Id == entity.SpriteAssetId);
+            int tileCount = asset?.GenerationParams?.TileCount ?? 0;
+
+            offsets[entity.SpriteAssetId] = nextOffset;
+            nextOffset += tileCount;
+        }
+
+        int totalBytesUsed = nextOffset * defaultBytesPerTile;
 
         return new VramAllocation
         {
@@ -127,13 +165,10 @@ public static class VramAllocator
     /// Looks up the tile count for an asset referenced by a layer.
     /// Falls back to 0 if the asset is not yet imported or has no generation params.
     /// </summary>
-    private static int GetTileCount(string assetId, SceneData scene)
+    private static int GetTileCount(string assetId, IReadOnlyList<AssetEntry> assets)
     {
-        // SceneData does not hold assets directly — assets live on RetruxelProject.
-        // Analyze() is called from the editor which passes the scene; the caller
-        // is responsible for ensuring assets are accessible via the project reference.
-        // Since Analyze is a dry-run, returning 0 for missing assets is safe.
-        return 0;
+        if (string.IsNullOrEmpty(assetId)) return 0;
+        return assets.FirstOrDefault(a => a.Id == assetId)?.GenerationParams?.TileCount ?? 0;
     }
 
     private static int CalculateTotalBytes(

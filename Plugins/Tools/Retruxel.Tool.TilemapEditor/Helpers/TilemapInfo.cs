@@ -6,6 +6,7 @@ namespace Retruxel.Tool.TilemapEditor.Helpers;
 
 /// <summary>
 /// Manages plane layer data and operations.
+/// Internal to TilemapEditor — not shared with other tools.
 /// </summary>
 public class PlaneInfo
 {
@@ -13,13 +14,13 @@ public class PlaneInfo
     private int _width;
     private int _height;
 
-    public int Width => _width;
-    public int Height => _height;
+    public int Width      => _width;
+    public int Height     => _height;
     public int LayerCount => _layers.Count;
 
     public void Initialize(int width, int height, int layerCount)
     {
-        _width = width;
+        _width  = width;
         _height = height;
         _layers.Clear();
 
@@ -38,26 +39,21 @@ public class PlaneInfo
     {
         if (layerIndex < 0 || layerIndex >= _layers.Count) return;
         if (x < 0 || x >= _width || y < 0 || y >= _height) return;
-
-        int index = y * _width + x;
-        _layers[layerIndex][index] = entry.Clone();
+        _layers[layerIndex][y * _width + x] = entry.Clone();
     }
 
-    // Backward-compat overload for simple tile placement (no flip)
     public void SetTile(int layerIndex, int x, int y, int tileIndex)
- => SetTile(layerIndex, x, y, new TileEntry { TileIndex = tileIndex });
+        => SetTile(layerIndex, x, y, new TileEntry { TileIndex = tileIndex });
 
     public TileEntry GetTile(int layerIndex, int x, int y)
     {
         if (layerIndex < 0 || layerIndex >= _layers.Count) return TileEntry.Empty;
         if (x < 0 || x >= _width || y < 0 || y >= _height) return TileEntry.Empty;
-
-        int index = y * _width + x;
-        return _layers[layerIndex][index];
+        return _layers[layerIndex][y * _width + x];
     }
 
     public int GetTileIndex(int layerIndex, int x, int y)
- => GetTile(layerIndex, x, y).TileIndex;
+        => GetTile(layerIndex, x, y).TileIndex;
 
     public void ClearLayer(int layerIndex)
     {
@@ -73,9 +69,8 @@ public class PlaneInfo
             _layers[layerIndex][i] = entry.Clone();
     }
 
-    // Backward-compat overload
     public void FillLayer(int layerIndex, int tileIndex)
- => FillLayer(layerIndex, new TileEntry { TileIndex = tileIndex });
+        => FillLayer(layerIndex, new TileEntry { TileIndex = tileIndex });
 
     public void Resize(int newWidth, int newHeight)
     {
@@ -87,21 +82,14 @@ public class PlaneInfo
             for (int j = 0; j < newLayer.Length; j++)
                 newLayer[j] = TileEntry.Empty;
 
-            // Copy existing data
             for (int y = 0; y < Math.Min(_height, newHeight); y++)
-            {
                 for (int x = 0; x < Math.Min(_width, newWidth); x++)
-                {
-                    int oldIndex = y * _width + x;
-                    int newIndex = y * newWidth + x;
-                    newLayer[newIndex] = _layers[i][oldIndex].Clone();
-                }
-            }
+                    newLayer[y * newWidth + x] = _layers[i][y * _width + x].Clone();
 
             _layers[i] = newLayer;
         }
 
-        _width = newWidth;
+        _width  = newWidth;
         _height = newHeight;
     }
 }

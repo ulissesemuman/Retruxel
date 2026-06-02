@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<TargetFramework>net10.0-windows</TargetFramework>
+		<UseWPF>true</UseWPF>
+		<Nullable>enable</Nullable>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\..\..\Retruxel.SDK\Retruxel.SDK.csproj" />
+		<ProjectReference Include="..\Retruxel.Tool.SpriteEditor\Retruxel.Tool.SpriteEditor.csproj">
+			<Private>false</Private>
+		</ProjectReference>
+	</ItemGroup>
+
+	<Target Name="CopyToRetruxelOutput" AfterTargets="Build">
+		<PropertyGroup>
+			<RetruxelOutput>..\..\..\Retruxel\bin\$(Configuration)\net10.0-windows\Plugins\Tools\</RetruxelOutput>
+		</PropertyGroup>
+		<Copy SourceFiles="$(TargetPath)" DestinationFolder="$(RetruxelOutput)" />
+	</Target>
+
+</Project>

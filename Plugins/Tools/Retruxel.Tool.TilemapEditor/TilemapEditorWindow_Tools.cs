@@ -41,10 +41,10 @@ public partial class TilemapEditorWindow
             var asset = _project.Assets.FirstOrDefault(a => a.Id == assetId);
             if (asset == null) return;
 
-            var imagePath = Path.Combine(_projectPath, asset.RelativePath.Replace('/', Path.DirectorySeparatorChar));
-            if (!File.Exists(imagePath))
+            if (asset.GenerationParams?.MapIndex == null || asset.GenerationParams.MapIndex.Length == 0)
             {
-                MessageBox.Show($"Image file not found: {imagePath}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show($"Asset '{assetId}' has no MapIndex. Re-import the asset to generate it.",
+                    "Missing MapIndex", MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
 
@@ -156,29 +156,30 @@ public partial class TilemapEditorWindow
 
     private async Task UpdateAssetWithOptimization(List<byte[]> uniqueTiles, AssetEntry asset)
     {
-        int tileWidth = _target.Specs.TileWidth;
+        int tileWidth  = _target.Specs.TileWidth;
         int tileHeight = _target.Specs.TileHeight;
-        int tilesPerRow = 16;
-        int rows = (int)Math.Ceiling(uniqueTiles.Count / (double)tilesPerRow);
-        int imageWidth = tilesPerRow * tileWidth;
-        int imageHeight = rows * tileHeight;
+
+        // Single-column layout: width = tileWidth, height = uniqueTiles.Count * tileHeight.
+        // This guarantees TileCount == (OptimizedWidth/tileWidth)*(OptimizedHeight/tileHeight)
+        // with no padding gaps at the end — every byte in MapIndex belongs to a valid tile.
+        int imageWidth  = tileWidth;
+        int imageHeight = uniqueTiles.Count * tileHeight;
 
         var mapIndex = new byte[imageWidth * imageHeight];
 
         for (int tileIdx = 0; tileIdx < uniqueTiles.Count; tileIdx++)
         {
             var tileData = uniqueTiles[tileIdx];
-            int tileX = (tileIdx % tilesPerRow) * tileWidth;
-            int tileY = (tileIdx / tilesPerRow) * tileHeight;
+            int tileY = tileIdx * tileHeight;   // one tile per row
 
             for (int py = 0; py < tileHeight; py++)
                 for (int px = 0; px < tileWidth; px++)
-                    mapIndex[(tileY + py) * imageWidth + (tileX + px)] = tileData[py * tileWidth + px];
+                    mapIndex[(tileY + py) * imageWidth + px] = tileData[py * tileWidth + px];
         }
 
         asset.GenerationParams!.MapIndex = mapIndex;
         asset.GenerationParams.TileCount = uniqueTiles.Count;
-        asset.GenerationParams.OptimizedWidth = imageWidth;
+        asset.GenerationParams.OptimizedWidth  = imageWidth;
         asset.GenerationParams.OptimizedHeight = imageHeight;
 
         if (_saveProjectCallback != null)
@@ -191,24 +192,23 @@ public partial class TilemapEditorWindow
         {
             if (uniqueTiles.Count == 0) return null;
 
-            int tileWidth = _target.Specs.TileWidth;
+            int tileWidth  = _target.Specs.TileWidth;
             int tileHeight = _target.Specs.TileHeight;
-            int tilesPerRow = 16;
-            int rows = (int)Math.Ceiling(uniqueTiles.Count / (double)tilesPerRow);
-            int imageWidth = tilesPerRow * tileWidth;
-            int imageHeight = rows * tileHeight;
+
+            // Single-column layout — no padding gaps.
+            int imageWidth  = tileWidth;
+            int imageHeight = uniqueTiles.Count * tileHeight;
 
             var mapIndex = new byte[imageWidth * imageHeight];
 
             for (int tileIdx = 0; tileIdx < uniqueTiles.Count; tileIdx++)
             {
                 var tileData = uniqueTiles[tileIdx];
-                int tileX = (tileIdx % tilesPerRow) * tileWidth;
-                int tileY = (tileIdx / tilesPerRow) * tileHeight;
+                int tileY = tileIdx * tileHeight;
 
                 for (int py = 0; py < tileHeight; py++)
                     for (int px = 0; px < tileWidth; px++)
-                        mapIndex[(tileY + py) * imageWidth + (tileX + px)] = tileData[py * tileWidth + px];
+                        mapIndex[(tileY + py) * imageWidth + px] = tileData[py * tileWidth + px];
             }
 
             var optimizedAssetId = $"{originalAsset.Id}_optimized";

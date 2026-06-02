@@ -16,12 +16,19 @@ internal class VariableResolver
     private System.Reflection.Assembly? _targetAssembly;
     private Dictionary<string, object> _globalVariables = new();
     private Models.SceneData? _currentScene;
+    private Dictionary<string, Models.AssetEntry> _inMemoryAssets = new(StringComparer.OrdinalIgnoreCase);
+    private ITarget? _target;
 
     public VariableResolver(Dictionary<string, ITool> tools, System.Reflection.Assembly? targetAssembly)
     {
         _tools = tools;
         _targetAssembly = targetAssembly;
     }
+
+    /// <summary>
+    /// Sets the current target for input port resolution.
+    /// </summary>
+    public void SetTarget(ITarget? target) => _target = target;
 
     /// <summary>
     /// Sets the current scene for palette slot resolution.
@@ -35,6 +42,13 @@ internal class VariableResolver
     /// </summary>
     public void SetGlobalVariables(Dictionary<string, object> variables)
  => _globalVariables = variables;
+
+    /// <summary>
+    /// Registers virtual (in-memory) assets so tools can resolve them without reading disk.
+    /// Used for merged plane assets created at code-gen time.
+    /// </summary>
+    public void SetInMemoryAssets(Dictionary<string, Models.AssetEntry> assets)
+ => _inMemoryAssets = assets;
 
     /// <summary>
     /// Updates the target assembly for tool extension discovery.
@@ -105,6 +119,10 @@ internal class VariableResolver
 
                 case "computed":
                     result[varName] = EvaluateComputedExpression(varDef, result);
+                    break;
+
+                case "inputPort":
+                    result[varName] = ResolveInputPortValue(root, varDef, result);
                     break;
             }
         }
@@ -180,6 +198,67 @@ internal class VariableResolver
         }
 
         return value;
+    }
+
+    private object ResolveInputPortValue(
+        JsonElement root,
+        VariableDefinition varDef,
+        Dictionary<string, object> resolved)
+    {
+        if (_target is null)
+            return varDef.Default ?? "";
+
+        // Determine portId: from already-resolved variable or directly from module JSON
+        var portId = "port1";
+        if (resolved.TryGetValue("portId", out var portIdObj) && portIdObj is string pid)
+            portId = pid;
+        else if (root.TryGetProperty("portId", out var portIdProp))
+            portId = portIdProp.GetString() ?? "port1";
+
+        var port = _target.GetInputPorts()
+            .FirstOrDefault(p => p.Id.Equals(portId, StringComparison.OrdinalIgnoreCase));
+
+        if (port is null)
+            return varDef.Default ?? "";
+
+        // "buttons" → list of {id, label, devkitConst} for the selected port
+        if (varDef.Path == "buttons")
+        {
+            return port.Buttons
+                .Select(b => (object)new Dictionary<string, object>
+                {
+                    ["id"]          = b.Id,
+                    ["label"]       = b.Label,
+                    ["devkitConst"] = b.DevkitConst
+                })
+                .ToList();
+        }
+
+        // "mappedButtons" → buttons that have a mapping, enriched with the action name
+        if (varDef.Path == "mappedButtons")
+        {
+            // Read buttonMappings from module JSON: { "btn1": "jump", "up": "move_up", ... }
+            var mappings = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            if (root.TryGetProperty("buttonMappings", out var mappingsProp) &&
+                mappingsProp.ValueKind == JsonValueKind.Object)
+            {
+                foreach (var entry in mappingsProp.EnumerateObject())
+                    mappings[entry.Name] = entry.Value.GetString() ?? "";
+            }
+
+            return port.Buttons
+                .Where(b => mappings.ContainsKey(b.Id) && !string.IsNullOrEmpty(mappings[b.Id]))
+                .Select(b => (object)new Dictionary<string, object>
+                {
+                    ["id"]          = b.Id,
+                    ["label"]       = b.Label,
+                    ["devkitConst"] = b.DevkitConst,
+                    ["action"]      = mappings[b.Id]
+                })
+                .ToList();
+        }
+
+        return varDef.Default ?? "";
     }
 
     private object ResolveAssetValue(JsonElement root, VariableDefinition varDef)
@@ -275,6 +354,20 @@ internal class VariableResolver
                     System.Diagnostics.Debug.WriteLine($"    → Using literal value: '{valueSource}'");
                 }
             }
+        }
+
+        // If the resolved assetId corresponds to a virtual in-memory asset,
+        // inject its raw data directly so the tool can bypass disk reads.
+        if (input.TryGetValue("assetId", out var resolvedAssetIdObj) &&
+            resolvedAssetIdObj is string resolvedAssetId &&
+            _inMemoryAssets.TryGetValue(resolvedAssetId, out var inMemoryAsset) &&
+            inMemoryAsset.GenerationParams?.MapIndex is byte[] mapIdx)
+        {
+            input["inMemoryMapIndex"]  = mapIdx;
+            input["inMemoryWidth"]     = inMemoryAsset.GenerationParams.OptimizedWidth;
+            input["inMemoryHeight"]    = inMemoryAsset.GenerationParams.OptimizedHeight;
+            input["inMemoryTileCount"] = inMemoryAsset.GenerationParams.TileCount;
+            System.Diagnostics.Debug.WriteLine($"Tool '{varDef.ToolId}': Injected in-memory asset '{resolvedAssetId}' ({mapIdx.Length} bytes)");
         }
 
         Dictionary<string, object> toolResult;

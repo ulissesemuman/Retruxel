@@ -399,7 +399,7 @@ public partial class AssetImporterWindow : Window
             var colorSpace = optimizationWindow.ColorSpace;
 
             // Convert to indexed PNG
-            var indexedPngService = new Retruxel.Lib.ImageProcessing.IndexedPngService();
+            var indexedPngService = new Retruxel.Lib.ImageProcessing.MapIndexService();
             var palette = optimizedPalette.Select(c => new HardwareColor(c.R, c.G, c.B)).ToList();
 
             // Show palette import dialog if scene is available

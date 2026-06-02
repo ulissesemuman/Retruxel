@@ -13,7 +13,7 @@
     "mapY": { "from": "module", "path": "mapY", "default": 0 },
     "mapWidth": { "from": "module", "path": "mapWidth", "default": 32 },
     "mapHeight": { "from": "module", "path": "mapHeight", "default": 24 },
-    "mapData": { "from": "module", "path": "mapData", "default": [] },
+    "tiles": { "from": "module", "path": "tiles", "default": [] },
     "solidTiles": { "from": "module", "path": "solidTiles", "default": [] },
     "maxTileSlots": { "from": "module", "path": "maxTileSlots", "default": 448 },
     "preprocessed": {
@@ -21,7 +21,7 @@
       "tool": "plane_preprocessor",
       "toolInput": {
         "solidTiles": "solidTiles",
-        "mapData": "mapData",
+        "tiles": "tiles",
         "startTile": "startTile",
         "mapWidth": "mapWidth",
         "mapHeight": "mapHeight",

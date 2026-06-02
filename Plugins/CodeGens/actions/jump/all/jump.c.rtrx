@@ -1,0 +1,15 @@
+// @retruxel:block source
+// Action: jump — injected into {{prefab.id}}
+void {{prefab.id}}_jump({{prefab.id}}_Params* p) {
+    {{#if params.canDouble}}
+    if (p->on_ground) p->jump_count = 0;
+    if (p->jump_count >= 2) return;
+    p->jump_count++;
+    {{/if}}
+    {{#ifnot params.canDouble}}
+    if (!p->on_ground) return;
+    {{/ifnot}}
+    p->vel_y = -{{params.jumpHeight}};
+    p->on_ground = 0;
+}
+// @retruxel:end

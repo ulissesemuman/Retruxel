@@ -1,0 +1,10 @@
+// @retruxel:block source
+// Action: attack — injected into {{prefab.id}}
+void {{prefab.id}}_attack({{prefab.id}}_Params* p) {
+    if (p->attack_cooldown > 0) return;
+    p->attacking = 1;
+    p->attack_damage = {{params.damage}};
+    p->attack_range = {{params.range}};
+    p->attack_cooldown = {{params.cooldown}};
+}
+// @retruxel:end

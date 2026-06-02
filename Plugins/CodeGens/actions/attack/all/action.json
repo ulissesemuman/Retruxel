@@ -1,0 +1,11 @@
+{
+  "type": "action",
+  "actionId": "attack",
+  "displayName": "Attack",
+  "category": "Combat",
+  "parameters": [
+    { "name": "damage",   "type": "int", "default": 1,  "label": "Damage"            },
+    { "name": "range",    "type": "int", "default": 16, "label": "Range (pixels)"    },
+    { "name": "cooldown", "type": "int", "default": 30, "label": "Cooldown (frames)" }
+  ]
+}

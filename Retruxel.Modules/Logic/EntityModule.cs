@@ -16,8 +16,8 @@ public class EntityModule : ILogicModule
     public string ModuleId => "entity";
     public string DisplayName => "Player Entity";
     public string Category => "Entities";
-    public ModuleType Type => ModuleType.Logic;
-    public SingletonPolicy SingletonPolicy => SingletonPolicy.Global;
+    public ModuleType Type => ModuleType.Entity;
+    public SingletonPolicy SingletonPolicy => SingletonPolicy.Multiple;
     public string[] Compatibility { get; set; } = [];
     public ModuleScope DefaultScope => ModuleScope.Project;
 

@@ -1,336 +1,250 @@
-# Retruxel — Contexto Amazon Q
-> Atualizado: 2026-04-06 | Versão do projeto: 0.4.0-alpha
+# Retruxel — Contexto de Sessão
+> Atualizado: 2026-05-31 | Versão do projeto: 0.8.0-alpha
 
 ---
 
 ## Visão Geral
 
-IDE visual para desenvolvimento de jogos retro, inspirado no GB Studio. Suporte multi-target: Sega Master System (ativo) e Nintendo NES (ativo).
+IDE visual para desenvolvimento de jogos retro, inspirado no GB Studio. Usuário coloca módulos no canvas, configura via UI auto-gerada, e o Retruxel cuida de codegen, compilação e ROM — sem terminal, sem Makefile.
 
-**Fluxos de build:**
-- SMS/GG/SG-1000/ColecoVision: `.rtrxproject` → CodeGenerator → `.c/.h` → SDCC → ihx2sms → `.sms ROM`
-- NES: `.rtrxproject` → CodeGenerator → `.c/.h` → cc65 → ld65 → `.nes ROM`
+**Fluxo de build:**
+`.rtrxproject` → `CodeGenerator` → `.c/.h` → SDCC → ihx2sms → `.sms ROM`
 
----
-
-## Solution — Projetos
-
-| Projeto | Tipo | Estado |
-|---|---|---|
-| `Retruxel` | WPF Application | ✅ Funcional |
-| `Retruxel.Core` | Class Library | ✅ Completo |
-| `Retruxel.SDK` | Class Library | ✅ Stub (re-exporta Core) |
-| `Retruxel.Modules` | Class Library | ✅ TextDisplayModule |
-| `Retruxel.Target.SMS` | Class Library | ✅ Funcional |
-| `Retruxel.Target.NES` | Class Library | ✅ Funcional (cc65 + neslib) |
-| `Retruxel.Target.GameGear` | Class Library | 🟡 Scaffolding |
-| `Retruxel.Target.SG1000` | Class Library | 🟡 Scaffolding |
-| `Retruxel.Target.ColecoVision` | Class Library | 🟡 Scaffolding |
-| `Retruxel.Tools` | Class Library | 🚧 FontRasterizer (incompleto) |
+**Caso de uso primário:** Port do Kung Fu Master (NES → SMS).
 
 ---
 
-## Retruxel.Core — Estado Atual
+## Stack
 
-### Interfaces (`/Interfaces/`)
-| Interface | Estado | Notas |
-|---|---|---|
-| `IModule` | ✅ | ModuleId, Serialize/Deserialize, GetValidationSample |
-| `IGraphicModule` | ✅ | CreateEditorViewModel, GenerateCode, GenerateAssets |
-| `ILogicModule` | ✅ | GetManifest, GenerateCode |
-| `IAudioModule` | ✅ | ChipName, ToneChannels, NoiseChannels, CreateEditorViewModel, GenerateCode, GenerateAssets |
-| `ITarget` | ✅ | GetHardwarePalette, GetToolchain, GetBuiltinModules, GetTemplates, GetSettingsDefinitions, GenerateCodeForModule, GenerateMainFile |
-| `IToolchain` | ✅ | ExtractAsync, BuildAsync, VerifyAsync |
-
-### Models (`/Models/`)
-| Classe | Estado | Notas |
-|---|---|---|
-| `ModuleManifest` + `ParameterDefinition` + `ParameterType` | ✅ | ParameterType: Int, Float, Bool, Enum, SpriteRef, TileRef, AudioRef, String |
-| `RetruxelProject` | ✅ | FormatVersion, Name, ProjectPath, TargetId, Scenes, Parameters, ModuleStates (deprecated) |
-| `SceneData` + `SceneElementData` | ✅ | SceneId, SceneName, Elements (ElementId, ModuleId, TileX, TileY, Trigger, ModuleState) |
-| `BuildContext` | ✅ | BuildId, TargetId, SourceFiles, Assets, BuildParameters, OutputDirectory |
-| `BuildResult` + `BuildLogEntry` + `BuildLogLevel` | ✅ | Success, RomPath, RomSizeBytes, RomMd5, RomSha256, Log |
-| `GeneratedFile` + `GeneratedFileType` | ✅ | Source / Header |
-| `GeneratedAsset` + `GeneratedAssetType` | ✅ | Tiles, Palette, Tilemap, Sprites, Audio, Raw |
-| `HardwareColor` | ✅ | record(R,G,B), ToHex(), FromHex() |
-| `AppSettings` | ✅ | General (Language, ShowWelcomeOnStartup, LastProjectLocation, ShowAllModules, RecentProjects, FavoriteTargets), Appearance (FontSize), Toolchain (ShowToolchainWarnings), Targets (Sms, Nes, GameGear, Sg1000, ColecoVision) — cada target com EmulatorPath, EmulatorArguments, LaunchEmulatorAfterBuild |
-| `ProjectTemplate` | ✅ | TemplateId, DisplayName, Description, PreviewImagePath, DefaultModules, DefaultParameters |
-| `TargetSpecs` | ✅ | Screen, Tiles, Colors/Palettes, Sprites, Memory, CPU, Sound, Manufacturer |
-
-### Services (`/Services/`)
-| Classe | Estado | Notas |
-|---|---|---|
-| `CodeGenerator` | ✅ | Itera scenes → instancia módulos → chama target.GenerateCodeForModule → gera main.c |
-| `ModuleLoader` | ✅ | Carrega DLLs de `/modules/` e `/plugins/` via reflection; RegisterLogicModule manual |
-| `ProjectManager` | ✅ | CreateProject, SaveAsync, LoadAsync, Close, MarkDirty, ClearDirtyFlag, evento ProjectChanged |
-| `LocalizationService` | ✅ | Singleton, DiscoverLanguages, DetectSystemLanguage, Load, Get, indexer this[key] |
-| `SettingsService` | ✅ | Static, LoadAsync/Load, SaveAsync/Save — persiste em `%AppData%\Retruxel\settings.json` |
-| `ToolchainManager` | ✅ | Register, GetToolchain, HasToolchain, RegisteredTargets |
-| `TargetRegistry` | ✅ | Singleton, Register, GetTarget, GetAllTargets, GetManufacturers, Initialize — descobre fabricantes dinamicamente |
+- **.NET 10 / C# 13 / WPF** (`net10.0-windows`)
+- **SkiaSharp 3.116.1** — renderização de tiles/sprites no editor
+- **SDCC 4.5.24** — compilador C para SMS/GG/SG-1000/ColecoVision
+- **SMSlib / devkitSMS** — runtime SMS embutido no toolchain
+- **cc65 / neslib** — toolchain NES embutido
+- Solution: `Retruxel.slnx` (formato VS 2022+)
 
 ---
 
-## Retruxel.Modules — Estado Atual
+## Estrutura da Solution
 
-| Módulo | ModuleId | Tipo | Estado |
-|---|---|---|---|
-| `TextDisplayModule` | `text.display` | ILogicModule | ✅ Universal — Serialize/Deserialize JSON, GetManifest, GetValidationSample |
-
----
-
-## Retruxel.Target.SMS — Estado Atual
-
-### SmsTarget
-- TargetId: `"sms"` | Manufacturer: `"Sega"` | CPU: Zilog Z80 @ 3.546MHz | RAM: 8KB | VRAM: 16KB
-- Paleta: 64 cores (2-bit RGB, 4 níveis por canal)
-- Tela: 256×192 | Tiles: 8×8 | MaxTilesVRAM: 448
-- Sprites: 8×8 (ou 8×16), max 64 na tela, 8 por scanline
-- Som: SN76489 (3 tom + 1 ruído)
-- Templates: `sms.blank`, `sms.platformer`, `sms.beatemup`
-- Settings: region (NTSC/PAL), romSize (32/128/256/512KB), fmSound (bool)
-- `GenerateCodeForModule`: só `text.display` implementado
-- `GenerateMainFile`: gera `main.c` com headers, init calls, loop VBlank, ROM header SDSC
-
-### SmsToolchain
-- Extrai binários embutidos para `%AppData%\Retruxel\toolchain\sms\`
-- Build: SDCC compila cada `.c` → `.rel`, linka tudo → `.ihx`, ihx2sms → `.sms`
-- Flags: `-mz80 --no-std-crt0 --sdcccall 1 --data-loc 0xC000`
-- Calcula MD5 e SHA-256 do ROM gerado
-- Suporta supressão de warnings via settings
-- **Nota:** SMSlib foi recompilada do zero para SDCC 4.5.24 — `SMSlib_readVRAM` removido por bug de compatibilidade
-
-### SmsTextDisplayCodeGen
-- Gera `text_display_{id}.c` e `text_display_{id}.h`
-- Instância 0: inicializa VRAM, autoSetUpTextRenderer, displayOn
-- Valida limites: X 0-31, Y 0-23
-- `ResetCounter()` deve ser chamado antes de cada build (chamado por SmsTarget.ResetCodeGenerationState)
-
----
-
-## Retruxel.Target.NES — Estado Atual
-
-### NesTarget
-- TargetId: `"nes"` | Manufacturer: `"Nintendo"` | CPU: Ricoh 2A03 @ 1.789MHz | RAM: 2KB | VRAM: 2KB
-- Paleta: 54 cores (sistema fixo)
-- Tela: 256×240 | Tiles: 8×8 | MaxTilesVRAM: 512
-- Sprites: 8×8 (ou 8×16), max 64 na tela, 8 por scanline
-- Som: 2A03 (2 pulse + 1 triangle + 1 noise + 1 DMC)
-- Templates: `nes.blank`
-- Settings: region (NTSC/PAL), mapper (0-NROM)
-- `GenerateCodeForModule`: só `text.display` implementado
-- `GenerateMainFile`: gera `main.c` com headers, init calls, loop VBlank, declara `oam_off` (zero page)
-- **ResetCodeGenerationState**: chama `NesTextDisplayCodeGen.ResetCounter()`
-
-### NesToolchain
-- Extrai binários embutidos para `%AppData%\Retruxel\toolchain\nes\`
-- Binários: cc65, ca65, ld65, ar65 (cc65 toolchain)
-- Build: cc65 compila cada `.c` → `.s`, ca65 monta `.s` → `.o`, cria `nes_config.s` com defines (NES_MAPPER, NES_PRG_BANKS, NES_CHR_BANKS, NES_MIRRORING), ld65 linka tudo → `.nes`
-- Config: `nes.cfg` com ZP=$00FE (254 bytes), PRG ROM, CHR ROM
-- Calcula MD5 e SHA-256 do ROM gerado
-- Organiza output: ROM na raiz de `build/`, sources em `build/src/`
-
-### NesTextDisplayCodeGen
-- Gera `text_display_{instanceId}.c` e `text_display_{instanceId}.h` (suporta múltiplas instâncias)
-- Instância 0: inicializa PPU, ppu_on_all
-- Valida limites: X 0-31, Y 0-29
-- `ResetCounter()` deve ser chamado antes de cada build
-
-### Recursos Embutidos
-- **bin/**: ar65.exe, ca65.exe, cc65.exe, ld65.exe
-- **include/**: crt0.s, nes.h, neslib.h, neslib.sinc, peekpoke.h, stdint.h, longbranch.mac, zeropage.inc, display.sinc, famitone2.sinc
-- **lib/**: nes.cfg, nes.lib
-
----
-
-## Retruxel (WPF Shell) — Estado Atual
-
-### Estrutura
 ```
-MainWindow
-├── TitleBar (drag, minimize, maximize, close, settings, home button)
-├── Content
-│   ├── WelcomeView (visível por padrão)
-│   └── SceneEditorView (visível quando projeto aberto)
-└── StatusBar (BUILD: READY | versão)
+Retruxel/                    ← WPF shell (startup)
+Retruxel.Core/               ← Interfaces, models, services
+Retruxel.SDK/                ← Re-exporta Core para plugins
+Retruxel.Modules/            ← Módulos padrão portáveis
+Retruxel.Toolchain/          ← Adaptador de toolchain
+Retruxel.Emulation/          ← Integração LibRetro
+Plugins/
+  Targets/
+    Retruxel.Target.SMS/     ← ✅ Ativo (~60%)
+    Retruxel.Target.NES/     ← ✅ Ativo (~5%)
+    Retruxel.Target.GG/      ← 🟡 Scaffolding
+    Retruxel.Target.SG1000/  ← 🟡 Scaffolding
+    Retruxel.Target.ColecoVision/ ← 🟡 Scaffolding
+  Tools/
+    Retruxel.Tool.TilemapEditor/
+    Retruxel.Tool.SpriteEditor/
+    Retruxel.Tool.AssetImporter/
+    Retruxel.Tool.PaletteEditor/
+    Retruxel.Tool.LiveLink/
+    Retruxel.Tool.TextArrayEditor/
+    Retruxel.Lib.PaletteHelpers/
+    Retruxel.Lib.ImageProcessing/
+  CodeGens/
+    entity/{sms,gg,sg1000,nes}/   ← codegen.json + entity.c.rtrx
+    sprite/{sms,gg,sg1000,coleco}/
+    plane/{sms,gg,sg1000,coleco,nes}/
+    scene/{sms}/
+    main/{sms,nes}/
+    animation/, physics/, input/, scroll/, hud/, ...
 ```
 
-### Overlay System
-- `OverlayLayer` sobre o conteúdo principal
-- Backdrop semi-transparente + modal arrastável
-- Usado para: BuildConsole, About, (futuro: outros diálogos)
+---
 
-### Views Implementadas
-| View | Estado | Notas |
+## Modelo de Dados — Entidades Relevantes
+
+### `EntityData` (em `SceneData.Entities`)
+```csharp
+EntityId      string   // GUID da instância
+Label         string   // nome da variante (ex: "Grunt")
+EntityType    string   // tipo (ex: "enemy_grunt") → seleciona CodeGen
+SpriteAssetId string   // asset compartilhado entre variantes do mesmo tipo
+PaletteSlot   int      // slot de paleta desta variante (0 ou 1 no SMS)
+StartTileX    int      // posição X inicial em tiles
+StartTileY    int      // posição Y inicial em tiles
+WidthTiles    int      // largura em tiles 8×8 (compartilhado pelo tipo)
+HeightTiles   int      // altura em tiles 8×8 (compartilhado pelo tipo)
+Visible       bool
+ModuleOverrides List<ProjectModuleData>
+State         JsonElement
+```
+
+**Modelo de variantes:** múltiplas `EntityData` com o mesmo `EntityType` compartilham
+`SpriteAssetId`, `WidthTiles`, `HeightTiles`. Cada variante tem seu próprio `PaletteSlot`
+e posição. A árvore agrupa por `EntityType`.
+
+### `SceneData`
+```
+PaletteSlots  List<PaletteSlotData>   // slot 0 = BG, slot 1 = Sprite (SMS)
+Planes        List<PlaneData>          // planos de hardware (SMS: 1 plano "bg")
+Entities      List<EntityData>         // entities agrupadas por EntityType na UI
+TextArrays    List<TextArrayData>
+ModuleOverrides List<ProjectModuleData>
+```
+
+### `PlaneData` / `PlaneLayerData`
+- `PlaneData.PaletteSlot` — paleta do plano inteiro
+- `PlaneLayerData` — sem `PaletteSlot` (pertence ao plano, não à layer)
+- `TileEntry.PaletteSlot` — override por tile (SMS: 0 ou 1)
+
+---
+
+## Pipeline de Build
+
+### Ordem de execução em `CodeGenerator.GenerateAsync()`
+1. `VramAllocator.Allocate(scene, target, assets)` → `VramAllocation` (TileOffsets por assetId)
+2. `SatAllocator.Allocate(scene, target)` → `IReadOnlyDictionary<entityId, satSlot>`
+3. Resultados injetados como `globalVariables`: `vramOffset_{assetId}`, `satIndex_{entityId}`
+4. Registro de módulos: project-level → scene overrides → plane layers → **entities (trigger: OnVBlank)** → text arrays → legacy elements
+5. CodeGen por módulo: ModuleRenderer (declarativo) → ITarget.GenerateCodeForModule → IModule.GenerateCode
+6. `RenderSceneFiles` → `scene_{name}.c/.h` (inclui `entity_N_init()`)
+7. Engine runtime, system files, main.c
+
+### Triggers
+- `OnStart` → `_init()` calls (via `onStartCalls` no main.c)
+- `OnVBlank` → `_update()` calls (via `onVBlankCalls` no main.c)
+- Entities usam `OnVBlank` — init é chamado em `scene_init()`, não no main
+
+### `ModuleRenderer.Render()` — variáveis injetadas para entities
+```
+instanceId                int     — contador global por moduleId
+isFirstInstance           bool    — true se primeira instância com este spriteAssetId
+isFirstInstanceWithAsset  bool    — true: define o array de tiles
+isNotFirstInstanceWithAsset bool  — true: emite extern
+isFirstInstanceWithoutAsset bool  — true: usa placeholder
+useFirstHalfTiles         int     — 1 se startTile < 256, 0 se >= 256
+```
+`_emittedSpriteAssets` (HashSet) rastreia quais assets já foram emitidos — reset em `ResetState()`.
+
+---
+
+## CodeGen Templates — Regras Críticas
+
+### TemplateEngine — limitações
+- **Não suporta condicionais aninhadas** (`{{#if A}}...{{#if B}}...{{/if}}...{{/if}}`)
+- O regex `{{#if}}...{{/if}}` é non-greedy — o `{{/if}}` mais próximo fecha o `{{#if}}` mais interno
+- **Solução:** pré-computar variáveis compostas no C# (ex: `isFirstInstanceWithAsset`) e usar condicionais planas no template
+- Suporta: `{{#if}}`, `{{#ifnot}}`, `{{#each}}`, `{{var}}`, `{{a * b}}`, `{{a > b}}`
+
+### entity/sms/entity.c.rtrx (v2.5.0)
+- Usa `isFirstInstanceWithAsset` / `isNotFirstInstanceWithAsset` / `isFirstInstanceWithoutAsset`
+- Usa `useFirstHalfTiles` (pré-computado) em vez de `{{#if startTile >= 256}}`
+- Array de tiles emitido apenas uma vez por `spriteAssetId` — variantes usam `extern`
+- `SMS_loadTiles` e `SMS_useFirstHalfTilesforSprites` apenas na primeira instância
+
+### scene/sms/scene.c.rtrx
+- Inclui headers de entities (`entityInits`)
+- Chama `entity_N_init()` dentro de `scene_init()` (após plane init)
+- `SMS_loadBGPalette` e `SMS_loadSpritePalette` sempre chamados (mesmo sem módulos gráficos)
+
+---
+
+## Árvore de Entities — Estrutura Visual
+
+```
+▼ ENTITIES                              [+]
+  ▼ enemy_grunt   ✏ + ✕               ← EntityType: asset + dimensões
+      Grunt  P0  👁 ⚙ ✕               ← variante: PaletteSlot=0
+      Guard  P1  👁 ⚙ ✕               ← variante: PaletteSlot=1
+  ▼ player        ✏ + ✕
+      Player P1  👁 ⚙ ✕
+```
+
+- `+` na seção ENTITIES → dialog pede EntityType → cria tipo + primeira variante
+- `+` no nó pai → `AddEntityVariant()` → copia asset/dimensões, próximo palette slot
+- `✕` no nó pai → `RemoveEntityType()` → remove todas as variantes
+- Click no nó pai → propriedades do tipo (Sprite Asset, Width, Height)
+- Click na variante → propriedades da variante (Name, Palette Slot, Start X/Y)
+
+---
+
+## Painel de Propriedades — Entity
+
+**Seção "ENTITY TYPE — {type}":**
+- Sprite Asset → propaga para todas as variantes do mesmo tipo
+- Width (tiles) → propaga para todas as variantes
+- Height (tiles) → propaga para todas as variantes
+
+**Seção "VARIANT":**
+- Name → `entity.Label`
+- Palette Slot → `entity.PaletteSlot`
+- Start X (tile) → `entity.StartTileX`
+- Start Y (tile) → `entity.StartTileY`
+
+---
+
+## Bugs Corrigidos Nesta Sessão
+
+| # | Bug | Arquivo(s) |
 |---|---|---|
-| `WelcomeView` | ✅ | Cards grid/lista, projetos recentes, drag-and-drop .rtrxproject, sidebar, sort (Name/Manufacturer), filter (All/Favorites/Sega/Nintendo/Coleco), favorites system (star icons), dynamic manufacturer discovery |
-| `SceneEditorView` | ✅ | Canvas 256×192, paleta de módulos, painel de eventos, painel de propriedades |
-| `BuildConsoleView` | ✅ | Terminal de log, export ROM, export debug ZIP, verificação MD5/SHA256, stats de memória, toast notifications, emulator launch (target-specific) |
-| `NewProjectDialog` | ✅ | Nome, localização, target, templates |
-| `TargetSelectionDialog` | ✅ | Seleção de target antes do NewProjectDialog |
-| `SettingsWindow` | ✅ | General (idioma, welcome), Appearance (theme display), Toolchain (global warnings), SMS/NES/GG/SG1000/Coleco tabs (emulador, launch after build) |
-| `AboutView` | ✅ | Informações do app |
-| `SplashScreen` | ✅ | Boot sequence animada, progress bar, log terminal |
-
-### TargetRegistry
-- Registra: `SmsTarget`, `NesTarget`, `GameGearTarget`, `Sg1000Target`, `ColecoVisionTarget`
-- `Initialize()`: descobre fabricantes dinamicamente de todos os targets registrados
-- `GetManufacturers()`: retorna lista única de fabricantes
-- Usado por WelcomeView para listar targets e filtros dinâmicos
-
-### Localization
-- Arquivos JSON em `Retruxel/Assets/Localization/`
-- Idiomas: `en.json`, `pt-BR.json`
-- Extensão XAML: `{loc:Tr Key='chave'}`
-- Runtime switching sem restart
-
-### Tema (RetruxelTheme.xaml)
-- Fontes: Space Grotesk (display), Inter (body)
-- Cores: surface #0e0e0e → highest #262626, primary #8eff71, secondary #7c3aed, tertiary #81ecff
-- Estilos: TextDisplay, TextHeadline, TextLabel, TextBody, TextCode
-- Botões: ButtonPrimary (gradiente verde), ButtonSecondary (roxo)
-- Controles: ToggleSwitch, TextBox, ComboBox, ScrollBar customizados
-- Regra: 0px border-radius em todos os componentes internos
-
----
-
-## Ambiente de Desenvolvimento
-
-| Item | Status | Localização |
-|---|---|---|
-| SDCC | ✅ 4.5.24 (MINGW64) | Embutido no toolchain SMS |
-| cc65 | ✅ 2.19 | Embutido no toolchain NES |
-| devkitSMS | ✅ | `F:\Junior\Desenvolvimento de Jogos\Ports\Master System\devkitSMS` |
-| SMSlib | ✅ | Recompilada para SDCC 4.5.24 |
-| neslib | ✅ | Embutida no toolchain NES |
-| ihx2sms | ✅ | No PATH do sistema |
-| Emulicious | ✅ | Emulador SMS com debugger |
-| Mesen | ✅ | Emulador NES (para análise) |
-
----
-
-## Port — Kung Fu Master (NES → SMS)
-
-**Status:** Grey box planejado
-
-### Decisões de Design
-- Beat em up simples — ideal para primeiro port
-- Abordagem: grey box primeiro, física ajustada visualmente
-- Linguagem: C com devkitSMS
-
-### Mapeamento de Controles SMS
-| Função | Controle |
-|---|---|
-| Soco | Botão 1 — tap |
-| Pulo | Botão 2 — tap |
-| Chute | Botão 1 — segurado 1s+ |
-| Menu | Botão 2 — segurado 1s+ |
-
-### Diferenças Técnicas NES → SMS
-| Item | NES | SMS |
-|---|---|---|
-| Resolução | 256×240 | 256×192 |
-| Paleta | 54 cores | 64 cores |
-| Som | 2A03 (5 canais) | SN76489 (3 tom + 1 ruído) |
-| Pause | No controle | **No console (NMI)** |
-
----
-
-## Problemas Conhecidos / Dívidas Técnicas
-
-| # | Problema | Severidade | Arquivo |
-|---|---|---|---|
-| 1 | Targets scaffolding (GG, SG1000, Coleco) não têm implementação real — apenas estrutura | 🟡 Média | `Retruxel.Target.GameGear/`, `Retruxel.Target.SG1000/`, `Retruxel.Target.ColecoVision/` |
-| 2 | `ModuleStates` em `RetruxelProject` marcado como DEPRECATED mas ainda presente | 🟢 Baixa | `Retruxel.Core/Models/RetruxelProject.cs` |
-| 3 | `Retruxel.Tools/FontRasterizer` existe mas não integrado em nenhum fluxo | 🟢 Baixa | `Retruxel.Tools/` |
-| 4 | Biblioteca de módulos limitada — apenas TextDisplayModule implementado | 🟡 Média | `Retruxel.Modules/` |
-| 5 | Sem asset editors (tiles, sprites, paletas) | 🟡 Média | — |
-
----
-
-## Próximos Passos (Ordenados por Prioridade)
-
-### Imediato
-- [x] **Generalizar SceneEditorView** — usar ModuleLoader + ModuleManifest para UI genérica
-- [x] **NES Target completo** — toolchain real (cc65 + neslib)
-- [x] **Multi-target infrastructure** — 5 plataformas registradas
-- [x] **Favorites system** — star icons, filter, persist
-- [x] **Dynamic manufacturer discovery** — sem hardcode
-- [x] **Emulator integration** — launch target-specific
-- [x] **Toast notifications** — feedback visual
-- [x] **GitHub Actions** — automated releases com instalador
-- [ ] **Kung Fu Master grey box** — estrutura de projeto, loop principal, input
-
-### Curto Prazo
-- [ ] **Asset Manager** (Tela 3) — import de imagens, tiles, sprites, paletas
-- [ ] **Tile Editor** (Tela 4) — grade 8×8, paleta SMS, preview
-- [ ] **Tilemap Editor** (Tela 5) — nametable, arrastar tiles, colisões
-- [ ] **Módulo de tiles SMS** — `IGraphicModule` para tiles/paleta
-
-### Médio Prazo
-- [ ] **Sprite Editor** (Tela 6)
-- [ ] **ToolchainValidator** (modo Debug) — projeto sintético com `GetValidationSample()` de cada módulo
-- [ ] **GG/SG1000/Coleco Targets completos** — implementação real além de scaffolding
-- [ ] **Ferramentas .NET** — conversor de paleta NES→SMS, extrator de tiles, visualizador de nametable
-- [ ] **Mais módulos** — sprite, input, collision, audio
-
-### Longo Prazo
-- [ ] **Plugin system** — auto-descoberta de DLLs em `/plugins/`
-- [ ] **Logic Editor** (Tela 7) — editor de nós visual
-- [ ] **Migração entre targets** — portabilidade de projetos universais
+| 1 | `entity_.h` — instanceId vazio porque `EntityModule.SingletonPolicy = Global` | `EntityModule.cs` |
+| 2 | `};` solto no .c gerado — condicional aninhada no template | `entity.c.rtrx` |
+| 3 | `scene_main_init()` sem `#include "scene_main.h"` no main.c | `main.c.rtrx` |
+| 4 | `entity_update()` nunca chamado — trigger era `OnStart`, mudado para `OnVBlank` | `CodeGenerator.cs` |
+| 5 | `entity_init()` nunca chamado — não estava em `scene_init()` | `ModuleRenderer.cs`, `scene.c.rtrx` |
+| 6 | Paleta de sprites não persistia — `OpenPaletteSlotEditor` não chamava `MarkDirty()` | `SceneEditorView_Properties.cs` |
+| 7 | `EventCallGenerator` gerava `_init()` para todos os triggers — OnVBlank precisa de `_update()` | `EventCallGenerator.cs` |
+| 8 | Array de tiles duplicado quando duas variantes compartilham o mesmo asset | `ModuleRenderer.cs`, `entity.c.rtrx` |
 
 ---
 
 ## Regras de Design (Invioláveis)
 
-- **0px border-radius** em todos os componentes internos (janela: 4-6px permitido)
-- **Sem linhas divisórias 1px** — separação por tonal shift de fundo
+- **0px border-radius** em todos os componentes — exceto `Border` externo de janelas modais (6px)
+- **Sem linhas divisórias 1px** — separação por tonal shift
 - **Grid de 8px** — sem exceções
-- Texto corpo: `#adaaaa` (nunca branco puro)
-- Ghost Border: 1px `#26ADAAAA` apenas como fallback
-- Componentes aninhados sempre mais claros que o pai
+- Texto corpo: `BrushOnSurfaceVariant` (`#adaaaa`) — nunca branco puro
+- `StackPanel.Spacing` não existe no WPF — usar `Margin` nos filhos
+- `BrushSurfaceDim` / `BrushSurfaceContainerLowest` não existem — usar `BrushSurface` (`#0e0e0e`)
+- **Nunca renderizar PNG em runtime** — usar `MapIndex` (`byte[]` de índices de paleta)
+- **Nunca usar `VramRegionId`** — usar `PlaneId` + `VramAllocator`
+- **Nunca adicionar `PaletteSlot` em `PlaneLayerData`** — pertence a `PlaneData` ou `TileEntry`
 
-## Paleta de Cores (Tokens)
+---
 
-| Token WPF | Hex | Uso |
+## Paleta de Cores (Tokens WPF)
+
+| Token | Hex | Uso |
 |---|---|---|
-| `BrushSurface` | `#0e0e0e` | Fundo base |
-| `BrushSurfaceContainerLow` | `#131313` | Sidebar, header, status bar |
+| `BrushSurface` | `#0e0e0e` | Fundo base (mais escuro disponível) |
+| `BrushSurfaceContainerLow` | `#131313` | Sidebar, header |
 | `BrushSurfaceContainerHigh` | `#1e1e1e` | Cards, painéis |
 | `BrushSurfaceContainerHighest` | `#262626` | Elementos interativos |
-| `BrushPrimary` | `#8eff71` | Ação principal, sucesso, build |
-| `BrushPrimaryDim` | `#2be800` | Hover do primary |
-| `BrushSecondary` | `#7c3aed` | Roxo — lógica, botões secundários |
-| `BrushTertiary` | `#81ecff` | Ciano — informação |
+| `BrushPrimary` | `#8eff71` | Ação principal, build, sucesso |
+| `BrushTertiary` | `#81ecff` | Informação |
+| `BrushOnSurface` | `#ffffff` | Texto principal |
 | `BrushOnSurfaceVariant` | `#adaaaa` | Texto corpo |
 | `BrushError` | `#ff4444` | Erros |
 | `BrushWarning` | `#ffaa00` | Avisos |
+| `BrushSuccess` | `#8eff71` | Sucesso (= Primary) |
 
 ---
 
-## Sistema de Módulos — Categorias de Portabilidade
+## SMS — Especificações Técnicas Relevantes
 
-| Categoria | Descrição | Exemplo |
-|---|---|---|
-| **Universal** | JSON idêntico em qualquer target — totalmente portável | `{"module": "text.display", "x": 10, "y": 5, "text": "Hello"}` |
-| **Base + Especialização** | JSON base compartilhado + campos opcionais por target | `{"module": "sprite.render", "x": 32, "y": 64, "tile": 4, "sms_priority": true}` |
-| **Exclusivo** | JSON só existe para aquele target — ícone de aviso na UI | `{"module": "snes.mode7", "angle": 45, "scale": 1.5}` |
-
----
-
-## Arquivos de Referência
-
-| Arquivo | Conteúdo |
-|---|---|
-| `RELEASE_v0.4.0-alpha.md` | Release notes da primeira versão pública |
-| `installer.iss` | Script Inno Setup para instalador Windows |
-| `.github/workflows/release-with-installer.yml` | GitHub Actions para releases automáticas |
-| `.amazonq/context.md` | Este arquivo — contexto consolidado |
+- VRAM: 16KB total → 14336 bytes para tiles (448 tiles × 32 bytes)
+- SAT: 64 sprites máx na tela, 8 por scanline
+- Paletas: 2 slots (slot 0 = BG, slot 1 = Sprite) × 16 cores cada
+- `SpritePalettes = 2` → máximo 2 variantes de cor de sprite visíveis simultaneamente
+- VRAM half: tiles 0-255 → `SMS_useFirstHalfTilesforSprites(1)`, tiles 256-511 → `(0)`
+- `SMS_initSprites()` + `SMS_copySpritestoSAT()` devem ser chamados a cada frame
 
 ---
 
-## Git Workflow
+## Próximos Passos Sugeridos
 
-- **Branch `master`**: Versões estáveis, releases
-- **Branch `dev`**: Desenvolvimento ativo, features integradas
-- **Releases automáticas**: Push na `master` → GitHub Actions → ZIP + Instalador
-- **Convenção de commits**: `feat:`, `fix:`, `docs:`, `chore:` para changelog automático
+- [ ] Testar build com 2 variantes do mesmo EntityType (Grunt + Guard) — verificar extern/define
+- [ ] Implementar `ShowEntityPickerDialog` com lista de tipos existentes (reusar tipo já criado)
+- [ ] Preview de entity no canvas usando `MapIndex` em vez de PNG direto
+- [ ] Validação de `SpritePalettes` no editor — avisar se variantes excedem slots disponíveis
+- [ ] `enemy` module CodeGen — análogo ao `entity` mas com comportamento de IA

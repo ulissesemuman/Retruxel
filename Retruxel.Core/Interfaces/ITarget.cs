@@ -1,4 +1,5 @@
 ﻿using Retruxel.Core.Models;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -175,4 +176,17 @@ public interface ITarget
     /// Converts font8x8 1bpp glyphs to target-specific tile format.
     /// </summary>
     IFontConverter GetFontConverter();
+
+    /// <summary>
+    /// Returns the physical input ports available on this target hardware.
+    /// These are the hardware defaults — the user can remap individual buttons
+    /// in the project via InputPortBinding stored in RetruxelProject.InputPorts.
+    ///
+    /// Ex: SMS returns two controller ports (Port A and Port B), each with
+    /// D-pad + 2 buttons.
+    ///
+    /// Returns an empty array for targets that have no configurable input
+    /// (e.g. targets that handle input entirely in custom code).
+    /// </summary>
+    InputPort[] GetInputPorts() => Array.Empty<InputPort>();
 }

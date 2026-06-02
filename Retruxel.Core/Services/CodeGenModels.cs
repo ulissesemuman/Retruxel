@@ -7,6 +7,12 @@ namespace Retruxel.Core.Services;
 /// </summary>
 internal class CodeGenManifest
 {
+    /// <summary>
+    /// Manifest type. Determines how this CodeGen is used.
+    /// "module" — standard module codegen (default).
+    /// "action" — action codegen, injected into entities.
+    /// </summary>
+    public string Type { get; init; } = "module";
     public string ModuleId { get; init; } = "";
     public string TargetId { get; init; } = "";
     public string Version { get; init; } = "1.0.0";

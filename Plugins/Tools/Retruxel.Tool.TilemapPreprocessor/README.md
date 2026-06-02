@@ -16,7 +16,7 @@ This tool processes raw plane data and returns numeric arrays that CodeGen templ
 | Parameter | Type | Default | Description |
 |---|---|---|---|
 | `solidTiles` | int[] | [] | Array of tile IDs that are solid (for collision) |
-| `mapData` | int[] | [] | Raw map data (tile IDs before startTile offset) |
+| `tiles` | int[] | [] | Raw map data (tile IDs before startTile offset) |
 | `startTile` | int | 0 | VRAM slot where tiles start |
 | `mapWidth` | int | 32 | Map width in tiles |
 | `mapHeight` | int | 24 | Map height in tiles |
@@ -46,14 +46,14 @@ Returns a dictionary with processed data:
 {
   "variables": {
     "solidTiles": { "from": "module", "path": "solidTiles", "default": [] },
-    "mapData": { "from": "module", "path": "mapData", "default": [] },
+    "tiles": { "from": "module", "path": "tiles", "default": [] },
     "maxTileSlots": { "from": "module", "path": "maxTileSlots", "default": 448 },
     "preprocessed": {
       "from": "tool",
       "tool": "plane_preprocessor",
       "toolInput": {
         "solidTiles": "solidTiles",
-        "mapData": "mapData",
+        "tiles": "tiles",
         "startTile": "startTile",
         "mapWidth": "mapWidth",
         "mapHeight": "mapHeight",

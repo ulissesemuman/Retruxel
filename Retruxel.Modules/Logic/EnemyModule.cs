@@ -17,7 +17,7 @@ public class EnemyModule : ILogicModule
     public string ModuleId => "enemy";
     public string DisplayName => "Enemy Entity";
     public string Category => "Entities";
-    public ModuleType Type => ModuleType.Logic;
+    public ModuleType Type => ModuleType.Entity;
     public SingletonPolicy SingletonPolicy => SingletonPolicy.Multiple;
     public string[] Compatibility { get; set; } = [];
     public ModuleScope DefaultScope => ModuleScope.Scene;

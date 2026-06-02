@@ -50,7 +50,7 @@ public class SmsRenderBackend
         sb.AppendLine();
         sb.AppendLine("typedef struct {");
         sb.AppendLine("    const unsigned char* tileData;");
-        sb.AppendLine("    const unsigned int* mapData;");
+        sb.AppendLine("    const unsigned int* tiles;");
         sb.AppendLine("    unsigned char mapWidth;");
         sb.AppendLine("    unsigned char mapHeight;");
         sb.AppendLine("    unsigned char startTile;");
@@ -58,7 +58,7 @@ public class SmsRenderBackend
         sb.AppendLine("    int mapX;");
         sb.AppendLine("    int mapY;");
         sb.AppendLine("    unsigned int tileDataSize;");
-        sb.AppendLine("    unsigned int mapDataSize;");
+        sb.AppendLine("    unsigned int tilesSize;");
         sb.AppendLine("} PlaneLayerState;");
         sb.AppendLine();
 
@@ -153,8 +153,8 @@ public class SmsRenderBackend
         sb.AppendLine("            if (layer->tileData != NULL && layer->tileDataSize > 0) {");
         sb.AppendLine("                SMS_loadTiles(layer->tileData, layer->startTile, layer->tileDataSize);");
         sb.AppendLine("            }");
-        sb.AppendLine("            if (layer->mapData != NULL && layer->mapDataSize > 0) {");
-        sb.AppendLine("                SMS_loadTileMapArea(layer->mapX, layer->mapY, layer->mapData, layer->mapWidth, layer->mapHeight);");
+        sb.AppendLine("            if (layer->tiles != NULL && layer->tilesSize > 0) {");
+        sb.AppendLine("                SMS_loadTileMapArea(layer->mapX, layer->mapY, layer->tiles, layer->mapWidth, layer->mapHeight);");
         sb.AppendLine("            }");
         sb.AppendLine("        }");
         sb.AppendLine("    }");

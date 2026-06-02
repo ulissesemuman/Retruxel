@@ -1,10 +1,11 @@
-﻿{
+{
   "moduleId": "input",
   "targetId": "sms",
   "version": "1.0.0",
   "template": "input.c.rtrx",
   "variables": {
-    "holdThreshold": { "from": "module", "path": "holdThreshold", "default": 60 },
-    "port": { "from": "module", "path": "port", "default": 1 }
+    "portId":         { "from": "module",    "path": "portId",         "default": "port1" },
+    "holdThreshold":  { "from": "module",    "path": "holdThreshold",  "default": 60 },
+    "mappedButtons":  { "from": "inputPort", "path": "mappedButtons" }
   }
 }

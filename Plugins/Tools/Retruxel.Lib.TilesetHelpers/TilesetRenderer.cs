@@ -1,11 +1,10 @@
 using Retruxel.Core.Models;
-using Retruxel.Lib.WPFImageProcessing;
+using Retruxel.Lib.ImageProcessing;
 using SkiaSharp;
-using System.Collections.Generic;
 using System.IO;
 using System.Windows.Media.Imaging;
 
-namespace Retruxel.Tool.TilemapEditor.Helpers;
+namespace Retruxel.Lib.TilesetHelpers;
 
 /// <summary>
 /// Handles tileset image loading and tile extraction.
@@ -22,10 +21,10 @@ public class TilesetRenderer
     // Cache: (tileId, flipH, flipV, rotation) → BitmapSource
     private readonly Dictionary<(int tileId, bool flipH, bool flipV, int rotation), BitmapSource> _tileCache = new();
 
-    public SKBitmap? Image => _tilesetImage;
-    public int Columns => _columns;
-    public int Rows => _rows;
-    public int TotalTiles => _columns * _rows;
+    public SKBitmap? Image     => _tilesetImage;
+    public int Columns         => _columns;
+    public int Rows            => _rows;
+    public int TotalTiles      => _columns * _rows;
 
     public void LoadTileset(string imagePath, int tileSize)
     {
@@ -66,22 +65,19 @@ public class TilesetRenderer
         if (skTile == null) return null;
 
         SKBitmap final;
-        bool needsDispose;
 
         if (!entry.FlipH && !entry.FlipV && entry.Rotation == 0)
         {
             final = skTile;
-            needsDispose = true;
         }
         else
         {
-            final = ApplyTransform(skTile, entry.FlipH, entry.FlipV, entry.Rotation);
+            final = TileTransformation.ApplyTileTransform(skTile, entry.FlipH, entry.FlipV, entry.Rotation, _tileSize);
             skTile.Dispose();
-            needsDispose = true;
         }
 
-        var bitmapSource = ImageProcessing.ConvertSkBitmapToBitmapSource(final);
-        if (needsDispose) final.Dispose();
+        var bitmapSource = Retruxel.Lib.WPFImageProcessing.ImageProcessing.ConvertSkBitmapToBitmapSource(final);
+        final.Dispose();
 
         _tileCache[key] = bitmapSource;
         return bitmapSource;
@@ -108,36 +104,12 @@ public class TilesetRenderer
             int srcY = (tileId / _columns) * _tileSize;
 
             using var c = new SKCanvas(tile);
-            var srcRect  = new SKRect(srcX, srcY, srcX + _tileSize, srcY + _tileSize);
-            var destRect = new SKRect(0, 0, _tileSize, _tileSize);
-            c.DrawBitmap(_tilesetImage, srcRect, destRect);
+            c.DrawBitmap(_tilesetImage,
+                new SKRect(srcX, srcY, srcX + _tileSize, srcY + _tileSize),
+                new SKRect(0,    0,    _tileSize,         _tileSize));
         }
 
         return tile;
-    }
-
-    private SKBitmap ApplyTransform(SKBitmap source, bool flipH, bool flipV, int rotation)
-    {
-        var transformed = new SKBitmap(_tileSize, _tileSize, SKColorType.Bgra8888, SKAlphaType.Premul);
-
-        using var canvas = new SKCanvas(transformed);
-        canvas.Clear(SKColors.Transparent);
-
-        var matrix = SKMatrix.Identity;
-
-        if (flipH)
-            matrix = matrix.PreConcat(SKMatrix.CreateScale(-1, 1, _tileSize / 2f, 0));
-
-        if (flipV)
-            matrix = matrix.PreConcat(SKMatrix.CreateScale(1, -1, 0, _tileSize / 2f));
-
-        if (rotation != 0)
-            matrix = matrix.PreConcat(SKMatrix.CreateRotationDegrees(rotation, _tileSize / 2f, _tileSize / 2f));
-
-        canvas.SetMatrix(matrix);
-        canvas.DrawBitmap(source, 0, 0);
-
-        return transformed;
     }
 
     public void ClearCache() => _tileCache.Clear();

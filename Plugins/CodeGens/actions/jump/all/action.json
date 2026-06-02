@@ -1,0 +1,11 @@
+{
+  "type": "action",
+  "actionId": "jump",
+  "displayName": "Jump",
+  "category": "Movement",
+  "parameters": [
+    { "name": "jumpHeight", "type": "int",  "default": 4,     "label": "Jump Height (pixels/frame)" },
+    { "name": "gravity",    "type": "int",  "default": 1,     "label": "Gravity (pixels/frame²)"   },
+    { "name": "canDouble",  "type": "bool", "default": false, "label": "Allow Double Jump"          }
+  ]
+}

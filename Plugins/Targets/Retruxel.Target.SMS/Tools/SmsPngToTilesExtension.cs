@@ -34,7 +34,7 @@ public class SmsPngToTilesExtension : IToolExtension
 
         System.Diagnostics.Debug.WriteLine($"Converting {tileCount} tiles ({width}x{height}), {indices.Length} index bytes");
 
-        var tiles = ConvertToSmsTiles(indices, width, height);
+        var tiles = ConvertToSmsTiles(indices, width, height, tileCount);
 
         var hexLines = new List<string>();
         for (int i = 0; i < tiles.Length; i += 16)
@@ -60,15 +60,19 @@ public class SmsPngToTilesExtension : IToolExtension
     /// Converts flat color-index array to SMS 4bpp planar tile data.
     /// Each tile is 32 bytes: 8 rows × 4 bitplanes.
     /// </summary>
-    private static byte[] ConvertToSmsTiles(byte[] indices, int width, int height)
+    private static byte[] ConvertToSmsTiles(byte[] indices, int width, int height, int tileCount)
     {
         var tilesW = width / 8;
         var tilesH = height / 8;
-        var result = new List<byte>(tilesW * tilesH * 32);
+        // tileCount may be less than tilesW*tilesH when the source has trailing padding.
+        // Stop at tileCount to avoid emitting blank padding tiles.
+        int limit  = tileCount < tilesW * tilesH ? tileCount : tilesW * tilesH;
+        var result = new List<byte>(limit * 32);
 
-        for (int tileY = 0; tileY < tilesH; tileY++)
+        int generated = 0;
+        for (int tileY = 0; tileY < tilesH && generated < limit; tileY++)
         {
-            for (int tileX = 0; tileX < tilesW; tileX++)
+            for (int tileX = 0; tileX < tilesW && generated < limit; tileX++)
             {
                 for (int row = 0; row < 8; row++)
                 {
@@ -92,6 +96,7 @@ public class SmsPngToTilesExtension : IToolExtension
                     result.Add(bp2);
                     result.Add(bp3);
                 }
+                generated++;
             }
         }
 

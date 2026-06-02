@@ -1,0 +1,156 @@
+using Retruxel.Core.Models;
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Text.Json;
+
+namespace Retruxel.Core.Services;
+
+/// <summary>
+/// Discovers and indexes ActionDefinitions from Plugins/CodeGens/actions/**/action.json.
+///
+/// Directory layout:
+///   actions/{actionId}/all/action.json       — target-agnostic variant
+///   actions/{actionId}/{targetId}/action.json — target-specific variant (overrides all/)
+///
+/// Discovery priority per action + target:
+///   1. actions/{actionId}/{targetId}/action.json
+///   2. actions/{actionId}/all/action.json
+/// </summary>
+public class ActionRegistry
+{
+    private readonly Dictionary<string, ActionDefinition> _actions;
+    private readonly Dictionary<string, string> _templatePaths; // actionId::targetId → template path
+
+    private ActionRegistry(
+        Dictionary<string, ActionDefinition> actions,
+        Dictionary<string, string> templatePaths)
+    {
+        _actions = actions;
+        _templatePaths = templatePaths;
+    }
+
+    /// <summary>All discovered actions, keyed by ActionId.</summary>
+    public IReadOnlyDictionary<string, ActionDefinition> Actions => _actions;
+
+    public ActionDefinition? GetById(string actionId)
+        => _actions.TryGetValue(actionId, out var def) ? def : null;
+
+    /// <summary>
+    /// Returns the template path for a given actionId and targetId.
+    /// Falls back to the "all" variant if no target-specific template exists.
+    /// Returns null if no template is found.
+    /// </summary>
+    public string? GetTemplatePath(string actionId, string targetId)
+    {
+        var specificKey = Key(actionId, targetId);
+        if (_templatePaths.TryGetValue(specificKey, out var specific))
+            return specific;
+
+        var allKey = Key(actionId, "all");
+        return _templatePaths.TryGetValue(allKey, out var fallback) ? fallback : null;
+    }
+
+    /// <summary>
+    /// Scans Plugins/CodeGens/actions/ and builds an ActionRegistry from all action.json files.
+    /// </summary>
+    public static ActionRegistry Discover(string pluginsPath, IProgress<string>? progress = null)
+    {
+        var actions = new Dictionary<string, ActionDefinition>(StringComparer.OrdinalIgnoreCase);
+        var templatePaths = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+
+        var actionsDir = Path.Combine(pluginsPath, "CodeGens", "actions");
+        if (!Directory.Exists(actionsDir))
+            return new ActionRegistry(actions, templatePaths);
+
+        var opts = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+
+        foreach (var manifestPath in Directory.GetFiles(actionsDir, "action.json", SearchOption.AllDirectories))
+        {
+            try
+            {
+                var raw = JsonSerializer.Deserialize<ActionManifestRaw>(
+                    File.ReadAllText(manifestPath), opts);
+
+                if (raw?.ActionId is null) continue;
+
+                // The target variant is the name of the immediate parent folder (e.g. "all", "sms")
+                var variantDir = Path.GetDirectoryName(manifestPath)!;
+                var targetVariant = Path.GetFileName(variantDir);
+
+                // Resolve template path — by convention, same folder as action.json
+                var templateFile = Directory.GetFiles(variantDir, "*.c.rtrx").FirstOrDefault();
+
+                var def = new ActionDefinition(
+                    ActionId:    raw.ActionId,
+                    DisplayName: raw.DisplayName ?? raw.ActionId,
+                    Category:    raw.Category    ?? "General",
+                    Parameters:  ParseParameters(raw.Parameters)
+                );
+
+                // Register definition keyed by actionId (all variants share the same definition)
+                if (!actions.ContainsKey(raw.ActionId))
+                    actions[raw.ActionId] = def;
+
+                // Register template path keyed by actionId::targetVariant
+                if (templateFile is not null)
+                    templatePaths[Key(raw.ActionId, targetVariant)] = templateFile;
+            }
+            catch (Exception ex)
+            {
+                progress?.Report($"WARN: Failed to load action manifest {manifestPath}: {ex.Message}");
+            }
+        }
+
+        progress?.Report($"INFO: ActionRegistry — {actions.Count} action(s) discovered.");
+        return new ActionRegistry(actions, templatePaths);
+    }
+
+    private static ActionParameterDef[] ParseParameters(List<ActionParameterDefRaw>? raw)
+    {
+        if (raw is null) return [];
+
+        return raw.Select(p => new ActionParameterDef(
+            Name:    p.Name    ?? string.Empty,
+            Type:    p.Type    ?? "string",
+            Default: ParseDefault(p.Default, p.Type),
+            Label:   p.Label   ?? p.Name ?? string.Empty
+        )).ToArray();
+    }
+
+    private static object ParseDefault(JsonElement? element, string? type)
+    {
+        if (element is null) return string.Empty;
+
+        return element.Value.ValueKind switch
+        {
+            JsonValueKind.True    => true,
+            JsonValueKind.False   => false,
+            JsonValueKind.Number  => element.Value.TryGetInt32(out var i) ? (object)i : element.Value.GetDouble(),
+            JsonValueKind.String  => element.Value.GetString() ?? string.Empty,
+            _                     => string.Empty
+        };
+    }
+
+    private static string Key(string actionId, string targetVariant)
+        => $"{actionId}::{targetVariant}".ToLowerInvariant();
+
+    // ── Raw deserialization models ─────────────────────────────────────────────
+
+    private class ActionManifestRaw
+    {
+        public string? ActionId     { get; set; }
+        public string? DisplayName  { get; set; }
+        public string? Category     { get; set; }
+        public List<ActionParameterDefRaw>? Parameters { get; set; }
+    }
+
+    private class ActionParameterDefRaw
+    {
+        public string?       Name    { get; set; }
+        public string?       Type    { get; set; }
+        public JsonElement?  Default { get; set; }
+        public string?       Label   { get; set; }
+    }
+}

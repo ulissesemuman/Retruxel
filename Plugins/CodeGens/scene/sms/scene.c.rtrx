@@ -22,6 +22,9 @@ void scene_{{sceneName}}_init(void);
 {{#each textStaticInits}}
 #include "{{this.header}}"
 {{/each}}
+{{#each entityInits}}
+#include "{{this.header}}"
+{{/each}}
 
 // Palette slot 0 (Background) - 16 colors (RGB222 format for SMS)
 static const unsigned char scene_{{sceneName}}_palette_0[16] = {
@@ -36,26 +39,24 @@ static const unsigned char scene_{{sceneName}}_palette_1[16] = {
 extern GameState g_gameState;
 
 void scene_{{sceneName}}_init(void) {
-{{#if hasGraphicModules}}
     // Load palette slots into CRAM
     SMS_loadBGPalette(scene_{{sceneName}}_palette_0);
     SMS_loadSpritePalette(scene_{{sceneName}}_palette_1);
 
-    // Plane layers
 {{#each planeInits}}
     {{this.call}}();
     Engine_Render(&g_gameState);
     Engine_ClearDirtyFlags(&g_gameState);
 {{/each}}
 
-    // Static text displays
 {{#each textStaticInits}}
     {{this.call}}();
     Engine_Render(&g_gameState);
     Engine_ClearDirtyFlags(&g_gameState);
 {{/each}}
-{{else}}
-    // Scene has no graphic modules yet
-{{/if}}
+
+{{#each entityInits}}
+    {{this.call}}();
+{{/each}}
 }
 // @retruxel:end

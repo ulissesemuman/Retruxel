@@ -101,7 +101,7 @@ public class SmsTarget : ITarget, IPaletteConverter
         // Each port exposes a D-pad and 2 fire buttons.
         InputPorts =
         [
-            new InputPort("port1", "Controller 11", InputPortType.Controller,
+            new InputPort("port1", "Controller 1", InputPortType.Controller,
                 Buttons:
                 [
                     new InputButton("up",    "Up",       "PORT_A_KEY_UP"),

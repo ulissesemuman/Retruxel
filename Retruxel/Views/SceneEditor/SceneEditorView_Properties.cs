@@ -83,82 +83,34 @@ public partial class SceneEditorView
 
     private void BuildEntityProperties(EntityData entity)
     {
-        // ── Type-level properties (shared by all variants of this EntityType) ──
-        AddPropertyLabel($"ENTITY TYPE — {entity.EntityType.ToUpper()}");
+        // Resolve Prefab for type-level properties
+        var prefab = _project?.Prefabs.FirstOrDefault(p => p.PrefabId == entity.PrefabId);
+        var prefabId = entity.PrefabId ?? entity.EntityType ?? "entity";
 
-        AddPropertyRow("Sprite Asset", entity.SpriteAssetId, val =>
+        AddPropertyLabel($"PREFAB — {prefabId.ToUpper()}");
+
+        // Open Prefab Editor button
+        if (prefab is not null && _target is not null && _actionRegistry is not null)
         {
-            if (_currentScene is null) return;
-            foreach (var v in _currentScene.Entities.Where(e => e.EntityType == entity.EntityType))
-                v.SpriteAssetId = val;
-            _projectManager?.MarkDirty();
-            RefreshPreview();
-        });
+            var openBtn = new System.Windows.Controls.Button
+            {
+                Content = "✏ EDIT PREFAB",
+                Height  = 32,
+                Margin  = new System.Windows.Thickness(0, 0, 0, 12)
+            };
+            openBtn.SetResourceReference(System.Windows.Controls.Button.StyleProperty, "ButtonSecondary");
+            openBtn.Click += (_, _) => OpenPrefabEditor(prefab);
+            PropertiesPanel.Children.Add(openBtn);
+        }
 
-        AddPropertyRow("Width (tiles)", entity.WidthTiles.ToString(), val =>
-        {
-            if (!int.TryParse(val, out var w) || w <= 0) return;
-            if (_currentScene is null) return;
-            foreach (var v in _currentScene.Entities.Where(e => e.EntityType == entity.EntityType))
-                v.WidthTiles = w;
-            _projectManager?.MarkDirty();
-            RefreshPreview();
-        });
+        AddPropertyLabel("INSTANCE");
 
-        AddPropertyRow("Height (tiles)", entity.HeightTiles.ToString(), val =>
-        {
-            if (!int.TryParse(val, out var h) || h <= 0) return;
-            if (_currentScene is null) return;
-            foreach (var v in _currentScene.Entities.Where(e => e.EntityType == entity.EntityType))
-                v.HeightTiles = h;
-            _projectManager?.MarkDirty();
-            RefreshPreview();
-        });
-
-        // ── Variant-level properties (specific to this instance) ──────────────
-        AddPropertyLabel("VARIANT");
-
-        AddPropertyRow("Name", entity.Label, val =>
+        AddPropertyRow("Label", entity.Label, val =>
         {
             entity.Label = val;
             _projectManager?.MarkDirty();
             RebuildProjectTree();
         });
-
-        // Palette slot — combo listing real slots from the target
-        if (_target is not null)
-        {
-            var paletteOptions = BuildPaletteSlotOptions(_target);
-            AddPropertyCombo("Palette Slot", paletteOptions, entity.PaletteSlot.ToString(), val =>
-            {
-                if (int.TryParse(val, out var s))
-                {
-                    entity.PaletteSlot = s;
-                    _projectManager?.MarkDirty();
-                    RefreshPreview();
-                }
-            });
-        }
-        else
-        {
-            AddPropertyRow("Palette Slot", entity.PaletteSlot.ToString(), val =>
-            {
-                if (int.TryParse(val, out var s)) { entity.PaletteSlot = s; _projectManager?.MarkDirty(); RefreshPreview(); }
-            });
-        }
-
-        // Input slot — combo listing project-level input modules + "None"
-        {
-            var inputOptions = BuildInputSlotOptions();
-            AddPropertyCombo("Input", inputOptions, entity.InputSlot.ToString(), val =>
-            {
-                if (int.TryParse(val, out var s))
-                {
-                    entity.InputSlot = s;
-                    _projectManager?.MarkDirty();
-                }
-            });
-        }
 
         AddPropertyRow("Start X (tile)", entity.StartTileX.ToString(), val =>
         {

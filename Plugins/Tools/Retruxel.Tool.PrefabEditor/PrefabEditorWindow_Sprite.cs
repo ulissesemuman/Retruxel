@@ -78,10 +78,16 @@ public partial class PrefabEditorWindow
 
     private void BtnOpenSpriteEditor_Click(object sender, RoutedEventArgs e)
     {
-        // Opens the SpriteEditor for the selected asset — invoked programmatically
-        // same pattern as TilemapEditor opening PaletteEditor
-        MessageBox.Show("Sprite Editor integration — coming soon.", "Retruxel",
-            MessageBoxButton.OK, MessageBoxImage.Information);
+        var scene = _project.Scenes.FirstOrDefault();
+
+        var changed = Retruxel.Services.VisualToolInvoker.OpenSpriteEditorForPrefab(
+            _prefab, _target, _project, _project.ProjectPath, scene);
+
+        if (changed)
+        {
+            PopulateSprite();
+            ValidateAll();
+        }
     }
 
     private void RefreshSpritePreview()

@@ -88,8 +88,12 @@
                                     BorderBrush="{StaticResource BrushSurfaceContainerHighest}"
                                     Height="32">
                                 <TextBox x:Name="TxtName"
-                                         Style="{StaticResource RetruxelTextBox}"
+                                         Background="{StaticResource BrushSurfaceContainerLow}"
+                                         Foreground="{StaticResource BrushOnSurface}"
+                                         BorderThickness="0"
                                          FontFamily="Consolas"
+                                         VerticalContentAlignment="Center"
+                                         Padding="4,0"
                                          TextChanged="TxtName_TextChanged"/>
                             </Border>
                             <TextBlock x:Name="TxtNameError"
@@ -110,7 +114,11 @@
                                     BorderBrush="{StaticResource BrushSurfaceContainerHighest}"
                                     Height="32">
                                 <TextBox x:Name="TxtDisplayName"
-                                         Style="{StaticResource RetruxelTextBox}"/>
+                                         Background="{StaticResource BrushSurfaceContainerLow}"
+                                         Foreground="{StaticResource BrushOnSurface}"
+                                         BorderThickness="0"
+                                         VerticalContentAlignment="Center"
+                                         Padding="4,0"/>
                             </Border>
                         </StackPanel>
                     </Grid>
@@ -132,7 +140,7 @@
                         <!-- Sprite preview -->
                         <Border Grid.Column="0"
                                 Width="128" Height="128"
-                                Background="{StaticResource BrushSurfaceContainerLowest}"
+                                Background="{StaticResource BrushSurface}"
                                 BorderThickness="1"
                                 BorderBrush="{StaticResource BrushSurfaceContainerHighest}">
                             <Grid>
@@ -202,8 +210,12 @@
                                             BorderBrush="{StaticResource BrushSurfaceContainerHighest}"
                                             Height="32">
                                         <TextBox x:Name="TxtWidthTiles"
-                                                 Style="{StaticResource RetruxelTextBox}"
+                                                 Background="{StaticResource BrushSurfaceContainerLow}"
+                                                 Foreground="{StaticResource BrushOnSurface}"
+                                                 BorderThickness="0"
                                                  FontFamily="Consolas"
+                                                 VerticalContentAlignment="Center"
+                                                 Padding="4,0"
                                                  Text="2"/>
                                     </Border>
                                 </StackPanel>
@@ -218,8 +230,12 @@
                                             BorderBrush="{StaticResource BrushSurfaceContainerHighest}"
                                             Height="32">
                                         <TextBox x:Name="TxtHeightTiles"
-                                                 Style="{StaticResource RetruxelTextBox}"
+                                                 Background="{StaticResource BrushSurfaceContainerLow}"
+                                                 Foreground="{StaticResource BrushOnSurface}"
+                                                 BorderThickness="0"
                                                  FontFamily="Consolas"
+                                                 VerticalContentAlignment="Center"
+                                                 Padding="4,0"
                                                  Text="2"/>
                                     </Border>
                                 </StackPanel>

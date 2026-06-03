@@ -259,6 +259,59 @@ public static class VisualToolInvoker
     }
 
     /// <summary>
+    /// Opens the sprite editor for a PrefabData.
+    /// Persists the selected asset back to prefab.SpriteAssetId.
+    /// </summary>
+    public static bool OpenSpriteEditorForPrefab(
+        PrefabData prefab,
+        ITarget target,
+        RetruxelProject project,
+        string projectPath,
+        SceneData? scene,
+        Func<Task>? saveProjectCallback = null)
+    {
+        if (_toolRegistry is null) return false;
+
+        var visualTool = _toolRegistry.GetVisualTool("sprite_editor");
+        if (visualTool is null) return false;
+
+        // Use first scene or an empty one for context
+        var contextScene = scene ?? project.Scenes.FirstOrDefault() ?? new SceneData();
+
+        var input = new Dictionary<string, object>
+        {
+            ["target"]       = target,
+            ["project"]      = project,
+            ["projectPath"]  = projectPath,
+            ["scene"]        = contextScene,
+            ["toolRegistry"] = _toolRegistry
+        };
+
+        if (saveProjectCallback is not null) input["saveProjectCallback"] = saveProjectCallback;
+
+        var window = visualTool.CreateWindow(input);
+        if (window is not Window wpfWindow) return false;
+
+        wpfWindow.Owner = Application.Current.MainWindow;
+        var result = wpfWindow.ShowDialog();
+        if (result != true) return false;
+
+        var moduleDataProp = window.GetType().GetProperty("ModuleData");
+        if (moduleDataProp?.GetValue(window) is Dictionary<string, object> moduleData)
+        {
+            if (moduleData.TryGetValue("tilesetAssetId", out var assetIdObj) &&
+                assetIdObj is string assetId &&
+                !string.IsNullOrEmpty(assetId))
+            {
+                prefab.SpriteAssetId = assetId;
+            }
+        }
+
+        saveProjectCallback?.Invoke();
+        return true;
+    }
+
+    /// <summary>
     /// Opens the sprite editor for a typed EntityData.
     /// Persists changes back to the entity's SpriteAssetId.
     /// </summary>

@@ -61,8 +61,7 @@ public class ProjectManager
                 new SceneData
                 {
                     SceneId = mainSceneId,
-                    SceneName = "Main",
-                    Elements = []
+                    SceneName = "Main"
                 }
             ]
         };
@@ -132,9 +131,6 @@ public class ProjectManager
                 project.InputPorts = BuildDefaultInputPorts(defaultTarget);
         }
 
-        // Migrate: promote legacy EntityData fields to Prefabs
-        MigrateLegacyEntities(project);
-
         CurrentProject = project;
         HasUnsavedChanges = false;
         ProjectChanged?.Invoke(this, project);
@@ -150,47 +146,6 @@ public class ProjectManager
         CurrentProject = null;
         HasUnsavedChanges = false;
         ProjectChanged?.Invoke(this, null);
-    }
-
-    /// <summary>
-    /// Migrates legacy EntityData fields (spriteAssetId, paletteSlot, widthTiles, heightTiles,
-    /// entityType, inputSlot) to PrefabData entries.
-    ///
-    /// Groups entities by entityType. For each unique type, creates one PrefabData if it doesn't
-    /// already exist, then updates EntityData.PrefabId and clears the legacy fields.
-    /// </summary>
-    private static void MigrateLegacyEntities(RetruxelProject project)
-    {
-        foreach (var scene in project.Scenes)
-        {
-            foreach (var entity in scene.Entities)
-            {
-                // Already migrated
-                if (!string.IsNullOrEmpty(entity.PrefabId))
-                    continue;
-
-                // Determine prefab id from legacy entityType or entityId
-                var prefabId = !string.IsNullOrEmpty(entity.EntityType)
-                    ? entity.EntityType
-                    : entity.EntityId;
-
-                // Create prefab if it doesn't exist yet
-                if (!project.Prefabs.Any(p => p.PrefabId == prefabId))
-                {
-                    project.Prefabs.Add(new PrefabData
-                    {
-                        PrefabId      = prefabId,
-                        DisplayName   = prefabId,
-                        SpriteAssetId = entity.SpriteAssetId ?? string.Empty,
-                        PaletteSlot   = entity.PaletteSlot   ?? 1,
-                        WidthTiles    = entity.WidthTiles     ?? 2,
-                        HeightTiles   = entity.HeightTiles    ?? 2,
-                    });
-                }
-
-                entity.PrefabId = prefabId;
-            }
-        }
     }
 
     /// <summary>

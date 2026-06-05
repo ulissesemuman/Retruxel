@@ -30,7 +30,7 @@ public partial class SceneEditorView : UserControl
     private readonly UndoRedoStack _undoRedo = new();
 
     // ── Selection state ────────────────────────────────────────────────────────
-    // Selection now points to typed model objects, not a generic SceneElement.
+    // Selection points to typed model objects.
     private object?   _selectedItem;       // PlaneLayerData | EntityData | PaletteSlotData
     private SceneData? _selectedScene;     // kept for properties panel context
 
@@ -150,15 +150,10 @@ public partial class SceneEditorView : UserControl
                 SceneId   = Guid.NewGuid().ToString(),
                 SceneName = "Main"
             };
-            InitializePaletteSlots(_currentScene, target);
-            EnsureDefaultPlanes(_currentScene, target);
             project.Scenes.Add(_currentScene);
         }
-        else
-        {
-            MigrateScene(_currentScene, target);
-        }
 
+        EnsureScene(_currentScene, target);
         EnsureInputPorts(project, target);
 
         ApplyTargetSpecs(target);
@@ -184,7 +179,19 @@ public partial class SceneEditorView : UserControl
         ApplyPreviewTransform();
     }
 
-    // ── Scene / palette / plane initialization ───────────────────────────────
+    // ── Scene initialization ──────────────────────────────────────────────────
+
+    /// <summary>
+    /// Ensures a scene has all required collections populated for the given target.
+    /// Safe to call on any scene — only fills in what is missing.
+    /// </summary>
+    private static void EnsureScene(SceneData scene, ITarget target)
+    {
+        if (scene.PaletteSlots.Count == 0)
+            InitializePaletteSlots(scene, target);
+
+        EnsureDefaultPlanes(scene, target);
+    }
 
     private static void InitializePaletteSlots(SceneData scene, ITarget target)
     {
@@ -249,78 +256,6 @@ public partial class SceneEditorView : UserControl
         {
             scene.Planes.Add(new PlaneData { PlaneId = "bg" });
         }
-    }
-
-    private static void MigrateScene(SceneData scene, ITarget target)
-    {
-        if (scene.PaletteSlots.Count == 0)
-            InitializePaletteSlots(scene, target);
-
-        // Migrate legacy flat Elements into typed Planes/Entities if needed
-        if (scene.Elements.Count > 0 && scene.Planes.Count == 0)
-            MigrateLegacyElements(scene);
-
-        // Ensure all hardware planes are present (handles projects saved before
-        // EnsureDefaultPlanes was introduced, or targets with new planes added later).
-        EnsureDefaultPlanes(scene, target);
-    }
-
-    /// <summary>
-    /// One-time migration from the old flat SceneElementData model to the new typed hierarchy.
-    /// Runs only when loading a pre-refactor project file.
-    /// </summary>
-    private static void MigrateLegacyElements(SceneData scene)
-    {
-        System.Diagnostics.Debug.WriteLine(
-            $"[SceneEditor] Migrating {scene.Elements.Count} legacy elements in scene '{scene.SceneName}'");
-
-        // Create a default plane to receive migrated tilemap elements
-        var defaultPlane = new PlaneData { PlaneId = "bg" };
-
-        foreach (var elem in scene.Elements)
-        {
-            if (elem.ModuleId.Contains("plane", StringComparison.OrdinalIgnoreCase))
-            {
-                var layer = new PlaneLayerData
-                {
-                    LayerId   = elem.ElementId,
-                    LayerName = elem.UserId ?? $"Layer {defaultPlane.Layers.Count}",
-                    AssetId   = TryGetAssetId(elem),
-                    Visible   = true
-                };
-                defaultPlane.Layers.Add(layer);
-            }
-            else if (elem.ModuleId is "entity" or "enemy" or "sprite" or "player")
-            {
-                scene.Entities.Add(new EntityData
-                {
-                    EntityId    = elem.ElementId,
-                    Label       = elem.UserId ?? elem.ModuleId,
-                    EntityType  = elem.ModuleId,
-                    SpriteAssetId = TryGetAssetId(elem),
-                    StartTileX  = elem.TileX,
-                    StartTileY  = elem.TileY
-                });
-            }
-        }
-
-        if (defaultPlane.Layers.Count > 0)
-            scene.Planes.Add(defaultPlane);
-
-        // Keep Elements for backward compat serialization but mark as migrated
-        scene.Elements.Clear();
-    }
-
-    private static string TryGetAssetId(SceneElementData elem)
-    {
-        try
-        {
-            if (elem.ModuleState.ValueKind == System.Text.Json.JsonValueKind.Object &&
-                elem.ModuleState.TryGetProperty("tilesAssetId", out var prop))
-                return prop.GetString() ?? string.Empty;
-        }
-        catch { }
-        return string.Empty;
     }
 
     // ── Selection ──────────────────────────────────────────────────────────────

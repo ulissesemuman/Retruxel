@@ -3,9 +3,11 @@
   "actionId": "jump",
   "displayName": "Jump",
   "category": "Movement",
+  "dependencies": ["gravity"],
   "parameters": [
-    { "name": "jumpHeight", "type": "int",  "default": 4,     "label": "Jump Height (pixels/frame)" },
-    { "name": "gravity",    "type": "int",  "default": 1,     "label": "Gravity (pixels/frame²)"   },
-    { "name": "canDouble",  "type": "bool", "default": false, "label": "Allow Double Jump"          }
+    { "name": "jumpHeight", "type": "int",  "default": 4,    "label": "Jump Height (pixels/frame)"               },
+    { "name": "gravity",    "type": "int",  "default": 1,    "label": "Gravity (pixels/frame²)"                  },
+    { "name": "canDouble",  "type": "bool", "default": false, "label": "Allow Double Jump"                       },
+    { "name": "onPress",    "type": "bool", "default": true,  "label": "Trigger on button press only (edge-triggered)" }
   ]
 }

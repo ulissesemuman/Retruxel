@@ -1,6 +1,16 @@
+// @retruxel:block header
+void entity_{{entityId}}_action_walk(Entity_{{entityId}}_Params* p, signed char direction);
+// @retruxel:end
+
+// @retruxel:block reset
+    {{#ifnot params.continuous}}
+    entity_{{entityId}}.params.vel_x = 0;
+    {{/ifnot}}
+// @retruxel:end
+
 // @retruxel:block source
-// Action: walk — injected into {{prefab.id}}
-void {{prefab.id}}_walk({{prefab.id}}_Params* p, signed char direction) {
+// Action: walk — injected into entity_{{entityId}}
+void entity_{{entityId}}_action_walk(Entity_{{entityId}}_Params* p, signed char direction) {
     {{#if params.acceleration}}
     if (direction > 0 && p->vel_x < {{params.speed}})
         p->vel_x += {{params.accelRate}};

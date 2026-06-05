@@ -54,10 +54,11 @@ Language files are JSON in `Retruxel/Assets/Localization/`. Supported: English (
 
 ## Plugin Discovery
 
-Plugins (targets, tools, CodeGens) are discovered at runtime via reflection. The app scans:
+Plugins (targets, tools, CodeGens, actions) are discovered at runtime via reflection and filesystem scan. The app scans:
 - `Plugins/Tools/*.dll` — implements `ITool`
 - `Plugins/Targets/*.dll` — implements `ITarget`
 - `Plugins/CodeGens/**/codegen.json` — declarative code generators
+- `Plugins/CodeGens/actions/**/action.json` — reusable action definitions (discovered by `ActionRegistry`)
 
 ## Code Generation Pipeline Priority
 
@@ -94,4 +95,23 @@ Before code generation starts, `CodeGenerator.GenerateAsync` populates `inMemory
 
 ## Input System
 
-Input ports are defined by the target via `ITarget.GetInputPorts()` and stored in `RetruxelProject.InputPorts` as `InputPortBinding[]` (remappable). `EntityData.InputSlot` holds the index into this array (-1 = no input). The `InputButton.DevkitConst` field is the C constant emitted by CodeGen (e.g. `PORT_A_KEY_1`).
+Input ports are defined by the target via `ITarget.GetInputPorts()` and stored in `RetruxelProject.InputPorts` as `InputPortBinding[]` (remappable). `PrefabData.InputMapping` holds the port selection and button→action mappings for that prefab type. `EntityData.InputSlot` (legacy, nullable) is deprecated — input configuration now lives in the prefab. The `InputButton.DevkitConst` field is the C constant emitted by CodeGen (e.g. `PORT_A_KEY_1`).
+
+## Prefab & Action System
+
+**`PrefabData`** (Retruxel.Core/Models/PrefabModels.cs) is the reusable entity definition. Key fields:
+- `PrefabId` — C-safe unique identifier; doubles as the CodeGen template folder name (`player/sms/`) and C name prefix (`player_walk()`)
+- `Actions` — `List<ActionInstance>`, each referencing an `ActionDefinition` by `ActionId` plus user-configured `Parameters`
+- `InputMapping` — optional `PrefabInputMapping` with `PortId` and `ButtonMappings` (`Dictionary<string, List<string>>` mapping button IDs → `ActionInstance.InstanceId` lists)
+
+**`ActionRegistry`** (Retruxel.Core/Services/ActionRegistry.cs):
+- Scans `Plugins/CodeGens/actions/{actionId}/{targetId}/action.json` and `actions/{actionId}/all/action.json`
+- Target-specific variant takes priority over `all/`
+- `GetTemplatePath(actionId, targetId)` → path to `.c.rtrx` template
+- Instantiated once in `SceneEditorView` via `ActionRegistry.Discover(pluginsPath)`
+
+**Action template variables:**
+- `{{prefab.id}}` — resolved to `PrefabData.PrefabId`
+- `{{params.Name}}` — resolved to `ActionInstance.Parameters[Name]` (falls back to `ActionParameterDef.Default`)
+
+**Open gap:** `CodeGenerator` does not yet iterate `PrefabData.Actions` to emit action C functions. Sprite/palette/dimensions from the prefab are injected into `entityState`, but the action codegen wiring is not implemented.

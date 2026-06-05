@@ -31,7 +31,15 @@ Retruxel.slnx                    ← Solution file (VS 2022+ format)
         ├── sprite/sms/
         ├── tilemap/sms/
         ├── text_display/sms/
-        └── ...                  ← One folder per module/target pair
+        ├── {prefabId}/sms/      ← Per-prefab codegen folder (e.g. player/sms/, goblin/sms/)
+        ├── ...                  ← One folder per module/target pair
+        └── actions/             ← Reusable action templates
+            ├── walk/
+            │   ├── all/         ← action.json + walk.c.rtrx (cross-platform)
+            │   └── {targetId}/  ← target-specific override (optional)
+            ├── jump/all/
+            ├── attack/all/
+            └── ...              ← One folder per actionId
 ```
 
 ## Retruxel.Core Internals
@@ -40,10 +48,11 @@ Retruxel.slnx                    ← Solution file (VS 2022+ format)
 Retruxel.Core/
 ├── Interfaces/      ← ITarget, IModule, ITool, IRenderBackend, IToolchain, etc.
 ├── Models/          ← RetruxelProject, SceneData, ModuleManifest, AssetEntry,
+│                       PrefabData, ActionInstance, PrefabInputMapping,
 │                       InputModels (InputPort, InputButton, InputPortBinding), etc.
 ├── Services/        ← CodeGenerator, ModuleRenderer, TemplateEngine, ToolRegistry,
 │                       TargetRegistry, ModuleLoader, ProjectManager, VramAllocator,
-│                       SatAllocator, etc.
+│                       SatAllocator, ActionRegistry, etc.
 ├── Engine/          ← GameState, RenderCommandBuffer (runtime abstractions)
 ├── Connectors/      ← Data flow connectors between assets, modules, tools
 ├── Helpers/         ← Utility classes
@@ -74,6 +83,21 @@ Retruxel/
 └── Localization/    ← Localization helpers
 ```
 
+**Prefab Editor tool** lives in `Plugins/Tools/Retruxel.Tool.PrefabEditor/` (not in `Views/`). It is a standalone WPF window split into partial classes:
+
+| File | Responsibility |
+|---|---|
+| `PrefabEditorWindow.xaml/.cs` | Main window, deep-copy working pattern (`DeepCopy()` via JSON), `_saveCallback` |
+| `PrefabEditorWindow_Identity.cs` | Name + DisplayName fields, C-identifier validation, duplicate detection |
+| `PrefabEditorWindow_Sprite.cs` | Asset dropdown, palette slot combo, width/height tiles, sprite preview |
+| `PrefabEditorWindow_Actions.cs` | Action list rows with params summary, `+ ADD ACTION` button |
+| `PrefabEditorWindow_InputMapping.cs` | Port selector, per-button action chips, toggle enable/disable |
+| `PrefabEditorWindow_Save.cs` | `ValidateAll()`, `BtnSave_Click` commits to `_saveCallback` |
+| `PrefabPickerDialog.cs` | Popup listing existing prefabs + inline "NEW PREFAB" creation form |
+| `ActionPickerDialog.cs` | Lists `ActionRegistry` entries grouped by category |
+| `ActionParameterDialog.cs` | Per-action parameter editor (bool → combo, int/float/string → textbox) |
+| `PrefabEditorTool.cs` | `ITool` stub (`toolId: "prefab_editor"`) — DLL copied to `Plugins/Tools/` |
+
 **Dialog pattern:** Modal dialogs are `Window` subclasses placed directly in `Views/`, not in `Windows/`. They use `WindowStyle="None"`, `AllowsTransparency="True"`, `CornerRadius="6"` on the outer border (physical window frame only — inner UI stays 0px radius), and `WindowStartupLocation="CenterOwner"`. Title bars implement drag via `DragMove()` on `MouseLeftButtonDown`.
 
 ## Key Architectural Patterns
@@ -88,26 +112,52 @@ Retruxel/
 
 ### Entity System
 
-`EntityData` is the owner of sprite and behavior configuration. Modules no longer float as independent scene elements for entities — they are absorbed into the `EntityData` hierarchy:
+`EntityData` is a placed instance of a `PrefabData` in a scene. The prefab owns the type-level definition; `EntityData` holds only instance-level data.
 
-- `EntityData.SpriteAssetId` — which asset to render
-- `EntityData.PaletteSlot` — which palette slot (combo in UI, not free text)
-- `EntityData.InputSlot` — index into `RetruxelProject.InputPorts` (-1 = no input)
-- `EntityData.WidthTiles` / `HeightTiles` — render grid size; **must match the asset layout**
-- `EntityData.ModuleOverrides` — per-entity parameter overrides (physics, AI, etc.)
-- `EntityData.EntityType` — drives which `codegen.json` folder is used (e.g. `"entity"`, `"enemy"`)
+**Resolving entity properties always goes through the Prefab:**
+```csharp
+var prefab = project.Prefabs.FirstOrDefault(p => p.PrefabId == entity.PrefabId);
+var spriteAssetId = prefab?.SpriteAssetId ?? entity.SpriteAssetId ?? string.Empty;
+var paletteSlot   = prefab?.PaletteSlot   ?? entity.PaletteSlot   ?? 1;
+var widthTiles    = prefab?.WidthTiles     ?? entity.WidthTiles     ?? 2;
+var heightTiles   = prefab?.HeightTiles    ?? entity.HeightTiles    ?? 2;
+```
+
+Legacy nullable fields on `EntityData` (`SpriteAssetId`, `PaletteSlot`, `WidthTiles`, `HeightTiles`, `InputSlot`, `EntityType`) exist only as migration fallbacks. New code never writes to them.
+
+`PrefabId` is used as `moduleId` for codegen template lookup — it resolves to the folder `{prefabId}/{targetId}/` (e.g. `player/sms/`).
 
 **Entity codegen tile layout:** tiles in VRAM are sequential starting at `START_TILE`. The update loop draws `widthTiles × heightTiles` hardware sprites row-major: `tile_idx = row * WIDTH_TILES + col`. The asset sheet must be organized with the same column count as `WidthTiles` for the mapping to be correct.
 
+### Prefab System
+
+`RetruxelProject.Prefabs` is the project-level list of `PrefabData`. Each prefab has:
+- `PrefabId` — unique C-safe identifier, used as C name prefix (`player_walk()`, `player_jump()`, etc.)
+- `Actions` — list of `ActionInstance` (each configures an `ActionDefinition` by `ActionId` + user `Parameters`)
+- `InputMapping` — optional `PrefabInputMapping` mapping hardware buttons → `ActionInstance.InstanceId` lists
+
+**Action discovery:** `ActionRegistry.Discover(pluginsPath)` scans `Plugins/CodeGens/actions/**/action.json` at startup. Target-specific variants (`actions/{actionId}/{targetId}/action.json`) override the `all/` fallback. `ActionRegistry` is constructed once in `SceneEditorView` and injected wherever needed.
+
+**PrefabPickerDialog** is the entry point for adding entities to a scene. It lists existing prefabs and provides an inline "NEW PREFAB" creation form. On selection, `AddEntityFromPrefab(prefabId)` creates a minimal `EntityData { PrefabId = prefabId }`.
+
+**PrefabEditorWindow** opens from:
+1. The PREFABS section in the project tree (edit/delete per-prefab)
+2. The `✏ EDIT PREFAB` button in the entity properties panel
+3. `PrefabPickerDialog` (implicitly — create form creates the prefab before the editor opens)
+
+The editor always works on a **deep copy** of `PrefabData` (JSON round-trip). Changes are committed only on Save via `_saveCallback`.
+
+**Deleting a prefab** is blocked if any `EntityData` in any scene references it (`entity.PrefabId == prefab.PrefabId`).
+
 ### Input System
 
-`ITarget.GetInputPorts()` returns the hardware default `InputPort[]`. On project creation/load, `EnsureInputPorts(project, target)` copies these into `RetruxelProject.InputPorts` as `InputPortBinding[]` (remappable by the user). `EntityData.InputSlot` is the index into this array.
+`ITarget.GetInputPorts()` returns the hardware default `InputPort[]`. On project creation/load, `EnsureInputPorts(project, target)` copies these into `RetruxelProject.InputPorts` as `InputPortBinding[]` (remappable by the user). `PrefabData.InputMapping.PortId` selects which port drives entities of this prefab type.
 
 ### Properties Panel (SceneEditorView_Properties.cs)
 
 The right panel renders typed controls based on the selected item:
 - **`PlaneLayerData`** — text rows + palette slot combo (lists real slots from target)
-- **`EntityData`** — type-level rows (sprite asset, width/height tiles) + variant rows (name, palette slot combo, input slot combo, start X/Y)
+- **`EntityData`** — shows `PREFAB — {ID}` label + `✏ EDIT PREFAB` button, then instance-level rows (label, start X/Y)
 - **`ProjectModuleData`** — label, enabled combo, then manifest-driven parameters (Enum → combo, Bool → combo, Int/String → textbox)
 
 `AddPropertyCombo(label, options, currentValue, onChange)` is the helper for dropdown rows. `AddPropertyRow` is for free-text rows. Never use free text for palette slots, input slots, or enum parameters.

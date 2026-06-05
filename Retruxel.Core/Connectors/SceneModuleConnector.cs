@@ -7,7 +7,7 @@ using System.Text.Json;
 namespace Retruxel.Core.Connectors;
 
 /// <summary>
-/// Creates or updates a module in the current scene with tool output.
+/// Creates or updates a module override in the current scene with tool output.
 /// Used when visual tools (like TilemapEditor) return module data.
 /// </summary>
 public class SceneModuleConnector : IToolConnector
@@ -31,52 +31,33 @@ public class SceneModuleConnector : IToolConnector
 
         System.Diagnostics.Debug.WriteLine($"[SceneModuleConnector] ModuleId: {moduleId}");
 
-        // Serialize module data to JSON
-        string moduleJson = JsonSerializer.Serialize(toolOutput, new JsonSerializerOptions
+        var stateJson = JsonSerializer.Serialize(toolOutput, new JsonSerializerOptions
         {
             PropertyNamingPolicy = JsonNamingPolicy.CamelCase
         });
+        var state = JsonDocument.Parse(stateJson).RootElement.Clone();
 
-        System.Diagnostics.Debug.WriteLine($"[SceneModuleConnector] Serialized JSON: {moduleJson}");
+        System.Diagnostics.Debug.WriteLine($"[SceneModuleConnector] Serialized state: {stateJson}");
 
-        var moduleState = JsonDocument.Parse(moduleJson).RootElement.Clone();
+        // Update existing override or create a new one
+        var existing = context.CurrentScene.ModuleOverrides
+            .FirstOrDefault(m => m.ModuleId == moduleId);
 
-        // Check if updating existing module or creating new one
-        if (toolOutput.TryGetValue("instanceId", out var instanceIdObj) && instanceIdObj is string instanceId)
+        if (existing != null)
         {
-            System.Diagnostics.Debug.WriteLine($"[SceneModuleConnector] Updating existing element: {instanceId}");
-            // Update existing module
-            var existingElement = context.CurrentScene.Elements
-                .FirstOrDefault(e => e.ElementId == instanceId);
-
-            if (existingElement != null)
-            {
-                existingElement.ModuleState = moduleState;
-                System.Diagnostics.Debug.WriteLine($"[SceneModuleConnector] Element updated successfully");
-            }
-            else
-            {
-                context.AddError($"SceneModuleConnector: Element '{instanceId}' not found in scene");
-            }
+            System.Diagnostics.Debug.WriteLine($"[SceneModuleConnector] Updating existing override: {moduleId}");
+            existing.State = state;
         }
         else
         {
-            System.Diagnostics.Debug.WriteLine($"[SceneModuleConnector] Creating new element");
-            // Create new element instance
-            string newElementId = $"{moduleId}_{context.CurrentScene.Elements.Count(e => e.ModuleId == moduleId)}";
-
-            var element = new SceneElementData
+            System.Diagnostics.Debug.WriteLine($"[SceneModuleConnector] Creating new module override: {moduleId}");
+            context.CurrentScene.ModuleOverrides.Add(new ProjectModuleData
             {
-                ElementId = newElementId,
                 ModuleId = moduleId,
-                ModuleState = moduleState,
-                TileX = 0,
-                TileY = 0,
-                Trigger = "OnStart"
-            };
-
-            context.CurrentScene.Elements.Add(element);
-            System.Diagnostics.Debug.WriteLine($"[SceneModuleConnector] New element created: {newElementId}");
+                Label    = moduleId,
+                Enabled  = true,
+                State    = state
+            });
         }
     }
 }

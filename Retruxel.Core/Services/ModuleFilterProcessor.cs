@@ -14,9 +14,12 @@ internal static class ModuleFilterProcessor
 {
     public static List<string> ProcessProjectModules(RetruxelProject project, VariableDefinition varDef)
     {
-        var allModuleIds = project.Scenes
-            .SelectMany(s => s.Elements)
-            .Select(e => e.ModuleId)
+        // Collect module IDs from project-level modules and all scene-level overrides.
+        // Legacy Elements are intentionally excluded — they are only processed by
+        // CodeGenerator's backward-compat pass (step 2e) and should not appear here.
+        var allModuleIds = project.Modules
+            .Select(m => m.ModuleId)
+            .Concat(project.Scenes.SelectMany(s => s.ModuleOverrides).Select(m => m.ModuleId))
             .ToList();
 
         if (!string.IsNullOrEmpty(varDef.Path))

@@ -55,11 +55,9 @@ public partial class SceneEditorView
     {
         if (_project is null) return;
 
-        // Check if asset is in use across all typed collections and legacy elements
         var usedBy = new List<string>();
         foreach (var scene in _project.Scenes)
         {
-            // Check typed plane layers
             foreach (var plane in scene.Planes)
             {
                 var planeLabel = _target?.Specs.Planes.FirstOrDefault(p => p.Id == plane.PlaneId)?.Label
@@ -74,28 +72,11 @@ public partial class SceneEditorView
                 }
             }
 
-            // Check typed entities
             foreach (var entity in scene.Entities)
             {
                 if (entity.SpriteAssetId == asset.Id)
                 {
                     var label = !string.IsNullOrEmpty(entity.Label) ? entity.Label : entity.EntityId[..8];
-                    usedBy.Add($"{scene.SceneName}/{label}");
-                }
-            }
-
-            // Check legacy flat elements (backward compat)
-            foreach (var element in scene.Elements)
-            {
-                if (element.ModuleState.ValueKind == System.Text.Json.JsonValueKind.Undefined ||
-                    element.ModuleState.ValueKind == System.Text.Json.JsonValueKind.Null)
-                    continue;
-
-                if (element.ModuleState.TryGetProperty("tilesAssetId", out var assetId) &&
-                    assetId.GetString() == asset.Id)
-                {
-                    var label = !string.IsNullOrEmpty(element.UserId)
-                        ? element.UserId : element.ElementId[..8];
                     usedBy.Add($"{scene.SceneName}/{label}");
                 }
             }
@@ -122,7 +103,6 @@ public partial class SceneEditorView
             Type        = ChangeType.Large,
             Execute     = () =>
             {
-                // Clear all references to this asset before removing it.
                 foreach (var scene in _project.Scenes)
                 {
                     foreach (var plane in scene.Planes)
@@ -133,19 +113,6 @@ public partial class SceneEditorView
                     foreach (var entity in scene.Entities)
                         if (entity.SpriteAssetId == asset.Id)
                             entity.SpriteAssetId = string.Empty;
-
-                    foreach (var element in scene.Elements)
-                    {
-                        if (element.ModuleState.ValueKind == System.Text.Json.JsonValueKind.Undefined ||
-                            element.ModuleState.ValueKind == System.Text.Json.JsonValueKind.Null)
-                            continue;
-                        if (element.ModuleState.TryGetProperty("tilesAssetId", out var assetId) &&
-                            assetId.GetString() == asset.Id)
-                        {
-                            // Legacy elements store state as a JsonElement — mark dirty only,
-                            // the next save will persist the cleared reference.
-                        }
-                    }
                 }
 
                 _project.Assets.Remove(asset);

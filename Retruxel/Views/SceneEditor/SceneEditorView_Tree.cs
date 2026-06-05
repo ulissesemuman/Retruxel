@@ -42,7 +42,7 @@ public partial class SceneEditorView
     private readonly HashSet<string> _expandedNodes = new(StringComparer.Ordinal)
     {
         "project", "assets", "modules_global", "scenes",
-        "palette", "planes", "modules_scene", "entities"
+        "palette", "planes", "modules_scene", "entities", "scene_actions"
     };
 
     // ── Entry point ────────────────────────────────────────────────────────────
@@ -272,6 +272,7 @@ public partial class SceneEditorView
         BuildPlanesSection(scene);
         BuildSceneModulesSection(scene);
         BuildEntitiesSection(scene);
+        BuildSceneActionsSection(scene);
         BuildVramUsageBar(scene);
     }
 
@@ -386,7 +387,15 @@ public partial class SceneEditorView
         var layerName = string.IsNullOrEmpty(layer.LayerName)
             ? $"Layer {plane.Layers.IndexOf(layer)}"
             : layer.LayerName;
-        var sublabel = string.IsNullOrEmpty(layer.AssetId) ? null : layer.AssetId;
+
+        // Sublabel: asset id + collision action when active
+        string? sublabel = null;
+        if (!string.IsNullOrEmpty(layer.AssetId))
+        {
+            sublabel = layer.HasCollision
+                ? $"{layer.AssetId}  ·  {layer.CollisionActionLabel}"
+                : layer.AssetId;
+        }
 
         var row = new Border
         {
@@ -396,6 +405,7 @@ public partial class SceneEditorView
 
         var grid = new Grid();
         grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto }); // collision
         grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto }); // ✍
         grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto }); // 👀
         grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto }); // ✖
@@ -416,28 +426,63 @@ public partial class SceneEditorView
         Grid.SetColumn(textStack, 0);
         grid.Children.Add(textStack);
 
+        // Collision toggle — icon reflects state:
+        //   no collision  →  ○  (dim)
+        //   solid         →  ⬛  (warning color)
+        //   with action   →  ⚡  (primary color, action name in sublabel)
+        string collIcon  = layer.HasCollision
+            ? (string.IsNullOrEmpty(layer.CollisionAction) ? "⬛" : "⚡")
+            : "○";
+        string collColor = layer.HasCollision
+            ? (string.IsNullOrEmpty(layer.CollisionAction) ? "BrushWarning" : "BrushPrimary")
+            : "BrushOnSurfaceVariant";
+
+        var collBtn = new TextBlock
+        {
+            Text              = collIcon,
+            FontSize          = 10,
+            Cursor            = Cursors.Hand,
+            VerticalAlignment = VerticalAlignment.Center,
+            Margin            = new Thickness(6, 0, 4, 0),
+            ToolTip           = layer.HasCollision
+                ? $"Collision: {layer.CollisionActionLabel} (click to toggle)"
+                : "No collision (click to enable)"
+        };
+        collBtn.SetResourceReference(TextBlock.ForegroundProperty, collColor);
+        collBtn.MouseLeftButtonDown += (_, e) =>
+        {
+            e.Handled = true;
+            layer.HasCollision = !layer.HasCollision;
+            _projectManager?.MarkDirty();
+            RebuildProjectTree();
+            // Refresh properties panel if this layer is currently selected
+            if (_selectedItem == layer) BuildPropertiesPanel(layer);
+        };
+        Grid.SetColumn(collBtn, 1);
+        grid.Children.Add(collBtn);
+
         // ✍ Edit button — opens PlaneEditor for this layer
         var editBtn = new TextBlock
         {
-            Text = "✍",
-            FontSize = 11,
-            Cursor = Cursors.Hand,
+            Text              = "✍",
+            FontSize          = 11,
+            Cursor            = Cursors.Hand,
             VerticalAlignment = VerticalAlignment.Center,
-            Margin = new Thickness(6, 0, 4, 0)
+            Margin            = new Thickness(0, 0, 4, 0)
         };
         editBtn.SetResourceReference(TextBlock.ForegroundProperty, "BrushPrimary");
         editBtn.MouseLeftButtonDown += (_, e) => { e.Handled = true; OpenTilemapEditor(layer); };
-        Grid.SetColumn(editBtn, 1);
+        Grid.SetColumn(editBtn, 2);
         grid.Children.Add(editBtn);
 
         // 👀 Visibility toggle
         var visBtn = new TextBlock
         {
-            Text = layer.Visible ? "👀" : "□",
-            FontSize = 10,
-            Cursor = Cursors.Hand,
+            Text              = layer.Visible ? "👀" : "□",
+            FontSize          = 10,
+            Cursor            = Cursors.Hand,
             VerticalAlignment = VerticalAlignment.Center,
-            Margin = new Thickness(0, 0, 4, 0)
+            Margin            = new Thickness(0, 0, 4, 0)
         };
         visBtn.SetResourceReference(TextBlock.ForegroundProperty,
             layer.Visible ? "BrushOnSurface" : "BrushOnSurfaceVariant");
@@ -449,30 +494,39 @@ public partial class SceneEditorView
             RebuildProjectTree();
             RefreshPreview();
         };
-        Grid.SetColumn(visBtn, 2);
+        Grid.SetColumn(visBtn, 3);
         grid.Children.Add(visBtn);
 
         // ✖ Delete button
         var delBtn = new TextBlock
         {
-            Text = "✖",
-            FontSize = 10,
-            Cursor = Cursors.Hand,
+            Text              = "✖",
+            FontSize          = 10,
+            Cursor            = Cursors.Hand,
             VerticalAlignment = VerticalAlignment.Center
         };
         delBtn.SetResourceReference(TextBlock.ForegroundProperty, "BrushOnSurfaceVariant");
         delBtn.MouseEnter += (_, _) => delBtn.SetResourceReference(TextBlock.ForegroundProperty, "BrushError");
         delBtn.MouseLeave += (_, _) => delBtn.SetResourceReference(TextBlock.ForegroundProperty, "BrushOnSurfaceVariant");
         delBtn.MouseLeftButtonDown += (_, e) => { e.Handled = true; RemovePlaneLayer(layer); };
-        Grid.SetColumn(delBtn, 3);
+        Grid.SetColumn(delBtn, 4);
         grid.Children.Add(delBtn);
 
         row.Child = grid;
 
-        // Double-click — inline rename
+        // Single-click — select + show properties
         row.MouseLeftButtonDown += (_, e) =>
         {
-            if (e.ClickCount == 2) { e.Handled = true; StartInlineLayerRename(row, lbl, layer); }
+            if (e.ClickCount == 2)
+            {
+                e.Handled = true;
+                StartInlineLayerRename(row, lbl, layer);
+            }
+            else if (e.Source is not TextBlock)
+            {
+                SelectItem(layer);
+                ShowPropertiesForItem(layer);
+            }
         };
 
         ProjectTreePanel.Children.Add(row);
@@ -764,6 +818,87 @@ public partial class SceneEditorView
             }
         };
         ProjectTreePanel.Children.Add(row);
+    }
+
+    // ── SCENE ACTIONS ─────────────────────────────────────────────────────
+
+    private void BuildSceneActionsSection(SceneData scene)
+    {
+        AddTreeSubSection("SCENE ACTIONS", "scene_actions", indent: 3,
+            sublabel: "applied to all entities",
+            onAdd: () => ShowSceneActionPickerDialog(scene));
+
+        if (!IsExpanded("scene_actions")) return;
+
+        if (scene.SceneActions.Count == 0)
+        {
+            AddTreeEmpty("No scene actions — click + to add", indent: 4);
+            return;
+        }
+
+        foreach (var action in scene.SceneActions)
+        {
+            var a = action;
+            var def = _actionRegistry?.GetById(a.ActionId);
+            var displayName = def?.DisplayName ?? a.ActionId;
+            var scopeLabel  = def?.Scope == "entity" ? "per entity" : "scene";
+
+            AddTreeLeafWithEdit(
+                label:    displayName,
+                sublabel: $"{a.ActionId}  ·  {scopeLabel}",
+                indent:   4,
+                onEdit:   () => { /* TODO: open action params editor */ },
+                onDelete: () =>
+                {
+                    scene.SceneActions.Remove(a);
+                    _projectManager?.MarkDirty();
+                    RebuildProjectTree();
+                });
+        }
+    }
+
+    private void ShowSceneActionPickerDialog(SceneData scene)
+    {
+        if (_actionRegistry is null) return;
+
+        // Only show actions with scope="scene" or those explicitly designed for scene use
+        var available = _actionRegistry.Actions.Values
+            .Where(d => d.Scope == "scene" || d.Scope == "entity") // all actions can be scene-scoped
+            .Where(d => !scene.SceneActions.Any(a =>
+                a.ActionId.Equals(d.ActionId, StringComparison.OrdinalIgnoreCase)))
+            .OrderBy(d => d.Category)
+            .ThenBy(d => d.DisplayName)
+            .ToList();
+
+        if (available.Count == 0)
+        {
+            System.Windows.MessageBox.Show(
+                "All available actions are already added to this scene.",
+                "Retruxel", System.Windows.MessageBoxButton.OK);
+            return;
+        }
+
+        // Simple picker: context menu with available actions
+        var menu = new ContextMenu { IsOpen = true };
+        foreach (var def in available)
+        {
+            var d = def;
+            var item = new MenuItem
+            {
+                Header = $"{d.DisplayName}  ({d.ActionId})",
+                Tag    = d
+            };
+            item.Click += (_, _) =>
+            {
+                scene.SceneActions.Add(new ActionInstance { ActionId = d.ActionId });
+                _projectManager?.MarkDirty();
+                _expandedNodes.Add("scene_actions");
+                RebuildProjectTree();
+            };
+            menu.Items.Add(item);
+        }
+        menu.PlacementTarget = ProjectTreePanel;
+        menu.IsOpen = true;
     }
 
     private void BuildVramUsageBar(SceneData scene)

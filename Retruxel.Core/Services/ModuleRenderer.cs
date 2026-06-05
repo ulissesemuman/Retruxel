@@ -344,6 +344,7 @@ public class ModuleRenderer
                 _instanceCounters[key] = 0;
 
             var instanceId = _instanceCounters[key]++;
+            variables["entityId"] = instanceId; // stable alias — never overwritten by #each item scopes
             variables["instanceId"] = instanceId;
 
             // isFirstInstance for tile array emission:

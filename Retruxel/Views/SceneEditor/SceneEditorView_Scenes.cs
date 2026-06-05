@@ -118,7 +118,7 @@ public partial class SceneEditorView
         SceneCanvas.Children.Clear();
         SelectItem(null);
         _undoRedo.Clear();
-        MigrateScene(scene, _target!);
+        EnsureScene(scene, _target!);
 
         RebuildProjectTree();
         RebuildSceneTabs();

@@ -216,6 +216,7 @@
                                                  FontFamily="Consolas"
                                                  VerticalContentAlignment="Center"
                                                  Padding="4,0"
+                                                 TextChanged="TxtWidthTiles_TextChanged"
                                                  Text="2"/>
                                     </Border>
                                 </StackPanel>
@@ -236,10 +237,20 @@
                                                  FontFamily="Consolas"
                                                  VerticalContentAlignment="Center"
                                                  Padding="4,0"
+                                                 TextChanged="TxtHeightTiles_TextChanged"
                                                  Text="2"/>
                                     </Border>
                                 </StackPanel>
                             </Grid>
+
+                            <!-- Dimension/asset mismatch warning -->
+                            <TextBlock x:Name="TxtDimWarning"
+                                       FontFamily="Consolas"
+                                       FontSize="9"
+                                       Foreground="{StaticResource BrushWarning}"
+                                       TextWrapping="Wrap"
+                                       Margin="0,6,0,0"
+                                       Visibility="Collapsed"/>
                         </StackPanel>
                     </Grid>
 

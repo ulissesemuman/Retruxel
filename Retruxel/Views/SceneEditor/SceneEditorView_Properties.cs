@@ -77,6 +77,45 @@ public partial class SceneEditorView
                 }
             });
         }
+
+        // ── Collision ─────────────────────────────────────────────────────────
+        AddPropertyLabel("COLLISION");
+
+        AddPropertyCombo("Has Collision", new Dictionary<string, string>
+        {
+            { "No",  "false" },
+            { "Yes", "true"  }
+        }, layer.HasCollision ? "true" : "false", val =>
+        {
+            layer.HasCollision = val == "true";
+            _projectManager?.MarkDirty();
+            RebuildProjectTree();
+            // Rebuild panel so the action combo appears/disappears immediately
+            BuildPlaneLayerProperties(layer);
+        });
+
+        if (layer.HasCollision)
+        {
+            // Build action options from ActionRegistry.
+            // Key = display label, Value = actionId (empty string = solid).
+            var actionOptions = new Dictionary<string, string>
+            {
+                { "Solid (block only)", string.Empty }
+            };
+
+            if (_actionRegistry is not null)
+            {
+                foreach (var action in _actionRegistry.Actions.Values)
+                    actionOptions[action.DisplayName] = action.ActionId;
+            }
+
+            AddPropertyCombo("Collision Action", actionOptions, layer.CollisionAction, val =>
+            {
+                layer.CollisionAction = val;
+                _projectManager?.MarkDirty();
+                RebuildProjectTree();
+            });
+        }
     }
 
     // ── Entity ────────────────────────────────────────────────────────────────

@@ -38,6 +38,29 @@ public class ActionRegistry
         => _actions.TryGetValue(actionId, out var def) ? def : null;
 
     /// <summary>
+    /// Returns all transitive dependencies for a given actionId (recursive, de-duplicated).
+    /// The returned list is ordered so dependencies come before dependents.
+    /// </summary>
+    public IReadOnlyList<string> GetAllDependencies(string actionId)
+    {
+        var result  = new List<string>();
+        var visited = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        CollectDependencies(actionId, result, visited);
+        return result;
+    }
+
+    private void CollectDependencies(string actionId, List<string> result, HashSet<string> visited)
+    {
+        if (!_actions.TryGetValue(actionId, out var def)) return;
+        foreach (var dep in def.Dependencies)
+        {
+            if (!visited.Add(dep)) continue;
+            CollectDependencies(dep, result, visited); // depth-first
+            result.Add(dep);
+        }
+    }
+
+    /// <summary>
     /// Returns the template path for a given actionId and targetId.
     /// Falls back to the "all" variant if no target-specific template exists.
     /// Returns null if no template is found.
@@ -83,10 +106,12 @@ public class ActionRegistry
                 var templateFile = Directory.GetFiles(variantDir, "*.c.rtrx").FirstOrDefault();
 
                 var def = new ActionDefinition(
-                    ActionId:    raw.ActionId,
-                    DisplayName: raw.DisplayName ?? raw.ActionId,
-                    Category:    raw.Category    ?? "General",
-                    Parameters:  ParseParameters(raw.Parameters)
+                    ActionId:     raw.ActionId,
+                    DisplayName:  raw.DisplayName ?? raw.ActionId,
+                    Category:     raw.Category    ?? "General",
+                    Parameters:   ParseParameters(raw.Parameters),
+                    Dependencies: raw.Dependencies?.ToArray() ?? [],
+                    Scope:        raw.Scope ?? "entity"
                 );
 
                 // Register definition keyed by actionId (all variants share the same definition)
@@ -140,9 +165,11 @@ public class ActionRegistry
 
     private class ActionManifestRaw
     {
-        public string? ActionId     { get; set; }
-        public string? DisplayName  { get; set; }
-        public string? Category     { get; set; }
+        public string? ActionId          { get; set; }
+        public string? DisplayName       { get; set; }
+        public string? Category          { get; set; }
+        public string? Scope             { get; set; }
+        public List<string>? Dependencies { get; set; }
         public List<ActionParameterDefRaw>? Parameters { get; set; }
     }
 

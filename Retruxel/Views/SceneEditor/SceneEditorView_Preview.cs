@@ -573,8 +573,18 @@ public partial class SceneEditorView
 
         int tileSize    = _target.Specs.TileWidth;
         int assetCols   = Math.Max(1, assetW / tileSize);
+        int assetRows   = Math.Max(1, assetH / tileSize);
         int widthTiles  = widthTilesVal  > 0 ? widthTilesVal  : assetCols;
-        int heightTiles = heightTilesVal > 0 ? heightTilesVal : Math.Max(1, assetH / tileSize);
+        int heightTiles = heightTilesVal > 0 ? heightTilesVal : assetRows;
+
+        // When widthTiles doesn't match assetCols the row-major tile mapping breaks —
+        // tile indices land on the wrong source pixels and the sprite renders as garbage.
+        // If there's a mismatch, fall back to the actual asset grid dimensions so the
+        // preview always shows the correct sprite (even if the prefab config is wrong).
+        if (widthTiles != assetCols)
+            widthTiles = assetCols;
+        if (heightTiles != assetRows)
+            heightTiles = assetRows;
         int outW        = widthTiles  * tileSize;
         int outH        = heightTiles * tileSize;
 

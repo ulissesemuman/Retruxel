@@ -23,7 +23,8 @@ public static class VramAllocator
         SceneData scene,
         ITarget target,
         IReadOnlyList<AssetEntry> assets,
-        int fontTileCount = 0)
+        int fontTileCount = 0,
+        RetruxelProject? project = null)
     {
         var specs      = target.Specs;
         var available  = specs.VramBytesForTiles;
@@ -75,13 +76,16 @@ public static class VramAllocator
             totalUsed += planeBytes;
         }
 
-        // Entity sprite assets
+        // Entity sprite assets — resolve via Prefab first, then legacy field
         foreach (var entity in scene.Entities)
         {
-            if (string.IsNullOrEmpty(entity.SpriteAssetId)) continue;
-            if (!counted.Add(entity.SpriteAssetId)) continue;
+            var prefab        = project?.Prefabs.FirstOrDefault(p => p.PrefabId == entity.PrefabId);
+            var spriteAssetId = prefab?.SpriteAssetId ?? entity.SpriteAssetId ?? string.Empty;
 
-            int tileCount = GetTileCount(entity.SpriteAssetId, assets);
+            if (string.IsNullOrEmpty(spriteAssetId)) continue;
+            if (!counted.Add(spriteAssetId)) continue;
+
+            int tileCount = GetTileCount(spriteAssetId, assets);
             totalUsed += tileCount * defaultBytesPerTile;
         }
 
@@ -103,7 +107,8 @@ public static class VramAllocator
     public static VramAllocation Allocate(
         SceneData scene,
         ITarget target,
-        IReadOnlyList<AssetEntry> assets)
+        IReadOnlyList<AssetEntry> assets,
+        RetruxelProject? project = null)
     {
         var specs       = target.Specs;
         var offsets     = new Dictionary<string, int>();
@@ -135,17 +140,21 @@ public static class VramAllocator
             }
         }
 
-        // Entity sprite assets — allocated after plane assets
+        // Entity sprite assets — resolve via Prefab first, then legacy field.
+        // Allocated after plane assets so sprite tiles never overlap BG tiles.
         int defaultBytesPerTile = specs.Planes.FirstOrDefault()?.BytesPerTile ?? 32;
         foreach (var entity in scene.Entities)
         {
-            if (string.IsNullOrEmpty(entity.SpriteAssetId)) continue;
-            if (offsets.ContainsKey(entity.SpriteAssetId)) continue;
+            var prefab        = project?.Prefabs.FirstOrDefault(p => p.PrefabId == entity.PrefabId);
+            var spriteAssetId = prefab?.SpriteAssetId ?? entity.SpriteAssetId ?? string.Empty;
 
-            var asset     = assets.FirstOrDefault(a => a.Id == entity.SpriteAssetId);
+            if (string.IsNullOrEmpty(spriteAssetId)) continue;
+            if (offsets.ContainsKey(spriteAssetId)) continue;
+
+            var asset     = assets.FirstOrDefault(a => a.Id == spriteAssetId);
             int tileCount = asset?.GenerationParams?.TileCount ?? 0;
 
-            offsets[entity.SpriteAssetId] = nextOffset;
+            offsets[spriteAssetId] = nextOffset;
             nextOffset += tileCount;
         }
 

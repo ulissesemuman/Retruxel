@@ -19,26 +19,40 @@ public partial class PrefabEditorWindow
 
         if (!hasMapping) return;
 
-        // Port selector
-        CmbPort.Items.Clear();
-        foreach (var port in _project.InputPorts)
+        // Suspend port change handling while we populate — otherwise SelectionChanged
+        // fires during SelectedIndex assignment and clears the existing ButtonMappings.
+        _suppressPortSelectionChanged = true;
+        try
         {
-            CmbPort.Items.Add(new ComboBoxItem
+            // Port selector
+            CmbPort.Items.Clear();
+            foreach (var port in _project.InputPorts)
             {
-                Content = port.Label,
-                Tag     = port.Id
-            });
-        }
+                CmbPort.Items.Add(new ComboBoxItem
+                {
+                    Content = port.Label,
+                    Tag     = port.Id
+                });
+            }
 
-        var portIndex = _project.InputPorts
-            .FindIndex(p => p.Id == _prefab.InputMapping!.PortId);
-        CmbPort.SelectedIndex = Math.Max(0, portIndex);
+            var portIndex = _project.InputPorts
+                .FindIndex(p => p.Id == _prefab.InputMapping!.PortId);
+            CmbPort.SelectedIndex = Math.Max(0, portIndex);
+        }
+        finally
+        {
+            _suppressPortSelectionChanged = false;
+        }
 
         RebuildButtonMappingRows();
     }
 
     private void CmbPort_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
+        // Suppressed during PopulateInputMapping to avoid clearing existing ButtonMappings
+        // when SelectedIndex is set programmatically while populating the combo.
+        if (_suppressPortSelectionChanged) return;
+
         if (_prefab.InputMapping is null) return;
         if (CmbPort.SelectedItem is ComboBoxItem item && item.Tag is string portId)
         {

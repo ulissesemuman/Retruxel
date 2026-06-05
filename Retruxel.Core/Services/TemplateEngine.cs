@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 
@@ -16,6 +17,7 @@ namespace Retruxel.Core.Services;
 /// - Negated conditionals: {{#ifnot condition}}...{{/ifnot}}
 /// - Comparisons: {{#if a > b}}, {{#if a == b}}
 /// - Block selection: @retruxel:block name:mode=value
+/// - Nested {{#each}} loops
 /// </summary>
 public class TemplateEngine
 {
@@ -39,6 +41,7 @@ public class TemplateEngine
         RegexOptions.Singleline | RegexOptions.Compiled
     );
 
+    // Kept for reference but not used in Render — replaced by ReplaceEachBlocks
     private static readonly Regex EachRegex = new(
         @"\{\{#each\s+(?<variable>\w+)\}\}(?<content>.*?)\{\{/each\}\}",
         RegexOptions.Singleline | RegexOptions.Compiled
@@ -54,7 +57,6 @@ public class TemplateEngine
 
         if (stream == null)
         {
-            // Fallback: try loading from file system
             if (File.Exists(resourcePath))
                 return File.ReadAllText(resourcePath);
 
@@ -74,21 +76,18 @@ public class TemplateEngine
 
         foreach (Match match in matches)
         {
-            var name = match.Groups["name"].Value;
+            var name      = match.Groups["name"].Value;
             var blockMode = match.Groups["mode"].Success ? match.Groups["mode"].Value : null;
-            var content = match.Groups["content"].Value;
+            var content   = match.Groups["content"].Value;
 
             if (name == blockName)
             {
-                // If mode is specified, match it
                 if (mode != null && blockMode != null && blockMode != mode)
                     continue;
 
-                // If no mode specified in query, return first match
                 if (mode == null && blockMode == null)
                     return content.Trim();
 
-                // If mode matches or no mode required
                 if (mode == null || blockMode == mode)
                     return content.Trim();
             }
@@ -104,19 +103,14 @@ public class TemplateEngine
     {
         var result = template;
 
-        // 1. Process each loops
-        result = EachRegex.Replace(result, match =>
-        {
-            var varName = match.Groups["variable"].Value.Trim();
-            var content = match.Groups["content"].Value;
-            return ProcessEachLoop(varName, content, variables);
-        });
+        // 1. Process each loops (nested-aware depth-counting parser)
+        result = ReplaceEachBlocks(result, variables);
 
         // 2. Process negated conditionals
         result = NegatedConditionalRegex.Replace(result, match =>
         {
             var condition = match.Groups["condition"].Value.Trim();
-            var content = match.Groups["content"].Value;
+            var content   = match.Groups["content"].Value;
             return EvaluateCondition(condition, variables) ? string.Empty : content;
         });
 
@@ -124,14 +118,14 @@ public class TemplateEngine
         result = ConditionalRegex.Replace(result, match =>
         {
             var condition = match.Groups["condition"].Value.Trim();
-            var content = match.Groups["content"].Value;
+            var content   = match.Groups["content"].Value;
             return EvaluateCondition(condition, variables) ? content : string.Empty;
         });
 
         // 4. Substitute variables and expressions
         result = VariableRegex.Replace(result, match =>
         {
-            var expr = match.Groups["expr"].Value.Trim();
+            var expr  = match.Groups["expr"].Value.Trim();
             var value = EvaluateExpression(expr, variables);
             return value?.ToString() ?? string.Empty;
         });
@@ -146,6 +140,77 @@ public class TemplateEngine
     {
         var block = ExtractBlock(template, blockName, mode);
         return Render(block, variables);
+    }
+
+    /// <summary>
+    /// Processes {{#each}} loops with proper nesting support by manually finding
+    /// the matching {{/each}} tag using a depth counter.
+    /// </summary>
+    private static string ReplaceEachBlocks(string template, Dictionary<string, object> variables)
+    {
+        const string openTag  = "{{#each ";
+        const string closeTag = "{{/each}}";
+
+        var result = new StringBuilder();
+        int pos = 0;
+
+        while (pos < template.Length)
+        {
+            int start = template.IndexOf(openTag, pos, StringComparison.Ordinal);
+            if (start < 0)
+            {
+                result.Append(template, pos, template.Length - pos);
+                break;
+            }
+
+            result.Append(template, pos, start - pos);
+
+            int nameStart = start + openTag.Length;
+            int nameEnd   = template.IndexOf("}}", nameStart, StringComparison.Ordinal);
+            if (nameEnd < 0) { result.Append(template, start, template.Length - start); break; }
+
+            var varName      = template.Substring(nameStart, nameEnd - nameStart).Trim();
+            int contentStart = nameEnd + 2;
+
+            // Find matching {{/each}} accounting for nesting
+            int depth      = 1;
+            int searchPos  = contentStart;
+            int contentEnd = -1;
+
+            while (searchPos < template.Length && depth > 0)
+            {
+                int nextOpen  = template.IndexOf(openTag,  searchPos, StringComparison.Ordinal);
+                int nextClose = template.IndexOf(closeTag, searchPos, StringComparison.Ordinal);
+
+                if (nextClose < 0) break;
+
+                if (nextOpen >= 0 && nextOpen < nextClose)
+                {
+                    depth++;
+                    searchPos = nextOpen + openTag.Length;
+                }
+                else
+                {
+                    depth--;
+                    if (depth == 0)
+                        contentEnd = nextClose;
+                    searchPos = nextClose + closeTag.Length;
+                }
+            }
+
+            if (contentEnd < 0)
+            {
+                result.Append(template, start, template.Length - start);
+                break;
+            }
+
+            var content = template.Substring(contentStart, contentEnd - contentStart);
+            result.Append(ProcessEachLoop(varName, content, variables));
+
+            pos = contentEnd + closeTag.Length;
+        }
+
+        return result.ToString();
     }
 
     private static string ProcessEachLoop(string varName, string content, Dictionary<string, object> variables)
@@ -173,12 +238,48 @@ public class TemplateEngine
                 sb.AppendLine(Render(content, itemVars));
             }
         }
+        // Handle JsonElement arrays — convert eagerly to avoid ObjectDisposedException
+        else if (value is System.Text.Json.JsonElement je && je.ValueKind == System.Text.Json.JsonValueKind.Array)
+        {
+            foreach (var item in je.EnumerateArray())
+            {
+                var itemVars = new Dictionary<string, object>(variables);
+                var d = JsonElementToDictionary(item);
+                foreach (var (k, v) in d) itemVars[k] = v;
+                itemVars["this"] = d.Count > 0
+                    ? (object)d
+                    : (item.ValueKind == System.Text.Json.JsonValueKind.String ? item.GetString() ?? "" : "");
+                sb.AppendLine(Render(content, itemVars));
+            }
+        }
         // Handle IEnumerable<object>
         else if (value is System.Collections.IEnumerable enumerable)
         {
             foreach (var item in enumerable)
             {
                 var itemVars = new Dictionary<string, object>(variables) { ["this"] = item };
+
+                if (item is Dictionary<string, object> dictItem)
+                {
+                    foreach (var (k, v) in dictItem)
+                        itemVars[k] = v;
+                }
+                else if (item is System.Text.Json.JsonElement je2)
+                {
+                    var d = JsonElementToDictionary(je2);
+                    foreach (var (k, v) in d) itemVars[k] = v;
+                }
+                else if (item is not null and not string)
+                {
+                    foreach (var prop in item.GetType().GetProperties(
+                        System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance))
+                    {
+                        var v = prop.GetValue(item);
+                        if (v is not null)
+                            itemVars[prop.Name] = v;
+                    }
+                }
+
                 sb.AppendLine(Render(content, itemVars));
             }
         }
@@ -186,9 +287,37 @@ public class TemplateEngine
         return sb.ToString();
     }
 
+    /// <summary>
+    /// Converts a JsonElement (object or array) into a Dictionary for template variable injection.
+    /// </summary>
+    private static Dictionary<string, object> JsonElementToDictionary(System.Text.Json.JsonElement element)
+    {
+        var dict = new Dictionary<string, object>(StringComparer.OrdinalIgnoreCase);
+        if (element.ValueKind != System.Text.Json.JsonValueKind.Object)
+            return dict;
+
+        foreach (var prop in element.EnumerateObject())
+        {
+            dict[prop.Name] = prop.Value.ValueKind switch
+            {
+                System.Text.Json.JsonValueKind.String  => (object)(prop.Value.GetString() ?? ""),
+                System.Text.Json.JsonValueKind.True    => true,
+                System.Text.Json.JsonValueKind.False   => false,
+                System.Text.Json.JsonValueKind.Number  => prop.Value.TryGetInt32(out var i) ? i : (object)prop.Value.GetDouble(),
+                System.Text.Json.JsonValueKind.Array   => prop.Value.EnumerateArray()
+                    .Select(e => e.ValueKind == System.Text.Json.JsonValueKind.String
+                        ? (object)(e.GetString() ?? "")
+                        : (object)JsonElementToDictionary(e))
+                    .ToList<object>(),
+                System.Text.Json.JsonValueKind.Object  => (object)JsonElementToDictionary(prop.Value),
+                _ => (object)""
+            };
+        }
+        return dict;
+    }
+
     private static bool EvaluateCondition(string condition, Dictionary<string, object> variables)
     {
-        // Handle comparisons: >, <, >=, <=, ==, !=
         var comparisonOps = new[] { "==", "!=", ">=", "<=", ">", "<" };
         foreach (var op in comparisonOps)
         {
@@ -197,22 +326,27 @@ public class TemplateEngine
                 var parts = condition.Split(new[] { op }, StringSplitOptions.None);
                 if (parts.Length == 2)
                 {
-                    var left = EvaluateExpression(parts[0].Trim(), variables);
+                    var left  = EvaluateExpression(parts[0].Trim(), variables);
                     var right = EvaluateExpression(parts[1].Trim(), variables);
                     return CompareValues(left, right, op);
                 }
             }
         }
 
-        // Simple boolean check
         var value = EvaluateExpression(condition, variables);
         return value switch
         {
             bool b => b,
-            int i => i != 0,
+            int i  => i != 0,
             double d => d != 0,
             string s => !string.IsNullOrEmpty(s),
-            Array a => a.Length > 0,
+            Array a  => a.Length > 0,
+            System.Text.Json.JsonElement j when j.ValueKind == System.Text.Json.JsonValueKind.True   => true,
+            System.Text.Json.JsonElement j when j.ValueKind == System.Text.Json.JsonValueKind.False  => false,
+            System.Text.Json.JsonElement j when j.ValueKind == System.Text.Json.JsonValueKind.Number => j.GetDouble() != 0,
+            System.Text.Json.JsonElement j when j.ValueKind == System.Text.Json.JsonValueKind.String => !string.IsNullOrEmpty(j.GetString()),
+            System.Text.Json.JsonElement j when j.ValueKind == System.Text.Json.JsonValueKind.Null   => false,
+            System.Text.Json.JsonElement => true,
             _ => value != null
         };
     }
@@ -222,19 +356,18 @@ public class TemplateEngine
         if (left == null || right == null)
             return op == "!=" ? left != right : left == right;
 
-        // Convert to double for numeric comparisons
-        var leftNum = Convert.ToDouble(left);
+        var leftNum  = Convert.ToDouble(left);
         var rightNum = Convert.ToDouble(right);
 
         return op switch
         {
             "==" => Math.Abs(leftNum - rightNum) < 0.0001,
             "!=" => Math.Abs(leftNum - rightNum) >= 0.0001,
-            ">" => leftNum > rightNum,
-            "<" => leftNum < rightNum,
+            ">"  => leftNum > rightNum,
+            "<"  => leftNum < rightNum,
             ">=" => leftNum >= rightNum,
             "<=" => leftNum <= rightNum,
-            _ => false
+            _    => false
         };
     }
 
@@ -242,13 +375,12 @@ public class TemplateEngine
     {
         expr = expr.Trim();
 
-        // Literal numbers
         if (int.TryParse(expr, out var intVal))
             return intVal;
-        if (double.TryParse(expr, out var doubleVal))
+        if (double.TryParse(expr, System.Globalization.NumberStyles.Any,
+                System.Globalization.CultureInfo.InvariantCulture, out var doubleVal))
             return doubleVal;
 
-        // Arithmetic operations: *, /, +, -
         var arithmeticOps = new (string op, Func<double, double, double> func)[]
         {
             ("*", (a, b) => a * b),
@@ -263,7 +395,7 @@ public class TemplateEngine
                 var parts = expr.Split(op, StringSplitOptions.None);
                 if (parts.Length == 2)
                 {
-                    var left = EvaluateExpression(parts[0].Trim(), variables);
+                    var left  = EvaluateExpression(parts[0].Trim(), variables);
                     var right = EvaluateExpression(parts[1].Trim(), variables);
                     if (left != null && right != null)
                         return func(Convert.ToDouble(left), Convert.ToDouble(right));
@@ -271,7 +403,6 @@ public class TemplateEngine
             }
         }
 
-        // Property access: object.property or object.property.subproperty
         if (expr.Contains('.'))
         {
             var parts = expr.Split('.');
@@ -288,21 +419,35 @@ public class TemplateEngine
 
                 var propName = parts[i];
 
-                // Array.length
                 if (propName == "length" && current is Array arr)
                 {
                     current = arr.Length;
                     continue;
                 }
 
-                // Dictionary/object property access
                 if (current is Dictionary<string, object> dict && dict.TryGetValue(propName, out var val))
                 {
                     current = val;
                     continue;
                 }
 
-                // Reflection fallback
+                if (current is System.Text.Json.JsonElement je)
+                {
+                    if (je.TryGetProperty(propName, out var jeProp))
+                    {
+                        current = jeProp.ValueKind switch
+                        {
+                            System.Text.Json.JsonValueKind.String => (object)(jeProp.GetString() ?? ""),
+                            System.Text.Json.JsonValueKind.True   => true,
+                            System.Text.Json.JsonValueKind.False  => false,
+                            System.Text.Json.JsonValueKind.Number => jeProp.TryGetInt32(out var n) ? n : (object)jeProp.GetDouble(),
+                            _ => jeProp
+                        };
+                        continue;
+                    }
+                    return null;
+                }
+
                 var prop = current.GetType().GetProperty(propName);
                 if (prop != null)
                 {
@@ -316,7 +461,6 @@ public class TemplateEngine
             return current;
         }
 
-        // Simple variable lookup
         return variables.TryGetValue(expr, out var value) ? value : null;
     }
 }

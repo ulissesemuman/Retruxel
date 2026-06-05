@@ -7,7 +7,7 @@ using System.Text.Json;
 namespace Retruxel.Core.Connectors;
 
 /// <summary>
-/// Connector that creates a Palette module in the project.
+/// Connector that creates or updates a palette module override in the current scene.
 /// Used for standalone palette creation (not called from TilemapEditor).
 /// </summary>
 public class PaletteToModuleConnector : IToolConnector
@@ -16,7 +16,6 @@ public class PaletteToModuleConnector : IToolConnector
 
     public void Connect(Dictionary<string, object> toolOutput, ToolExecutionContext context)
     {
-        // Validate output
         if (!toolOutput.ContainsKey("name") || !toolOutput.ContainsKey("colors"))
         {
             context.AddError("Palette output missing required fields: name, colors");
@@ -29,11 +28,11 @@ public class PaletteToModuleConnector : IToolConnector
             return;
         }
 
-        // Generate unique palette ID — check both typed ModuleOverrides and legacy Elements
-        var existingPalettes = context.CurrentProject.Scenes
-            .SelectMany(s => s.ModuleOverrides.Select(m => m.ModuleId == "palette" ? m.ModuleId : null)
-                .Concat(s.Elements.Where(e => e.ModuleId == "palette").Select(e => e.ElementId)))
-            .Where(id => id != null)
+        // Generate a unique palette module ID from existing scene ModuleOverrides
+        var existingIds = context.CurrentProject.Scenes
+            .SelectMany(s => s.ModuleOverrides)
+            .Where(m => m.ModuleId.StartsWith("palette"))
+            .Select(m => m.ModuleId)
             .ToHashSet();
 
         int paletteIndex = 0;
@@ -42,32 +41,31 @@ public class PaletteToModuleConnector : IToolConnector
         {
             paletteId = $"palette_{paletteIndex}";
             paletteIndex++;
-        } while (existingPalettes.Contains(paletteId));
+        } while (existingIds.Contains(paletteId));
 
-        // Create palette module
         var moduleData = new Dictionary<string, object>
         {
-            ["name"] = toolOutput["name"],
+            ["name"]   = toolOutput["name"],
             ["colors"] = toolOutput["colors"]
         };
 
-        var paletteElement = new SceneElementData
+        var state = JsonDocument.Parse(
+            JsonSerializer.Serialize(moduleData, new JsonSerializerOptions
+            {
+                PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+            })).RootElement.Clone();
+
+        context.CurrentScene.ModuleOverrides.Add(new ProjectModuleData
         {
-            ElementId = paletteId,
-            UserId = toolOutput["name"].ToString()!,
-            ModuleId = "palette",
-            ModuleState = JsonDocument.Parse(JsonSerializer.Serialize(moduleData)).RootElement.Clone(),
-            TileX = 0,
-            TileY = 0,
-            Trigger = "OnStart"
-        };
+            ModuleId = paletteId,
+            Label    = toolOutput["name"].ToString()!,
+            Enabled  = true,
+            State    = state
+        });
 
-        context.CurrentScene.Elements.Add(paletteElement);
-
-        // Return created palette ID
         context.ChainResult(new Dictionary<string, object>
         {
-            ["paletteId"] = paletteId,
+            ["paletteId"]   = paletteId,
             ["paletteName"] = toolOutput["name"]
         });
     }

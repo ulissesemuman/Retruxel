@@ -11,6 +11,25 @@ namespace Retruxel.Core.Services;
 public partial class CodeGenerator
 {
     /// <summary>
+    /// Returns the extra C arguments for an action call based on actionId and buttonId context.
+    /// E.g. walk called from "left" → "-1", from "right" → "1".
+    /// Returns empty string if no extra args needed.
+    /// </summary>
+    private static string GetActionCallArgs(string actionId, string buttonId)
+    {
+        return actionId switch
+        {
+            "walk" => buttonId switch
+            {
+                "left"  or "up"   => "-1",
+                "right" or "down" => "1",
+                _                  => "0"
+            },
+            _ => ""
+        };
+    }
+
+    /// <summary>
     /// Formats a byte array as a C array initializer string.
     /// Example: "0x3C, 0x42, 0x42, 0x3C"
     /// Returns "0x00" for empty arrays to prevent C compilation errors.

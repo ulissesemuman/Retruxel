@@ -1,6 +1,10 @@
+// @retruxel:block header
+void entity_{{entityId}}_action_attack(Entity_{{entityId}}_Params* p);
+// @retruxel:end
+
 // @retruxel:block source
-// Action: attack — injected into {{prefab.id}}
-void {{prefab.id}}_attack({{prefab.id}}_Params* p) {
+// Action: attack — injected into entity_{{entityId}}
+void entity_{{entityId}}_action_attack(Entity_{{entityId}}_Params* p) {
     if (p->attack_cooldown > 0) return;
     p->attacking = 1;
     p->attack_damage = {{params.damage}};

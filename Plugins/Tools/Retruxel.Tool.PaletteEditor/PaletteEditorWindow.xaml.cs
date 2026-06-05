@@ -284,14 +284,14 @@ public partial class PaletteEditorWindow : Window
         }
 
         var modulesUsingPalette = _project.Scenes
-            .SelectMany(s => s.Elements)
-            .Where(e =>
+            .SelectMany(s => s.ModuleOverrides)
+            .Where(m =>
             {
-                if (e.ModuleState.ValueKind is System.Text.Json.JsonValueKind.Undefined
-                                           or System.Text.Json.JsonValueKind.Null)
+                if (m.State.ValueKind is System.Text.Json.JsonValueKind.Undefined
+                                      or System.Text.Json.JsonValueKind.Null)
                     return false;
 
-                return e.ModuleState.TryGetProperty("paletteModuleId", out var id)
+                return m.State.TryGetProperty("paletteModuleId", out var id)
                     && id.GetString() == _paletteElementId;
             })
             .ToList();
@@ -303,7 +303,7 @@ public partial class PaletteEditorWindow : Window
         }
 
         foreach (var module in modulesUsingPalette)
-            AddUsageText($"• {module.ElementId} ({module.ModuleId})", "BrushOnSurface", new Thickness(0, 0, 0, 4));
+            AddUsageText($"• {module.ModuleId} ({module.Label})", "BrushOnSurface", new Thickness(0, 0, 0, 4));
     }
 
     private void AddUsageText(string text, string brushKey, Thickness margin = default)

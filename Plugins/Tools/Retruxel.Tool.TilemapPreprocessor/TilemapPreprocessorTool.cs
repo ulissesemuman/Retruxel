@@ -1,4 +1,3 @@
-
 using Retruxel.Core.Interfaces;
 using System;
 using System.Collections.Generic;

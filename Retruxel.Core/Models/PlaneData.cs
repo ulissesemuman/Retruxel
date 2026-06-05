@@ -4,9 +4,9 @@ using System.Text.Json.Serialization;
 namespace Retruxel.Core.Models;
 
 /// <summary>
-/// Represents a hardware plane plane in a scene.
-/// SMS has 1, SNES has up to 4 (BG1-BG4).
-/// Each HardwarePlane contains N logical layers merged at build time.
+/// Represents a hardware BG plane in a scene.
+/// SMS has 1, SNES has up to 4 (BG1–BG4).
+/// Each plane contains N logical layers merged at build time.
 /// </summary>
 public class PlaneData
 {
@@ -81,6 +81,26 @@ public class PlaneLayerData
     public bool Visible { get; set; } = true;
 
     /// <summary>
+    /// Whether collision detection is active for this layer.
+    /// When true, the build pipeline emits a collision map and the CodeGen
+    /// generates the corresponding lookup table and helper macros.
+    /// </summary>
+    [JsonPropertyName("hasCollision")]
+    public bool HasCollision { get; set; } = false;
+
+    /// <summary>
+    /// Action triggered when an entity collides with a solid tile in this layer.
+    /// References ActionDefinition.ActionId from the ActionRegistry.
+    ///
+    /// Empty string means "solid" — the entity is blocked but no action fires.
+    /// Any registered action ID is valid: "damage", "trigger", "kill", etc.
+    ///
+    /// Only meaningful when HasCollision = true.
+    /// </summary>
+    [JsonPropertyName("collisionAction")]
+    public string CollisionAction { get; set; } = string.Empty;
+
+    /// <summary>
     /// Width of the tile map for this layer in tiles.
     /// Defaults to PlaneSpecs.DefaultWidth when layer is created.
     /// </summary>
@@ -100,4 +120,12 @@ public class PlaneLayerData
     /// </summary>
     [JsonPropertyName("tiles")]
     public List<TileEntry> Tiles { get; set; } = [];
+
+    /// <summary>
+    /// Resolved display label for the collision action.
+    /// "solid" when CollisionAction is empty, otherwise the ActionId.
+    /// </summary>
+    [JsonIgnore]
+    public string CollisionActionLabel =>
+        string.IsNullOrEmpty(CollisionAction) ? "solid" : CollisionAction;
 }

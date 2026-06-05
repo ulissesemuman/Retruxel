@@ -1,0 +1,12 @@
+{
+  "type": "action",
+  "actionId": "gravity",
+  "displayName": "Gravity",
+  "category": "Physics",
+  "scope": "entity",
+  "parameters": [
+    { "name": "strength",     "type": "int",  "default": 1,   "label": "Gravity Strength (pixels/frame²)" },
+    { "name": "maxFallSpeed", "type": "int",  "default": 8,   "label": "Max Fall Speed (pixels/frame)"    },
+    { "name": "groundY",      "type": "int",  "default": 160, "label": "Ground Y position (pixels)"       }
+  ]
+}

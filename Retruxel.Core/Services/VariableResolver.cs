@@ -172,8 +172,8 @@ internal class VariableResolver
             JsonValueKind.Number => prop.TryGetInt32(out var i) ? (object)i : prop.GetDouble(),
             JsonValueKind.True => true,
             JsonValueKind.False => false,
-            JsonValueKind.Array => prop,  // Keep as JsonElement for complex arrays
-            JsonValueKind.Object => prop,
+            JsonValueKind.Array  => prop.Clone(),   // Clone survives JsonDocument.Dispose()
+            JsonValueKind.Object => prop.Clone(),
             _ => prop.GetString() ?? varDef.Default ?? ""
         };
 
@@ -198,6 +198,31 @@ internal class VariableResolver
         }
 
         return value;
+    }
+
+    private static Dictionary<string, object> JsonElementToDictionary(JsonElement element)
+    {
+        var dict = new Dictionary<string, object>(StringComparer.OrdinalIgnoreCase);
+        if (element.ValueKind != JsonValueKind.Object)
+            return dict;
+        foreach (var prop in element.EnumerateObject())
+        {
+            dict[prop.Name] = prop.Value.ValueKind switch
+            {
+                JsonValueKind.String => (object)(prop.Value.GetString() ?? ""),
+                JsonValueKind.True   => true,
+                JsonValueKind.False  => false,
+                JsonValueKind.Number => prop.Value.TryGetInt32(out var i) ? i : (object)prop.Value.GetDouble(),
+                JsonValueKind.Array  => prop.Value.EnumerateArray()
+                    .Select(e => e.ValueKind == JsonValueKind.String
+                        ? (object)(e.GetString() ?? "")
+                        : (object)JsonElementToDictionary(e))
+                    .ToList<object>(),
+                JsonValueKind.Object => (object)JsonElementToDictionary(prop.Value),
+                _ => (object)""
+            };
+        }
+        return dict;
     }
 
     private object ResolveInputPortValue(

@@ -2,6 +2,7 @@ using Retruxel.Core.Interfaces;
 using Retruxel.Core.Models;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -25,12 +26,15 @@ public partial class CodeGenerator
     private readonly ModuleRenderer _moduleRenderer;
     private readonly ITarget _target;
     private readonly TextAnalyzer _textAnalyzer = new();
+    private readonly ActionRegistry? _actionRegistry;
 
-    public CodeGenerator(ModuleRegistry moduleRegistry, ModuleRenderer moduleRenderer, ITarget target)
+    public CodeGenerator(ModuleRegistry moduleRegistry, ModuleRenderer moduleRenderer, ITarget target,
+        ActionRegistry? actionRegistry = null)
     {
         _moduleRegistry = moduleRegistry;
         _moduleRenderer = moduleRenderer;
         _target = target;
+        _actionRegistry = actionRegistry;
 
         // Set target assembly for ModuleRenderer to discover IToolExtension implementations
         _moduleRenderer.SetTargetAssembly(target.GetType().Assembly);
@@ -98,7 +102,7 @@ public partial class CodeGenerator
         {
             try
             {
-                var vram = VramAllocator.Allocate(scene, _target, project.Assets);
+                var vram = VramAllocator.Allocate(scene, _target, project.Assets, project);
                 if (!vram.FitsInVram)
                     progress?.Report($"WARN: Scene '{scene.SceneName}' VRAM usage exceeds target limit.");
 
@@ -131,7 +135,8 @@ public partial class CodeGenerator
             System.Text.Json.JsonElement moduleState,
             string elementId,
             string? sceneId,
-            string trigger)
+            string trigger,
+            string? overrideCodegenModuleId = null)
         {
             IModule? moduleTemplate = null;
 
@@ -157,19 +162,23 @@ public partial class CodeGenerator
 
             module.Deserialize(moduleStateJson);
 
-            if (!instancesByModule.ContainsKey(moduleId))
-                instancesByModule[moduleId] = new List<IModule>();
+            // If the codegen should use a different moduleId (e.g. prefab name → entity DLL),
+            // track the override so the render loop uses the right codegen folder.
+            var effectiveModuleId = overrideCodegenModuleId ?? moduleId;
 
-            instancesByModule[moduleId].Add(module);
+            if (!instancesByModule.ContainsKey(effectiveModuleId))
+                instancesByModule[effectiveModuleId] = new List<IModule>();
+
+            instancesByModule[effectiveModuleId].Add(module);
             originalJsonByModule[module] = moduleStateJson;
 
             if (sceneId is not null)
                 elementToScene[module] = sceneId;
 
-            elementIds[module]      = elementId;
+            elementIds[module]        = elementId;
             triggersByElement[module] = trigger;
 
-            if (moduleId == "text.array")
+            if (effectiveModuleId == "text.array")
             {
                 textModuleJsons = instancesByModule["text.array"].Select(m => m.Serialize()).ToList();
                 textResult      = _textAnalyzer.Analyze(textModuleJsons, fontConverter, graphicTilesEnd);
@@ -198,7 +207,7 @@ public partial class CodeGenerator
                 trigger:     "OnStart");
         }
 
-        // 2. Scene-level typed collections + legacy Elements
+        // 2. Scene-level typed collections
         foreach (var scene in project.Scenes)
         {
             // 2a. Scene module overrides
@@ -332,13 +341,32 @@ public partial class CodeGenerator
                     _moduleRenderer.SetInMemoryAssets(inMemoryAssets);
                 }
 
+                // Resolve collision settings from visible layers.
+                // First layer with HasCollision = true wins for the action.
+                // solidTiles is a placeholder — per-tile marking is owned by the TilemapEditor state.
+                var collisionLayer   = visibleLayers.FirstOrDefault(l => l.HasCollision);
+                bool hasCollision    = collisionLayer is not null;
+                string collisionAction      = collisionLayer?.CollisionAction ?? string.Empty;
+                string collisionActionLabel = string.IsNullOrEmpty(collisionAction) ? "solid" : collisionAction;
+                string collisionActionUpper = collisionActionLabel.ToUpperInvariant();
+                var solidTilesUnion  = visibleLayers
+                    .Where(l => l.HasCollision)
+                    .SelectMany(_ => Array.Empty<int>())
+                    .Distinct()
+                    .ToArray();
+
                 var planeState = System.Text.Json.JsonSerializer.SerializeToElement(new
                 {
-                    tilesAssetId = mergedAssetId,
-                    mapWidth     = mapWidth,
-                    mapHeight    = mapHeight,
-                    paletteSlot  = plane.PaletteSlot,
-                    tiles        = mergedList.Select(t => new
+                    tilesAssetId         = mergedAssetId,
+                    mapWidth             = mapWidth,
+                    mapHeight            = mapHeight,
+                    paletteSlot          = plane.PaletteSlot,
+                    hasCollision         = hasCollision,
+                    collisionAction      = collisionAction,
+                    collisionActionLabel = collisionActionLabel,
+                    collisionActionUpper = collisionActionUpper,
+                    solidTiles           = solidTilesUnion,
+                    tiles                = mergedList.Select(t => new
                     {
                         tileIndex = t.TileIndex,
                         flipH     = t.FlipH,
@@ -356,6 +384,7 @@ public partial class CodeGenerator
             }
 
             // 2c. Typed entities
+            var entityInstanceCounter = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
             foreach (var entity in scene.Entities)
             {
                 progress?.Report($"PROC: Loading entity '{entity.Label}' in '{scene.SceneName}'...");
@@ -372,16 +401,168 @@ public partial class CodeGenerator
                 int satIndex  = globalVariables.TryGetValue($"satIndex_{entity.EntityId}", out var satObj)
                     ? (int)satObj : 0;
 
+                // Build action instances — auto-inject transitive dependencies first.
+                var prefabIdForCodegen = prefab?.PrefabId ?? string.Empty;
+                var actionsForCodegen = new List<object>();
+
+                // Collect all actions including auto-injected dependencies (de-duplicated)
+                var effectiveActions = new List<ActionInstance>();
+                if (prefab?.Actions is { Count: > 0 } prefabActions)
+                {
+                    var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                    foreach (var actionInstance in prefabActions)
+                    {
+                        // Inject transitive dependencies before the action itself
+                        if (_actionRegistry is not null)
+                        {
+                            foreach (var depId in _actionRegistry.GetAllDependencies(actionInstance.ActionId))
+                            {
+                                if (!seen.Add(depId)) continue;
+                                // Only add if not already in prefab actions and not a scene action
+                                var alreadyInPrefab = prefabActions.Any(a => a.ActionId.Equals(depId, StringComparison.OrdinalIgnoreCase));
+                                var isSceneAction   = scene.SceneActions.Any(a => a.ActionId.Equals(depId, StringComparison.OrdinalIgnoreCase))
+                                                   && !(prefab?.IgnoredSceneActions.Contains(depId, StringComparer.OrdinalIgnoreCase) ?? false);
+                                if (!alreadyInPrefab && !isSceneAction)
+                                    effectiveActions.Add(new ActionInstance { ActionId = depId });
+                            }
+                        }
+                        if (seen.Add(actionInstance.ActionId))
+                            effectiveActions.Add(actionInstance);
+                    }
+                }
+
+                // Add scene-scoped actions that this prefab doesn't ignore
+                // and doesn't already define explicitly (prefab takes priority over scene).
+                var prefabActionIds = effectiveActions
+                    .Select(a => a.ActionId)
+                    .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+                var sceneActionsForEntity = scene.SceneActions
+                    .Where(sa => !prefabActionIds.Contains(sa.ActionId))
+                    .Where(sa => !(prefab?.IgnoredSceneActions.Contains(sa.ActionId, StringComparer.OrdinalIgnoreCase) ?? false))
+                    .ToList();
+
+                if (effectiveActions.Count > 0 || sceneActionsForEntity.Count > 0)
+                {
+                    var allActions = effectiveActions.Concat(sceneActionsForEntity);
+                    foreach (var actionInstance in allActions)
+                    {
+                        var actionDef = _actionRegistry?.GetById(actionInstance.ActionId);
+                        // Merge defaults with user-configured values
+                        var resolvedParams = new Dictionary<string, object>();
+                        if (actionDef is not null)
+                        {
+                            foreach (var paramDef in actionDef.Parameters)
+                                resolvedParams[paramDef.Name] = paramDef.Default;
+                        }
+                        foreach (var (k, v) in actionInstance.Parameters)
+                            resolvedParams[k] = v;
+
+                        var actionBody    = "";
+                        var actionDecl    = "";
+                        var actionReset   = "";
+                        var actionPhysics = "";
+                        var templatePath = _actionRegistry?.GetTemplatePath(actionInstance.ActionId, project.TargetId);
+                        if (templatePath is not null && File.Exists(templatePath))
+                        {
+                            var codegenModuleId = !string.IsNullOrEmpty(prefabIdForCodegen) ? prefabIdForCodegen : "entity";
+                            if (!entityInstanceCounter.TryGetValue(codegenModuleId, out var currentCount))
+                                currentCount = 0;
+                            var actionTemplate = File.ReadAllText(templatePath);
+                            var paramVars = resolvedParams
+                                .ToDictionary(kv => $"params.{kv.Key}", kv => kv.Value);
+                            paramVars["params"]   = (object)resolvedParams;
+                            paramVars["entityId"] = currentCount;
+                            actionBody  = TemplateEngine.Render(TemplateEngine.ExtractBlock(actionTemplate, "source"), paramVars);
+                            actionDecl  = TemplateEngine.Render(TemplateEngine.ExtractBlock(actionTemplate, "header"), paramVars);
+                            // reset block is optional — only some actions define it
+                            try { actionReset = TemplateEngine.Render(TemplateEngine.ExtractBlock(actionTemplate, "reset"), paramVars); }
+                            catch { actionReset = ""; }
+                            // physics block is optional — gravity defines it, others don't
+                            try { actionPhysics = TemplateEngine.Render(TemplateEngine.ExtractBlock(actionTemplate, "physics"), paramVars); }
+                            catch { actionPhysics = ""; }
+                        }
+
+                        actionsForCodegen.Add(new
+                        {
+                            actionGuid    = actionInstance.InstanceId,
+                            actionId      = actionInstance.ActionId,
+                            parameters    = resolvedParams,
+                            actionBody,
+                            actionDecl,
+                            actionReset,
+                            actionPhysics
+                        });
+                    }
+                }
+
+                // Build input mappings: button → list of action function calls.
+                // Resolves DevkitConst from project.InputPorts and action name from instances.
+                var inputMappingsForCodegen = new List<object>();
+                if (prefab?.InputMapping is { } inputMapping)
+                {
+                    var port = project.InputPorts.FirstOrDefault(p => p.Id == inputMapping.PortId);
+                    if (port is not null)
+                    {
+                        foreach (var (buttonId, instanceIds) in inputMapping.ButtonMappings)
+                        {
+                            var button = port.Buttons.FirstOrDefault(b => b.Id == buttonId);
+                            if (button is null) continue;
+
+                            var calls = instanceIds
+                                .Select(iid => prefab.Actions.FirstOrDefault(a => a.InstanceId == iid))
+                                .Where(a => a is not null)
+                                .Select(a =>
+                                {
+                                    var def = _actionRegistry?.GetById(a!.ActionId);
+                                    // Merge defaults + overrides to check onPress
+                                    var p = new Dictionary<string, object>();
+                                    if (def is not null)
+                                        foreach (var pd in def.Parameters)
+                                            p[pd.Name] = pd.Default;
+                                    foreach (var (k, v) in a!.Parameters)
+                                        p[k] = v;
+
+                                    bool isOnPress = p.TryGetValue("onPress", out var op) && op is bool b && b;
+                                    return new
+                                    {
+                                        actionId  = a.ActionId,
+                                        callArgs  = GetActionCallArgs(a.ActionId, buttonId),
+                                        keysFunc  = isOnPress ? "SMS_getKeysPressed" : "SMS_getKeysStatus"
+                                    };
+                                })
+                                .ToList<object>();
+
+                            if (calls.Count == 0) continue;
+
+                            inputMappingsForCodegen.Add(new
+                            {
+                                devkitConst = button.DevkitConst,
+                                buttonLabel = button.Label,
+                                actionCalls = calls
+                            });
+                        }
+                    }
+                }
+
+                var hasPrefabActions   = actionsForCodegen.Count > 0;
+                var hasInputMapping    = inputMappingsForCodegen.Count > 0;
+
                 var entityState = System.Text.Json.JsonSerializer.SerializeToElement(new
                 {
-                    spriteAssetId = spriteAssetId,
-                    paletteSlot   = paletteSlot,
-                    startTileX    = entity.StartTileX * _target.Specs.TileWidth,
-                    startTileY    = entity.StartTileY * _target.Specs.TileHeight,
-                    startTile     = startTile,
-                    satIndex      = satIndex,
-                    widthTiles    = widthTiles,
-                    heightTiles   = heightTiles
+                    spriteAssetId      = spriteAssetId,
+                    paletteSlot        = paletteSlot,
+                    startTileX         = entity.StartTileX * _target.Specs.TileWidth,
+                    startTileY         = entity.StartTileY * _target.Specs.TileHeight,
+                    startTile          = startTile,
+                    satIndex           = satIndex,
+                    widthTiles         = widthTiles,
+                    heightTiles        = heightTiles,
+                    prefabId           = prefabIdForCodegen,
+                    hasPrefabActions   = hasPrefabActions,
+                    hasInputMapping    = hasInputMapping,
+                    actions            = actionsForCodegen,
+                    inputMappings      = inputMappingsForCodegen
                 });
 
                 // Use PrefabId as moduleId if it maps to a known module, else fall back to legacy EntityType
@@ -389,12 +570,33 @@ public partial class CodeGenerator
                              : !string.IsNullOrEmpty(entity.EntityType) ? entity.EntityType
                              : "entity";
 
+                // For prefab-based entities: the prefab may have its own codegen folder
+                // (e.g. player/sms/codegen.json), but there is no IModule DLL for it.
+                // Fall back to the "entity" module DLL as the registry proxy so
+                // RegisterModuleData doesn't abort — the prefabModuleId is passed in the
+                // state and used by CanRender to locate the per-prefab codegen first,
+                // then fall back to entity/sms if it doesn't exist.
+                var registryModuleId = moduleId;
+                if (!string.IsNullOrEmpty(entity.PrefabId))
+                {
+                    bool hasPrefabDll = _moduleRegistry.GraphicModules.ContainsKey(moduleId)
+                                     || _moduleRegistry.LogicModules.ContainsKey(moduleId)
+                                     || _moduleRegistry.AudioModules.ContainsKey(moduleId);
+                    if (!hasPrefabDll)
+                        registryModuleId = "entity";
+                }
+
                 RegisterModuleData(
-                    moduleId:    moduleId,
+                    moduleId:    registryModuleId,
                     moduleState: entityState,
                     elementId:   entity.EntityId,
                     sceneId:     scene.SceneId,
-                    trigger:     "OnVBlank");
+                    trigger:     "OnVBlank",
+                    overrideCodegenModuleId: moduleId != registryModuleId ? moduleId : null);
+
+                // Advance counter to stay in sync with ModuleRenderer's instanceCounters
+                var counterKey = moduleId != registryModuleId ? moduleId : registryModuleId;
+                entityInstanceCounter[counterKey] = entityInstanceCounter.GetValueOrDefault(counterKey) + 1;
             }
 
             // 2d. Typed text arrays
@@ -415,21 +617,7 @@ public partial class CodeGenerator
                     trigger:     "OnStart");
             }
 
-            // 2e. Legacy flat Elements
-            foreach (var elementData in scene.Elements)
-            {
-                var elementIdShort = elementData.ElementId.Length > 8
-                    ? elementData.ElementId.Substring(0, 8)
-                    : elementData.ElementId;
-                progress?.Report($"PROC: Loading legacy element {elementIdShort}...");
 
-                RegisterModuleData(
-                    moduleId:    elementData.ModuleId,
-                    moduleState: elementData.ModuleState,
-                    elementId:   elementData.ElementId,
-                    sceneId:     scene.SceneId,
-                    trigger:     string.IsNullOrEmpty(elementData.Trigger) ? "OnStart" : elementData.Trigger);
-            }
         }
 
         var presentModuleIds = instancesByModule.Keys.ToHashSet();
@@ -450,10 +638,23 @@ public partial class CodeGenerator
 
                 List<GeneratedFile> generatedFiles;
 
-                if (_moduleRenderer.CanRender(module.ModuleId, project.TargetId))
+                // For prefab-based entities, try the prefab-specific codegen (player/sms)
+                // first, then fall back to entity/sms if no dedicated folder exists.
+                var renderModuleId = moduleId;
+                if (!_moduleRenderer.CanRender(moduleId, project.TargetId) && moduleId != "entity")
+                {
+                    // Check if this is a prefab that should fall back to entity codegen
+                    if (_moduleRenderer.CanRender("entity", project.TargetId))
+                    {
+                        renderModuleId = "entity";
+                        progress?.Report($"INFO: No codegen found for '{moduleId}' — using 'entity' codegen as fallback.");
+                    }
+                }
+
+                if (_moduleRenderer.CanRender(renderModuleId, project.TargetId))
                 {
                     var policy     = _target.GetModulePolicyOverrides()
-                        .TryGetValue(module.ModuleId, out var p) ? p : module.SingletonPolicy;
+                        .TryGetValue(renderModuleId, out var p) ? p : module.SingletonPolicy;
                     var isSingleton = policy != SingletonPolicy.Multiple;
 
                     var moduleScene = elementToScene.TryGetValue(module, out var sceneId)
@@ -461,9 +662,9 @@ public partial class CodeGenerator
                         : null;
 
                     generatedFiles = _moduleRenderer.Render(
-                        module.ModuleId, project.TargetId, moduleJson,
+                        renderModuleId, project.TargetId, moduleJson,
                         isSingleton, project.ProjectPath, moduleScene).ToList();
-                    progress?.Report($"INFO: {module.ModuleId} generated via ModuleRenderer.");
+                    progress?.Report($"INFO: {moduleId} generated via ModuleRenderer (codegen: {renderModuleId}).");
                 }
                 else if (_target.GenerateCodeForModule(contextualModule).ToList() is var targetFiles && targetFiles.Count > 0)
                 {

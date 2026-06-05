@@ -11,7 +11,9 @@ public record ActionDefinition(
     string ActionId,
     string DisplayName,
     string Category,
-    ActionParameterDef[] Parameters
+    ActionParameterDef[] Parameters,
+    string[] Dependencies,   // actionIds this action requires
+    string Scope             // "entity" | "scene"
 );
 
 /// <summary>

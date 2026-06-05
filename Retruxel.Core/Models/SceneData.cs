@@ -1,40 +1,7 @@
-using Retruxel.Core.Interfaces;
-using System;
 using System.Collections.Generic;
-using System.Text.Json;
 using System.Text.Json.Serialization;
 
 namespace Retruxel.Core.Models;
-
-/// <summary>
-/// Legacy flat element model — kept for backward compatibility with pre-refactor project files.
-/// New code should use the typed collections (Planes, Entities, TextArrays) on SceneData.
-/// Serialized as "elements" in .rtrxproject for migration support.
-/// </summary>
-[Obsolete("Use typed collections (Planes, Entities, TextArrays) instead. This will be removed in a future version after migration support is dropped.")]
-public class SceneElementData
-{
-    [JsonPropertyName("elementId")]
-    public string ElementId { get; set; } = string.Empty;
-
-    [JsonPropertyName("userId")]
-    public string? UserId { get; set; }
-
-    [JsonPropertyName("moduleId")]
-    public string ModuleId { get; set; } = string.Empty;
-
-    [JsonPropertyName("moduleState")]
-    public System.Text.Json.JsonElement ModuleState { get; set; }
-
-    [JsonPropertyName("tileX")]
-    public int TileX { get; set; }
-
-    [JsonPropertyName("tileY")]
-    public int TileY { get; set; }
-
-    [JsonPropertyName("trigger")]
-    public string? Trigger { get; set; }
-}
 
 /// <summary>
 /// Represents a scene in the project.
@@ -71,7 +38,7 @@ public class SceneData
     public List<PlaneData> Planes { get; set; } = [];
 
     /// <summary>
-    /// Entities in this scene (player, enemies, etc).
+    /// Entities in this scene.
     /// </summary>
     [JsonPropertyName("entities")]
     public List<EntityData> Entities { get; set; } = [];
@@ -81,6 +48,13 @@ public class SceneData
     /// </summary>
     [JsonPropertyName("textArrays")]
     public List<TextArrayData> TextArrays { get; set; } = [];
+
+    /// <summary>
+    /// Scene-level actions (e.g. gravity applied to all entities in the scene).
+    /// Each entry is a configured ActionInstance with scope="scene".
+    /// </summary>
+    [JsonPropertyName("sceneActions")]
+    public List<ActionInstance> SceneActions { get; set; } = [];
 
     /// <summary>
     /// HUD configuration for this scene.
@@ -102,13 +76,4 @@ public class SceneData
     /// </summary>
     [JsonPropertyName("backgroundScroll")]
     public BackgroundScrollData? BackgroundScroll { get; set; }
-
-    /// <summary>
-    /// Legacy flat element list — kept for backward compatibility with pre-refactor project files.
-    /// New code should use Planes, Entities, and TextArrays instead.
-    /// Populated only when loading old .rtrxproject files; cleared after migration.
-    /// </summary>
-    [Obsolete("Use typed collections (Planes, Entities, TextArrays) instead. This will be removed in a future version after migration support is dropped.")]  
-    [JsonPropertyName("elements")]
-    public List<SceneElementData> Elements { get; set; } = [];
 }

@@ -82,7 +82,8 @@ public partial class BuildConsoleView : UserControl
         ((IProgress<string>)progress).Report($"DEBUG: Directory exists = {Directory.Exists(pluginsPath)}");
         var moduleRenderer = new ModuleRenderer(pluginsPath, null, progress);
 
-        var codeGen = new CodeGenerator(moduleRegistry, moduleRenderer, target);
+        var actionRegistry = ActionRegistry.Discover(pluginsPath, progress);
+        var codeGen = new CodeGenerator(moduleRegistry, moduleRenderer, target, actionRegistry);
 
         var outputDir = Path.Combine(project.ProjectPath, "build");
         Directory.CreateDirectory(outputDir);
@@ -110,8 +111,7 @@ public partial class BuildConsoleView : UserControl
                 s.Planes.Sum(t => t.Layers.Count) +
                 s.Entities.Count +
                 s.TextArrays.Count +
-                s.ModuleOverrides.Count +
-                s.Elements.Count); // legacy compat
+                s.ModuleOverrides.Count);
 
             if (_lastResult.RomPath != null)
                 AppendLog($"SAVED: {_lastResult.RomPath}");

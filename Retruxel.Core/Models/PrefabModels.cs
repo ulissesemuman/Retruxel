@@ -84,6 +84,14 @@ public class PrefabData
     public int HeightTiles { get; set; } = 2;
 
     /// <summary>
+    /// Scene-scoped action IDs this prefab ignores.
+    /// Use when a scene-level action (e.g. gravity) should not affect this prefab.
+    /// Ex: ["gravity"] for a static block in a platformer.
+    /// </summary>
+    [JsonPropertyName("ignoredSceneActions")]
+    public List<string> IgnoredSceneActions { get; set; } = [];
+
+    /// <summary>
     /// Actions available to this Prefab.
     /// Each ActionInstance configures an ActionDefinition with specific parameter values.
     /// Can be empty for non-interactive entities.

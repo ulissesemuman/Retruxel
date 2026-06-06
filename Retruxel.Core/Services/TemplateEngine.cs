@@ -106,21 +106,11 @@ public class TemplateEngine
         // 1. Process each loops (nested-aware depth-counting parser)
         result = ReplaceEachBlocks(result, variables);
 
-        // 2. Process negated conditionals
-        result = NegatedConditionalRegex.Replace(result, match =>
-        {
-            var condition = match.Groups["condition"].Value.Trim();
-            var content   = match.Groups["content"].Value;
-            return EvaluateCondition(condition, variables) ? string.Empty : content;
-        });
+        // 2. Process negated conditionals (nested-aware depth-counting parser)
+        result = ReplaceIfNotBlocks(result, variables);
 
-        // 3. Process conditionals
-        result = ConditionalRegex.Replace(result, match =>
-        {
-            var condition = match.Groups["condition"].Value.Trim();
-            var content   = match.Groups["content"].Value;
-            return EvaluateCondition(condition, variables) ? content : string.Empty;
-        });
+        // 3. Process conditionals (nested-aware depth-counting parser)
+        result = ReplaceIfBlocks(result, variables);
 
         // 4. Substitute variables and expressions
         result = VariableRegex.Replace(result, match =>
@@ -131,6 +121,148 @@ public class TemplateEngine
         });
 
         return result;
+    }
+
+    /// <summary>
+    /// Processes {{#if}} conditionals with proper nesting support using a depth counter.
+    /// </summary>
+    private static string ReplaceIfBlocks(string template, Dictionary<string, object> variables)
+    {
+        const string openTag  = "{{#if ";
+        const string closeTag = "{{/if}}";
+
+        var result = new StringBuilder();
+        int pos = 0;
+
+        while (pos < template.Length)
+        {
+            int start = template.IndexOf(openTag, pos, StringComparison.Ordinal);
+            if (start < 0)
+            {
+                result.Append(template, pos, template.Length - pos);
+                break;
+            }
+
+            result.Append(template, pos, start - pos);
+
+            int condStart = start + openTag.Length;
+            int condEnd   = template.IndexOf("}}", condStart, StringComparison.Ordinal);
+            if (condEnd < 0) { result.Append(template, start, template.Length - start); break; }
+
+            var condition    = template.Substring(condStart, condEnd - condStart).Trim();
+            int contentStart = condEnd + 2;
+
+            // Find matching {{/if}} accounting for nesting
+            int depth      = 1;
+            int searchPos  = contentStart;
+            int contentEnd = -1;
+
+            while (searchPos < template.Length && depth > 0)
+            {
+                int nextOpen  = template.IndexOf(openTag,  searchPos, StringComparison.Ordinal);
+                int nextClose = template.IndexOf(closeTag, searchPos, StringComparison.Ordinal);
+
+                if (nextClose < 0) break;
+
+                if (nextOpen >= 0 && nextOpen < nextClose)
+                {
+                    depth++;
+                    searchPos = nextOpen + openTag.Length;
+                }
+                else
+                {
+                    depth--;
+                    if (depth == 0)
+                        contentEnd = nextClose;
+                    searchPos = nextClose + closeTag.Length;
+                }
+            }
+
+            if (contentEnd < 0)
+            {
+                result.Append(template, start, template.Length - start);
+                break;
+            }
+
+            var content = template.Substring(contentStart, contentEnd - contentStart);
+            if (EvaluateCondition(condition, variables))
+                result.Append(Render(content, variables));
+
+            pos = contentEnd + closeTag.Length;
+        }
+
+        return result.ToString();
+    }
+
+    /// <summary>
+    /// Processes {{#ifnot}} conditionals with proper nesting support using a depth counter.
+    /// </summary>
+    private static string ReplaceIfNotBlocks(string template, Dictionary<string, object> variables)
+    {
+        const string openTag  = "{{#ifnot ";
+        const string closeTag = "{{/ifnot}}";
+
+        var result = new StringBuilder();
+        int pos = 0;
+
+        while (pos < template.Length)
+        {
+            int start = template.IndexOf(openTag, pos, StringComparison.Ordinal);
+            if (start < 0)
+            {
+                result.Append(template, pos, template.Length - pos);
+                break;
+            }
+
+            result.Append(template, pos, start - pos);
+
+            int condStart = start + openTag.Length;
+            int condEnd   = template.IndexOf("}}", condStart, StringComparison.Ordinal);
+            if (condEnd < 0) { result.Append(template, start, template.Length - start); break; }
+
+            var condition    = template.Substring(condStart, condEnd - condStart).Trim();
+            int contentStart = condEnd + 2;
+
+            // Find matching {{/ifnot}} accounting for nesting
+            int depth      = 1;
+            int searchPos  = contentStart;
+            int contentEnd = -1;
+
+            while (searchPos < template.Length && depth > 0)
+            {
+                int nextOpen  = template.IndexOf(openTag,  searchPos, StringComparison.Ordinal);
+                int nextClose = template.IndexOf(closeTag, searchPos, StringComparison.Ordinal);
+
+                if (nextClose < 0) break;
+
+                if (nextOpen >= 0 && nextOpen < nextClose)
+                {
+                    depth++;
+                    searchPos = nextOpen + openTag.Length;
+                }
+                else
+                {
+                    depth--;
+                    if (depth == 0)
+                        contentEnd = nextClose;
+                    searchPos = nextClose + closeTag.Length;
+                }
+            }
+
+            if (contentEnd < 0)
+            {
+                result.Append(template, start, template.Length - start);
+                break;
+            }
+
+            var content = template.Substring(contentStart, contentEnd - contentStart);
+            if (!EvaluateCondition(condition, variables))
+                result.Append(Render(content, variables));
+
+            pos = contentEnd + closeTag.Length;
+        }
+
+        return result.ToString();
     }
 
     /// <summary>

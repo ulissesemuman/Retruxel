@@ -341,19 +341,57 @@ public partial class CodeGenerator
                     _moduleRenderer.SetInMemoryAssets(inMemoryAssets);
                 }
 
-                // Resolve collision settings from visible layers.
-                // First layer with HasCollision = true wins for the action.
-                // solidTiles is a placeholder — per-tile marking is owned by the TilemapEditor state.
-                var collisionLayer   = visibleLayers.FirstOrDefault(l => l.HasCollision);
-                bool hasCollision    = collisionLayer is not null;
+                // Collect solid tile IDs from layers marked as HasCollision.
+                // Uses the merged tile list with asset offsets already applied,
+                // filtered to cells that came from a collision layer.
+                // Build a set of which asset offsets belong to collision layers.
+                var collisionAssetOffsets = new HashSet<int>();
+                foreach (var layer in visibleLayers.Where(l => l.HasCollision))
+                {
+                    if (!string.IsNullOrEmpty(layer.AssetId) &&
+                        layerOffsets.TryGetValue(layer.AssetId, out var off))
+                        collisionAssetOffsets.Add(off);
+                }
+
+                // A tile in mergedList is solid if it was placed by a collision layer.
+                // We determine this by checking if its tileIndex falls within a
+                // collision layer's asset offset range.
+                // Build offset→tileCount map for range checking.
+                var offsetToCount = new Dictionary<int, int>();
+                foreach (var layer in visibleLayers.Where(l => !string.IsNullOrEmpty(l.AssetId)))
+                {
+                    if (layerOffsets.TryGetValue(layer.AssetId, out var off))
+                    {
+                        var assetTileCount = project.Assets
+                            .FirstOrDefault(a => a.Id == layer.AssetId)
+                            ?.GenerationParams?.TileCount ?? 0;
+                        offsetToCount[off] = assetTileCount;
+                    }
+                }
+
+                var solidTilesUnion = mergedList
+                    .Where(t => !t.IsEmpty)
+                    .Select(t => t.TileIndex) // already has offset applied
+                    .Where(idx =>
+                    {
+                        // Check if this tile index falls within any collision layer's range
+                        foreach (var (off, count) in offsetToCount)
+                        {
+                            if (collisionAssetOffsets.Contains(off) &&
+                                idx >= off && idx < off + count)
+                                return true;
+                        }
+                        return false;
+                    })
+                    .Distinct()
+                    .OrderBy(id => id)
+                    .ToArray();
+
+                var collisionLayer        = visibleLayers.FirstOrDefault(l => l.HasCollision);
+                bool hasCollision         = collisionLayer is not null;
                 string collisionAction      = collisionLayer?.CollisionAction ?? string.Empty;
                 string collisionActionLabel = string.IsNullOrEmpty(collisionAction) ? "solid" : collisionAction;
                 string collisionActionUpper = collisionActionLabel.ToUpperInvariant();
-                var solidTilesUnion  = visibleLayers
-                    .Where(l => l.HasCollision)
-                    .SelectMany(_ => Array.Empty<int>())
-                    .Distinct()
-                    .ToArray();
 
                 var planeState = System.Text.Json.JsonSerializer.SerializeToElement(new
                 {
@@ -462,6 +500,7 @@ public partial class CodeGenerator
                         var actionDecl    = "";
                         var actionReset   = "";
                         var actionPhysics = "";
+                        var actionUpdate  = "";
                         var templatePath = _actionRegistry?.GetTemplatePath(actionInstance.ActionId, project.TargetId);
                         if (templatePath is not null && File.Exists(templatePath))
                         {
@@ -478,9 +517,10 @@ public partial class CodeGenerator
                             // reset block is optional — only some actions define it
                             try { actionReset = TemplateEngine.Render(TemplateEngine.ExtractBlock(actionTemplate, "reset"), paramVars); }
                             catch { actionReset = ""; }
-                            // physics block is optional — gravity defines it, others don't
                             try { actionPhysics = TemplateEngine.Render(TemplateEngine.ExtractBlock(actionTemplate, "physics"), paramVars); }
                             catch { actionPhysics = ""; }
+                            try { actionUpdate = TemplateEngine.Render(TemplateEngine.ExtractBlock(actionTemplate, "update"), paramVars); }
+                            catch { actionUpdate = ""; }
                         }
 
                         actionsForCodegen.Add(new
@@ -491,7 +531,8 @@ public partial class CodeGenerator
                             actionBody,
                             actionDecl,
                             actionReset,
-                            actionPhysics
+                            actionPhysics,
+                            actionUpdate
                         });
                     }
                 }
@@ -548,6 +589,15 @@ public partial class CodeGenerator
                 var hasPrefabActions   = actionsForCodegen.Count > 0;
                 var hasInputMapping    = inputMappingsForCodegen.Count > 0;
 
+                // Find the first plane with a collision layer in the current scene
+                var collisionPlaneData = scene.Planes
+                    .FirstOrDefault(pl => pl.Layers.Any(l => l.HasCollision));
+                var collisionPlaneIdx = collisionPlaneData is not null
+                    ? scene.Planes.IndexOf(collisionPlaneData)
+                    : -1;
+                var collisionPlaneId  = collisionPlaneIdx >= 0 ? collisionPlaneIdx.ToString() : "";
+                var hasCollisionPlane = collisionPlaneIdx >= 0;
+
                 var entityState = System.Text.Json.JsonSerializer.SerializeToElement(new
                 {
                     spriteAssetId      = spriteAssetId,
@@ -561,6 +611,8 @@ public partial class CodeGenerator
                     prefabId           = prefabIdForCodegen,
                     hasPrefabActions   = hasPrefabActions,
                     hasInputMapping    = hasInputMapping,
+                    hasCollisionPlane,
+                    collisionPlaneId,
                     actions            = actionsForCodegen,
                     inputMappings      = inputMappingsForCodegen
                 });

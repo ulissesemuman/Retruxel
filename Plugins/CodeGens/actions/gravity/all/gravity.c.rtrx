@@ -4,6 +4,7 @@ void entity_{{entityId}}_action_gravity(Entity_{{entityId}}_Params* p);
 
 // @retruxel:block source
 // Action: gravity — injected into entity_{{entityId}}
+// vel_y in subpixels (1/8 px). Applied to position via >> 3 in physics block.
 void entity_{{entityId}}_action_gravity(Entity_{{entityId}}_Params* p) {
     if (p->on_ground) return;
     p->vel_y += {{params.strength}};
@@ -11,15 +12,6 @@ void entity_{{entityId}}_action_gravity(Entity_{{entityId}}_Params* p) {
 }
 // @retruxel:end
 
-// @retruxel:block physics
-    entity_{{entityId}}.x += entity_{{entityId}}.params.vel_x;
-    entity_{{entityId}}.y += entity_{{entityId}}.params.vel_y;
-    if (entity_{{entityId}}.y >= {{params.groundY}}) {
-        entity_{{entityId}}.y = {{params.groundY}};
-        entity_{{entityId}}.params.vel_y  = 0;
-        entity_{{entityId}}.params.on_ground = 1;
-        entity_{{entityId}}.params.jump_count = 0;
-    } else {
-        entity_{{entityId}}.params.on_ground = 0;
-    }
+// @retruxel:block update
+    entity_{{entityId}}_action_gravity(&entity_{{entityId}}.params);
 // @retruxel:end

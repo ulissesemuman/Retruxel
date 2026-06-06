@@ -21,6 +21,7 @@ public partial class PrefabEditorWindow
     private Border BuildActionRow(ActionInstance instance)
     {
         var def = _actionRegistry.GetById(instance.ActionId);
+        var deps = _actionRegistry.GetAllDependencies(instance.ActionId);
 
         var row = new Border
         {
@@ -35,7 +36,7 @@ public partial class PrefabEditorWindow
         grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
         grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
 
-        // Left: action id + parameters summary
+        // Left: action id + parameters summary + dependencies
         var info = new StackPanel();
 
         var idLabel = new TextBlock
@@ -61,6 +62,77 @@ public partial class PrefabEditorWindow
                 Margin     = new Thickness(0, 2, 0, 0)
             };
             info.Children.Add(paramsLabel);
+        }
+
+        // Dependencies section
+        if (deps.Count > 0)
+        {
+            var depsHeader = new TextBlock
+            {
+                Text       = "DEPENDS ON:",
+                FontFamily = new FontFamily("Consolas"),
+                FontSize   = 8,
+                Foreground = (Brush)FindResource("BrushOnSurfaceVariant"),
+                Margin     = new Thickness(0, 6, 0, 2)
+            };
+            info.Children.Add(depsHeader);
+
+            foreach (var depId in deps)
+            {
+                var depDef = _actionRegistry.GetById(depId);
+                var depRow = new StackPanel
+                {
+                    Orientation = Orientation.Horizontal,
+                    Margin      = new Thickness(8, 1, 0, 1)
+                };
+
+                var depLabel = new TextBlock
+                {
+                    Text       = depDef?.DisplayName ?? depId,
+                    FontFamily = new FontFamily("Consolas"),
+                    FontSize   = 9,
+                    Foreground = (Brush)FindResource("BrushPrimary"),
+                    Cursor     = System.Windows.Input.Cursors.Hand
+                };
+
+                // Click on dependency name — open its ActionParameterDialog
+                // (find or create an ActionInstance in the prefab for this dep)
+                depLabel.MouseLeftButtonDown += (_, e) =>
+                {
+                    e.Handled = true;
+                    if (depDef is null) return;
+                    var depInstance = _prefab.Actions
+                        .FirstOrDefault(a => a.ActionId.Equals(depId, StringComparison.OrdinalIgnoreCase));
+                    if (depInstance is null)
+                    {
+                        // Dependency was auto-injected by codegen, not explicitly in prefab.
+                        // Create a transient instance so user can preview/edit defaults.
+                        depInstance = new Retruxel.Core.Models.ActionInstance
+                        {
+                            ActionId   = depDef.ActionId,
+                            Parameters = depDef.Parameters.ToDictionary(p => p.Name, p => p.Default)
+                        };
+                        _prefab.Actions.Add(depInstance);
+                        PopulateActions();
+                    }
+                    OpenActionParameterDialog(depInstance, depDef);
+                };
+                depRow.Children.Add(depLabel);
+
+                if (depDef is not null)
+                {
+                    var depSub = new TextBlock
+                    {
+                        Text       = $"  ·  {depDef.Category}",
+                        FontFamily = new FontFamily("Consolas"),
+                        FontSize   = 9,
+                        Foreground = (Brush)FindResource("BrushOnSurfaceVariant")
+                    };
+                    depRow.Children.Add(depSub);
+                }
+
+                info.Children.Add(depRow);
+            }
         }
 
         Grid.SetColumn(info, 0);

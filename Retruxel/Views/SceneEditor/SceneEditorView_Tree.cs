@@ -847,7 +847,16 @@ public partial class SceneEditorView
                 label:    displayName,
                 sublabel: $"{a.ActionId}  ·  {scopeLabel}",
                 indent:   4,
-                onEdit:   () => { /* TODO: open action params editor */ },
+                onEdit:   def is not null ? () =>
+                {
+                    Dispatcher.BeginInvoke(() =>
+                    {
+                        var dialog = new Retruxel.Tool.PrefabEditor.ActionParameterDialog(
+                            a, def, Window.GetWindow(this));
+                        if (dialog.ShowDialog() == true)
+                            _projectManager?.MarkDirty();
+                    }, System.Windows.Threading.DispatcherPriority.Input);
+                } : null,
                 onDelete: () =>
                 {
                     scene.SceneActions.Remove(a);

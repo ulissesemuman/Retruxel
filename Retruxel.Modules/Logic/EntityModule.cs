@@ -138,5 +138,20 @@ public class EntityModule : ILogicModule
         public int Y { get; set; } = 144;
         public int Speed { get; set; } = 2;
         public int Health { get; set; } = 3;
+        public string SpriteAssetId { get; set; } = string.Empty;
+        public int PaletteSlot { get; set; } = 1;
+        public int StartTileX { get; set; } = 120;
+        public int StartTileY { get; set; } = 144;
+        public int StartTile { get; set; } = 0;
+        public int SatIndex { get; set; } = 0;
+        public int WidthTiles { get; set; } = 2;
+        public int HeightTiles { get; set; } = 2;
+        public string PrefabId { get; set; } = string.Empty;
+        public bool HasPrefabActions { get; set; }
+        public bool HasInputMapping { get; set; }
+        public bool HasCollisionPlane { get; set; }
+        public string CollisionPlaneId { get; set; } = string.Empty;
+        public List<object> Actions { get; set; } = [];
+        public List<object> InputMappings { get; set; } = [];
     }
 }

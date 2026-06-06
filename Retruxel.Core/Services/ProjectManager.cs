@@ -176,10 +176,6 @@ public class ProjectManager
     /// </summary>
     public void MarkDirty()
     {
-        if (!HasUnsavedChanges)
-        {
-            System.Diagnostics.Debug.WriteLine($"[ProjectManager] MarkDirty called from: {Environment.StackTrace}");
-        }
         HasUnsavedChanges = true;
     }
 

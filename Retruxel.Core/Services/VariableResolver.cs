@@ -63,16 +63,6 @@ internal class VariableResolver
     {
         var result = new Dictionary<string, object>();
 
-        if (!string.IsNullOrEmpty(projectPath))
-        {
-            result["projectPath"] = projectPath;
-            System.Diagnostics.Debug.WriteLine($"VariableResolver: projectPath = {projectPath}");
-        }
-        else
-        {
-            System.Diagnostics.Debug.WriteLine("WARNING: projectPath is null or empty!");
-        }
-
         using var doc = JsonDocument.Parse(moduleJson);
         var root = doc.RootElement;
 
@@ -315,50 +305,27 @@ internal class VariableResolver
         if (resolvedVariables.TryGetValue("projectPath", out var projectPathObj))
         {
             input["projectPath"] = projectPathObj;
-            System.Diagnostics.Debug.WriteLine($"Tool '{varDef.ToolId}': projectPath = {projectPathObj}");
-        }
-        else
-        {
-            System.Diagnostics.Debug.WriteLine($"WARNING: Tool '{varDef.ToolId}' invoked without projectPath!");
         }
 
         IToolExtension? extension = null;
         if (tool.TargetExtensionId is not null && _targetAssembly is not null)
         {
-            System.Diagnostics.Debug.WriteLine($"Tool '{varDef.ToolId}': Looking for extension '{tool.TargetExtensionId}' in assembly '{_targetAssembly.GetName().Name}'");
             extension = FindToolExtension(_targetAssembly, tool.TargetExtensionId);
             if (extension is not null)
             {
-                System.Diagnostics.Debug.WriteLine($"Tool '{varDef.ToolId}': Extension found! Type = {extension.GetType().Name}");
                 foreach (var (k, v) in extension.GetDefaultParameters())
                     input[k] = v;
             }
-            else
-            {
-                System.Diagnostics.Debug.WriteLine($"Tool '{varDef.ToolId}': Extension NOT found");
-            }
-        }
-        else
-        {
-            if (tool.TargetExtensionId is null)
-                System.Diagnostics.Debug.WriteLine($"Tool '{varDef.ToolId}': No TargetExtensionId specified");
-            if (_targetAssembly is null)
-                System.Diagnostics.Debug.WriteLine($"Tool '{varDef.ToolId}': No target assembly available");
         }
 
         if (varDef.ToolInput is not null)
         {
-            System.Diagnostics.Debug.WriteLine($"Tool '{varDef.ToolId}': Processing toolInput with {varDef.ToolInput.Count} parameters");
-
             foreach (var (inputKey, valueSource) in varDef.ToolInput)
             {
-                System.Diagnostics.Debug.WriteLine($"  - {inputKey} = '{valueSource}'");
-
                 if (resolvedVariables.ContainsKey(valueSource))
                 {
                     var value = resolvedVariables[valueSource];
                     input[inputKey] = value;
-                    System.Diagnostics.Debug.WriteLine($"    → Resolved from variables: '{value}'");
                 }
                 else if (moduleRoot.TryGetProperty(valueSource, out var v))
                 {
@@ -371,12 +338,10 @@ internal class VariableResolver
                         _ => v.GetString() ?? ""
                     };
                     input[inputKey] = value;
-                    System.Diagnostics.Debug.WriteLine($"    → Resolved from moduleRoot: '{value}'");
                 }
                 else
                 {
                     input[inputKey] = valueSource;
-                    System.Diagnostics.Debug.WriteLine($"    → Using literal value: '{valueSource}'");
                 }
             }
         }
@@ -392,7 +357,6 @@ internal class VariableResolver
             input["inMemoryWidth"]     = inMemoryAsset.GenerationParams.OptimizedWidth;
             input["inMemoryHeight"]    = inMemoryAsset.GenerationParams.OptimizedHeight;
             input["inMemoryTileCount"] = inMemoryAsset.GenerationParams.TileCount;
-            System.Diagnostics.Debug.WriteLine($"Tool '{varDef.ToolId}': Injected in-memory asset '{resolvedAssetId}' ({mapIdx.Length} bytes)");
         }
 
         Dictionary<string, object> toolResult;
@@ -408,42 +372,30 @@ internal class VariableResolver
                 if (paletteSlot < _currentScene.PaletteSlots.Count)
                 {
                     input["paletteColors"] = _currentScene.PaletteSlots[paletteSlot].Colors;
-                    System.Diagnostics.Debug.WriteLine($"Tool '{varDef.ToolId}': Injected paletteColors from scene slot {paletteSlot}");
                 }
             }
 
             toolResult = tool.Execute(input);
-
-            // Log tool execution for debugging
-            System.Diagnostics.Debug.WriteLine($"Tool '{varDef.ToolId}' executed successfully");
         }
         catch (Exception ex)
         {
             var errorMsg = $"Tool '{varDef.ToolId}' failed: {ex.Message}";
-            System.Diagnostics.Debug.WriteLine($"ERROR: {errorMsg}");
             Console.WriteLine($"ERROR: {errorMsg}");
             return new() { ["error"] = errorMsg, ["tilesHex"] = "/* " + errorMsg + " */" };
         }
 
         if (extension is not null)
         {
-            System.Diagnostics.Debug.WriteLine($"Tool '{varDef.ToolId}': Invoking extension with {toolResult.Count} result keys");
             var extensionInput = new Dictionary<string, object>(input);
             foreach (var (k, v) in toolResult)
                 extensionInput[k] = v;
 
             var extensionResult = extension.Execute(extensionInput);
-            System.Diagnostics.Debug.WriteLine($"Tool '{varDef.ToolId}': Extension returned {extensionResult.Count} keys");
 
             foreach (var (k, v) in extensionResult)
             {
                 toolResult[k] = v;
-                System.Diagnostics.Debug.WriteLine($"  - {k} = {v?.ToString()?.Substring(0, Math.Min(50, v?.ToString()?.Length ?? 0))}...");
             }
-        }
-        else
-        {
-            System.Diagnostics.Debug.WriteLine($"Tool '{varDef.ToolId}': No extension to invoke");
         }
 
         return toolResult;

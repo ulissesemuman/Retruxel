@@ -19,6 +19,8 @@
     "prefabId":        { "from": "module", "path": "prefabId",        "default": "" },
     "hasPrefabActions":{ "from": "module", "path": "hasPrefabActions","default": false },
     "hasInputMapping": { "from": "module", "path": "hasInputMapping", "default": false },
+    "hasCollisionPlane": { "from": "module", "path": "hasCollisionPlane", "default": false },
+    "collisionPlaneId":  { "from": "module", "path": "collisionPlaneId",  "default": "" },
     "actions":         { "from": "module", "path": "actions",         "default": [] },
     "inputMappings":   { "from": "module", "path": "inputMappings",   "default": [] },
     "tilesData": {

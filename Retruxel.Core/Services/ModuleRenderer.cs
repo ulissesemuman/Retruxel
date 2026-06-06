@@ -189,18 +189,12 @@ public class ModuleRenderer
         ITarget target,
         IProgress<string>? progress = null)
     {
-        System.Diagnostics.Debug.WriteLine($"[RenderSceneFiles] START for scene '{scene.SceneName}'");
-        System.Diagnostics.Debug.WriteLine($"[RenderSceneFiles] Scene has {scene.PaletteSlots.Count} palette slots");
-
         var key = Key(targetId, "scene");
 
         if (!_codeGens.TryGetValue(key, out var manifest))
         {
-            System.Diagnostics.Debug.WriteLine($"[RenderSceneFiles] No scene codegen found for key: {key}");
             yield break;
         }
-
-        System.Diagnostics.Debug.WriteLine($"[RenderSceneFiles] Found scene codegen manifest");
 
         // Sanitize scene name for file names (remove spaces and special chars)
         var sanitizedName = SanitizeFileName(scene.SceneName).ToLowerInvariant();
@@ -216,34 +210,22 @@ public class ModuleRenderer
         {
             if (varDef.From == "scenePaletteSlot" && varDef.SlotIndex.HasValue)
             {
-                System.Diagnostics.Debug.WriteLine($"[ModuleRenderer] Resolving palette slot {varDef.SlotIndex.Value} for variable '{varName}'");
-
                 var slotIndex = varDef.SlotIndex.Value;
-                System.Diagnostics.Debug.WriteLine($"[ModuleRenderer] Scene has {scene.PaletteSlots.Count} palette slots");
 
                 if (slotIndex < scene.PaletteSlots.Count)
                 {
                     var slot = scene.PaletteSlots[slotIndex];
-                    System.Diagnostics.Debug.WriteLine($"[ModuleRenderer] Slot {slotIndex} has {slot.Colors.Count} colors");
-
                     var converter = FindPaletteConverter(target);
-                    System.Diagnostics.Debug.WriteLine($"[ModuleRenderer] Converter found: {converter != null}");
 
                     if (converter is not null)
                     {
                         var bytes = converter.ConvertColors(slot.Colors);
                         variables[varName] = string.Join(", ", bytes.Select(b => $"0x{b:X2}"));
-                        System.Diagnostics.Debug.WriteLine($"[ModuleRenderer] Generated palette hex: {variables[varName]}");
                     }
                     else
                     {
-                        System.Diagnostics.Debug.WriteLine($"[ModuleRenderer] ERROR: No palette converter found!");
                         variables[varName] = "0x00";
                     }
-                }
-                else
-                {
-                    System.Diagnostics.Debug.WriteLine($"[ModuleRenderer] ERROR: Slot index {slotIndex} out of range!");
                 }
             }
         }
@@ -546,26 +528,20 @@ public class ModuleRenderer
 
     private static IPaletteConverter? FindPaletteConverter(ITarget target)
     {
-        System.Diagnostics.Debug.WriteLine($"[FindPaletteConverter] Searching for IPaletteConverter in assembly: {target.GetType().Assembly.GetName().Name}");
-
         var targetAssembly = target.GetType().Assembly;
         var converterType = targetAssembly.GetTypes()
             .FirstOrDefault(t => typeof(IPaletteConverter).IsAssignableFrom(t) && !t.IsInterface && !t.IsAbstract);
 
         if (converterType is not null)
         {
-            System.Diagnostics.Debug.WriteLine($"[FindPaletteConverter] Found converter type: {converterType.Name}");
             return (IPaletteConverter)Activator.CreateInstance(converterType)!;
         }
 
-        System.Diagnostics.Debug.WriteLine($"[FindPaletteConverter] No converter found, checking if target implements IPaletteConverter");
         if (target is IPaletteConverter targetConverter)
         {
-            System.Diagnostics.Debug.WriteLine($"[FindPaletteConverter] Target itself implements IPaletteConverter");
             return targetConverter;
         }
 
-        System.Diagnostics.Debug.WriteLine($"[FindPaletteConverter] ERROR: No palette converter available!");
         return null;
     }
 }

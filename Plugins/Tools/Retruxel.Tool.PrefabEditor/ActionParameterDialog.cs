@@ -15,7 +15,8 @@ public class ActionParameterDialog : Window
     private readonly ActionInstance _instance;
     private readonly Dictionary<string, Func<object>> _readers = new();
 
-    public ActionParameterDialog(ActionInstance instance, ActionDefinition def, Window owner)
+    public ActionParameterDialog(ActionInstance instance, ActionDefinition def, Window owner,
+        Retruxel.Core.Models.RetruxelProject? project = null)
     {
         _instance = instance;
 
@@ -56,7 +57,51 @@ public class ActionParameterDialog : Window
             instance.Parameters.TryGetValue(p.Name, out var currentVal);
             var currentStr = currentVal?.ToString() ?? p.Default?.ToString() ?? string.Empty;
 
-            if (p.Type == "bool")
+            if (p.EntityRef && project is not null)
+            {
+                var combo = new ComboBox
+                {
+                    Height          = 32,
+                    Margin          = new Thickness(0, 0, 0, 12),
+                    Background      = new SolidColorBrush(Color.FromRgb(0x1a, 0x1a, 0x1a)),
+                    Foreground      = new SolidColorBrush(Colors.White),
+                    BorderThickness = new Thickness(0)
+                };
+                foreach (var (entityName, label) in project.GetEntityNames())
+                {
+                    var item = new ComboBoxItem { Content = label, Tag = entityName };
+                    combo.Items.Add(item);
+                    if (entityName.Equals(currentStr, StringComparison.OrdinalIgnoreCase))
+                        combo.SelectedItem = item;
+                }
+                if (combo.SelectedItem is null && combo.Items.Count > 0)
+                    combo.SelectedIndex = 0;
+                root.Children.Add(combo);
+                _readers[p.Name] = () => combo.SelectedItem is ComboBoxItem ci ? ci.Tag?.ToString() ?? string.Empty : string.Empty;
+            }
+            else if (p.Options is { Length: > 0 } options)
+            {
+                var combo = new ComboBox
+                {
+                    Height          = 32,
+                    Margin          = new Thickness(0, 0, 0, 12),
+                    Background      = new SolidColorBrush(Color.FromRgb(0x1a, 0x1a, 0x1a)),
+                    Foreground      = new SolidColorBrush(Colors.White),
+                    BorderThickness = new Thickness(0)
+                };
+                foreach (var opt in options)
+                {
+                    var item = new ComboBoxItem { Content = opt, Tag = opt };
+                    combo.Items.Add(item);
+                    if (opt.Equals(currentStr, StringComparison.OrdinalIgnoreCase))
+                        combo.SelectedItem = item;
+                }
+                if (combo.SelectedItem is null && combo.Items.Count > 0)
+                    combo.SelectedIndex = 0;
+                root.Children.Add(combo);
+                _readers[p.Name] = () => combo.SelectedItem is ComboBoxItem ci ? ci.Tag?.ToString() ?? string.Empty : string.Empty;
+            }
+            else if (p.Type == "bool")
             {
                 var combo = new ComboBox
                 {

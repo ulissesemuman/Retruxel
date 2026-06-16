@@ -1,0 +1,12 @@
+{
+  "type": "action",
+  "actionId": "follow_entity",
+  "displayName": "Follow Entity",
+  "category": "AI",
+  "parameters": [
+    { "name": "targetEntity",       "type": "string",  "default": "",           "label": "Target Entity", "entityRef": true },
+    { "name": "speed",              "type": "int",     "default": 1,            "label": "Speed" },
+    { "name": "axisMode",           "type": "string",  "default": "horizontal", "label": "Axis Mode (horizontal / both)" },
+    { "name": "activationDistance", "type": "int",     "default": 0,            "label": "Activation Distance (0 = always follow)" }
+  ]
+}

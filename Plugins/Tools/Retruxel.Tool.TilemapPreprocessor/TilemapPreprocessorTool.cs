@@ -1,3 +1,4 @@
+using Retruxel.Core.Helpers;
 using Retruxel.Core.Interfaces;
 using System;
 using System.Collections.Generic;
@@ -354,20 +355,8 @@ public class PlanePreprocessorTool : ITool
     private int[] GetIntArray(Dictionary<string, object> input, string key)
     {
         if (input.TryGetValue(key, out var value))
-        {
-            if (value is int[] intArray) return intArray;
-            if (value is System.Collections.IEnumerable enumerable)
-            {
-                var list = new List<int>();
-                foreach (var item in enumerable)
-                {
-                    if (item is int i) list.Add(i);
-                    else if (item is long l) list.Add((int)l);
-                    else if (item is double d) list.Add((int)d);
-                }
-                return list.ToArray();
-            }
-        }
+            return ArrayConversionHelper.ToIntArray(value);
+
         return Array.Empty<int>();
     }
 }

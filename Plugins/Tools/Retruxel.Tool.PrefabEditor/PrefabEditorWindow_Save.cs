@@ -58,7 +58,10 @@ public partial class PrefabEditorWindow
         if (_prefab.InputMapping is not null)
         {
             var validIds = new System.Collections.Generic.HashSet<string>(
-                _prefab.Actions.Select(a => a.InstanceId));
+                _prefab.Actions
+                    .Concat(_prefab.OnVBlankActions)
+                    .Concat(_prefab.OnStartActions)
+                    .Select(a => a.InstanceId));
 
             foreach (var (btn, ids) in _prefab.InputMapping.ButtonMappings)
             {

@@ -1,0 +1,47 @@
+// @retruxel:block header
+void {{entityName}}_action_follow_entity({{entityName}}_Params* p);
+// @retruxel:end
+
+// @retruxel:block source
+#include "{{params.targetEntity}}.h"
+
+// Action: follow_entity — moves toward the target entity.
+// axisMode "horizontal": only vel_x (use with gravity).
+// axisMode "both":       vel_x + vel_y (use without gravity, e.g. flying enemies).
+// activationDistance: 0 = always follow; > 0 = only follow when within that pixel distance.
+extern {{params.targetEntity}}_t {{params.targetEntity}};
+
+void {{entityName}}_action_follow_entity({{entityName}}_Params* p) {
+    int dx = {{params.targetEntity}}.x - {{entityName}}.x;
+    {{#if params.axisMode == "both"}}
+    int dy = {{params.targetEntity}}.y - {{entityName}}.y;
+    {{/if}}
+
+    {{#if params.activationDistance}}
+    {
+        int adx = dx < 0 ? -dx : dx;
+        {{#if params.axisMode == "both"}}
+        int ady = dy < 0 ? -dy : dy;
+        if (adx > {{params.activationDistance}} && ady > {{params.activationDistance}}) return;
+        {{/if}}
+        {{#ifnot params.axisMode == "both"}}
+        if (adx > {{params.activationDistance}}) return;
+        {{/ifnot}}
+    }
+    {{/if}}
+
+    if (dx > 0)      p->vel_x =  {{params.speed}};
+    else if (dx < 0) p->vel_x = -{{params.speed}};
+    else             p->vel_x = 0;
+
+    {{#if params.axisMode == "both"}}
+    if (dy > 0)      p->vel_y =  {{params.speed}};
+    else if (dy < 0) p->vel_y = -{{params.speed}};
+    else             p->vel_y = 0;
+    {{/if}}
+}
+// @retruxel:end
+
+// @retruxel:block update
+    {{entityName}}_action_follow_entity(&{{entityName}}.params);
+// @retruxel:end

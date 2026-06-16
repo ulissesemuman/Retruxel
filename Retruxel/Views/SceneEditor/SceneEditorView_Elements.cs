@@ -137,7 +137,9 @@ public partial class SceneEditorView
 
         // Count existing variants to pick a default palette slot
         var existingVariants = scene.Entities
-            .Where(e => e.EntityType == entityType)
+            .Where(e => !string.IsNullOrEmpty(reference.PrefabId)
+                ? e.PrefabId == reference.PrefabId
+                : e.EntityType == entityType)
             .ToList();
 
         var maxPaletteSlots = _target?.Specs.SpritePalettes ?? 2;
@@ -148,7 +150,8 @@ public partial class SceneEditorView
         {
             EntityId      = Guid.NewGuid().ToString(),
             Label         = $"Variant {variantNumber}",
-            EntityType    = entityType,
+            PrefabId      = reference.PrefabId,
+            EntityType    = reference.EntityType ?? entityType,
             SpriteAssetId = reference.SpriteAssetId,
             PaletteSlot   = nextSlot,
             WidthTiles    = reference.WidthTiles,

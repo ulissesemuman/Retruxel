@@ -66,6 +66,8 @@ public partial class PrefabEditorWindow : Window
         PopulateIdentity();
         PopulateSprite();
         PopulateActions();
+        PopulateVBlankActions();
+        PopulateStartActions();
         PopulateInputMapping();
         UpdateTitleBar();
         ValidateAll();

@@ -488,8 +488,21 @@ public class TemplateEngine
         if (left == null || right == null)
             return op == "!=" ? left != right : left == right;
 
-        var leftNum  = Convert.ToDouble(left);
-        var rightNum = Convert.ToDouble(right);
+        // String comparison — strip surrounding quotes from literals
+        var leftStr  = left.ToString()!.Trim('"');
+        var rightStr = right.ToString()!.Trim('"');
+
+        if (!double.TryParse(leftStr,  System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out var leftNum) ||
+            !double.TryParse(rightStr, System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out var rightNum))
+        {
+            // At least one side is not numeric — compare as strings
+            return op switch
+            {
+                "==" => string.Equals(leftStr, rightStr, StringComparison.OrdinalIgnoreCase),
+                "!=" => !string.Equals(leftStr, rightStr, StringComparison.OrdinalIgnoreCase),
+                _    => false
+            };
+        }
 
         return op switch
         {
@@ -506,6 +519,10 @@ public class TemplateEngine
     private static object? EvaluateExpression(string expr, Dictionary<string, object> variables)
     {
         expr = expr.Trim();
+
+        // String literal in quotes — return as string
+        if (expr.StartsWith('"') && expr.EndsWith('"') && expr.Length >= 2)
+            return expr.Substring(1, expr.Length - 2);
 
         if (int.TryParse(expr, out var intVal))
             return intVal;

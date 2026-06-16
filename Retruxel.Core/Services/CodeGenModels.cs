@@ -41,5 +41,5 @@ internal class VariableDefinition
     public string? GroupBy { get; set; }
     public string? Transform { get; set; }
     public int? SlotIndex { get; set; }
-    public string? Value { get; set; }
+    public object? Value { get; set; }
 }

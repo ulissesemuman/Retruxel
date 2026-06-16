@@ -5,8 +5,12 @@
   "category": "Movement",
   "dependencies": ["gravity"],
   "parameters": [
-    { "name": "jumpHeight", "type": "int",  "default": 32,   "label": "Jump Height (subpixels/frame, 32 = 4px)"          },
-    { "name": "canDouble",  "type": "bool", "default": false, "label": "Allow Double Jump"                               },
-    { "name": "onPress",    "type": "bool", "default": true,  "label": "Trigger on button press only (edge-triggered)"  }
+    { "name": "jumpHeight",       "type": "int",  "default": 32,   "label": "Jump Height (subpixels/frame, 32 = 4px)"                      },
+    { "name": "canDouble",        "type": "bool", "default": false, "label": "Allow Double Jump"                                           },
+    { "name": "onPress",          "type": "bool", "default": true,  "label": "Trigger on button press only (edge-triggered)"              },
+    { "name": "allowLongJump",    "type": "bool", "default": true,  "label": "Allow Long Jump (hold button to jump higher)"               },
+    { "name": "longJumpDuration", "type": "int",  "default": 20,    "label": "Long Jump Window (frames the player can hold for full height)" },
+    { "name": "coyoteFrames",     "type": "int",  "default": 6,     "label": "Coyote Time (frames after leaving ground to still jump, 0 = off)" },
+    { "name": "snapPixels",       "type": "int",  "default": 4,     "label": "Platform Snap Threshold (pixels, max invasion to snap to platform top)" }
   ]
 }

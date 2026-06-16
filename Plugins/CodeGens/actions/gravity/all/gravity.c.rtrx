@@ -1,17 +1,57 @@
 // @retruxel:block header
-void entity_{{entityId}}_action_gravity(Entity_{{entityId}}_Params* p);
+void {{entityName}}_action_gravity({{entityName}}_Params* p);
 // @retruxel:end
 
 // @retruxel:block source
-// Action: gravity — injected into entity_{{entityId}}
-// vel_y in subpixels (1/8 px). Applied to position via >> 3 in physics block.
-void entity_{{entityId}}_action_gravity(Entity_{{entityId}}_Params* p) {
-    if (p->on_ground) return;
-    p->vel_y += {{params.strength}};
+// Action: gravity — passive jump cut + fast fall (runs every frame via update block)
+void {{entityName}}_action_gravity({{entityName}}_Params* p) {
+    if (p->on_ground) {
+        {{#if params.coyoteFrames}}
+        p->coyote_frames = {{params.coyoteFrames}};
+        {{/if}}
+        {{#if params.onPress}}
+        p->prev_button_held = 0;
+        {{/if}}
+        return;
+    }
+
+    {{#if params.coyoteFrames}}
+    if (p->coyote_frames > 0) p->coyote_frames--;
+    {{/if}}
+
+    {{#if params.allowLongJump}}
+    {{#if params.jumpButtonConst}}
+    if (p->long_jump_active && p->vel_y < 0) {
+        if (!(SMS_getKeysStatus() & {{params.jumpButtonConst}})) {
+            p->vel_y >>= 1;
+            p->long_jump_active = 0;
+            p->long_jump_timer = 0;
+        } else if (p->long_jump_timer > 0) {
+            p->long_jump_timer--;
+        } else {
+            p->long_jump_active = 0;
+        }
+    }
+    {{/if}}
+    {{/if}}
+
+    {
+        signed char grav = (signed char){{params.strength}};
+        if (p->vel_y >= 0) {
+            grav = (signed char)({{params.strength}} * {{params.fallStrengthMultiplier}});
+            p->long_jump_active = 0;
+            p->long_jump_timer = 0;
+            {{#if params.onPress}}
+            p->prev_button_held = 0;
+            {{/if}}
+        }
+        p->vel_y += grav;
+    }
+
     if (p->vel_y > {{params.maxFallSpeed}}) p->vel_y = {{params.maxFallSpeed}};
 }
 // @retruxel:end
 
 // @retruxel:block update
-    entity_{{entityId}}_action_gravity(&entity_{{entityId}}.params);
+    {{entityName}}_action_gravity(&{{entityName}}.params);
 // @retruxel:end

@@ -84,20 +84,33 @@ public class PrefabData
     public int HeightTiles { get; set; } = 2;
 
     /// <summary>
-    /// Scene-scoped action IDs this prefab ignores.
-    /// Use when a scene-level action (e.g. gravity) should not affect this prefab.
+    /// Scene-scoped behavior IDs this prefab ignores.
+    /// Use when a scene-level behavior (e.g. gravity) should not affect this prefab.
     /// Ex: ["gravity"] for a static block in a platformer.
     /// </summary>
-    [JsonPropertyName("ignoredSceneActions")]
-    public List<string> IgnoredSceneActions { get; set; } = [];
+    [JsonPropertyName("ignoredSceneBehaviors")]
+    public List<string> IgnoredSceneBehaviors { get; set; } = [];
 
     /// <summary>
-    /// Actions available to this Prefab.
-    /// Each ActionInstance configures an ActionDefinition with specific parameter values.
+    /// OnInput actions — triggered by player input (mapped in InputMapping).
     /// Can be empty for non-interactive entities.
     /// </summary>
     [JsonPropertyName("actions")]
     public List<ActionInstance> Actions { get; set; } = [];
+
+    /// <summary>
+    /// OnVBlank actions — called every frame in the entity update loop.
+    /// If an actionId matches a SceneBehavior, this overrides it for this prefab.
+    /// If it doesn't match, it is added on top of scene behaviors.
+    /// </summary>
+    [JsonPropertyName("onVBlankActions")]
+    public List<ActionInstance> OnVBlankActions { get; set; } = [];
+
+    /// <summary>
+    /// OnStart actions — called once in the entity init function.
+    /// </summary>
+    [JsonPropertyName("onStartActions")]
+    public List<ActionInstance> OnStartActions { get; set; } = [];
 
     /// <summary>
     /// Input mapping for this Prefab.
@@ -105,4 +118,7 @@ public class PrefabData
     /// </summary>
     [JsonPropertyName("inputMapping")]
     public PrefabInputMapping? InputMapping { get; set; }
+    
+    [JsonPropertyName("spriteBorderBehavior")]
+    public string SpriteBorderBehavior { get; set; } = "Default";
 }

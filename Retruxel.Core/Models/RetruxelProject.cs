@@ -1,4 +1,4 @@
-﻿using System;
+﻿﻿using System;
 using System.Collections.Generic;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -72,6 +72,29 @@ public class RetruxelProject
     /// Index in this list is the "input slot" referenced by EntityData.InputSlot.
     /// </summary>
     public List<InputPortBinding> InputPorts { get; set; } = [];
+
+    /// <summary>
+    /// Returns all entity instance names in the same order the CodeGenerator assigns them.
+    /// Each entry is (entityName: "player_0", label: "Player").
+    /// Used by the editor to populate entityRef ComboBoxes.
+    /// </summary>
+    public IEnumerable<(string EntityName, string Label)> GetEntityNames()
+    {
+        var counters = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+        foreach (var scene in Scenes)
+        {
+            foreach (var entity in scene.Entities)
+            {
+                var prefabId = entity.PrefabId;
+                var key      = string.IsNullOrEmpty(prefabId) ? "entity" : prefabId;
+                if (!counters.TryGetValue(key, out var idx)) idx = 0;
+                var name = string.IsNullOrEmpty(prefabId) ? $"entity_{idx}" : $"{prefabId}_{idx}";
+                var label = string.IsNullOrEmpty(entity.Label) ? name : $"{entity.Label} ({name})";
+                yield return (name, label);
+                counters[key] = idx + 1;
+            }
+        }
+    }
 }
 
 /// <summary>
@@ -165,6 +188,9 @@ public class EntityData
     /// <summary>Legacy: input slot index. Migrated to PrefabData.InputMapping on load.</summary>
     [JsonPropertyName("inputSlot")]
     public int? InputSlot { get; set; }
+    
+    [JsonPropertyName("spriteBorderBehavior")]
+    public string SpriteBorderBehavior { get; set; } = "Default";
 }
 
 /// <summary>

@@ -89,6 +89,14 @@ public class PlaneLayerData
     public bool HasCollision { get; set; } = false;
 
     /// <summary>
+    /// Type of collision for this layer.
+    /// "Platform": Only collide from above (like Mario-style platforms).
+    /// "Solid": Collide from all sides.
+    /// </summary>
+    [JsonPropertyName("collisionType")]
+    public string CollisionType { get; set; } = "Platform";
+
+    /// <summary>
     /// Action triggered when an entity collides with a solid tile in this layer.
     /// References ActionDefinition.ActionId from the ActionRegistry.
     ///

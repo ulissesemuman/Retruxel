@@ -57,7 +57,7 @@ public class PhysicsModule : ILogicModule
                 DisplayName = "Gravity",
                 Description = "Downward acceleration per frame (fixed-point units).",
                 Type = ParameterType.Int,
-                DefaultValue = 2, MinValue = 1, MaxValue = 16
+                DefaultValue = 4, MinValue = 1, MaxValue = 16
             },
             new ParameterDefinition
             {
@@ -65,7 +65,7 @@ public class PhysicsModule : ILogicModule
                 DisplayName = "Max Fall Speed",
                 Description = "Terminal velocity — caps freefall speed (fixed-point units).",
                 Type = ParameterType.Int,
-                DefaultValue = 24, MinValue = 4, MaxValue = 64
+                DefaultValue = 32, MinValue = 4, MaxValue = 64
             },
             new ParameterDefinition
             {
@@ -73,7 +73,7 @@ public class PhysicsModule : ILogicModule
                 DisplayName = "Jump Force",
                 Description = "Upward velocity when jumping (fixed-point units). Higher = higher jump.",
                 Type = ParameterType.Int,
-                DefaultValue = 52, MinValue = 16, MaxValue = 128
+                DefaultValue = 64, MinValue = 16, MaxValue = 128
             },
             new ParameterDefinition
             {
@@ -131,13 +131,13 @@ public class PhysicsModule : ILogicModule
     private class PhysicsState
     {
         /// <summary>Downward acceleration applied each frame (fixed-point × 16).</summary>
-        public int Gravity { get; set; } = 2;
+        public int Gravity { get; set; } = 4;
 
         /// <summary>Maximum downward velocity — caps freefall speed (fixed-point × 16).</summary>
-        public int MaxFallSpeed { get; set; } = 24;
+        public int MaxFallSpeed { get; set; } = 32;
 
         /// <summary>Upward velocity applied when jumping (fixed-point × 16).</summary>
-        public int JumpForce { get; set; } = 52;
+        public int JumpForce { get; set; } = 64;
 
         /// <summary>Horizontal speed when walking left or right (fixed-point × 16).</summary>
         public int WalkSpeed { get; set; } = 8;

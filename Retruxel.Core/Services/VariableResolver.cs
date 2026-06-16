@@ -1,3 +1,4 @@
+using Retruxel.Core.Helpers;
 using Retruxel.Core.Interfaces;
 using System;
 using System.Collections.Generic;
@@ -325,7 +326,10 @@ internal class VariableResolver
                 if (resolvedVariables.ContainsKey(valueSource))
                 {
                     var value = resolvedVariables[valueSource];
-                    input[inputKey] = value;
+                    input[inputKey] = value is JsonElement { ValueKind: JsonValueKind.Array } jsonArray
+                        && jsonArray.EnumerateArray().All(e => e.ValueKind == JsonValueKind.Number)
+                        ? ArrayConversionHelper.ToIntArray(value)
+                        : value;
                 }
                 else if (moduleRoot.TryGetProperty(valueSource, out var v))
                 {
@@ -426,11 +430,11 @@ internal class VariableResolver
     /// </summary>
     public object EvaluateComputedExpression(VariableDefinition varDef, Dictionary<string, object> resolvedVariables)
     {
-        if (string.IsNullOrEmpty(varDef.Value))
+        if (varDef.Value is not string valueExpr || string.IsNullOrEmpty(valueExpr))
             return varDef.Default ?? false;
 
         // Check for multi-language detection pattern
-        if (varDef.Value.Contains("languages.Count > 1", StringComparison.OrdinalIgnoreCase))
+        if (valueExpr.Contains("languages.Count > 1", StringComparison.OrdinalIgnoreCase))
         {
             if (!resolvedVariables.TryGetValue("arrays", out var arraysObj))
                 return false;

@@ -1,346 +1,124 @@
 # Retruxel
 
 <p align="center">
-  <img src="Retruxel/Assets/Images/Logo/full_logo.png" alt="Full Logo" width="40%">
+  <img src="Retruxel/Assets/Images/Logo/full_logo.png" alt="Full Logo" width="40%" />
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/.NET-10.0-512BD4?logo=dotnet&logoColor=white" alt=".NET 10">
-  <img src="https://img.shields.io/badge/WPF-Windows-0078D4?logo=windows&logoColor=white" alt="WPF">
-  <img src="https://img.shields.io/github/v/release/ulissesemuman/Retruxel?include_prereleases&label=version" alt="Version">
-  <img src="https://img.shields.io/badge/License-MIT-green" alt="License">
-  <img src="https://img.shields.io/badge/Status-Alpha-orange" alt="Status">
-  <img src="https://img.shields.io/badge/Platforms-SMS%20%7C%20NES%20%7C%20GG%20%7C%20SG1000%20%7C%20Coleco-blueviolet" alt="Platforms">
+  <img src="https://img.shields.io/badge/.NET-10.0-512BD4?logo=dotnet&logoColor=white" alt=".NET 10" />
+  <img src="https://img.shields.io/badge/WPF-Windows-0078D4?logo=windows&logoColor=white" alt="WPF" />
+  <img src="https://img.shields.io/github/v/release/ulissesemuman/Retruxel?include_prereleases&label=version" alt="Version" />
+  <img src="https://img.shields.io/badge/License-MIT-green" alt="License" />
+  <img src="https://img.shields.io/badge/Status-Alpha-orange" alt="Status" />
+  <img src="https://img.shields.io/badge/Platforms-SMS%20%7C%20NES%20%7C%20GG%20%7C%20SG1000%20%7C%20Coleco-blueviolet" alt="Platforms" />
 </p>
 
-> Visual retro game development tool — build games for classic consoles without writing a single line of code.
-> 
-> Inspired by [GB Studio](https://www.gbstudio.dev/)
+> **Retruxel** – a visual IDE for retro‑game development. Build games for classic consoles without writing a single line of C or assembly.
 
 ---
 
-<!-- Application screenshot -->
-![Retruxel Screenshot](Retruxel/Assets/Images/Readme/builder.png)
+## 📖 Overview
 
----
-
-## What is Retruxel?
-
-Retruxel is a visual IDE for developing retro games, inspired by [GB Studio](https://www.gbstudio.dev/). Instead of writing C or assembly by hand, you use a visual editor to place modules, configure parameters through an auto-generated UI, and Retruxel handles the rest — generating C code, compiling it with the embedded toolchain, and producing a ready-to-run ROM file.
-
-No terminal. No Makefile. No toolchain setup. Just open and start building.
-
----
-
-## ✨ Features
-
-- 🎮 **Visual game editor** — place modules on canvas and configure them through auto-generated UI
-- 🎯 **Multi-target support** — build for multiple retro consoles from a single project
-- ⚙️ **Zero setup** — toolchains embedded and extracted automatically on first run
-- 🧩 **Module system** — graphic, logic and audio modules as building blocks (early stage)
-- 🔁 **Portable modules** — universal modules keep your project target-agnostic for future migration
-- 🏗️ **Auto-generated UI** — module parameters are described via `ModuleManifest`, no UI code needed
-- 📦 **One-click ROM export** — full build pipeline from project to ROM file
-- ⭐ **Favorites system** — mark and filter your preferred target platforms
-- 🌍 **Multilingual** — interface available in multiple languages with runtime switching
-- 🚀 **Emulator integration** — launch ROMs directly from the IDE
-
----
-
-## 🎯 Supported Targets
-
-| Console | Status | Progress | Toolchain |
-|---|---|---|---|
-| Sega Master System | 🟢 Active | ~60% | SDCC 4.5.24 + devkitSMS + SMSlib |
-| Sega Game Gear | 🟡 Scaffolding | ~15% | SDCC 4.5.24 + devkitSMS + SMSlib |
-| Sega SG-1000 | 🟡 Scaffolding | ~15% | SDCC 4.5.24 + devkitSMS + SMSlib |
-| ColecoVision | 🟡 Scaffolding | ~15% | SDCC 4.5.24 + devkitSMS + SMSlib |
-| Nintendo NES | 🟢 Active | ~5% | cc65 + neslib |
-| SNES | 🔮 Planned | 0% | — |
+Retruxel is a visual IDE for developing retro games, inspired by [GB Studio](https://www.gbstudio.dev/). Retruxel lets you design games with a drag‑and‑drop canvas, configure modules through auto‑generated UI, and handles all code generation, compilation and ROM packaging automatically. The toolchain for each target is bundled with the application, so no external SDKs are required.
 
 ---
 
 ## 🏛️ Architecture
 
-Retruxel is built on .NET 10 / WPF and organized as a multi-project solution with a plugin-based architecture:
+The solution is a multi‑project .NET 10 / WPF solution with a **plugin‑based** architecture. The main projects are:
 
 | Project | Type | Role |
 |---|---|---|
-| `Retruxel` | WPF Application | Main shell — UI, navigation and orchestration |
-| `Retruxel.Core` | Class Library | Interfaces, models, services and code generation engine |
-| `Retruxel.SDK` | Class Library | Public interfaces for plugin developers |
-| `Retruxel.Toolchain` | Class Library | Embedded toolchains with centralized adapter |
-| `Retruxel.Modules` | Class Library | Standard portable module definitions |
-| `Plugins/Targets/*` | Class Libraries | Platform-specific implementations (SMS, NES, GG, SG-1000, ColecoVision) |
-| `Plugins/Tools/*` | Class Libraries | Standalone tools (image processing, preprocessors, asset converters) |
-| `Plugins/CodeGens/*` | JSON + Templates | Declarative code generators (`.c.rtrx` templates + `codegen.json` manifests) |
+| `Retruxel` | WPF Application | UI shell, navigation and orchestration |
+| `Retruxel.Core` | Class Library | Core services, models, code‑generation engine |
+| `Retruxel.SDK` | Class Library | Public API for third‑party plugin developers |
+| `Retruxel.Toolchain` | Class Library | Embedded toolchains (SDCC, cc65, etc.) and adapters |
+| `Retruxel.Modules` | Class Library | Portable module definitions (graphics, logic, audio) |
+| `Plugins/Tools/*` | Class Libraries | Stand‑alone tools (image processing, palette helpers, etc.) |
+| `Plugins/CodeGens/*` | JSON + Templates | Declarative code generators (`.c.rtrx` + `codegen.json`) |
+| `Plugins/Targets/*` | Class Libraries | Platform‑specific implementations (SMS, NES, GG, SG‑1000, Coleco) |
 
-### Build Pipeline
+### Build Pipeline (high‑level)
 
-**SMS / Game Gear / SG-1000 / ColecoVision:**
 ```
-.rtrxproject  →  ModuleRenderer (JSON+templates)  →  .c / .h files  →  SDCC  →  ihx2sms  →  ROM
-                      ↓
-              Tool invocation (preprocessors, asset converters)
-```
-
-**NES:**
-```
-.rtrxproject  →  ModuleRenderer (JSON+templates)  →  .c / .h files  →  cc65  →  ld65  →  .nes ROM
-                      ↓
-              Tool invocation (preprocessors, asset converters)
+.rtrxproject → ModuleRenderer (JSON + .c.rtrx templates) → .c/.h files
+    → Target toolchain (SDCC / cc65) → Linker → ROM
+    ↓
+  Tool invocations (pre‑processors, asset converters)
 ```
 
-**Generation Priority:**
-1. ModuleRenderer (declarative JSON + `.c.rtrx` templates)
-2. CodeGen DLL (legacy compiled generators)
-3. Target.GenerateCodeForModule() (target-specific fallback)
-4. Module.GenerateCode() (module-level fallback)
-
-### Module System
-
-Modules are the building blocks of every Retruxel project. There are three types:
-
-- **Graphic modules** — tiles, sprites, palettes, tilemaps
-- **Logic modules** — physics, input, entities, game flow
-- **Audio modules** — music and sound effects for the target sound chip
-
-Each module exposes a `ModuleManifest` that describes its parameters. The shell reads this manifest and auto-generates the configuration UI — no WPF knowledge required to write a module.
-
-**Standard modules** (`Retruxel.Modules`) are portable definitions designed for cross-platform migration. These modules generate platform-agnostic JSON that can be rendered to any target.
-
-**Console-specific modules** can be added to leverage unique hardware features (e.g., SMS VDP modes, NES PPU attributes). These are defined in `Retruxel.Modules` with target-specific parameters.
-
-Code generation is declarative: each module has a `codegen.json` manifest and `.c.rtrx` template files in `Plugins/CodeGens/[module]/[target]/`. The `ModuleRenderer` processes templates with variable substitution, conditionals, loops, and tool invocation.
-
-#### Portability categories
-
-| Category | Description |
-|---|---|
-| **Universal** | Identical JSON output on any target — fully portable |
-| **Base + Specialization** | Shared base with optional target-specific fields |
-| **Exclusive** | Target-locked — marked with a warning icon in the UI |
+The pipeline is the same for all supported targets; only the final toolchain differs.
 
 ---
 
-## 🎨 Design System
+## 🧩 Core Components
 
-Retruxel uses a custom design system called **Neo-Technical Archive** — a modern IDE aesthetic inspired by 1980s mainframe terminals.
-
-- **Style:** Architectural Brutalism + Modern Editorial Design
-- **0px border-radius** on all internal components
-- **8px grid** — no exceptions
-- Separation by tonal background shift — no divider lines
-- Typography: **Space Grotesk** (display) + **Inter** (body/code)
+- **Module System** – Graphic, Logic and Audio modules. Each module exposes a `ModuleManifest` that drives the auto‑generated UI.
+- **Code Generation** – Declarative JSON manifests + Handlebars‑style templates (`.c.rtrx`).
+- **Plugin Framework** – Plugins are discovered via reflection at startup. Developers can add new code generators, tools or target platforms without modifying the core.
+- **Embedded Toolchains** – SDCC for SMS/Game Gear/SG‑1000/Coleco, cc65 for NES, with automatic extraction to `%AppData%\Retruxel\toolchain` on first run.
+- **Emulator Integration** – Launches ROMs directly in the built‑in emulator window.
+- **Internationalisation** – UI strings are stored in JSON files under `Retruxel/Assets/Localization` and can be switched at runtime.
 
 ---
 
 ## 🚀 Getting Started
 
-> ⚠️ Retruxel is currently in alpha development (v0.8.0-alpha).
+### Option 1 – Installer (recommended)
+1. Download the latest installer from the **[Releases page](https://github.com/ulissesemuman/Retruxel/releases)**.
+2. Run the installer; the toolchain is extracted automatically to `%AppData%\Retruxel\toolchain`.
+3. Launch **Retruxel** from the Start menu.
 
-### Option 1: Download Installer (Recommended)
-
-Download the latest installer from [Releases](https://github.com/ulissesemuman/Retruxel/releases). The toolchain is extracted automatically on first run to `%AppData%\Retruxel\toolchain\`.
-
-### Option 2: Build from Source
-
-1. Clone the repository
-2. Open `Retruxel.slnx` in Visual Studio 2022+
-3. Build and run the `Retruxel` project
-4. The toolchain is extracted automatically on first run to `%AppData%\Retruxel\toolchain\`
-
-### Current Status
-
-- ✅ Project creation and management
-- ✅ Multi-target infrastructure with 6 platforms (SMS, GG, SG-1000, ColecoVision, NES, SNES planned)
-- ✅ Visual scene editor with canvas
-- ✅ Declarative code generation system (JSON + `.c.rtrx` templates)
-- ✅ Tool system with preprocessors and asset converters
-- ✅ ModuleRenderer with template engine (conditionals, loops, nested properties, arithmetic)
-- ✅ Event system (OnStart, OnVBlank, OnInput)
-- ✅ ROM compilation pipeline (SMS + NES)
-- ✅ SMS splash screen with fade effects
-- ✅ Build console with real-time output and toast notifications
-- ✅ Emulator integration with configurable launch settings
-- ✅ Favorites system with sort and filter capabilities
-- ✅ Internationalization (i18n) system with runtime language switching
-- ✅ Dynamic manufacturer discovery and filtering
-- ✅ Centralized toolchain adapter
-- 🚧 Standard modules (text display, tilemap, sprite, palette — early stage)
-- 🚧 Asset editors (planned)
-- 🚧 Visual scripting system (planned)
+### Option 2 – Build from source
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/ulissesemuman/Retruxel.git
+   cd Retruxel
+   ```
+2. Open `Retruxel.slnx` in **Visual Studio 2022** (or later) and build the solution.
+3. Run the `Retruxel` project. The first launch extracts the embedded toolchains.
 
 ---
 
-## 🌍 Internationalization
+## 🛠️ Development Workflow
 
-Retruxel supports multiple languages with automatic detection and runtime switching.
-
-### Supported Languages
-
-- 🇺🇸 English
-- 🇧🇷 Português (Brasil)
-
-### Adding a New Language
-
-1. Create a new JSON file in `Retruxel/Assets/Localization/` with the language code as filename (e.g., `es.json` for Spanish)
-2. Use this structure:
-
-```json
-{
-  "_metadata": {
-    "code": "es"
-  },
-  "strings": {
-    "app.title": "RETRUXEL",
-    "welcome.title": "SELECCIÓN DE TARGET",
-    ...
-  }
-}
-```
-
-3. The language will appear automatically in Settings → General → Language
-4. Language names are automatically localized using .NET `CultureInfo` based on your OS language
-
-### How It Works
-
-- Language files are discovered automatically on startup
-- Display names are pulled from the operating system (e.g., "Español" on Spanish Windows, "Spanish" on English Windows)
-- No restart required — switch languages instantly in Settings
-- Fallback to English if selected language file is missing
+1. **Create a new project** – The wizard scaffolds a `.rtrxproject` file.
+2. **Add modules** – Drag modules onto the scene canvas, configure parameters in the property panel.
+3. **Generate code** – The IDE automatically runs the `ModuleRenderer` and creates C source files under the project’s `Generated` folder.
+4. **Build** – Press **Build**; the appropriate toolchain compiles the sources and produces a ROM.
+5. **Test** – The built‑in emulator can launch the ROM instantly for quick iteration.
 
 ---
 
-## 🧩 Writing a Plugin
+## 📦 Plugins & Extensions
 
-Retruxel supports three types of plugins:
+- **Code Generators** – Place a folder under `Plugins/CodeGens/<module>/<target>/` containing `codegen.json` and a `.c.rtrx` template.
+- **Tools** – Implement `ITool` in a class library under `Plugins/Tools/` and reference it from a code generator.
+- **Targets** – Implement `ITarget` under `Plugins/Targets/` to add support for new consoles.
 
-### 1. Declarative Code Generators (Recommended)
+All plugins are loaded automatically at startup via reflection.
 
-Create a folder in `Plugins/CodeGens/[module_id]/[target_id]/` with:
+---
 
-**codegen.json** — manifest describing inputs and outputs:
+## 🌍 Internationalisation
+
+Add a new language by creating a JSON file in `Retruxel/Assets/Localization/` (e.g., `es.json`). The file follows the structure:
 ```json
 {
-  "moduleId": "sprite",
-  "targetId": "sms",
-  "displayName": "SMS Sprite CodeGen",
-  "description": "Generates C code for SMS sprite rendering with animation support",
-  "version": "1.0.0",
-  "template": "sprite.c.rtrx",
-  "variables": {
-    "spriteName": { "from": "module", "path": "name", "default": "sprite" },
-    "spritePath": { "from": "module", "path": "imagePath", "default": "" },
-    "width": { "from": "module", "path": "width", "default": 16 },
-    "height": { "from": "module", "path": "height", "default": 16 },
-    "animated": { "from": "module", "path": "animated", "default": false },
-    "frameCount": { "from": "module", "path": "frameCount", "default": 1 },
-    "visible": { "from": "module", "path": "visible", "default": true },
-    "speed": { "from": "module", "path": "speed", "default": 0 },
-    "direction": { "from": "module", "path": "direction", "default": 1 },
-    "frames": { "from": "module", "path": "frames", "default": [] },
-    "spriteData": {
-      "from": "tool",
-      "tool": "png_to_tiles_sms",
-      "toolInput": {
-        "imagePath": "spritePath",
-        "tileWidth": 8,
-        "tileHeight": 8
-      }
-    }
-  }
+  "_metadata": { "code": "es" },
+  "strings": { "app.title": "RETRUXEL", "welcome.title": "SELECCIÓN DE TARGET" }
 }
 ```
+The UI will list the language automatically.
 
-**sprite.c.rtrx** — C template with variable substitution:
-```c
-// Sprite: {{spriteName}}
-// Size: {{width}}x{{height}} pixels
-// Tiles: {{spriteData.tileCount}}
+---
 
-const unsigned char {{spriteName}}_tiles[] = {
-    {{spriteData.tilesArray}}
-};
+## 🤝 Contributing
 
-const unsigned char {{spriteName}}_palette[] = {
-    {{spriteData.palette}}
-};
-
-void {{spriteName}}_init() {
-    {{#if animated}}
-    // Animation setup
-    sprite_frame = 0;
-    sprite_frame_count = {{frameCount}};
-    {{/if}}
-    
-    {{#ifnot visible}}
-    // Sprite hidden by default
-    sprite_visible = 0;
-    {{/ifnot}}
-}
-
-void {{spriteName}}_update() {
-    {{#if animated}}
-    {{#each frames}}
-    if (sprite_frame == {{@index}}) {
-        load_tiles({{this.offset}}, {{this.count}});
-    }
-    {{/each}}
-    {{/if}}
-    
-    {{#if speed > 0}}
-    sprite_x += {{speed * direction}};
-    {{/if}}
-}
-```
-
-**Variable sources:**
-- `"from": "module"` - Value comes from module's property at `"path"`
-- `"from": "tool"` - Value comes from tool execution result
-- `"toolInput"` - Maps variable names to tool input parameters
-
-Supports: `{{variable}}`, `{{#if}}`, `{{#ifnot}}`, `{{#each}}`, `{{object.property}}`, `{{a * b}}`.
-
-### 2. Tools (Asset Converters, Preprocessors)
-
-Create a .NET class library in `Plugins/Tools/` that implements `ITool`:
-
-```csharp
-public class MyTool : ITool
-{
-    public string ToolId => "mytool";
-    public string DisplayName => "My Tool";
-    public string Category => "Conversion";
-    public bool IsStandalone => true;
-    public bool RequiresProject => false;
-    
-    public Dictionary<string, object> Execute(Dictionary<string, object> input)
-    {
-        // Process input and return results
-        return new Dictionary<string, object> { ["output"] = result };
-    }
-}
-```
-
-### 3. Target Platforms
-
-Create a .NET class library in `Plugins/Targets/` that implements `ITarget`:
-
-```csharp
-public class MyTarget : ITarget
-{
-    public string TargetId => "myconsole";
-    public string DisplayName => "My Console";
-    public string Manufacturer => "MyCompany";
-    // Implement ITarget interface methods
-}
-```
-
-Retruxel discovers plugins automatically via reflection on startup.
+Contributions are welcome! Please fork the repository, create a feature branch and open a pull request. Follow the existing code style and run the full build before submitting.
 
 ---
 
 ## 📄 License
 
-This project is licensed under the MIT License. See [LICENSE](LICENSE) for details.
+This project is licensed under the **MIT License**. See the [LICENSE](LICENSE) file for details.

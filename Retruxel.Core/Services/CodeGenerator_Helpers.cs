@@ -25,6 +25,7 @@ public partial class CodeGenerator
                 "right" or "down" => "1",
                 _                  => "0"
             },
+            "jump" => "",
             _ => ""
         };
     }

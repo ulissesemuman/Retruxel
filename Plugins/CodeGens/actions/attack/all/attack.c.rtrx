@@ -1,10 +1,10 @@
 // @retruxel:block header
-void entity_{{entityId}}_action_attack(Entity_{{entityId}}_Params* p);
+void {{entityName}}_action_attack({{entityName}}_Params* p);
 // @retruxel:end
 
 // @retruxel:block source
-// Action: attack — injected into entity_{{entityId}}
-void entity_{{entityId}}_action_attack(Entity_{{entityId}}_Params* p) {
+// Action: attack — injected into {{entityName}}
+void {{entityName}}_action_attack({{entityName}}_Params* p) {
     if (p->attack_cooldown > 0) return;
     p->attacking = 1;
     p->attack_damage = {{params.damage}};

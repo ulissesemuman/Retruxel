@@ -13,12 +13,25 @@ public partial class PrefabEditorWindow
     private void PopulateActions()
     {
         ActionsPanel.Children.Clear();
-
         foreach (var instance in _prefab.Actions)
-            ActionsPanel.Children.Add(BuildActionRow(instance));
+            ActionsPanel.Children.Add(BuildActionRow(instance, _prefab.Actions));
     }
 
-    private Border BuildActionRow(ActionInstance instance)
+    private void PopulateVBlankActions()
+    {
+        VBlankActionsPanel.Children.Clear();
+        foreach (var instance in _prefab.OnVBlankActions)
+            VBlankActionsPanel.Children.Add(BuildActionRow(instance, _prefab.OnVBlankActions));
+    }
+
+    private void PopulateStartActions()
+    {
+        StartActionsPanel.Children.Clear();
+        foreach (var instance in _prefab.OnStartActions)
+            StartActionsPanel.Children.Add(BuildActionRow(instance, _prefab.OnStartActions));
+    }
+
+    private Border BuildActionRow(ActionInstance instance, List<ActionInstance> sourceList)
     {
         var def = _actionRegistry.GetById(instance.ActionId);
         var deps = _actionRegistry.GetAllDependencies(instance.ActionId);
@@ -155,14 +168,16 @@ public partial class PrefabEditorWindow
 
         var removeBtn = MakeLabelButton("✕", "BrushError", () =>
         {
-            _prefab.Actions.Remove(instance);
-            // Remove any input mappings referencing this instance
-            if (_prefab.InputMapping is not null)
+            sourceList.Remove(instance);
+            // Remove any input mappings referencing this instance (only relevant for OnInput actions)
+            if (ReferenceEquals(sourceList, _prefab.Actions) && _prefab.InputMapping is not null)
             {
                 foreach (var key in _prefab.InputMapping.ButtonMappings.Keys.ToList())
                     _prefab.InputMapping.ButtonMappings[key].Remove(instance.InstanceId);
             }
             PopulateActions();
+            PopulateVBlankActions();
+            PopulateStartActions();
             PopulateInputMapping();
         });
         buttons.Children.Add(removeBtn);
@@ -180,31 +195,43 @@ public partial class PrefabEditorWindow
     }
 
     private void BtnAddAction_Click(object sender, RoutedEventArgs e)
+        => AddActionTo(_prefab.Actions, refreshInput: true);
+
+    private void BtnAddVBlankAction_Click(object sender, RoutedEventArgs e)
+        => AddActionTo(_prefab.OnVBlankActions);
+
+    private void BtnAddStartAction_Click(object sender, RoutedEventArgs e)
+        => AddActionTo(_prefab.OnStartActions);
+
+    private void AddActionTo(List<ActionInstance> targetList, bool refreshInput = false)
     {
         var picker = new ActionPickerDialog(_actionRegistry, Owner ?? this);
-        if (picker.ShowDialog() == true && picker.SelectedActionId is not null)
+        if (picker.ShowDialog() != true || picker.SelectedActionId is null) return;
+
+        var def = _actionRegistry.GetById(picker.SelectedActionId)!;
+        var instance = new ActionInstance
         {
-            var def = _actionRegistry.GetById(picker.SelectedActionId)!;
+            ActionId   = def.ActionId,
+            Parameters = def.Parameters.ToDictionary(p => p.Name, p => p.Default)
+        };
 
-            var instance = new ActionInstance
-            {
-                ActionId   = def.ActionId,
-                Parameters = def.Parameters.ToDictionary(
-                    p => p.Name,
-                    p => p.Default)
-            };
-
-            _prefab.Actions.Add(instance);
-            PopulateActions();
-            PopulateInputMapping(); // Refresh chips — new action available for mapping
-        }
+        targetList.Add(instance);
+        PopulateActions();
+        PopulateVBlankActions();
+        PopulateStartActions();
+        if (refreshInput)
+            PopulateInputMapping();
     }
 
     private void OpenActionParameterDialog(ActionInstance instance, ActionDefinition def)
     {
-        var dialog = new ActionParameterDialog(instance, def, Owner ?? this);
+        var dialog = new ActionParameterDialog(instance, def, Owner ?? this, _project);
         if (dialog.ShowDialog() == true)
-            PopulateActions(); // Refresh to show updated param values
+        {
+            PopulateActions();
+            PopulateVBlankActions();
+            PopulateStartActions();
+        }
     }
 
     private static TextBlock MakeLabelButton(string text, string colorKey, Action onClick)

@@ -112,7 +112,16 @@ internal static class CodeGenDiscovery
                 def.SlotIndex = slotIndex.GetInt32();
 
             if (element.TryGetProperty("value", out var value))
-                def.Value = value.GetString();
+            {
+                def.Value = value.ValueKind switch
+                {
+                    JsonValueKind.Array => value.EnumerateArray().Select(e => e.GetString() ?? "").ToArray(),
+                    JsonValueKind.Number => value.TryGetInt32(out var i) ? (object)i : value.GetDouble(),
+                    JsonValueKind.True => true,
+                    JsonValueKind.False => false,
+                    _ => value.GetString() ?? ""
+                };
+            }
 
             if (element.TryGetProperty("default", out var defVal))
             {

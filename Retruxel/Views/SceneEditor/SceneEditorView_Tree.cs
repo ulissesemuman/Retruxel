@@ -42,7 +42,7 @@ public partial class SceneEditorView
     private readonly HashSet<string> _expandedNodes = new(StringComparer.Ordinal)
     {
         "project", "assets", "modules_global", "scenes",
-        "palette", "planes", "modules_scene", "entities", "scene_actions"
+        "palette", "planes", "modules_scene", "entities", "scene_behaviors"
     };
 
     // ── Entry point ────────────────────────────────────────────────────────────
@@ -272,7 +272,7 @@ public partial class SceneEditorView
         BuildPlanesSection(scene);
         BuildSceneModulesSection(scene);
         BuildEntitiesSection(scene);
-        BuildSceneActionsSection(scene);
+        BuildSceneBehaviorsSection(scene);
         BuildVramUsageBar(scene);
     }
 
@@ -606,9 +606,11 @@ public partial class SceneEditorView
 
         if (IsExpanded("entities"))
         {
-            // Group entities by EntityType — each type is a collapsible parent node.
+            // Group entities by PrefabId (or legacy EntityType) — each type is a collapsible parent node.
             var byType = scene.Entities
-                .GroupBy(e => string.IsNullOrEmpty(e.EntityType) ? "entity" : e.EntityType)
+                .GroupBy(e => !string.IsNullOrEmpty(e.PrefabId) ? e.PrefabId
+                            : !string.IsNullOrEmpty(e.EntityType) ? e.EntityType
+                            : "entity")
                 .ToList();
 
             if (byType.Count == 0)
@@ -820,23 +822,23 @@ public partial class SceneEditorView
         ProjectTreePanel.Children.Add(row);
     }
 
-    // ── SCENE ACTIONS ─────────────────────────────────────────────────────
+    // ── SCENE BEHAVIORS ─────────────────────────────────────────────────────
 
-    private void BuildSceneActionsSection(SceneData scene)
+    private void BuildSceneBehaviorsSection(SceneData scene)
     {
-        AddTreeSubSection("SCENE ACTIONS", "scene_actions", indent: 3,
+        AddTreeSubSection("SCENE BEHAVIORS", "scene_behaviors", indent: 3,
             sublabel: "applied to all entities",
             onAdd: () => ShowSceneActionPickerDialog(scene));
 
-        if (!IsExpanded("scene_actions")) return;
+        if (!IsExpanded("scene_behaviors")) return;
 
-        if (scene.SceneActions.Count == 0)
+        if (scene.SceneBehaviors.Count == 0)
         {
-            AddTreeEmpty("No scene actions — click + to add", indent: 4);
+            AddTreeEmpty("No scene behaviors — click + to add", indent: 4);
             return;
         }
 
-        foreach (var action in scene.SceneActions)
+        foreach (var action in scene.SceneBehaviors)
         {
             var a = action;
             var def = _actionRegistry?.GetById(a.ActionId);
@@ -859,7 +861,7 @@ public partial class SceneEditorView
                 } : null,
                 onDelete: () =>
                 {
-                    scene.SceneActions.Remove(a);
+                    scene.SceneBehaviors.Remove(a);
                     _projectManager?.MarkDirty();
                     RebuildProjectTree();
                 });
@@ -873,7 +875,7 @@ public partial class SceneEditorView
         // Only show actions with scope="scene" or those explicitly designed for scene use
         var available = _actionRegistry.Actions.Values
             .Where(d => d.Scope == "scene" || d.Scope == "entity") // all actions can be scene-scoped
-            .Where(d => !scene.SceneActions.Any(a =>
+            .Where(d => !scene.SceneBehaviors.Any(a =>
                 a.ActionId.Equals(d.ActionId, StringComparison.OrdinalIgnoreCase)))
             .OrderBy(d => d.Category)
             .ThenBy(d => d.DisplayName)
@@ -899,9 +901,9 @@ public partial class SceneEditorView
             };
             item.Click += (_, _) =>
             {
-                scene.SceneActions.Add(new ActionInstance { ActionId = d.ActionId });
+                scene.SceneBehaviors.Add(new ActionInstance { ActionId = d.ActionId });
                 _projectManager?.MarkDirty();
-                _expandedNodes.Add("scene_actions");
+                _expandedNodes.Add("scene_behaviors");
                 RebuildProjectTree();
             };
             menu.Items.Add(item);

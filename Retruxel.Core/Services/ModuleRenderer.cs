@@ -126,7 +126,7 @@ public class ModuleRenderer
                     break;
 
                 case "constant":
-                    variables[varName] = varDef.Default ?? new string[0];
+                    variables[varName] = varDef.Value ?? varDef.Default ?? Array.Empty<string>();
                     break;
 
                 case "moduleFiles":
@@ -261,7 +261,7 @@ public class ModuleRenderer
         // Entity inits — called once per scene to load tiles into VRAM and set up SAT
         var entityInits = moduleFiles
             .Where(f => f.FileType == GeneratedFileType.Header &&
-                        (f.SourceModuleId == "entity" || f.SourceModuleId == "enemy"))
+                        f.SourceModuleId == "entity")
             .Select(f => new Dictionary<string, object>
             {
                 ["header"] = f.FileName,
@@ -301,7 +301,8 @@ public class ModuleRenderer
         string moduleJson,
         bool isSingleton,
         string? projectPath = null,
-        SceneData? currentScene = null)
+        SceneData? currentScene = null,
+        string? fileNamePrefix = null)
     {
         var key = Key(targetId, moduleId);
         if (!_codeGens.TryGetValue(key, out var manifest))
@@ -322,11 +323,15 @@ public class ModuleRenderer
 
         if (!effectiveSingleton)
         {
-            if (!_instanceCounters.ContainsKey(key))
-                _instanceCounters[key] = 0;
+            // Use fileNamePrefix as counter key when provided so that
+            // player_0/player_1 and enemy_0/enemy_1 are independent sequences.
+            var counterKey = !string.IsNullOrEmpty(fileNamePrefix) ? fileNamePrefix : key;
 
-            var instanceId = _instanceCounters[key]++;
-            variables["entityId"] = instanceId; // stable alias — never overwritten by #each item scopes
+            if (!_instanceCounters.ContainsKey(counterKey))
+                _instanceCounters[counterKey] = 0;
+
+            var instanceId = _instanceCounters[counterKey]++;
+            variables["entityId"] = instanceId;
             variables["instanceId"] = instanceId;
 
             // isFirstInstance for tile array emission:
@@ -371,11 +376,15 @@ public class ModuleRenderer
 
         var template = File.ReadAllText(manifest.TemplatePath);
 
+        var baseName = !string.IsNullOrEmpty(fileNamePrefix)
+            ? fileNamePrefix.Replace('.', '_')
+            : manifest.ModuleId.Replace('.', '_');
+
         yield return new GeneratedFile
         {
             FileName = effectiveSingleton
-                ? $"{manifest.ModuleId.Replace('.', '_')}.h"
-                : $"{manifest.ModuleId.Replace('.', '_')}_{variables["instanceId"]}.h",
+                ? $"{baseName}.h"
+                : $"{baseName}_{variables["instanceId"]}.h",
             FileType = GeneratedFileType.Header,
             SourceModuleId = moduleId,
             Content = TemplateEngine.RenderBlock(template, "header", variables)
@@ -384,8 +393,8 @@ public class ModuleRenderer
         yield return new GeneratedFile
         {
             FileName = effectiveSingleton
-                ? $"{manifest.ModuleId.Replace('.', '_')}.c"
-                : $"{manifest.ModuleId.Replace('.', '_')}_{variables["instanceId"]}.c",
+                ? $"{baseName}.c"
+                : $"{baseName}_{variables["instanceId"]}.c",
             FileType = GeneratedFileType.Source,
             SourceModuleId = moduleId,
             Content = TemplateEngine.RenderBlock(template, "source", variables)

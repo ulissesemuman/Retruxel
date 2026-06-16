@@ -160,18 +160,8 @@ public class SmsRenderBackend
         sb.AppendLine("    }");
         sb.AppendLine();
 
-        // Sprites - ONLY flush when dirty
-        sb.AppendLine("    if (state->spritesDirty) {");
-        sb.AppendLine("        SMS_initSprites();");
-        sb.AppendLine("        for (i = 0; i < state->sprites.count && i < 64; i++) {");
-        sb.AppendLine("            SpriteRenderState* sprite = &state->sprites.sprites[i];");
-        sb.AppendLine("            if (sprite->visible) {");
-        sb.AppendLine("                SMS_addSprite(sprite->x, sprite->y, sprite->tileIndex);");
-        sb.AppendLine("            }");
-        sb.AppendLine("        }");
-        sb.AppendLine("        SMS_copySpritestoSAT();");
-        sb.AppendLine("    }");
-        sb.AppendLine();
+        // Sprites managed directly by main loop via SMS_initSprites/addSprite/copySpritestoSAT.
+        // Engine_Render does NOT touch the SAT — doing so would cause a double-write per frame.
 
         // Scroll
         sb.AppendLine("    if (state->scrollDirty) {");

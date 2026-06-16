@@ -50,11 +50,11 @@ public class SceneData
     public List<TextArrayData> TextArrays { get; set; } = [];
 
     /// <summary>
-    /// Scene-level actions (e.g. gravity applied to all entities in the scene).
-    /// Each entry is a configured ActionInstance with scope="scene".
+    /// Scene-level behaviors (e.g. gravity applied to all entities in the scene).
+    /// Each entry is a configured BehaviorInstance with scope="scene".
     /// </summary>
-    [JsonPropertyName("sceneActions")]
-    public List<ActionInstance> SceneActions { get; set; } = [];
+    [JsonPropertyName("sceneBehaviors")]
+    public List<ActionInstance> SceneBehaviors { get; set; } = [];
 
     /// <summary>
     /// HUD configuration for this scene.
@@ -76,4 +76,7 @@ public class SceneData
     /// </summary>
     [JsonPropertyName("backgroundScroll")]
     public BackgroundScrollData? BackgroundScroll { get; set; }
+    
+    [JsonPropertyName("spriteBorderBehaviorDefault")]
+    public string SpriteBorderBehaviorDefault { get; set; } = "Clamp";
 }

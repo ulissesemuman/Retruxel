@@ -136,12 +136,31 @@ public class ActionRegistry
     {
         if (raw is null) return [];
 
-        return raw.Select(p => new ActionParameterDef(
-            Name:    p.Name    ?? string.Empty,
-            Type:    p.Type    ?? "string",
-            Default: ParseDefault(p.Default, p.Type),
-            Label:   p.Label   ?? p.Name ?? string.Empty
-        )).ToArray();
+        return raw.Select(p =>
+        {
+            // Detect pipe-separated options in the default string: "patrol|walk|idle"
+            string[] options = [];
+            string? defaultStr = p.Default?.ValueKind == JsonValueKind.String
+                ? p.Default.Value.GetString() : null;
+            if (defaultStr is not null && defaultStr.Contains('|'))
+            {
+                options = defaultStr.Split('|');
+                defaultStr = options[0]; // first option is the actual default
+            }
+
+            var parsedDefault = options.Length > 0
+                ? (object)(defaultStr ?? string.Empty)
+                : ParseDefault(p.Default, p.Type);
+
+            return new ActionParameterDef(
+                Name:      p.Name      ?? string.Empty,
+                Type:      p.Type      ?? "string",
+                Default:   parsedDefault,
+                Label:     p.Label     ?? p.Name ?? string.Empty,
+                EntityRef: p.EntityRef,
+                Options:   options
+            );
+        }).ToArray();
     }
 
     private static object ParseDefault(JsonElement? element, string? type)
@@ -175,9 +194,10 @@ public class ActionRegistry
 
     private class ActionParameterDefRaw
     {
-        public string?       Name    { get; set; }
-        public string?       Type    { get; set; }
-        public JsonElement?  Default { get; set; }
-        public string?       Label   { get; set; }
+        public string?       Name      { get; set; }
+        public string?       Type      { get; set; }
+        public JsonElement?  Default   { get; set; }
+        public string?       Label     { get; set; }
+        public bool          EntityRef { get; set; }
     }
 }

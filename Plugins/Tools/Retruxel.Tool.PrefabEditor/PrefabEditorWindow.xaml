@@ -254,11 +254,15 @@
                         </StackPanel>
                     </Grid>
 
-                    <!-- ACTIONS -->
+                    <!-- ACTIONS (OnInput) -->
                     <Border Height="1" Background="{StaticResource BrushSurfaceContainerHighest}" Margin="0,16,0,16"/>
-                    <TextBlock Text="ACTIONS"
+                    <TextBlock Text="ON INPUT — ACTIONS"
                                Style="{StaticResource TextLabelCaps}"
                                Foreground="{StaticResource BrushPrimary}"
+                               Margin="0,0,0,4"/>
+                    <TextBlock Text="Triggered by player input via Input Mapping below."
+                               FontFamily="Consolas" FontSize="9"
+                               Foreground="{StaticResource BrushOnSurfaceVariant}"
                                Margin="0,0,0,12"/>
 
                     <StackPanel x:Name="ActionsPanel" Margin="0,0,0,8"/>
@@ -273,7 +277,63 @@
                                 <Setter Property="BorderBrush" Value="{StaticResource BrushSurfaceContainerHighest}"/>
                             </Style>
                         </Button.Style>
-                        <TextBlock Text="+ ADD ACTION"
+                        <TextBlock Text="+ ADD ON INPUT ACTION"
+                                   Style="{StaticResource TextLabelCaps}"
+                                   Foreground="{StaticResource BrushOnSurfaceVariant}"/>
+                    </Button>
+
+                    <!-- ON VBLANK ACTIONS -->
+                    <Border Height="1" Background="{StaticResource BrushSurfaceContainerHighest}" Margin="0,16,0,16"/>
+                    <TextBlock Text="ON VBLANK — ACTIONS"
+                               Style="{StaticResource TextLabelCaps}"
+                               Foreground="{StaticResource BrushPrimary}"
+                               Margin="0,0,0,4"/>
+                    <TextBlock Text="Called every frame. Overrides scene behaviors with same actionId; others are additive."
+                               FontFamily="Consolas" FontSize="9"
+                               Foreground="{StaticResource BrushOnSurfaceVariant}"
+                               Margin="0,0,0,12"/>
+
+                    <StackPanel x:Name="VBlankActionsPanel" Margin="0,0,0,8"/>
+
+                    <Button x:Name="BtnAddVBlankAction"
+                            Height="40"
+                            Margin="0,0,0,0"
+                            Click="BtnAddVBlankAction_Click">
+                        <Button.Style>
+                            <Style TargetType="Button" BasedOn="{StaticResource ButtonGhost}">
+                                <Setter Property="BorderThickness" Value="1"/>
+                                <Setter Property="BorderBrush" Value="{StaticResource BrushSurfaceContainerHighest}"/>
+                            </Style>
+                        </Button.Style>
+                        <TextBlock Text="+ ADD ON VBLANK ACTION"
+                                   Style="{StaticResource TextLabelCaps}"
+                                   Foreground="{StaticResource BrushOnSurfaceVariant}"/>
+                    </Button>
+
+                    <!-- ON START ACTIONS -->
+                    <Border Height="1" Background="{StaticResource BrushSurfaceContainerHighest}" Margin="0,16,0,16"/>
+                    <TextBlock Text="ON START — ACTIONS"
+                               Style="{StaticResource TextLabelCaps}"
+                               Foreground="{StaticResource BrushPrimary}"
+                               Margin="0,0,0,4"/>
+                    <TextBlock Text="Called once when the entity initializes."
+                               FontFamily="Consolas" FontSize="9"
+                               Foreground="{StaticResource BrushOnSurfaceVariant}"
+                               Margin="0,0,0,12"/>
+
+                    <StackPanel x:Name="StartActionsPanel" Margin="0,0,0,8"/>
+
+                    <Button x:Name="BtnAddStartAction"
+                            Height="40"
+                            Margin="0,0,0,0"
+                            Click="BtnAddStartAction_Click">
+                        <Button.Style>
+                            <Style TargetType="Button" BasedOn="{StaticResource ButtonGhost}">
+                                <Setter Property="BorderThickness" Value="1"/>
+                                <Setter Property="BorderBrush" Value="{StaticResource BrushSurfaceContainerHighest}"/>
+                            </Style>
+                        </Button.Style>
+                        <TextBlock Text="+ ADD ON START ACTION"
                                    Style="{StaticResource TextLabelCaps}"
                                    Foreground="{StaticResource BrushOnSurfaceVariant}"/>
                     </Button>

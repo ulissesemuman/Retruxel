@@ -60,9 +60,11 @@ void main(void) {
 {{/each}}
 
         // OnVBlank: Game logic modules
+        SMS_initSprites();
 {{#each onVBlankCalls}}
         {{this}}
 {{/each}}
+        SMS_copySpritestoSAT();
 
         // Render: Apply state changes to VRAM
         Engine_Render(&g_gameState);

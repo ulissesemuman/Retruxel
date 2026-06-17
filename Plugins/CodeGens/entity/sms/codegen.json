@@ -26,6 +26,7 @@
     "collisionIsPlatform":{ "from": "module", "path": "collisionIsPlatform","default": false },
     "snapPixels":         { "from": "module", "path": "snapPixels",         "default": 4 },
     "spriteBorderBehavior":{ "from": "module", "path": "spriteBorderBehavior","default": "None" },
+    "useSoftwareSprites":   { "from": "module", "path": "useSoftwareSprites",  "default": false },
     "actions":         { "from": "module", "path": "actions",         "default": [] },
     "inputMappings":   { "from": "module", "path": "inputMappings",   "default": [] },
     "tilesData": {

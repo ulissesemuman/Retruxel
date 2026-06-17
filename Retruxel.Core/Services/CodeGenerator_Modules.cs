@@ -23,20 +23,22 @@ public partial class CodeGenerator
     /// The wrapper only modifies Serialize() — all other IModule members
     /// delegate to the original module unchanged.
     /// </summary>
-    private static IModule InjectContextFlags(IModule module, HashSet<string> presentModuleIds)
+    private static IModule InjectContextFlags(IModule module, HashSet<string> presentModuleIds, bool hasHardwareSprites = true)
     {
         if (module.ModuleId == "entity")
         {
-            var usePhysics = presentModuleIds.Contains("physics");
-            var useInput = presentModuleIds.Contains("input");
+            var usePhysics   = presentModuleIds.Contains("physics");
+            var useInput     = presentModuleIds.Contains("input");
             var useAnimation = presentModuleIds.Contains("animation");
+            var useSoftwareSprites = !hasHardwareSprites;
 
-            if (usePhysics || useInput || useAnimation)
+            if (usePhysics || useInput || useAnimation || useSoftwareSprites)
                 return new ContextualModule(module, json => InjectFlags(json, new()
                 {
-                    ["usePhysics"] = usePhysics,
-                    ["useInput"] = useInput,
-                    ["useAnimation"] = useAnimation
+                    ["usePhysics"]         = usePhysics,
+                    ["useInput"]           = useInput,
+                    ["useAnimation"]       = useAnimation,
+                    ["useSoftwareSprites"] = useSoftwareSprites
                 }));
         }
 

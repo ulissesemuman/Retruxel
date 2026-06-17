@@ -57,6 +57,16 @@ public class TargetSpecs
     /// <summary>How many simultaneous palettes are available for sprites.</summary>
     public int SpritePalettes { get; set; }
 
+    /// <summary>
+    /// Zero-based indices of the palette slots that sprites can use.
+    /// Drives the palette slot dropdown in the Prefab editor.
+    ///
+    /// Ex: [1]    (SMS — sprites always use the Sprite palette)
+    ///     [4, 5, 6, 7] (NES — sprite palettes are slots 4–7)
+    /// Empty means no restriction (all slots allowed).
+    /// </summary>
+    public int[] AllowedSpritePaletteSlots { get; set; } = [];
+
     // ── Planes ────────────────────────────────────────────────────────────────
 
     /// <summary>
@@ -91,6 +101,17 @@ public class TargetSpecs
 
     /// <summary>Maximum sprites on screen simultaneously.</summary>
     public int MaxSpritesOnScreen { get; set; }
+
+    /// <summary>
+    /// Whether this target has dedicated hardware sprite support (OAM/Sprite RAM).
+    ///
+    /// true  → CodeGen uses native hardware sprite commands (SMS_addSprite, oam_spr, etc.)
+    /// false → CodeGen must inject a software blitter routine (save BG, blit pixels, restore).
+    ///
+    /// Targets with hardware sprites: SMS, GG, NES, SNES, Mega Drive, Game Boy, PC Engine, Neo Geo.
+    /// Targets without: Amstrad CPC, Atari 8-bit, C64 (overflow), MSX1.
+    /// </summary>
+    public bool SpritesSupported { get; set; } = true;
 
     /// <summary>Base sprite size in pixels. Ex: 8×8 (SMS default), 8×8 (NES)</summary>
     public int SpriteWidth  { get; set; } = 8;
@@ -221,6 +242,16 @@ public class PlaneSpecs
     /// Ex: 1 (SMS — 2 palettes: 0 or 1), 2 (Mega Drive — 4 palettes: 0–3)
     /// </summary>
     public int PaletteBitsPerTile { get; set; }
+
+    /// <summary>
+    /// Zero-based indices of the palette slots that tiles on this plane can use.
+    /// Drives the palette slot dropdown in the plane/layer editor.
+    ///
+    /// Ex: [0, 1] (SMS BG — both BG and Sprite palettes are valid for BG tiles)
+    ///     [0, 1, 2, 3] (Mega Drive Plane A — 4 palettes)
+    /// Empty means no restriction (all slots allowed).
+    /// </summary>
+    public int[] AllowedPaletteSlots { get; set; } = [];
 
     /// <summary>Default plane width in tiles when creating a new layer.</summary>
     public int DefaultWidth { get; set; } = 32;

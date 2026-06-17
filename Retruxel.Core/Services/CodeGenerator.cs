@@ -863,7 +863,7 @@ public partial class CodeGenerator
             foreach (var module in instances)
             {
                 var baseJson         = originalJsonByModule.TryGetValue(module, out var orig) ? orig : module.Serialize();
-                var contextualModule = InjectContextFlags(module, presentModuleIds);
+                var contextualModule = InjectContextFlags(module, presentModuleIds, _target.HasHardwareSprites);
                 var moduleJson       = MergeJson(baseJson, contextualModule.Serialize());
 
                 List<GeneratedFile> generatedFiles;

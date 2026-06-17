@@ -202,7 +202,7 @@ public partial class SceneEditorView : UserControl
             {
                 SlotIndex = i,
                 Label     = target.GetPaletteSlotType(i).ToString(),
-                Colors    = Enumerable.Repeat("#000000", target.GetColorsPerSlot()).ToList()
+                Colors    = Enumerable.Repeat("-1", target.GetColorsPerSlot()).ToList()
             });
         }
     }

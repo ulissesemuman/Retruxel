@@ -38,8 +38,8 @@ public class SmsTarget : ITarget, IPaletteConverter
         ColorsPerTile = 16,
         ColorsPerPalette = 16,
         SimultaneousPalettes = 2,
-        BgPalettes = 2,   // both palettes available for BG tiles
-        SpritePalettes = 2,   // both palettes available for sprites
+        BgPalettes = 2,         // both palettes available for BG tiles
+        SpritePalettes = 1,      // sprites only use slot 1 (Sprite palette)
 
         // BG Planes
         // SMS has a single scrollable BG plane (Name Table).
@@ -56,6 +56,7 @@ public class SmsTarget : ITarget, IPaletteConverter
                 PaletteMode            = PaletteMode.PerTile,
                 BitsPerPixel           = 4,   // 16-color → 4bpp → 32 bytes per tile
                 PaletteBitsPerTile     = 1,   // 1 bit → 2 palettes (0 or 1)
+                AllowedPaletteSlots     = [0, 1],
                 DefaultWidth           = 32,
                 DefaultHeight          = 28,
                 MaxWidth               = 64,
@@ -76,6 +77,7 @@ public class SmsTarget : ITarget, IPaletteConverter
         SpriteWidth = 8,
         SpriteHeight = 8,
         SupportsDoubleHeightSprites = true,   // 8×16 mode via VDP register
+        AllowedSpritePaletteSlots = [1],      // SMS sprites always use the Sprite palette (slot 1)
 
         // Memory
         RamBytes = 8192,

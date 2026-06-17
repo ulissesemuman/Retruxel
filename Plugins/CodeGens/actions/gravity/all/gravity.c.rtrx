@@ -5,12 +5,18 @@ void {{entityName}}_action_gravity({{entityName}}_Params* p);
 // @retruxel:block source
 // Action: gravity — passive jump cut + fast fall (runs every frame via update block)
 void {{entityName}}_action_gravity({{entityName}}_Params* p) {
+    {{#if params.onPress}}
+    {{#if params.jumpButtonConst}}
+    // Reset edge-trigger latch only when button is physically released
+    if (!(SMS_getKeysStatus() & {{params.jumpButtonConst}})) {
+        p->prev_button_held = 0;
+    }
+    {{/if}}
+    {{/if}}
+
     if (p->on_ground) {
         {{#if params.coyoteFrames}}
         p->coyote_frames = {{params.coyoteFrames}};
-        {{/if}}
-        {{#if params.onPress}}
-        p->prev_button_held = 0;
         {{/if}}
         return;
     }
@@ -41,9 +47,6 @@ void {{entityName}}_action_gravity({{entityName}}_Params* p) {
             grav = (signed char)({{params.strength}} * {{params.fallStrengthMultiplier}});
             p->long_jump_active = 0;
             p->long_jump_timer = 0;
-            {{#if params.onPress}}
-            p->prev_button_held = 0;
-            {{/if}}
         }
         p->vel_y += grav;
     }

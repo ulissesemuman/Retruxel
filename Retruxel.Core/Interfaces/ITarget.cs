@@ -166,10 +166,30 @@ public interface ITarget
     int GetColorsPerSlot() => 16;
 
     /// <summary>
+    /// Whether this target has dedicated hardware sprite support.
+    /// When false, the entity/sprite CodeGen must use a software blitter instead of
+    /// native OAM writes. Delegates to Specs.SpritesSupported.
+    /// </summary>
+    bool HasHardwareSprites => Specs.SpritesSupported;
+
+    /// <summary>
     /// Returns the type of a specific palette slot.
     /// Used by the editor to label slots correctly.
     /// </summary>
     PaletteSlotType GetPaletteSlotType(int slotIndex) => PaletteSlotType.Shared;
+
+    /// <summary>
+    /// Returns the palette slot indices that sprites (entities/prefabs) are allowed to use.
+    /// Delegates to Specs.AllowedSpritePaletteSlots when non-empty.
+    /// Targets override this only when the allowed slots cannot be expressed statically.
+    /// </summary>
+    int[] GetAllowedSpritePaletteSlots()
+    {
+        if (Specs.AllowedSpritePaletteSlots.Length > 0)
+            return Specs.AllowedSpritePaletteSlots;
+        // Fallback: all slots
+        return Enumerable.Range(0, GetPaletteSlotCount()).ToArray();
+    }
 
     /// <summary>
     /// Returns the font converter for this target.

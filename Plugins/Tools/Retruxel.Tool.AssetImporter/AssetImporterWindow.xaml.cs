@@ -69,7 +69,6 @@ public partial class AssetImporterWindow : Window
     {
         var loc = ServiceLocator.Localization;
         TxtTitle.Text = loc.Translate("assetimporter.title");
-        // Labels already set in XAML
     }
 
     /// <summary>
@@ -81,7 +80,6 @@ public partial class AssetImporterWindow : Window
         var planes = _target.Specs.Planes;
         if (planes == null || planes.Length == 0)
         {
-            // Fallback: single generic BG plane
             var rb = new RadioButton
             {
                 Content = "BG",
@@ -135,25 +133,19 @@ public partial class AssetImporterWindow : Window
     /// <summary>Backward-compatible overload — maps a legacy regionId to the closest PlaneId.</summary>
     public void PreSelectRegion(string regionId) => PreSelectPlane(regionId);
 
-
     private void TitleBar_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
- => DragMove();
+        => DragMove();
 
     private void BtnClose_Click(object sender, RoutedEventArgs e)
- => Close();
+        => Close();
 
     private void BtnCancel_Click(object sender, RoutedEventArgs e)
- => Close();
+        => Close();
 
     private void RbSource_Changed(object sender, RoutedEventArgs e)
     {
-        // Don't process during initialization
-        if (!_isInitialized)
-            return;
-
-        // Check if controls are initialized
-        if (RbSourceFile == null || RbSourceEmulator == null || DropHint == null || EmulatorHint == null || DropZone == null)
-            return;
+        if (!_isInitialized) return;
+        if (RbSourceFile == null || RbSourceEmulator == null || DropHint == null || EmulatorHint == null || DropZone == null) return;
 
         if (RbSourceFile.IsChecked == true)
         {
@@ -189,9 +181,7 @@ public partial class AssetImporterWindow : Window
             });
 
             if (result != null && result.ContainsKey("captureResult"))
-            {
                 ProcessEmulatorCapture(result["captureResult"]);
-            }
         }
         catch (Exception ex)
         {
@@ -201,9 +191,6 @@ public partial class AssetImporterWindow : Window
 
     private void ProcessEmulatorCapture(object captureData)
     {
-        // TODO: Convert CaptureResult to PNG and process
-        // For now, show placeholder
-        var loc = ServiceLocator.Localization;
         ShowValidation("Emulator capture processing not yet implemented.");
     }
 
@@ -217,15 +204,12 @@ public partial class AssetImporterWindow : Window
         };
 
         if (dialog.ShowDialog() != true) return;
-
         LoadSourceImage(dialog.FileName);
     }
 
     private void DropZone_DragOver(object sender, DragEventArgs e)
     {
-        e.Effects = e.Data.GetDataPresent(DataFormats.FileDrop)
-            ? DragDropEffects.Copy
-            : DragDropEffects.None;
+        e.Effects = e.Data.GetDataPresent(DataFormats.FileDrop) ? DragDropEffects.Copy : DragDropEffects.None;
         e.Handled = true;
     }
 
@@ -238,8 +222,7 @@ public partial class AssetImporterWindow : Window
 
         if (png is null)
         {
-            var loc = ServiceLocator.Localization;
-            ShowValidation(loc.Translate("assetimporter.error.only_png"));
+            ShowValidation(ServiceLocator.Localization.Translate("assetimporter.error.only_png"));
             return;
         }
 
@@ -253,25 +236,17 @@ public partial class AssetImporterWindow : Window
 
         try
         {
-            // Validate dimensions before preview
             using var stream = File.OpenRead(pngPath);
             using var bitmap = SKBitmap.Decode(stream);
-
             var loc = ServiceLocator.Localization;
 
-            if (bitmap is null)
-            {
-                ShowValidation(loc.Translate("assetimporter.error.decode_failed"));
-                return;
-            }
-
+            if (bitmap is null) { ShowValidation(loc.Translate("assetimporter.error.decode_failed")); return; }
             if (bitmap.Width % 8 != 0 || bitmap.Height % 8 != 0)
             {
                 ShowValidation(string.Format(loc.Translate("assetimporter.error.dimensions"), bitmap.Width, bitmap.Height));
                 return;
             }
 
-            // Show source preview
             _sourcePngPath = pngPath;
             ImgSource.Source = ImageProcessing.ConvertSkBitmapToBitmapSource(LoadBitmapFromPath(pngPath));
             ImgSource.Visibility = Visibility.Visible;
@@ -281,20 +256,16 @@ public partial class AssetImporterWindow : Window
             TxtSourceInfo.Text = string.Format(loc.Translate("assetimporter.info.source"), bitmap.Width, bitmap.Height, tileCount);
             TxtTileCount.Text = string.Format(loc.Translate("assetimporter.info.tiles"), tileCount);
 
-            // Auto-fill asset name from filename
             if (string.IsNullOrEmpty(TxtAssetName.Text))
                 TxtAssetName.Text = Path.GetFileNameWithoutExtension(pngPath);
 
-            // Generate reduced preview
             GenerateReducedPreview(pngPath);
-
             ClearValidation();
             UpdateImportButton();
         }
         catch (Exception ex)
         {
-            var loc = ServiceLocator.Localization;
-            ShowValidation(string.Format(loc.Translate("assetimporter.error.loading"), ex.Message));
+            ShowValidation(string.Format(ServiceLocator.Localization.Translate("assetimporter.error.loading"), ex.Message));
         }
     }
 
@@ -309,15 +280,12 @@ public partial class AssetImporterWindow : Window
             ImgReduced.Visibility = Visibility.Visible;
             ReducedHint.Visibility = Visibility.Collapsed;
 
-            // Count unique colors in reduced image
-            var loc = ServiceLocator.Localization;
             var uniqueColors = CountUniqueColors(_reducedPreview);
-            TxtReducedInfo.Text = string.Format(loc.Translate("assetimporter.info.colors"), uniqueColors, _target.DisplayName);
+            TxtReducedInfo.Text = string.Format(ServiceLocator.Localization.Translate("assetimporter.info.colors"), uniqueColors, _target.DisplayName);
         }
         catch (Exception ex)
         {
-            var loc = ServiceLocator.Localization;
-            TxtReducedInfo.Text = string.Format(loc.Translate("assetimporter.error.preview"), ex.Message);
+            TxtReducedInfo.Text = string.Format(ServiceLocator.Localization.Translate("assetimporter.error.preview"), ex.Message);
         }
     }
 
@@ -332,95 +300,59 @@ public partial class AssetImporterWindow : Window
         var loc = ServiceLocator.Localization;
         var name = TxtAssetName.Text.Trim();
 
-        if (string.IsNullOrEmpty(name))
-        {
-            ShowValidation(loc.Translate("assetimporter.error.name_empty"));
-            return false;
-        }
-
-        if (name.IndexOfAny(Path.GetInvalidFileNameChars()) >= 0)
-        {
-            ShowValidation(loc.Translate("assetimporter.error.name_invalid"));
-            return false;
-        }
-
-        if (name.Contains(' '))
-        {
-            ShowValidation(loc.Translate("assetimporter.error.name_spaces"));
-            return false;
-        }
+        if (string.IsNullOrEmpty(name)) { ShowValidation(loc.Translate("assetimporter.error.name_empty")); return false; }
+        if (name.IndexOfAny(Path.GetInvalidFileNameChars()) >= 0) { ShowValidation(loc.Translate("assetimporter.error.name_invalid")); return false; }
+        if (name.Contains(' ')) { ShowValidation(loc.Translate("assetimporter.error.name_spaces")); return false; }
 
         ClearValidation();
         return true;
     }
 
     private void UpdateImportButton()
-    {
-        BtnImport.IsEnabled = _sourcePngPath is not null && ValidateAssetName();
-    }
+        => BtnImport.IsEnabled = _sourcePngPath is not null && ValidateAssetName();
 
     private void BtnImport_Click(object sender, RoutedEventArgs e)
     {
         if (_sourcePngPath is null || _reducedPreview is null) return;
 
         var assetName = TxtAssetName.Text.Trim();
-        var planeId   = GetSelectedPlaneId();
+        var planeId = GetSelectedPlaneId();
 
         try
         {
             SKBitmap skBitmap = LoadBitmapFromPath(_sourcePngPath);
 
-            // Determine target color count from target specs
-            //int paletteSlotCount = _target.GetPaletteSlotCount();
             int colorsPerSlot = _target.GetColorsPerSlot();
-            int targetColorCount = /*paletteSlotCount **/ colorsPerSlot;
 
-            // Open palette optimization preview window
             var optimizationWindow = new PaletteOptimizationWindow(
                 skBitmap,
-                targetColorCount,
-                DistanceMode.LAB, // Use LAB color space for better perceptual matching
-                _target);
-
-            optimizationWindow.Owner = this;
-
-            if (optimizationWindow.ShowDialog() != true)
+                colorsPerSlot,
+                DistanceMode.LAB,
+                _target)
             {
-                // User cancelled optimization
-                return;
-            }
+                Owner = this
+            };
 
-            // Get optimized bitmap and palette
+            if (optimizationWindow.ShowDialog() != true) return;
+
             var optimizedBitmap = optimizationWindow.OptimizedBitmap;
             var optimizedPalette = optimizationWindow.OptimizedPalette;
-
-            // Get color reduxtion parameters
             var selectedDiversity = optimizationWindow.SelectedDiversity;
             var colorSpace = optimizationWindow.ColorSpace;
-
-            // Convert to indexed PNG
-            var indexedPngService = new Retruxel.Lib.ImageProcessing.MapIndexService();
             var palette = optimizedPalette.Select(c => new HardwareColor(c.R, c.G, c.B)).ToList();
 
-            // Show palette import dialog if scene is available
-            if (_currentScene != null)
-            {
-                ShowPaletteImportDialog(palette, _currentScene, _target);
-            }
-
-            optimizedBitmap.Dispose();
-
+            // mapIndex produced by the optimizer (assetColor indices 0..N-1)
             var mapIndex = optimizationWindow.MapIndex;
 
+            // Show palette import dialog and potentially rewrite mapIndex
+            if (_currentScene != null)
+                mapIndex = ShowPaletteImportDialog(palette, mapIndex, _currentScene, _target);
+
+            // Remap for transparent color swap (ReplaceSlot path)
             if (_transparentColorIndex != 0 && _chosenPaletteSlot != -1)
             {
-                var slot = _currentScene.PaletteSlots[_chosenPaletteSlot];
-                var slotColors = new List<HardwareColor>();
-
-                foreach (var hexColor in slot.Colors)
-                {
-                    slotColors.Add(HardwareColor.FromHex(hexColor));
-                }
+                var slot = _currentScene!.PaletteSlots[_chosenPaletteSlot];
+                var slotColors = slot.Colors.Select(HardwareColor.FromHex).ToList();
 
                 mapIndex = IndexedBitmapRenderer.EncodeFromMapIndex(
                     mapIndex,
@@ -430,10 +362,8 @@ public partial class AssetImporterWindow : Window
                     _reducedPreview.Height);
             }
 
-            // Import using ORIGINAL file (_sourcePngPath)
-            // AssetImporter copies original to Assets/Source/
-            // Stores AssetGenerationParams (palette, colorSpace, diversity)
-            // Editors use AssetProcessorTool to process on-the-fly
+            optimizedBitmap.Dispose();
+
             ImportedAsset = Services.AssetImporter.Import(
                 assetName,
                 _sourcePngPath,
@@ -455,17 +385,12 @@ public partial class AssetImporterWindow : Window
         }
         catch (Exception ex)
         {
-            var loc = ServiceLocator.Localization;
-            ShowValidation(string.Format(loc.Translate("assetimporter.error.unexpected"), ex.Message));
+            ShowValidation(string.Format(ServiceLocator.Localization.Translate("assetimporter.error.unexpected"), ex.Message));
         }
     }
 
-
-    private void ShowValidation(string message)
- => TxtValidation.Text = message;
-
-    private void ClearValidation()
- => TxtValidation.Text = string.Empty;
+    private void ShowValidation(string message) => TxtValidation.Text = message;
+    private void ClearValidation() => TxtValidation.Text = string.Empty;
 
     private static SKBitmap? LoadBitmapFromPath(string path)
     {
@@ -480,8 +405,7 @@ public partial class AssetImporterWindow : Window
             for (int x = 0; x < bitmap.Width; x++)
             {
                 var p = bitmap.GetPixel(x, y);
-                if (p.Alpha > 0)
-                    colors.Add((uint)((p.Red << 16) | (p.Green << 8) | p.Blue));
+                if (p.Alpha > 0) colors.Add((uint)((p.Red << 16) | (p.Green << 8) | p.Blue));
             }
         return colors.Count;
     }
@@ -492,48 +416,62 @@ public partial class AssetImporterWindow : Window
         base.OnClosed(e);
     }
 
-    private void ShowPaletteImportDialog(
+    /// <summary>
+    /// Shows the palette import dialog. Returns the (possibly remapped) mapIndex.
+    /// For MergeSlot: rewrites every pixel index so it points to the correct position
+    /// in the merged slot palette.
+    /// </summary>
+    private byte[] ShowPaletteImportDialog(
         IReadOnlyList<HardwareColor> palette,
+        byte[] mapIndex,
         SceneData currentScene,
         ITarget target)
     {
-        List<string> hexColors = palette.Select(c => c.ToHex()).ToList();
+        var hexColors = palette.Select(c => c.ToHex()).ToList();
 
-        var dialog = new PaletteImportDialog(
-            hexColors,
-            currentScene,
-            target)
-        {
-            Owner = this
-        };
-
-        if (dialog.ShowDialog() != true) return;
+        var dialog = new PaletteImportDialog(hexColors, currentScene, target) { Owner = this };
+        if (dialog.ShowDialog() != true) return mapIndex;
 
         _transparentColorIndex = dialog.TransparentColorIndex;
 
         switch (dialog.Result)
         {
             case PaletteImportResult.ReplaceSlot:
+            {
                 var slot = currentScene.PaletteSlots[dialog.ChosenSlot];
-
-                _oldColors = new List<HardwareColor>();
-
-                foreach (var hexColor in slot.Colors)
-                {
-                    _oldColors.Add(HardwareColor.FromHex(hexColor));
-                }
-
+                _oldColors = slot.Colors.Select(HardwareColor.FromHex).ToList();
                 _chosenPaletteSlot = slot.SlotIndex;
 
                 slot.Colors.Clear();
-
                 for (int i = 0; i < Math.Min(hexColors.Count, target.GetColorsPerSlot()); i++)
                     slot.Colors.Add(hexColors[i]);
 
                 break;
+            }
+
+            case PaletteImportResult.MergeSlot:
+            {
+                var slot = currentScene.PaletteSlots[dialog.ChosenSlot];
+                _chosenPaletteSlot = slot.SlotIndex;
+
+                // Apply merged palette to slot
+                slot.Colors.Clear();
+                foreach (var c in dialog.MergedColors!)
+                    slot.Colors.Add(c);
+
+                // Rewrite mapIndex: each pixel value is an assetColor index → remap to slot index
+                var remap = dialog.MergeRemap!;
+                var remapped = new byte[mapIndex.Length];
+                for (int p = 0; p < mapIndex.Length; p++)
+                    remapped[p] = (byte)remap[mapIndex[p]];
+
+                return remapped;
+            }
 
             case PaletteImportResult.KeepCurrent:
                 break;
         }
+
+        return mapIndex;
     }
 }

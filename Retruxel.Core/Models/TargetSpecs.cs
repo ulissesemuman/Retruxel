@@ -60,12 +60,18 @@ public class TargetSpecs
     /// <summary>
     /// Zero-based indices of the palette slots that sprites can use.
     /// Drives the palette slot dropdown in the Prefab editor.
-    ///
-    /// Ex: [1]    (SMS — sprites always use the Sprite palette)
-    ///     [4, 5, 6, 7] (NES — sprite palettes are slots 4–7)
+    /// Ex: [1] (SMS — sprites always use the Sprite palette)
     /// Empty means no restriction (all slots allowed).
     /// </summary>
     public int[] AllowedSpritePaletteSlots { get; set; } = [];
+
+    /// <summary>
+    /// Whether this target has dedicated hardware sprite support (OAM/Sprite RAM).
+    /// true  → CodeGen uses native hardware sprite commands.
+    /// false → CodeGen must inject a software blitter routine.
+    /// Default: true (all existing targets have hardware sprites).
+    /// </summary>
+    public bool SpritesSupported { get; set; } = true;
 
     // ── Planes ────────────────────────────────────────────────────────────────
 
@@ -101,17 +107,6 @@ public class TargetSpecs
 
     /// <summary>Maximum sprites on screen simultaneously.</summary>
     public int MaxSpritesOnScreen { get; set; }
-
-    /// <summary>
-    /// Whether this target has dedicated hardware sprite support (OAM/Sprite RAM).
-    ///
-    /// true  → CodeGen uses native hardware sprite commands (SMS_addSprite, oam_spr, etc.)
-    /// false → CodeGen must inject a software blitter routine (save BG, blit pixels, restore).
-    ///
-    /// Targets with hardware sprites: SMS, GG, NES, SNES, Mega Drive, Game Boy, PC Engine, Neo Geo.
-    /// Targets without: Amstrad CPC, Atari 8-bit, C64 (overflow), MSX1.
-    /// </summary>
-    public bool SpritesSupported { get; set; } = true;
 
     /// <summary>Base sprite size in pixels. Ex: 8×8 (SMS default), 8×8 (NES)</summary>
     public int SpriteWidth  { get; set; } = 8;
@@ -246,9 +241,7 @@ public class PlaneSpecs
     /// <summary>
     /// Zero-based indices of the palette slots that tiles on this plane can use.
     /// Drives the palette slot dropdown in the plane/layer editor.
-    ///
-    /// Ex: [0, 1] (SMS BG — both BG and Sprite palettes are valid for BG tiles)
-    ///     [0, 1, 2, 3] (Mega Drive Plane A — 4 palettes)
+    /// Ex: [0, 1] (SMS BG — both palettes valid for BG tiles)
     /// Empty means no restriction (all slots allowed).
     /// </summary>
     public int[] AllowedPaletteSlots { get; set; } = [];
@@ -265,6 +258,46 @@ public class PlaneSpecs
     /// <summary>Maximum plane height in tiles.</summary>
     public int MaxHeight { get; set; } = 64;
 
+    // ── Scroll ────────────────────────────────────────────────────────────────
+
+    /// <summary>
+    /// Physical width of the hardware Name Table in tiles.
+    /// This is the actual VRAM structure size, which may differ from the screen width.
+    ///
+    /// Ex: SMS = 32 (256px), Genesis Plane A = 128 (1024px), SNES = 64 (512px)
+    ///
+    /// Targets without a Name Table (SG-1000, ColecoVision) set this equal to DefaultWidth.
+    /// </summary>
+    public int NameTableWidth { get; set; } = 32;
+
+    /// <summary>
+    /// Physical height of the hardware Name Table in tiles.
+    /// Ex: SMS = 28, Genesis = 64, SNES = 32 or 64 depending on mode.
+    /// </summary>
+    public int NameTableHeight { get; set; } = 28;
+
+    /// <summary>
+    /// Whether the hardware VDP/PPU supports horizontal scroll via a register.
+    /// False for SG-1000, ColecoVision, MSX1, Amstrad CPC.
+    /// </summary>
+    public bool SupportsHardwareScrollX { get; set; } = false;
+
+    /// <summary>
+    /// Whether the hardware VDP/PPU supports vertical scroll via a register.
+    /// False for SG-1000, ColecoVision, MSX1.
+    /// Note: SMS supports vertical scroll but it is global-only (no per-column Y scroll).
+    /// </summary>
+    public bool SupportsHardwareScrollY { get; set; } = false;
+
+    /// <summary>
+    /// How the engine handles maps larger than the Name Table.
+    /// None: no streaming needed (map fits in Name Table or console has no scroll).
+    /// ColumnStreaming: engine refills one column per frame as camera moves horizontally.
+    /// RowStreaming: engine refills one row per frame as camera moves vertically.
+    /// Both: engine streams both axes (needed for full free-scroll on hardware like SMS).
+    /// </summary>
+    public ScrollStreamingMode StreamingMode { get; set; } = ScrollStreamingMode.None;
+
     /// <summary>
     /// Bytes consumed by one 8×8 tile in this plane.
     /// Derived from BitsPerPixel — not set directly.
@@ -276,8 +309,23 @@ public class PlaneSpecs
 }
 
 /// <summary>
-/// Defines how palettes are assigned to tiles in a plane.
+/// Defines how the engine handles maps larger than the hardware Name Table.
+/// Used by the code generator to emit the correct scroll/streaming logic.
 /// </summary>
+public enum ScrollStreamingMode
+{
+    /// <summary>No streaming needed. Map fits within the Name Table or console has no scroll.</summary>
+    None,
+
+    /// <summary>Engine streams one column of tiles per frame on horizontal camera movement.</summary>
+    ColumnStreaming,
+
+    /// <summary>Engine streams one row of tiles per frame on vertical camera movement.</summary>
+    RowStreaming,
+
+    /// <summary>Engine streams both columns and rows (full free-scroll maps).</summary>
+    Both
+}
 public enum PaletteMode
 {
     /// <summary>One palette for the entire plane.</summary>

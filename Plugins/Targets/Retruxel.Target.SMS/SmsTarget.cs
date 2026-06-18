@@ -277,6 +277,76 @@ public class SmsTarget : ITarget, IPaletteConverter
         return new SmsDiagnosticsProvider().Analyze(input);
     }
 
+    public IReadOnlyList<LiveDiagnosticMetric> GetLiveDiagnostics(LiveDiagnosticInput input)
+    {
+        var metrics = new List<LiveDiagnosticMetric>();
+        var scene   = input.Scene;
+        var project = input.Project;
+
+        // ── Palette slots usage ────────────────────────────────────────────
+        int colorsPerSlot = GetColorsPerSlot();
+        foreach (var slot in scene.PaletteSlots)
+        {
+            int usedColors = slot.Colors.Count(c => c != "-1");
+            metrics.Add(new LiveDiagnosticMetric
+            {
+                Label    = $"Palette Slot {slot.SlotIndex} ({slot.Label})",
+                Category = "Palette",
+                Current  = usedColors,
+                Max      = colorsPerSlot,
+                Unit     = "colors"
+            });
+        }
+
+        // ── SAT slots (sprites) ─────────────────────────────────────────
+        int satSlots = 0;
+        foreach (var entity in scene.Entities)
+        {
+            var prefab = project.Prefabs.FirstOrDefault(p => p.PrefabId == entity.PrefabId);
+            int w = prefab?.WidthTiles  ?? 2;
+            int h = prefab?.HeightTiles ?? 2;
+            satSlots += w * h; // each tile of the sprite occupies one SAT entry
+        }
+        metrics.Add(new LiveDiagnosticMetric
+        {
+            Label             = "SAT Entries",
+            Category          = "Sprites",
+            Current           = satSlots,
+            Max               = Specs.MaxSpritesOnScreen,
+            Unit              = "entries",
+            Detail            = "Each sprite tile uses one SAT slot",
+            WarningThreshold  = 0.75,
+            ErrorThreshold    = 1.0
+        });
+
+        // ── Sprite tiles in VRAM ──────────────────────────────────────
+        var countedSprite = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        int spriteTiles   = 0;
+        foreach (var entity in scene.Entities)
+        {
+            var prefab        = project.Prefabs.FirstOrDefault(p => p.PrefabId == entity.PrefabId);
+            var spriteAssetId = prefab?.SpriteAssetId ?? entity.SpriteAssetId ?? string.Empty;
+            if (string.IsNullOrEmpty(spriteAssetId) || !countedSprite.Add(spriteAssetId)) continue;
+            var asset = project.Assets.FirstOrDefault(a => a.Id == spriteAssetId);
+            spriteTiles += asset?.GenerationParams?.TileCount ?? 0;
+        }
+        if (spriteTiles > 0)
+        {
+            int bytesPerTile = Specs.Planes.FirstOrDefault()?.BytesPerTile ?? 32;
+            int maxTiles     = Specs.VramBytesForTiles / bytesPerTile;
+            metrics.Add(new LiveDiagnosticMetric
+            {
+                Label    = "Sprite Tiles",
+                Category = "Sprites",
+                Current  = spriteTiles,
+                Max      = maxTiles,
+                Unit     = "tiles"
+            });
+        }
+
+        return metrics;
+    }
+
     public string GenerateSceneTransitionPreamble() =>
         "    SMS_displayOff();\n" +
         "    SMS_VRAMmemsetW(0, 0x0000, 16384);";

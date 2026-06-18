@@ -4,8 +4,30 @@ using System.Linq;
 namespace Retruxel.Core.Models;
 
 /// <summary>
-/// Severity level for a build diagnostic metric.
+/// A single hardware constraint metric produced by ITarget.GetLiveDiagnostics().
+/// Displayed in the passive Hardware Usage panel in the SceneEditor.
 /// </summary>
+public class LiveDiagnosticMetric
+{
+    public string Label    { get; init; } = string.Empty;
+    public string Category { get; init; } = string.Empty;
+    public int    Current  { get; init; }
+    public int    Max      { get; init; }
+    public string Unit     { get; init; } = string.Empty;
+    public string? Detail  { get; init; }
+    public double WarningThreshold { get; init; } = 0.8;
+    public double ErrorThreshold   { get; init; } = 1.0;
+
+    public double UsageRatio => Max > 0 ? (double)Current / Max : 0;
+    public DiagnosticSeverity Severity => UsageRatio switch
+    {
+        var r when r >= ErrorThreshold   => DiagnosticSeverity.Error,
+        var r when r >= WarningThreshold => DiagnosticSeverity.Warning,
+        _                                => DiagnosticSeverity.Info
+    };
+}
+
+
 public enum DiagnosticSeverity
 {
     Info,

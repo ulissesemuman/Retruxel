@@ -120,6 +120,17 @@ public interface ITarget
     BuildDiagnosticsReport? GetBuildDiagnostics(BuildDiagnosticInput input) => null;
 
     /// <summary>
+    /// Returns live hardware constraint metrics calculated directly from project data,
+    /// without requiring a build. Called by the editor on every project mutation.
+    /// Returns empty list if this target does not support live diagnostics.
+    ///
+    /// Implement to expose palette slot usage, SAT slot usage, sprite-per-scanline
+    /// estimates, and any other hardware constraints visible at edit time.
+    /// </summary>
+    IReadOnlyList<LiveDiagnosticMetric> GetLiveDiagnostics(LiveDiagnosticInput input)
+        => System.Array.Empty<LiveDiagnosticMetric>();
+
+    /// <summary>
     /// Generates code to execute before transitioning to a new scene.
     /// Typically includes display off and VRAM clear.
     /// Returns empty string if target doesn't require scene transition logic.

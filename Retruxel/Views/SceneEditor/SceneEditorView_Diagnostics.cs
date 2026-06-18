@@ -1,6 +1,7 @@
 using Retruxel.Core.Models;
 using Retruxel.Core.Services;
 using System;
+using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
@@ -10,8 +11,9 @@ namespace Retruxel.Views;
 public partial class SceneEditorView
 {
     /// <summary>
-    /// Rebuilds the passive hardware usage panel from a live VramAllocator dry-run.
-    /// Called after any project mutation (tree rebuild, property change, asset import).
+    /// Rebuilds the passive hardware usage panel.
+    /// Combines VramAllocator dry-run data with ITarget.GetLiveDiagnostics().
+    /// Called after any project mutation via StateChanged.
     /// </summary>
     internal void RefreshDiagnostics()
     {
@@ -22,43 +24,45 @@ public partial class SceneEditorView
 
         try
         {
-            var report = VramAllocator.Analyze(
-                _currentScene,
-                _target,
-                _project.Assets,
-                fontTileCount: 0,
-                project: _project);
+            // ── VRAM (VramAllocator dry-run) ──────────────────────────────────
+            var vramReport = VramAllocator.Analyze(
+                _currentScene, _target, _project.Assets,
+                fontTileCount: 0, project: _project);
 
-            AddUsageBar(
-                "VRAM Tiles",
-                report.TotalBytesUsed / (_target.Specs.Planes.FirstOrDefault()?.BytesPerTile ?? 32),
-                report.TotalBytesAvailable / (_target.Specs.Planes.FirstOrDefault()?.BytesPerTile ?? 32),
-                "tiles");
+            int bytesPerTile = _target.Specs.Planes.FirstOrDefault()?.BytesPerTile ?? 32;
+            int maxTiles     = _target.Specs.VramBytesForTiles / bytesPerTile;
+            int usedTiles    = vramReport.TotalBytesUsed / bytesPerTile;
 
-            AddUsageBar(
-                "VRAM Bytes",
-                report.TotalBytesUsed,
-                report.TotalBytesAvailable,
-                "bytes");
+            AddCategoryHeader("VRAM");
+            AddUsageBar("Tiles", usedTiles, maxTiles, "tiles");
+            AddUsageBar("Bytes", vramReport.TotalBytesUsed, vramReport.TotalBytesAvailable, "bytes");
 
-            // Per-plane breakdown
-            foreach (var plane in report.Planes)
+            foreach (var plane in vramReport.Planes.Where(p => p.BytesUsed > 0))
+                AddUsageBar($"  {plane.PlaneLabel}", plane.BytesUsed / bytesPerTile, maxTiles, "tiles", isSubItem: true);
+
+            // ── Live target metrics (palette, SAT, etc.) ──────────────────────
+            var liveInput = new LiveDiagnosticInput
             {
-                if (plane.BytesUsed == 0) continue;
-                var bytesPerTile = plane.BytesPerTile > 0 ? plane.BytesPerTile : 32;
-                AddUsageBar(
-                    $"  {plane.PlaneLabel}",
-                    plane.BytesUsed / bytesPerTile,
-                    report.TotalBytesAvailable / bytesPerTile,
-                    "tiles",
-                    isSubItem: true);
-            }
+                Scene    = _currentScene,
+                Project  = _project,
+                Specs    = _target.Specs,
+                VramUsage = vramReport
+            };
 
-            // Sprite count
-            var spriteCount = _currentScene.Entities.Count;
-            var maxSprites  = _target.Specs.MaxSpritesOnScreen;
-            if (maxSprites > 0)
-                AddUsageBar("Sprites", spriteCount, maxSprites, "sprites");
+            var liveMetrics = _target.GetLiveDiagnostics(liveInput);
+            if (liveMetrics.Count > 0)
+            {
+                string? lastCategory = null;
+                foreach (var metric in liveMetrics)
+                {
+                    if (metric.Category != lastCategory)
+                    {
+                        AddCategoryHeader(metric.Category);
+                        lastCategory = metric.Category;
+                    }
+                    AddUsageBarFromMetric(metric);
+                }
+            }
         }
         catch
         {
@@ -66,12 +70,33 @@ public partial class SceneEditorView
         }
     }
 
+    // ── Rendering helpers ──────────────────────────────────────────────────────
+
+    private void AddCategoryHeader(string text)
+    {
+        DiagnosticsPanel.Children.Add(new TextBlock
+        {
+            Text       = text.ToUpperInvariant(),
+            FontSize   = 9,
+            Foreground = TryFindBrush("BrushOnSurfaceVariant") ?? Brushes.Gray,
+            Margin     = new Thickness(0, 8, 0, 4),
+            FontFamily = new FontFamily("Inter, Segoe UI, sans-serif")
+        });
+    }
+
+    private void AddUsageBarFromMetric(LiveDiagnosticMetric metric)
+        => AddUsageBar(metric.Label, metric.Current, metric.Max, metric.Unit,
+            warningThreshold: metric.WarningThreshold,
+            errorThreshold: metric.ErrorThreshold);
+
     private void AddUsageBar(
         string label,
         int current,
         int max,
         string unit,
-        bool isSubItem = false)
+        bool isSubItem = false,
+        double warningThreshold = 0.8,
+        double errorThreshold = 1.0)
     {
         if (max <= 0) return;
 
@@ -79,9 +104,9 @@ public partial class SceneEditorView
 
         var severity = ratio switch
         {
-            >= 1.0  => DiagnosticSeverity.Error,
-            >= 0.8  => DiagnosticSeverity.Warning,
-            _       => DiagnosticSeverity.Info
+            var r when r >= errorThreshold   => DiagnosticSeverity.Error,
+            var r when r >= warningThreshold => DiagnosticSeverity.Warning,
+            _                                => DiagnosticSeverity.Info
         };
 
         var fillColor = severity switch
@@ -91,9 +116,9 @@ public partial class SceneEditorView
             _                          => TryFindBrush("BrushPrimary") ?? Brushes.Green
         };
 
-        var panel = new StackPanel { Margin = new Thickness(0, 0, 0, 8) };
+        var panel = new StackPanel { Margin = new Thickness(0, 0, 0, 6) };
 
-        // Label row: name + value
+        // Label row
         var labelRow = new Grid();
         labelRow.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
         labelRow.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
@@ -101,23 +126,23 @@ public partial class SceneEditorView
         var nameBlock = new TextBlock
         {
             Text       = label,
-            Style      = TryFindStyle("TextLabel"),
+            FontSize   = isSubItem ? 9 : 10,
             Foreground = isSubItem
                 ? TryFindBrush("BrushOnSurfaceVariant") ?? Brushes.Gray
-                : TryFindBrush("BrushOnSurface")        ?? Brushes.White,
-            FontSize   = isSubItem ? 10 : 11
+                : TryFindBrush("BrushOnSurface") ?? Brushes.White,
+            FontFamily = new FontFamily("Inter, Segoe UI, sans-serif")
         };
         Grid.SetColumn(nameBlock, 0);
         labelRow.Children.Add(nameBlock);
 
         var valueBlock = new TextBlock
         {
-            Text       = $"{current} / {max} {unit}",
-            Style      = TryFindStyle("TextLabel"),
+            Text       = $"{current}/{max} {unit}",
+            FontSize   = 9,
             Foreground = severity == DiagnosticSeverity.Info
                 ? TryFindBrush("BrushOnSurfaceVariant") ?? Brushes.Gray
                 : fillColor,
-            FontSize   = 10
+            FontFamily = new FontFamily("Inter, Segoe UI, sans-serif")
         };
         Grid.SetColumn(valueBlock, 1);
         labelRow.Children.Add(valueBlock);
@@ -125,38 +150,25 @@ public partial class SceneEditorView
         panel.Children.Add(labelRow);
 
         // Progress bar
-        var barContainer = new Grid { Height = isSubItem ? 4 : 6, Margin = new Thickness(0, 2, 0, 0) };
+        var barContainer = new Grid { Height = isSubItem ? 3 : 5, Margin = new Thickness(0, 2, 0, 0) };
 
-        var bg = new Border
+        barContainer.Children.Add(new Border
         {
-            Background = TryFindBrush("BrushSurfaceContainerHighest") ?? new SolidColorBrush(Color.FromRgb(40, 40, 40))
-        };
-        barContainer.Children.Add(bg);
+            Background = TryFindBrush("BrushSurfaceContainerHighest")
+                         ?? new SolidColorBrush(Color.FromRgb(40, 40, 40))
+        });
 
-        var fill = new Border
-        {
-            Background          = fillColor,
-            HorizontalAlignment = HorizontalAlignment.Left,
-            Width               = 0
-        };
-        barContainer.SizeChanged += (_, e) =>
-            fill.Width = Math.Max(0, ratio * e.NewSize.Width);
-
+        var fill = new Border { Background = fillColor, HorizontalAlignment = HorizontalAlignment.Left, Width = 0 };
+        barContainer.SizeChanged += (_, e) => fill.Width = Math.Max(0, ratio * e.NewSize.Width);
         barContainer.Children.Add(fill);
-        panel.Children.Add(barContainer);
 
+        panel.Children.Add(barContainer);
         DiagnosticsPanel.Children.Add(panel);
     }
 
     private Brush? TryFindBrush(string key)
     {
         try { return FindResource(key) as Brush; }
-        catch { return null; }
-    }
-
-    private Style? TryFindStyle(string key)
-    {
-        try { return FindResource(key) as Style; }
         catch { return null; }
     }
 }

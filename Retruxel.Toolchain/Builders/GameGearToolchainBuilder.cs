@@ -44,17 +44,7 @@ public class GameGearToolchainBuilder : IToolchainBuilder
             var srcDirectory = Path.Combine(context.OutputDirectory, "src");
             Directory.CreateDirectory(srcDirectory);
 
-            foreach (var file in context.SourceFiles)
-            {
-                var path = Path.Combine(srcDirectory, file.FileName);
-                await File.WriteAllTextAsync(path, file.Content);
-            }
-
-            foreach (var asset in context.Assets)
-            {
-                var path = Path.Combine(srcDirectory, asset.FileName);
-                await File.WriteAllBytesAsync(path, asset.Data);
-            }
+            await IncrementalBuildCache.WriteInputsAsync(context, srcDirectory, log, progress);
 
             var sdccPath = Path.Combine(ToolchainPath, "compilers", "sdcc", "bin", "sdcc.exe");
             var includePath = Path.Combine(ToolchainPath, "sdks", "sega8bit", "include");
@@ -70,6 +60,12 @@ public class GameGearToolchainBuilder : IToolchainBuilder
             // Step 1 — Compile with TARGET_GG flag
             foreach (var file in sourceFiles)
             {
+                if (!IncrementalBuildCache.ShouldCompileSource(context, file, srcDirectory, ".rel"))
+                {
+                    progress.Report($"CACHE: compile skipped - {file.FileName}");
+                    continue;
+                }
+
                 progress.Report($"COMPILE: {file.FileName}");
                 var compileArgs = $"-mz80 --no-std-crt0 --sdcccall 1 -DTARGET_GG " +
                                   (suppressWarnings ? "--disable-warning 336 " : "") +
@@ -125,6 +121,7 @@ public class GameGearToolchainBuilder : IToolchainBuilder
 
                 result.RomMd5 = await ComputeMd5Async(romPath);
                 result.RomSha256 = await ComputeSha256Async(romPath);
+                await IncrementalBuildCache.CommitAsync(context);
                 log.Add(new BuildLogEntry
                 {
                     Level = BuildLogLevel.Success,

@@ -1,5 +1,6 @@
 using Retruxel.Core.Interfaces;
 using Retruxel.Core.Models;
+using Retruxel.Core.Services;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -67,12 +68,7 @@ public class NesToolchainBuilder : IToolchainBuilder
             var srcDirectory = Path.Combine(context.OutputDirectory, "src");
             Directory.CreateDirectory(srcDirectory);
 
-            foreach (var file in context.SourceFiles)
-            {
-                var path = Path.Combine(srcDirectory, file.FileName);
-                await File.WriteAllTextAsync(path, file.Content);
-                log.Add(new BuildLogEntry { Level = BuildLogLevel.Info, Message = $"WRITTEN: {file.FileName}" });
-            }
+            await IncrementalBuildCache.WriteInputsAsync(context, srcDirectory, log, progress);
 
             var cc65 = Path.Combine(ToolchainPath, "compilers", "cc65", "bin", "cc65.exe");
             var ca65 = Path.Combine(ToolchainPath, "compilers", "cc65", "bin", "ca65.exe");
@@ -115,6 +111,14 @@ public class NesToolchainBuilder : IToolchainBuilder
             {
                 var cPath = Path.Combine(srcDirectory, srcFile.FileName);
                 var sPath = Path.ChangeExtension(cPath, ".s");
+                var oPath = Path.ChangeExtension(cPath, ".o");
+
+                if (!IncrementalBuildCache.ShouldCompileSource(context, srcFile, srcDirectory, ".o"))
+                {
+                    progress.Report($"CACHE: compile skipped - {srcFile.FileName}");
+                    objectFiles.Add(oPath);
+                    continue;
+                }
 
                 progress.Report($"COMPILING: {srcFile.FileName}");
 
@@ -130,7 +134,6 @@ public class NesToolchainBuilder : IToolchainBuilder
                 }
 
                 // Step 2a: ca65 — assemble each .s
-                var oPath = Path.ChangeExtension(cPath, ".o");
                 progress.Report($"ASSEMBLING: {Path.GetFileName(sPath)}");
 
                 var ca65Args = $"--include-dir \"{includeDir}\" \"{sPath}\" -o \"{oPath}\"";
@@ -227,6 +230,7 @@ public class NesToolchainBuilder : IToolchainBuilder
 
                 result.RomMd5 = await ComputeHashAsync(romPath, MD5.Create());
                 result.RomSha256 = await ComputeHashAsync(romPath, SHA256.Create());
+                await IncrementalBuildCache.CommitAsync(context);
                 log.Add(new BuildLogEntry
                 {
                     Level = BuildLogLevel.Success,

@@ -1,4 +1,5 @@
 using Retruxel.Tool.SpriteEditor.Models;
+using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 
@@ -13,9 +14,10 @@ public partial class SpriteEditorWindow
         for (int i = 0; i < _state.Frames.Count; i++)
         {
             var frame = _state.Frames[i];
+            var tagPrefix = string.IsNullOrWhiteSpace(frame.Tag) ? "" : $"[{frame.Tag}] ";
             var item = new ListBoxItem
             {
-                Content = $"{frame.Name} ({frame.Tiles.Count} tiles)",
+                Content = $"{tagPrefix}{frame.Name} ({frame.Tiles.Count} tiles)",
                 Tag = i,
                 Foreground = (System.Windows.Media.Brush)FindResource("BrushOnSurface"),
                 Background = (System.Windows.Media.Brush)FindResource("BrushSurfaceContainerLow"),
@@ -38,6 +40,7 @@ public partial class SpriteEditorWindow
         {
             _state.CurrentFrameIndex = index;
             UpdateFrameDurationField();
+            UpdateFrameTagField();
             RefreshHitboxList();
             RenderCanvas();
         }
@@ -55,6 +58,7 @@ public partial class SpriteEditorWindow
         _state.CurrentFrameIndex = _state.Frames.Count - 1;
 
         RefreshFramesList();
+        UpdateFrameTagField();
         OnSpriteChanged();
     }
 
@@ -71,6 +75,7 @@ public partial class SpriteEditorWindow
         _state.CurrentFrameIndex++;
 
         RefreshFramesList();
+        UpdateFrameTagField();
         OnSpriteChanged();
     }
 
@@ -91,6 +96,7 @@ public partial class SpriteEditorWindow
 
         RefreshFramesList();
         UpdateFrameDurationField();
+        UpdateFrameTagField();
         OnSpriteChanged();
     }
 
@@ -101,6 +107,7 @@ public partial class SpriteEditorWindow
 
         var currentFrame = _state.Frames[_state.CurrentFrameIndex];
         TxtFrameDuration.Text = currentFrame.Duration.ToString();
+        UpdateFrameTagField();
     }
 
     private void TxtFrameDuration_TextChanged(object sender, TextChangedEventArgs e)
@@ -114,5 +121,79 @@ public partial class SpriteEditorWindow
             currentFrame.Duration = duration;
             UpdateAnimationSpeed();
         }
+    }
+
+    private void InitializeFrameTags()
+    {
+        CmbFrameTag.Items.Clear();
+        foreach (var tag in new[] { "", "idle", "walk", "jump", "attack" })
+            CmbFrameTag.Items.Add(tag);
+
+        UpdateFrameTagField();
+    }
+
+    private void UpdateFrameTagField()
+    {
+        if (CmbFrameTag == null || _state.Frames.Count == 0)
+            return;
+
+        var tag = _state.Frames[_state.CurrentFrameIndex].Tag;
+        if (!CmbFrameTag.Items.Cast<object>().Any(i => string.Equals(i?.ToString(), tag, System.StringComparison.OrdinalIgnoreCase)))
+            CmbFrameTag.Items.Add(tag);
+
+        CmbFrameTag.Text = tag;
+    }
+
+    private void CmbFrameTag_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (_isInitializing || _state.Frames.Count == 0 || CmbFrameTag.SelectedItem is null)
+            return;
+
+        SetCurrentFrameTag(CmbFrameTag.SelectedItem.ToString() ?? string.Empty);
+    }
+
+    private void CmbFrameTag_LostFocus(object sender, RoutedEventArgs e)
+    {
+        if (_isInitializing || _state.Frames.Count == 0)
+            return;
+
+        SetCurrentFrameTag(CmbFrameTag.Text);
+    }
+
+    private void SetCurrentFrameTag(string tag)
+    {
+        var normalized = tag.Trim();
+        var currentFrame = _state.Frames[_state.CurrentFrameIndex];
+        if (currentFrame.Tag == normalized)
+            return;
+
+        currentFrame.Tag = normalized;
+        if (!string.IsNullOrWhiteSpace(normalized) &&
+            !CmbFrameTag.Items.Cast<object>().Any(i => string.Equals(i?.ToString(), normalized, System.StringComparison.OrdinalIgnoreCase)))
+        {
+            CmbFrameTag.Items.Add(normalized);
+        }
+
+        RefreshFramesList();
+        OnSpriteChanged();
+    }
+
+    private void OnionSkinSettings_Changed(object sender, RoutedEventArgs e)
+    {
+        if (_isInitializing)
+            return;
+
+        _state.OnionSkinPrevious = ChkOnionPrev.IsChecked == true;
+        _state.OnionSkinNext = ChkOnionNext.IsChecked == true;
+        RenderCanvas();
+    }
+
+    private void SldOnionOpacity_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+    {
+        if (_isInitializing)
+            return;
+
+        _state.OnionSkinOpacity = SldOnionOpacity.Value / 100.0;
+        RenderCanvas();
     }
 }

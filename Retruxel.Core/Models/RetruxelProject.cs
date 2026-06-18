@@ -1,4 +1,4 @@
-﻿﻿using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -66,24 +66,25 @@ public class RetruxelProject
     public List<PrefabData> Prefabs { get; set; } = [];
 
     /// <summary>
-    /// Project-level game variable definitions.
-    /// Replaces the GameVar module instances — stored here for direct access by the event bus.
-    /// </summary>
-    public List<GameVarDefinition> GameVars { get; set; } = [];
-
-    /// <summary>
-    /// Event bus bindings: connects events emitted by actions to variable mutations.
-    /// Processed by CodeGenerator to generate event_bus_dispatch().
-    /// </summary>
-    public List<EventBinding> EventBindings { get; set; } = [];
-
-    /// <summary>
     /// Remappable input port bindings for this project.
     /// Initialized from the target's default InputPort definitions when the project is created.
     /// The user can remap individual buttons here — changes are persisted in the project file.
     /// Index in this list is the "input slot" referenced by EntityData.InputSlot.
     /// </summary>
     public List<InputPortBinding> InputPorts { get; set; } = [];
+
+    /// <summary>
+    /// Game variables declared at project level.
+    /// Emitted as a single GameVars struct in vars.h / vars.c.
+    /// All variables are global — accessible from any scene or module.
+    /// </summary>
+    public List<GameVariableData> Variables { get; set; } = [];
+
+    /// <summary>
+    /// Event bindings that connect emitted events to global game variable mutations.
+    /// </summary>
+    [JsonPropertyName("eventBindings")]
+    public List<EventBinding> EventBindings { get; set; } = [];
 
     /// <summary>
     /// Returns all entity instance names in the same order the CodeGenerator assigns them.

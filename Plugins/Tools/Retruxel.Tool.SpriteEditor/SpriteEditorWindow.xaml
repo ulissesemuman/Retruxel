@@ -158,6 +158,31 @@
                             <Button x:Name="BtnCanvasZoom" Content="200%"
                                 Style="{StaticResource ButtonSecondary}" Width="64" Height="24"
                                 Click="BtnCanvasZoom_Click"/>
+                            <CheckBox x:Name="ChkOnionPrev" Content="PREV"
+                                      IsChecked="True"
+                                      Foreground="{StaticResource BrushOnSurface}"
+                                      VerticalAlignment="Center"
+                                      Margin="16,0,0,0"
+                                      Checked="OnionSkinSettings_Changed"
+                                      Unchecked="OnionSkinSettings_Changed"/>
+                            <CheckBox x:Name="ChkOnionNext" Content="NEXT"
+                                      IsChecked="True"
+                                      Foreground="{StaticResource BrushOnSurface}"
+                                      VerticalAlignment="Center"
+                                      Margin="12,0,0,0"
+                                      Checked="OnionSkinSettings_Changed"
+                                      Unchecked="OnionSkinSettings_Changed"/>
+                            <TextBlock Text="Opacity:" Style="{StaticResource TextLabel}"
+                                       VerticalAlignment="Center" Margin="16,0,4,0"/>
+                            <Slider x:Name="SldOnionOpacity"
+                                    Width="96"
+                                    Minimum="10"
+                                    Maximum="70"
+                                    Value="35"
+                                    TickFrequency="5"
+                                    IsSnapToTickEnabled="True"
+                                    VerticalAlignment="Center"
+                                    ValueChanged="SldOnionOpacity_ValueChanged"/>
                         </StackPanel>
 
                         <ScrollViewer Grid.Row="2" x:Name="CanvasScrollViewer"
@@ -188,6 +213,7 @@
                         <Grid Grid.Row="0">
                             <Grid.RowDefinitions>
                                 <RowDefinition Height="32"/>
+                                <RowDefinition Height="Auto"/>
                                 <RowDefinition Height="*"/>
                                 <RowDefinition Height="40"/>
                             </Grid.RowDefinitions>
@@ -197,12 +223,21 @@
                                    Foreground="{StaticResource BrushOnSurfaceVariant}"
                                    Margin="16,8"/>
 
-                            <ListBox Grid.Row="1" x:Name="FramesListBox"
+                            <StackPanel Grid.Row="1" Margin="16,4,16,8">
+                                <TextBlock Text="Animation Tag" Style="{StaticResource TextLabel}" Margin="0,0,0,4"/>
+                                <ComboBox x:Name="CmbFrameTag"
+                                          Height="32"
+                                          IsEditable="True"
+                                          SelectionChanged="CmbFrameTag_SelectionChanged"
+                                          LostFocus="CmbFrameTag_LostFocus"/>
+                            </StackPanel>
+
+                            <ListBox Grid.Row="2" x:Name="FramesListBox"
                                  Background="Transparent"
                                  BorderThickness="0"
                                  SelectionChanged="FramesListBox_SelectionChanged"/>
 
-                            <StackPanel Grid.Row="2" Orientation="Horizontal" 
+                            <StackPanel Grid.Row="3" Orientation="Horizontal" 
                                     HorizontalAlignment="Center">
                                 <Button Content="+" Style="{StaticResource ButtonSecondary}" 
                                     Click="BtnAddFrame_Click" Width="60" Height="32"/>

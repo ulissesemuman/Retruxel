@@ -959,7 +959,7 @@ public partial class CodeGenerator
             progress?.Report($"INFO: Scene '{scene.SceneName}' generated.");
         }
 
-        if (instancesByModule.ContainsKey("gamevar") || project.GameVars.Count > 0 || project.EventBindings.Count > 0)
+        if (instancesByModule.ContainsKey("gamevar") || project.Variables.Count > 0 || project.EventBindings.Count > 0)
         {
             var legacyInstances = instancesByModule.TryGetValue("gamevar", out var gvi) ? gvi : [];
             sourceFiles.AddRange(GenerateGameVarsFile(project, legacyInstances, progress));
@@ -1003,6 +1003,8 @@ public partial class CodeGenerator
             Assets          = assets,
             OutputDirectory = outputDirectory
         };
+
+        IncrementalBuildCache.Prepare(buildContext, progress);
 
         var diagnosticInput = new BuildDiagnosticInput(
             sourceFiles, assets, buildContext.BuildParameters, _target.Specs);

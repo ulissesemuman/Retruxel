@@ -108,6 +108,7 @@ public partial class TilemapEditorWindow
         }
 
         DrawViewportOverlay(scaledTileSize);
+        DrawCollisionOverlay();
 
         // Keep dimension display in sync with actual bounding box.
         int displayW = _planeData.Width  > 0 ? _planeData.Width  : viewportW;
@@ -176,19 +177,7 @@ public partial class TilemapEditorWindow
 
         _isPainting = true;
         Point position = e.GetPosition(PlaneCanvas);
-
-        if (_selectedTileIds.Count > 1)
-        {
-            int tileSize = _target.Specs.TileWidth;
-            double scaledTileSize = tileSize * _canvasZoom;
-            int tileX = (int)(position.X / scaledTileSize);
-            int tileY = (int)(position.Y / scaledTileSize);
-            PlaceTileBlock(tileX, tileY);
-        }
-        else
-        {
-            PaintTile(position);
-        }
+        PaintAt(position);
     }
 
     private void Canvas_MouseMove(object sender, MouseEventArgs e)
@@ -213,7 +202,7 @@ public partial class TilemapEditorWindow
             HidePaintPreview();
 
         if (_isPainting && e.LeftButton == MouseButtonState.Pressed)
-            PaintTile(position);
+            PaintAt(position);
     }
 
     private void Canvas_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
@@ -280,6 +269,89 @@ public partial class TilemapEditorWindow
         };
 
         _planeData.SetTile(_currentLayerIndex, tileX, tileY, entry);
+        RenderCanvas();
+    }
+
+    private void PaintAt(Point position)
+    {
+        int tileSize = _target.Specs.TileWidth;
+        double scaledTileSize = tileSize * _canvasZoom;
+
+        int tileX = (int)(position.X / scaledTileSize);
+        int tileY = (int)(position.Y / scaledTileSize);
+
+        // No hard boundary — any non-negative position is valid.
+        if (tileX < 0 || tileY < 0) return;
+
+        switch (_currentToolMode)
+        {
+            case ToolMode.Paint:
+                PaintSingleTile(tileX, tileY);
+                break;
+            case ToolMode.MetatilePaint:
+                if (_selectedMetatileIndex >= 0 && _selectedMetatileIndex < _metatiles.Count)
+                    PlaceMetatile(tileX, tileY, _metatiles[_selectedMetatileIndex]);
+                break;
+            case ToolMode.BrushPaint:
+                if (_selectedBrushIndex >= 0 && _selectedBrushIndex < _brushes.Count)
+                    PlaceBrush(tileX, tileY, _brushes[_selectedBrushIndex]);
+                break;
+        }
+    }
+
+    private void PaintSingleTile(int tileX, int tileY)
+    {
+        int tileIndex = _isAutoTilingEnabled ? ResolveAutoTileIndex(tileX, tileY) : _selectedTileId;
+        
+        var entry = new TileEntry
+        {
+            TileIndex = tileIndex,
+            FlipH     = _selectedFlipH,
+            FlipV     = _selectedFlipV
+        };
+
+        _planeData.SetTile(_currentLayerIndex, tileX, tileY, entry);
+        RenderCanvas();
+    }
+
+    private void PlaceMetatile(int startX, int startY, Metatile metatile)
+    {
+        for (int y = 0; y < metatile.Height; y++)
+        {
+            for (int x = 0; x < metatile.Width; x++)
+            {
+                int tileIndex = metatile.TileIndices[y, x];
+                if (tileIndex >= 0)
+                {
+                    var entry = new TileEntry
+                    {
+                        TileIndex = tileIndex,
+                        FlipH     = _selectedFlipH,
+                        FlipV     = _selectedFlipV
+                    };
+                    _planeData.SetTile(_currentLayerIndex, startX + x, startY + y, entry);
+                }
+            }
+        }
+        RenderCanvas();
+    }
+
+    private void PlaceBrush(int startX, int startY, Brush brush)
+    {
+        foreach (var brushTile in brush.Tiles)
+        {
+            int tileX = startX + brushTile.OffsetX;
+            int tileY = startY + brushTile.OffsetY;
+
+            var entry = new TileEntry
+            {
+                TileIndex = brushTile.TileIndex,
+                FlipH     = brushTile.FlipH,
+                FlipV     = brushTile.FlipV,
+                Rotation  = brushTile.Rotation
+            };
+            _planeData.SetTile(_currentLayerIndex, tileX, tileY, entry);
+        }
         RenderCanvas();
     }
 }

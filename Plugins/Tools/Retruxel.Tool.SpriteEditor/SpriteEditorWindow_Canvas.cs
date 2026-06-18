@@ -5,6 +5,8 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Shapes;
+using Retruxel.Core.Models;
+using Retruxel.Tool.SpriteEditor.Models;
 
 namespace Retruxel.Tool.SpriteEditor;
 
@@ -82,11 +84,29 @@ public partial class SpriteEditorWindow
         int zoom  = GetCanvasZoom();
         int tileSize = _target?.Specs.TileWidth ?? 8;
 
+        RenderOnionSkinFrame(_state.CurrentFrameIndex - 1, Brushes.DeepSkyBlue, _state.OnionSkinPrevious, zoom, tileSize);
+        RenderOnionSkinFrame(_state.CurrentFrameIndex + 1, Brushes.Orange, _state.OnionSkinNext, zoom, tileSize);
+        RenderFrameTiles(frame, zoom, tileSize, 1.0, null, interactive: true);
+
+        DrawGrid();
+        DrawHitboxes();
+        UpdateStatusBar();
+    }
+
+    private void RenderOnionSkinFrame(int frameIndex, Brush tint, bool enabled, int zoom, int tileSize)
+    {
+        if (!enabled || frameIndex < 0 || frameIndex >= _state.Frames.Count)
+            return;
+
+        RenderFrameTiles(_state.Frames[frameIndex], zoom, tileSize, _state.OnionSkinOpacity, tint, interactive: false);
+    }
+
+    private void RenderFrameTiles(SpriteFrame frame, int zoom, int tileSize, double opacity, Brush? tint, bool interactive)
+    {
         foreach (var tile in frame.Tiles)
         {
-            // Use TilesetRenderer (cached BitmapSource, same as TilemapEditor)
             var source = _tilesetRenderer.ExtractTile(
-                new Core.Models.TileEntry { TileIndex = tile.TileIndex });
+                new TileEntry { TileIndex = tile.TileIndex });
 
             if (source == null) continue;
 
@@ -95,32 +115,54 @@ public partial class SpriteEditorWindow
                 Source  = source,
                 Width   = tileSize * zoom,
                 Height  = tileSize * zoom,
-                Stretch = Stretch.Fill
+                Stretch = Stretch.Fill,
+                Opacity = opacity
             };
             RenderOptions.SetBitmapScalingMode(image, BitmapScalingMode.NearestNeighbor);
+
+            FrameworkElement visual = image;
+            if (tint is not null)
+            {
+                var grid = new Grid
+                {
+                    Width = tileSize * zoom,
+                    Height = tileSize * zoom,
+                    Opacity = opacity
+                };
+
+                image.Opacity = 1.0;
+                grid.Children.Add(image);
+                grid.Children.Add(new Rectangle
+                {
+                    Fill = tint,
+                    Opacity = 0.32,
+                    IsHitTestVisible = false
+                });
+                visual = grid;
+            }
 
             var border = new Border
             {
                 Width  = tileSize * zoom,
                 Height = tileSize * zoom,
-                Child  = image,
+                Child  = visual,
                 Tag    = tile,
-                Cursor = Cursors.Hand
+                Cursor = interactive ? Cursors.Hand : Cursors.Arrow,
+                IsHitTestVisible = interactive
             };
 
             Canvas.SetLeft(border, tile.OffsetX * zoom);
             Canvas.SetTop (border, tile.OffsetY * zoom);
 
-            border.MouseLeftButtonDown += CanvasTile_MouseDown;
-            border.MouseMove           += CanvasTile_MouseMove;
-            border.MouseLeftButtonUp   += CanvasTile_MouseUp;
+            if (interactive)
+            {
+                border.MouseLeftButtonDown += CanvasTile_MouseDown;
+                border.MouseMove           += CanvasTile_MouseMove;
+                border.MouseLeftButtonUp   += CanvasTile_MouseUp;
+            }
 
             CompositionCanvas.Children.Add(border);
         }
-
-        DrawGrid();
-        DrawHitboxes();
-        UpdateStatusBar();
     }
 
     private void DrawGrid()

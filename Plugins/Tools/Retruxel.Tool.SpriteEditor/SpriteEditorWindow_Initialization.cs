@@ -20,6 +20,7 @@ public partial class SpriteEditorWindow
     private void InitializeUI()
     {
         InitializeAnimation();
+        InitializeFrameTags();
         RefreshFramesList();
         UpdateFrameDurationField();
         RenderCanvas();
@@ -46,6 +47,7 @@ public partial class SpriteEditorWindow
                     var frame = new SpriteFrame
                     {
                         Name = frameDict.TryGetValue("name", out var nameObj) && nameObj is string name ? name : "Frame",
+                        Tag = frameDict.TryGetValue("tag", out var tagObj) && tagObj is string tag ? tag : string.Empty,
                         Duration = frameDict.TryGetValue("duration", out var durationObj) && durationObj is int duration ? duration : 100
                     };
 
@@ -112,6 +114,28 @@ public partial class SpriteEditorWindow
             _state.AnimationSpeed = speed;
         }
 
+        if (moduleData.TryGetValue("onionSkinPrevious", out var onionPrevObj) && onionPrevObj is bool onionPrev)
+        {
+            _state.OnionSkinPrevious = onionPrev;
+            ChkOnionPrev.IsChecked = onionPrev;
+        }
+
+        if (moduleData.TryGetValue("onionSkinNext", out var onionNextObj) && onionNextObj is bool onionNext)
+        {
+            _state.OnionSkinNext = onionNext;
+            ChkOnionNext.IsChecked = onionNext;
+        }
+
+        if (moduleData.TryGetValue("onionSkinOpacity", out var onionOpacityObj))
+        {
+            if (onionOpacityObj is double onionOpacity)
+                _state.OnionSkinOpacity = Math.Clamp(onionOpacity, 0.1, 0.7);
+            else if (onionOpacityObj is int onionOpacityPercent)
+                _state.OnionSkinOpacity = Math.Clamp(onionOpacityPercent / 100.0, 0.1, 0.7);
+
+            SldOnionOpacity.Value = _state.OnionSkinOpacity * 100.0;
+        }
+
         if (moduleData.TryGetValue("paletteSlot", out var paletteSlotObj) && paletteSlotObj is int paletteSlot)
         {
             if (CmbPaletteSlot.Items.Count > paletteSlot)
@@ -120,6 +144,7 @@ public partial class SpriteEditorWindow
 
         RefreshFramesList();
         UpdateFrameDurationField();
+        UpdateFrameTagField();
         RefreshHitboxList();
         RenderCanvas();
         RenderPreview();
@@ -168,6 +193,7 @@ public partial class SpriteEditorWindow
             framesList.Add(new Dictionary<string, object>
             {
                 ["name"] = frame.Name,
+                ["tag"] = frame.Tag,
                 ["duration"] = frame.Duration,
                 ["tiles"] = tilesList,
                 ["hitboxes"] = hitboxesList
@@ -179,7 +205,10 @@ public partial class SpriteEditorWindow
             ["frames"] = framesList,
             ["currentFrameIndex"] = _state.CurrentFrameIndex,
             ["loopAnimation"] = ChkLoop.IsChecked == true,
-            ["animationSpeed"] = _state.AnimationSpeed
+            ["animationSpeed"] = _state.AnimationSpeed,
+            ["onionSkinPrevious"] = ChkOnionPrev.IsChecked == true,
+            ["onionSkinNext"] = ChkOnionNext.IsChecked == true,
+            ["onionSkinOpacity"] = _state.OnionSkinOpacity
         };
 
         if (!string.IsNullOrEmpty(_tilesetAssetId))

@@ -65,7 +65,7 @@ public partial class TilemapEditorWindow
             ["startTile"]    = 0,
             ["mapX"]         = _mapOffsetX,
             ["mapY"]         = _mapOffsetY,
-            ["solidTiles"]   = Array.Empty<int>()
+            ["solidTiles"]   = GetSolidTileIds()
         };
 
         DialogResult = true;
@@ -225,6 +225,23 @@ public partial class TilemapEditorWindow
         }
 
         UpdateMapOffset();
+
+        // Load solid tile IDs for collision overlay
+        if (moduleData.ContainsKey("solidTiles"))
+        {
+            var solidObj = moduleData["solidTiles"];
+            if (solidObj is System.Text.Json.JsonElement jsonSolid &&
+                jsonSolid.ValueKind == System.Text.Json.JsonValueKind.Array)
+            {
+                LoadSolidTileIds(jsonSolid.EnumerateArray()
+                    .Where(e => e.ValueKind == System.Text.Json.JsonValueKind.Number)
+                    .Select(e => e.GetInt32()));
+            }
+            else if (solidObj is int[] arr)
+            {
+                LoadSolidTileIds(arr);
+            }
+        }
 
         // Initialize sparse plane (no fixed allocation needed).
         _planeData.Initialize(1);

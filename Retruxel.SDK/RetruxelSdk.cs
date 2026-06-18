@@ -44,6 +44,7 @@ using System.Runtime.CompilerServices;
 [assembly: TypeForwardedTo(typeof(Retruxel.Core.Models.RomBank))]
 [assembly: TypeForwardedTo(typeof(Retruxel.Core.Models.ProjectTemplate))]
 [assembly: TypeForwardedTo(typeof(Retruxel.Core.Models.BuildContext))]
+[assembly: TypeForwardedTo(typeof(Retruxel.Core.Models.IncrementalBuildInfo))]
 [assembly: TypeForwardedTo(typeof(Retruxel.Core.Models.BuildResult))]
 [assembly: TypeForwardedTo(typeof(Retruxel.Core.Models.BuildLogEntry))]
 [assembly: TypeForwardedTo(typeof(Retruxel.Core.Models.RetruxelProject))]

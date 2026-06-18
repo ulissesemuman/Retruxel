@@ -14,6 +14,7 @@ public partial class TilemapEditorWindow
 
     private void ChkShowCollision_CheckedChanged(object sender, RoutedEventArgs e)
     {
-        // TODO: Toggle collision overlay
+        RefreshTilesetCollisionOverlay();
+        RenderCanvas();
     }
 }

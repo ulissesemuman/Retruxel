@@ -1,0 +1,11 @@
+{
+  "moduleId": "vars",
+  "targetId": "sms",
+  "displayName": "Game Variables",
+  "description": "Generates vars.h and vars.c containing the GameVars struct with all project-level variables",
+  "version": "1.0.0",
+  "templates": ["vars.h.rtrx", "vars.c.rtrx"],
+  "variables": {
+    "variables": { "from": "project", "path": "variables", "default": [] }
+  }
+}

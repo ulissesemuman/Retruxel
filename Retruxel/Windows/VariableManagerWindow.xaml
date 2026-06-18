@@ -1,0 +1,213 @@
+<Window x:Class="Retruxel.Views.VariableManagerWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Game Variables"
+        Width="680" Height="500"
+        MinWidth="560" MinHeight="380"
+        WindowStartupLocation="CenterOwner"
+        ResizeMode="CanResize"
+        Background="{DynamicResource BrushBackground}">
+
+    <Grid Margin="0">
+        <Grid.ColumnDefinitions>
+            <!-- Left: variable list -->
+            <ColumnDefinition Width="230" MinWidth="160"/>
+            <ColumnDefinition Width="Auto"/>
+            <!-- Right: form -->
+            <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
+
+        <!-- ── LEFT PANEL ─────────────────────────────────────────────────── -->
+        <Grid Grid.Column="0">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+
+            <!-- Header -->
+            <Border Grid.Row="0" Padding="12,12,12,8"
+                    BorderThickness="0,0,0,1"
+                    BorderBrush="{DynamicResource BrushOutline}">
+                <TextBlock Text="VARIABLES" FontSize="10" FontWeight="SemiBold"
+                           Foreground="{DynamicResource BrushOnSurfaceVariant}"/>
+            </Border>
+
+            <!-- List -->
+            <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+                <StackPanel x:Name="VarListPanel" Margin="8,4,8,4"/>
+            </ScrollViewer>
+
+            <!-- Add button -->
+            <Border Grid.Row="2" Padding="8,8,8,10"
+                    BorderThickness="0,1,0,0"
+                    BorderBrush="{DynamicResource BrushOutline}">
+                <Button x:Name="BtnAdd" Content="+ New Variable"
+                        Click="BtnAdd_Click"
+                        Style="{DynamicResource ButtonSecondary}"
+                        HorizontalAlignment="Stretch"/>
+            </Border>
+        </Grid>
+
+        <!-- Divider -->
+        <GridSplitter Grid.Column="1" Width="1"
+                      Background="{DynamicResource BrushOutline}"
+                      HorizontalAlignment="Center" VerticalAlignment="Stretch"
+                      ResizeBehavior="PreviousAndNext"/>
+
+        <!-- ── RIGHT PANEL ────────────────────────────────────────────────── -->
+        <Grid Grid.Column="2">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+
+            <!-- Header -->
+            <Border Grid.Row="0" Padding="16,12,16,8"
+                    BorderThickness="0,0,0,1"
+                    BorderBrush="{DynamicResource BrushOutline}">
+                <TextBlock Text="VARIABLE PROPERTIES" FontSize="10" FontWeight="SemiBold"
+                           Foreground="{DynamicResource BrushOnSurfaceVariant}"/>
+            </Border>
+
+            <!-- Placeholder (no selection) -->
+            <TextBlock x:Name="FormPlaceholder"
+                       Grid.Row="1"
+                       Text="Select a variable or click + to create one."
+                       FontSize="12" TextWrapping="Wrap"
+                       HorizontalAlignment="Center" VerticalAlignment="Center"
+                       Margin="24,0"
+                       Foreground="{DynamicResource BrushOnSurfaceVariant}"/>
+
+            <!-- Form -->
+            <ScrollViewer x:Name="FormPanel" Grid.Row="1"
+                          Visibility="Collapsed"
+                          VerticalScrollBarVisibility="Auto">
+                <StackPanel Margin="16,12,16,12">
+
+                    <!-- Label -->
+                    <TextBlock Text="Label" FontSize="10" Margin="0,0,0,4"
+                               Foreground="{DynamicResource BrushOnSurfaceVariant}"/>
+                    <TextBox x:Name="TxtLabel"
+                             TextChanged="TxtLabel_TextChanged"
+                             Style="{DynamicResource InputField}"
+                             ToolTip="Human-readable name shown in the editor"
+                             Margin="0,0,0,12"/>
+
+                    <!-- Variable ID -->
+                    <TextBlock Text="Variable ID  (C field name)" FontSize="10" Margin="0,0,0,4"
+                               Foreground="{DynamicResource BrushOnSurfaceVariant}"/>
+                    <TextBox x:Name="TxtVariableId"
+                             Style="{DynamicResource InputField}"
+                             FontFamily="Consolas, Courier New, monospace"
+                             ToolTip="Used as the C struct field name — lowercase, underscores only. Cannot be changed after creation."
+                             Margin="0,0,0,12"/>
+
+                    <!-- Type + Default on same row -->
+                    <Grid Margin="0,0,0,12">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="12"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+
+                        <StackPanel Grid.Column="0">
+                            <TextBlock Text="C Type" FontSize="10" Margin="0,0,0,4"
+                                       Foreground="{DynamicResource BrushOnSurfaceVariant}"/>
+                            <ComboBox x:Name="CmbType"
+                                      Style="{DynamicResource ComboBoxField}"
+                                      ToolTip="uint8_t fits in one Z80 register — prefer it for SMS">
+                                <ComboBoxItem Content="uint8_t"/>
+                                <ComboBoxItem Content="int8_t"/>
+                                <ComboBoxItem Content="uint16_t"/>
+                                <ComboBoxItem Content="int16_t"/>
+                                <ComboBoxItem Content="uint32_t"/>
+                                <ComboBoxItem Content="int32_t"/>
+                            </ComboBox>
+                        </StackPanel>
+
+                        <StackPanel Grid.Column="2">
+                            <TextBlock Text="Default Value" FontSize="10" Margin="0,0,0,4"
+                                       Foreground="{DynamicResource BrushOnSurfaceVariant}"/>
+                            <TextBox x:Name="TxtDefault"
+                                     Style="{DynamicResource InputField}"
+                                     ToolTip="Initial value at program start"/>
+                        </StackPanel>
+                    </Grid>
+
+                    <!-- Min + Max -->
+                    <Grid Margin="0,0,0,12">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="12"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+
+                        <StackPanel Grid.Column="0">
+                            <TextBlock Text="Min Value" FontSize="10" Margin="0,0,0,4"
+                                       Foreground="{DynamicResource BrushOnSurfaceVariant}"/>
+                            <TextBox x:Name="TxtMin"
+                                     Style="{DynamicResource InputField}"
+                                     ToolTip="Used for editor validation and optional bounds check in codegen"/>
+                        </StackPanel>
+
+                        <StackPanel Grid.Column="2">
+                            <TextBlock Text="Max Value" FontSize="10" Margin="0,0,0,4"
+                                       Foreground="{DynamicResource BrushOnSurfaceVariant}"/>
+                            <TextBox x:Name="TxtMax"
+                                     Style="{DynamicResource InputField}"
+                                     ToolTip="Used for editor validation and optional bounds check in codegen"/>
+                        </StackPanel>
+                    </Grid>
+
+                    <!-- Group -->
+                    <TextBlock Text="Group  (optional)" FontSize="10" Margin="0,0,0,4"
+                               Foreground="{DynamicResource BrushOnSurfaceVariant}"/>
+                    <TextBox x:Name="TxtGroup"
+                             Style="{DynamicResource InputField}"
+                             ToolTip="Groups variables in the editor list. Ex: Player, World, Combat"
+                             Margin="0,0,0,12"/>
+
+                    <!-- Persistent -->
+                    <CheckBox x:Name="ChkPersistent"
+                              Content="Persistent (save to SRAM)"
+                              Foreground="{DynamicResource BrushOnSurface}"
+                              ToolTip="Emits vars_save() / vars_load() helpers. Requires target with battery-backed SRAM."/>
+
+                </StackPanel>
+            </ScrollViewer>
+
+            <!-- Footer buttons -->
+            <Border Grid.Row="2" Padding="16,8,16,12"
+                    BorderThickness="0,1,0,0"
+                    BorderBrush="{DynamicResource BrushOutline}">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="8"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+
+                    <Button x:Name="BtnDelete" Grid.Column="0"
+                            Content="Delete"
+                            Click="BtnDelete_Click"
+                            Style="{DynamicResource ButtonDanger}"
+                            Visibility="Collapsed"/>
+
+                    <Button x:Name="BtnSave" Grid.Column="2"
+                            Content="Save"
+                            Click="BtnSave_Click"
+                            Style="{DynamicResource ButtonPrimary}"/>
+
+                    <Button x:Name="BtnClose" Grid.Column="4"
+                            Content="Close"
+                            Click="BtnClose_Click"
+                            Style="{DynamicResource ButtonSecondary}"/>
+                </Grid>
+            </Border>
+        </Grid>
+    </Grid>
+</Window>

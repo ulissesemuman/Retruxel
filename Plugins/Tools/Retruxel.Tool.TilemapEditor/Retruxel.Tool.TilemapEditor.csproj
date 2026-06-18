@@ -19,6 +19,7 @@
 		<ProjectReference Include="..\Retruxel.Tool.AssetProcessor\Retruxel.Tool.AssetProcessor.csproj">
 			<Private>false</Private>
 		</ProjectReference>
+		<ProjectReference Include="..\Retruxel.Tool.TilePacker\Retruxel.Tool.TilePacker.csproj" />
 		<ProjectReference Include="..\Retruxel.Tool.PaletteEditor\Retruxel.Tool.PaletteEditor.csproj">
 			<Private>false</Private>
 		</ProjectReference>

@@ -7,6 +7,7 @@ namespace Retruxel.Tool.SpriteEditor.Models;
 public class SpriteFrame
 {
     public string Name { get; set; } = "Frame";
+    public string Tag { get; set; } = string.Empty;
     public int Duration { get; set; } = 100; // milliseconds
     public List<SpriteTile> Tiles { get; set; } = new();
     public List<HitboxDefinition> Hitboxes { get; set; } = new();
@@ -16,6 +17,7 @@ public class SpriteFrame
         return new SpriteFrame
         {
             Name = Name,
+            Tag = Tag,
             Duration = Duration,
             Tiles = Tiles.Select(t => t.Clone()).ToList(),
             Hitboxes = Hitboxes.Select(h => new HitboxDefinition

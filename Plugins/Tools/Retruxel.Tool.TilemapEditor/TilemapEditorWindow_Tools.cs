@@ -1,5 +1,7 @@
 using Retruxel.Core.Models;
+using Retruxel.Lib.PaletteHelpers;
 using Retruxel.Lib.WPFImageProcessing;
+using Retruxel.Tool.TilePacker;
 using SkiaSharp;
 using System;
 using System.Collections.Generic;
@@ -22,19 +24,6 @@ public partial class TilemapEditorWindow
             return;
         }
 
-        if (_toolRegistry == null)
-        {
-            MessageBox.Show("Tool registry not available.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-            return;
-        }
-
-        var tilePackerTool = _toolRegistry.GetTool("retruxel.tool.tilepacker");
-        if (tilePackerTool == null)
-        {
-            MessageBox.Show("TilePacker tool not found.", "Tool Not Found", MessageBoxButton.OK, MessageBoxImage.Warning);
-            return;
-        }
-
         try
         {
             var assetId = CmbTilesetAsset.SelectedItem.ToString()!;
@@ -48,43 +37,45 @@ public partial class TilemapEditorWindow
                 return;
             }
 
-            var input = new Dictionary<string, object>
+            int imageWidth  = asset.GenerationParams.OptimizedWidth  > 0 ? asset.GenerationParams.OptimizedWidth  : asset.SourceWidth;
+            int imageHeight = asset.GenerationParams.OptimizedHeight > 0 ? asset.GenerationParams.OptimizedHeight : asset.SourceHeight;
+
+            var palette = ResolvePaletteForPreview();
+            var dialog = new TilePackerWindow(
+                asset.GenerationParams.MapIndex,
+                imageWidth,
+                imageHeight,
+                _target.Specs.TileWidth,
+                _target.Specs.TileHeight,
+                palette,
+                assetLabel: $"{asset.Id} — {_target.Specs.TileWidth}×{_target.Specs.TileHeight}px tiles")
             {
-                ["indexMap"] = _currentAsset!.GenerationParams!.MapIndex,
-                ["imageWidth"] = _currentAsset.SourceWidth,
-                ["imageHeight"] = _currentAsset.SourceHeight,
-                ["tileWidth"] = _target.Specs.TileWidth,
-                ["tileHeight"] = _target.Specs.TileHeight,
-                ["enableFlipH"] = true,
-                ["enableFlipV"] = true,
-                ["enableRotation"]= false
+                Owner = this
             };
 
-            var result = tilePackerTool.Execute(input);
+            if (dialog.ShowDialog() != true || dialog.Result is not TilePackResult packResult)
+                return;
 
-            TilePackResult tilePackResult = result["result"] as TilePackResult;
-
-            var originalCount = tilePackResult.OriginalTileCount;
-            var optimizedCount = tilePackResult.OptimizedTileCount;
-            var compressionRatio = tilePackResult.CompressionRatio;
-            var savedTiles = originalCount - optimizedCount;
-            var savedPercent = (1.0 - compressionRatio) * 100;
-
-            var message = $"Optimization complete!\n\n" +
-                         $"Original tiles: {originalCount}\n" +
-                         $"Optimized tiles: {optimizedCount}\n" +
-                         $"Saved: {savedTiles} tiles ({savedPercent:F1}%)\n\n" +
-                         $"Apply optimization to current plane?";
-
-            var dialogResult = MessageBox.Show(message, "Tile Optimization", MessageBoxButton.YesNo, MessageBoxImage.Question);
-
-            if (dialogResult == MessageBoxResult.Yes)
-                ApplyOptimization(result, asset);
+            ApplyOptimization(new Dictionary<string, object> { ["result"] = packResult }, asset);
         }
         catch (Exception ex)
         {
             MessageBox.Show($"Optimization failed: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
         }
+    }
+
+    private IReadOnlyList<HardwareColor> ResolvePaletteForPreview()
+    {
+        if (_currentScene != null && _currentScene.PaletteSlots.Count > 0)
+        {
+            var slotIndex = _selectedPaletteSlot;
+            if (slotIndex >= _currentScene.PaletteSlots.Count)
+                slotIndex = 0;
+
+            return PaletteHelpers.ResolvePaletteColors(_currentScene.PaletteSlots[slotIndex], _target);
+        }
+
+        return _target.GetHardwarePalette();
     }
 
     private async void ApplyOptimization(Dictionary<string, object> optimizationResult, AssetEntry originalAsset)

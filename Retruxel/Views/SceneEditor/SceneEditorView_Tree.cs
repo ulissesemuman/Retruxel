@@ -41,7 +41,7 @@ public partial class SceneEditorView
 {
     private readonly HashSet<string> _expandedNodes = new(StringComparer.Ordinal)
     {
-        "project", "assets", "modules_global", "scenes",
+        "project", "assets", "modules_global", "variables", "scenes",
         "palette", "planes", "modules_scene", "entities", "scene_behaviors"
     };
 
@@ -64,6 +64,7 @@ public partial class SceneEditorView
         BuildAssetsSection();
         BuildGlobalModulesSection();
         BuildPrefabsSection();
+        BuildVariablesSection();
         BuildScenesSection();
     }
 
@@ -198,7 +199,77 @@ public partial class SceneEditorView
         }
     }
 
-    // ── SCENES ─────────────────────────────────────────────────────────────────
+    // ── VARIABLES ──────────────────────────────────────────────────────────
+
+    private void BuildVariablesSection()
+    {
+        var count = _project!.Variables.Count;
+        var sublabel = count == 0 ? null : $"{count} variable{(count == 1 ? "" : "s")}";
+
+        AddTreeSubSectionWithGear(
+            text:     "VARIABLES",
+            key:      "variables",
+            indent:   1,
+            sublabel: sublabel,
+            onGear:   () => OpenVariableManager());
+
+        if (!IsExpanded("variables")) return;
+
+        if (_project.Variables.Count == 0)
+        {
+            AddTreeEmpty("No variables — click ⚙ to manage", indent: 2);
+            return;
+        }
+
+        var grouped = _project.Variables
+            .GroupBy(v => string.IsNullOrEmpty(v.Group) ? "General" : v.Group)
+            .OrderBy(g => g.Key);
+
+        foreach (var group in grouped)
+        {
+            var groupHeader = new TextBlock
+            {
+                Text     = group.Key.ToUpperInvariant(),
+                FontSize = 9,
+                Margin   = new Thickness(2 * 8 + 6, 4, 8, 1)
+            };
+            groupHeader.SetResourceReference(TextBlock.ForegroundProperty, "BrushOnSurfaceVariant");
+            ProjectTreePanel.Children.Add(groupHeader);
+
+            foreach (var variable in group)
+            {
+                var v = variable;
+                var typeBadge   = v.CType.Replace("_t", "");
+                var persistIcon = v.Persistent ? "  💾" : "";
+                AddTreeLeaf(
+                    label:    v.Label + persistIcon,
+                    sublabel: $"{v.VariableId}  ·  {typeBadge}  ·  default: {v.DefaultValue}",
+                    indent:   2,
+                    onClick:  () => OpenVariableManager(),
+                    onDelete: null);
+            }
+        }
+    }
+
+    private void OpenVariableManager()
+    {
+        if (_project is null) return;
+
+        Dispatcher.BeginInvoke(() =>
+        {
+            var window = new VariableManagerWindow(_project, saveCallback: () =>
+            {
+                _projectManager?.MarkDirty();
+                RebuildProjectTree();
+            })
+            {
+                Owner = Window.GetWindow(this)
+            };
+            window.ShowDialog();
+        }, System.Windows.Threading.DispatcherPriority.Input);
+    }
+
+    // ── SCENES ─────────────────────────────────────────────────────────────
 
     private void BuildScenesSection()
     {
@@ -1098,6 +1169,65 @@ public partial class SceneEditorView
         row.MouseLeftButtonDown += (_, e) =>
         {
             if (e.Source is TextBlock tb && tb.Text == "+") return;
+            ToggleExpand(key);
+            RebuildProjectTree();
+            e.Handled = true;
+        };
+        ProjectTreePanel.Children.Add(row);
+    }
+
+    private void AddTreeSubSectionWithGear(string text, string key, int indent,
+        string? sublabel = null, Action? onGear = null)
+    {
+        var row = new Border { Padding = new Thickness(indent * 8, 4, 8, 2), Cursor = Cursors.Hand };
+        var grid = new Grid();
+        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+        if (onGear != null)
+            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+
+        var textStack = new StackPanel { Orientation = Orientation.Horizontal };
+        var arrow = new TextBlock
+        {
+            Text = IsExpanded(key) ? "▼" : "▶",
+            FontSize = 8, VerticalAlignment = VerticalAlignment.Center,
+            Margin = new Thickness(0, 0, 5, 0)
+        };
+        arrow.SetResourceReference(TextBlock.ForegroundProperty, "BrushOnSurfaceVariant");
+
+        var lbl = new TextBlock { Text = text, FontSize = 10, VerticalAlignment = VerticalAlignment.Center };
+        lbl.SetResourceReference(TextBlock.StyleProperty, "TextLabelCaps");
+        lbl.SetResourceReference(TextBlock.ForegroundProperty, "BrushOnSurfaceVariant");
+        textStack.Children.Add(arrow);
+        textStack.Children.Add(lbl);
+
+        if (sublabel != null)
+        {
+            var sl = new TextBlock { Text = $"  {sublabel}", FontSize = 9, VerticalAlignment = VerticalAlignment.Center };
+            sl.SetResourceReference(TextBlock.ForegroundProperty, "BrushOnSurfaceVariant");
+            textStack.Children.Add(sl);
+        }
+
+        Grid.SetColumn(textStack, 0);
+        grid.Children.Add(textStack);
+
+        if (onGear != null)
+        {
+            var gearBtn = new TextBlock
+            {
+                Text = "⚙", FontSize = 12,
+                Width = 20, TextAlignment = TextAlignment.Center,
+                Cursor = Cursors.Hand, VerticalAlignment = VerticalAlignment.Center
+            };
+            gearBtn.SetResourceReference(TextBlock.ForegroundProperty, "BrushPrimary");
+            gearBtn.MouseLeftButtonDown += (_, e) => { onGear.Invoke(); e.Handled = true; };
+            Grid.SetColumn(gearBtn, 1);
+            grid.Children.Add(gearBtn);
+        }
+
+        row.Child = grid;
+        row.MouseLeftButtonDown += (_, e) =>
+        {
+            if (e.Source is TextBlock tb && tb.Text == "⚙") return;
             ToggleExpand(key);
             RebuildProjectTree();
             e.Handled = true;

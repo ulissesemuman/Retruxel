@@ -430,6 +430,83 @@
                                       Checked="ChkShowCollision_CheckedChanged"
                                       Unchecked="ChkShowCollision_CheckedChanged"/>
 
+                            <!-- AUTO-TILING CONTROLS -->
+                            <TextBlock Text="AUTO-TILING"
+                                       Style="{StaticResource TextLabelCaps}"
+                                       Foreground="{StaticResource BrushOnSurfaceVariant}"
+                                       Margin="0,0,0,6"/>
+                            <StackPanel Margin="0,0,0,16">
+                                <CheckBox x:Name="ChkAutoTiling"
+                                          Content="Enable Auto-Tiling"
+                                          Style="{StaticResource ToggleSwitch}"
+                                          Margin="0,0,0,8"
+                                          Checked="ChkAutoTiling_CheckedChanged"
+                                          Unchecked="ChkAutoTiling_CheckedChanged"/>
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="8"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Grid.Column="0"
+                                               Text="Base Index:"
+                                               Style="{StaticResource TextLabel}"
+                                               Foreground="{StaticResource BrushOnSurface}"
+                                               VerticalAlignment="Center"/>
+                                    <TextBox x:Name="TxtAutoTileBase"
+                                             Grid.Column="2"
+                                             Text="0"
+                                             Height="28"
+                                             VerticalContentAlignment="Center"
+                                             TextChanged="TxtAutoTileBase_TextChanged"/>
+                                </Grid>
+                            </StackPanel>
+
+                            <!-- METATILE CONTROLS -->
+                            <TextBlock Text="METATILES & BRUSHES"
+                                       Style="{StaticResource TextLabelCaps}"
+                                       Foreground="{StaticResource BrushOnSurfaceVariant}"
+                                       Margin="0,0,0,6"/>
+                            <Grid Margin="0,0,0,16">
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="8"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="8"/>
+                                    <RowDefinition Height="Auto"/>
+                                </Grid.RowDefinitions>
+                                <ComboBox x:Name="CmbToolMode"
+                                          Grid.Row="0"
+                                          SelectedIndex="0"
+                                          SelectionChanged="CmbToolMode_SelectionChanged">
+                                    <ComboBoxItem Content="Single Tile Paint"/>
+                                    <ComboBoxItem Content="Metatile Paint"/>
+                                    <ComboBoxItem Content="Brush Paint"/>
+                                </ComboBox>
+                                
+                                <TextBlock x:Name="LblPaletteTools"
+                                           Grid.Row="2"
+                                           Text="Select Block:"
+                                           Style="{StaticResource TextLabel}"
+                                           Foreground="{StaticResource BrushOnSurfaceVariant}"
+                                           Visibility="Collapsed"/>
+                                <ComboBox x:Name="CmbBlockSelector"
+                                          Grid.Row="4"
+                                          SelectionChanged="CmbBlockSelector_SelectionChanged"
+                                          Visibility="Collapsed"/>
+                            </Grid>
+                                          
+                            <Button x:Name="BtnCreateMetatile"
+                                    Content="CREATE METATILE FROM SEL"
+                                    Click="BtnCreateMetatile_Click"
+                                    Style="{StaticResource ButtonSecondary}"
+                                    Margin="0,0,0,8"/>
+                            <Button x:Name="BtnCreateBrush"
+                                    Content="CREATE BRUSH FROM SEL"
+                                    Click="BtnCreateBrush_Click"
+                                    Style="{StaticResource ButtonSecondary}"
+                                    Margin="0,0,0,16"/>
+
                             <TextBlock x:Name="LblSelectedTile"
                                        Text="SELECTED TILE"
                                        Style="{StaticResource TextLabelCaps}"

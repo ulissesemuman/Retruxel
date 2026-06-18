@@ -27,14 +27,14 @@ public partial class CodeGenerator
         // Collect vars from both the new GameVars list and legacy module instances
         var vars = new List<Dictionary<string, object>>();
 
-        foreach (var gv in project.GameVars)
+        foreach (var gv in project.Variables)
         {
             vars.Add(new Dictionary<string, object>
             {
                 ["name"]         = gv.VariableId,
-                ["type"]         = gv.Type,
-                ["initialValue"] = gv.InitialValue,
-                ["showInHud"]    = gv.ShowInHud
+                ["type"]         = gv.CType,
+                ["initialValue"] = gv.DefaultValue,
+                ["showInHud"]    = false
             });
         }
 
@@ -43,7 +43,7 @@ public partial class CodeGenerator
         {
             var node = JsonNode.Parse(m.Serialize()) as JsonObject;
             var name = node?["name"]?.GetValue<string>() ?? "myVar";
-            if (project.GameVars.Any(g => g.VariableId == name)) continue; // skip duplicates
+            if (project.Variables.Any(g => g.VariableId == name)) continue; // skip duplicates
             vars.Add(new Dictionary<string, object>
             {
                 ["name"]         = name,
@@ -57,8 +57,8 @@ public partial class CodeGenerator
 
         var hasIntOrByte = vars.Any(v => v["type"].ToString() is "int" or "byte");
 
-        // Build a lookup: variableId → GameVarDefinition (for Reset operation initial value)
-        var varLookup = project.GameVars.ToDictionary(
+        // Build a lookup: variableId → GameVariableData (for Reset operation initial value)
+        var varLookup = project.Variables.ToDictionary(
             g => g.VariableId,
             g => g,
             StringComparer.OrdinalIgnoreCase);
@@ -93,7 +93,7 @@ public partial class CodeGenerator
                         ["variableName"] = b.VariableId,
                         ["operation"]    = b.Operation.ToString(),
                         ["value"]        = b.Value,
-                        ["initialValue"] = varDef?.InitialValue ?? "0",
+                        ["initialValue"] = varDef?.DefaultValue ?? "0",
                         ["condition"]    = b.Condition ?? string.Empty
                     };
                 }).ToList<object>()

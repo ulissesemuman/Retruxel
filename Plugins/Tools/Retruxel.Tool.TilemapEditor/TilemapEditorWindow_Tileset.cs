@@ -193,6 +193,8 @@ public partial class TilemapEditorWindow
     }
 
     private const int TilesetColumns = 16;
+
+    internal int GetTilesetColumns() => TilesetColumns;
     private SKBitmap? _tilesetBitmap;
     private Image? _tilesetImage;
 
@@ -346,6 +348,9 @@ public partial class TilemapEditorWindow
 
         int tileId = HitTestTile(e.GetPosition(TilesetCanvas));
         if (tileId < 0) return;
+
+        // Collision mode: click toggles tile as solid instead of selecting it
+        if (TryHandleCollisionTilesetClick(tileId)) return;
 
         if (Keyboard.Modifiers == ModifierKeys.Shift)
         {

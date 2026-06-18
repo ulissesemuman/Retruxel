@@ -10,4 +10,7 @@ public class SpriteState
     public bool LoopAnimation { get; set; } = true;
     public int AnimationSpeed { get; set; } = 100;
     public int StartTile { get; set; } = 0;
+    public bool OnionSkinPrevious { get; set; } = true;
+    public bool OnionSkinNext { get; set; } = true;
+    public double OnionSkinOpacity { get; set; } = 0.35;
 }

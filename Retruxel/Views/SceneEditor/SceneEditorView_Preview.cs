@@ -254,6 +254,8 @@ public partial class SceneEditorView
         Canvas.SetLeft(boundary, 0);
         Canvas.SetTop (boundary, 0);
         SceneCanvas.Children.Add(boundary);
+
+        DrawConstraintOverlays();
     }
 
     // ── Plane layer rendering ───────────────────────────────────────────────

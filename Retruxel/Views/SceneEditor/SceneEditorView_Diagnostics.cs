@@ -22,6 +22,16 @@ public partial class SceneEditorView
 
         DiagnosticsPanel.Children.Clear();
 
+        // Scene label header
+        DiagnosticsPanel.Children.Add(new System.Windows.Controls.TextBlock
+        {
+            Text       = $"SCENE: {_currentScene.SceneName.ToUpperInvariant()}",
+            FontSize   = 9,
+            FontFamily = new System.Windows.Media.FontFamily("Space Grotesk, Segoe UI, sans-serif"),
+            Foreground = TryFindBrush("BrushPrimary") ?? System.Windows.Media.Brushes.Green,
+            Margin     = new System.Windows.Thickness(0, 0, 0, 8)
+        });
+
         try
         {
             // ── VRAM (VramAllocator dry-run) ──────────────────────────────────

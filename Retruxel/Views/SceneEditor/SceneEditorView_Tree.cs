@@ -344,7 +344,6 @@ public partial class SceneEditorView
         BuildSceneModulesSection(scene);
         BuildEntitiesSection(scene);
         BuildSceneBehaviorsSection(scene);
-        BuildVramUsageBar(scene);
     }
 
     // ── PALETTE ────────────────────────────────────────────────────────────────
@@ -700,7 +699,6 @@ public partial class SceneEditorView
                 return (prefab?.WidthTiles ?? e.WidthTiles ?? 2) *
                        (prefab?.HeightTiles ?? e.HeightTiles ?? 2);
             });
-        BuildSpriteUsageBar(usedSprites, maxSprites, indent: 3);
     }
 
     /// <summary>

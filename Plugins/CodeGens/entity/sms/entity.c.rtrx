@@ -59,6 +59,7 @@ void {{entityName}}_update(void);
 
 // @retruxel:block source
 #include "SMSlib.h"
+#include "engine.h"
 #include "{{entityName}}.h"
 {{#if collisionPlaneId}}
 #include "plane_{{collisionPlaneId}}.h"

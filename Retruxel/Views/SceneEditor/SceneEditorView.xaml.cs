@@ -76,6 +76,7 @@ public partial class SceneEditorView : UserControl
             _stateManager = new StateManager(manager, _undoRedo);
             _stateManager.SavingStateChanged += OnSavingStateChanged;
             _stateManager.StateChanged       += () => _projectManager?.MarkDirty();
+            _stateManager.StateChanged       += () => Dispatcher.InvokeAsync(RefreshDiagnostics);
         }
     }
 
@@ -160,6 +161,7 @@ public partial class SceneEditorView : UserControl
         RebuildSceneTabs();
         RebuildProjectTree();
         RefreshPreview();
+        RefreshDiagnostics();
     }
 
     public void Cleanup()

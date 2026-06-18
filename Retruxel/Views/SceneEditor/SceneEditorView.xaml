@@ -183,38 +183,77 @@
             </Grid>
         </Border>
 
-        <!-- ===== RIGHT — PROPERTIES ===== -->
+        <!-- ===== RIGHT — PROPERTIES + DIAGNOSTICS ===== -->
         <Border Grid.Row="1" Grid.Column="3"
-            Background="{StaticResource BrushSurfaceContainerLow}"
-            Padding="16">
+            Background="{StaticResource BrushSurfaceContainerLow}">
             <Grid>
                 <Grid.RowDefinitions>
-                    <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="*" MinHeight="120"/>
+                    <RowDefinition Height="4"/>
+                    <RowDefinition Height="220" MinHeight="80" MaxHeight="400"/>
                 </Grid.RowDefinitions>
 
-                <TextBlock Grid.Row="0"
-                       x:Name="TxtPropertiesTitle"
-                       Text="PROPERTIES"
-                       Style="{StaticResource TextLabelCaps}"
-                       Foreground="{StaticResource BrushOnSurfaceVariant}"
-                       Margin="0,0,0,16"/>
+                <!-- Properties -->
+                <Grid Grid.Row="0" Margin="16">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
 
-                <ScrollViewer Grid.Row="1"
-                          VerticalScrollBarVisibility="Auto"
-                          HorizontalScrollBarVisibility="Disabled">
-                    <StackPanel>
-                        <TextBlock x:Name="TxtNoSelection"
-                               Text="{loc:Tr Key='scene.no_selection'}"
-                               Style="{StaticResource TextBody}"
-                               TextWrapping="Wrap"
+                    <TextBlock Grid.Row="0"
+                           x:Name="TxtPropertiesTitle"
+                           Text="PROPERTIES"
+                           Style="{StaticResource TextLabelCaps}"
+                           Foreground="{StaticResource BrushOnSurfaceVariant}"
+                           Margin="0,0,0,16"/>
+
+                    <ScrollViewer Grid.Row="1"
+                              VerticalScrollBarVisibility="Auto"
+                              HorizontalScrollBarVisibility="Disabled">
+                        <StackPanel>
+                            <TextBlock x:Name="TxtNoSelection"
+                                   Text="{loc:Tr Key='scene.no_selection'}"
+                                   Style="{StaticResource TextBody}"
+                                   TextWrapping="Wrap"
+                                   Foreground="{StaticResource BrushOnSurfaceVariant}"
+                                   Visibility="Visible"/>
+
+                            <StackPanel x:Name="PropertiesPanel"
+                                    Visibility="Collapsed"/>
+                        </StackPanel>
+                    </ScrollViewer>
+                </Grid>
+
+                <!-- Splitter -->
+                <GridSplitter Grid.Row="1"
+                          Height="4"
+                          HorizontalAlignment="Stretch"
+                          VerticalAlignment="Stretch"
+                          Background="{StaticResource BrushSurface}"
+                          ShowsPreview="False"/>
+
+                <!-- Diagnostics passivos -->
+                <Border Grid.Row="2"
+                        Background="{StaticResource BrushSurface}">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="*"/>
+                        </Grid.RowDefinitions>
+
+                        <TextBlock Grid.Row="0"
+                               Text="HARDWARE USAGE"
+                               Style="{StaticResource TextLabelCaps}"
                                Foreground="{StaticResource BrushOnSurfaceVariant}"
-                               Visibility="Visible"/>
+                               Margin="16,8,16,4"/>
 
-                        <StackPanel x:Name="PropertiesPanel"
-                                Visibility="Collapsed"/>
-                    </StackPanel>
-                </ScrollViewer>
+                        <ScrollViewer Grid.Row="1"
+                                  VerticalScrollBarVisibility="Auto"
+                                  HorizontalScrollBarVisibility="Disabled">
+                            <StackPanel x:Name="DiagnosticsPanel" Margin="16,0,16,12"/>
+                        </ScrollViewer>
+                    </Grid>
+                </Border>
             </Grid>
         </Border>
 

@@ -39,5 +39,6 @@ void {{entityName}}_action_jump_press({{entityName}}_Params* p) {
     {{#if params.onPress}}
     p->prev_button_held = 1;
     {{/if}}
+    EVENT_EMIT(EV_ON_JUMP);
 }
 // @retruxel:end

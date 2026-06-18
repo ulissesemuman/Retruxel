@@ -12,13 +12,13 @@ namespace Retruxel.Tool.TilemapEditor;
 public partial class TilemapEditorWindow
 {
     private void TitleBar_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
- => DragMove();
+        => DragMove();
 
     private void BtnClose_Click(object sender, RoutedEventArgs e)
- => Close();
+        => Close();
 
     private void BtnCancel_Click(object sender, RoutedEventArgs e)
- => Close();
+        => Close();
 
     private async void BtnSave_Click(object sender, RoutedEventArgs e)
     {
@@ -37,27 +37,30 @@ public partial class TilemapEditorWindow
 
         SavePaletteSlotSelection();
 
-        // Snapshot the current layer directly — no Base64 round-trip needed.
+        // Get the bounding box so width/height reflect actual placed content.
+        int mapWidth  = _planeData.Width;
+        int mapHeight = _planeData.Height;
+
+        // Snapshot the current layer as a flat row-major array (empty = TileEntry.Empty).
         var layerSnapshot = _planeData.GetLayer(_currentLayerIndex);
 
-        // Convert TileEntry[] to a typed array for clean JSON serialization.
-        var tilesArray = layerSnapshot.Select(e => new
+        // Serialize as typed objects for clean JSON round-trip.
+        var tilesArray = layerSnapshot.Select(entry => new
         {
-            tileIndex = e.TileIndex,
-            flipH     = e.FlipH,
-            flipV     = e.FlipV,
-            rotation  = e.Rotation
+            tileIndex = entry.TileIndex,
+            flipH     = entry.FlipH,
+            flipV     = entry.FlipV,
+            rotation  = entry.Rotation
         }).ToArray();
 
-        
         ModuleData = new Dictionary<string, object>
         {
             ["moduleId"]     = "plane",
-            ["mapWidth"]     = _planeData.Width,
-            ["mapHeight"]    = _planeData.Height,
+            ["mapWidth"]     = mapWidth,
+            ["mapHeight"]    = mapHeight,
             ["tilesAssetId"] = CmbTilesetAsset.SelectedItem.ToString()!,
             ["paletteSlot"]  = _selectedPaletteSlot,
-            ["tiles"]      = tilesArray,
+            ["tiles"]        = tilesArray,
             ["mapAssetId"]   = "",
             ["startTile"]    = 0,
             ["mapX"]         = _mapOffsetX,
@@ -86,15 +89,18 @@ public partial class TilemapEditorWindow
 
     private void BtnFill_Click(object sender, RoutedEventArgs e)
     {
-        // Create entry with current flip flags
+        // Fill uses the current viewport dimensions as the fill area.
+        int fillW = _planeSpecs.DefaultWidth;
+        int fillH = _planeSpecs.DefaultHeight;
+
         var entry = new TileEntry
         {
             TileIndex = _selectedTileId,
-            FlipH = _selectedFlipH,
-            FlipV = _selectedFlipV
+            FlipH     = _selectedFlipH,
+            FlipV     = _selectedFlipV
         };
 
-        _planeData.FillLayer(_currentLayerIndex, entry);
+        _planeData.FillLayer(_currentLayerIndex, entry, fillW, fillH);
         RenderCanvas();
     }
 
@@ -121,17 +127,19 @@ public partial class TilemapEditorWindow
             int tileCount = asset.GenerationParams.TileCount;
             int rows = (int)Math.Ceiling((double)tileCount / columns);
 
-            // Resize plane to match tileset dimensions
-            TxtWidth.Text = columns.ToString();
-            TxtHeight.Text = rows.ToString();
-            _planeData.Resize(columns, rows);
+            // Clear existing content and place tiles sequentially starting at (0,0).
+            _planeData.ClearLayer(_currentLayerIndex);
 
-            // Fill plane with tiles in order (0, 1, 2, ...) - no flip
-            var currentLayer = _planeData.GetLayer(_currentLayerIndex);
-            for (int i = 0; i < currentLayer.Length && i < tileCount; i++)
+            for (int i = 0; i < tileCount; i++)
             {
-                currentLayer[i] = new TileEntry { TileIndex = i };
+                int x = i % columns;
+                int y = i / columns;
+                _planeData.SetTile(_currentLayerIndex, x, y, new TileEntry { TileIndex = i });
             }
+
+            // Update dimension display to reflect the imported layout.
+            TxtWidth.Text  = columns.ToString();
+            TxtHeight.Text = rows.ToString();
 
             RenderCanvas();
 
@@ -151,63 +159,77 @@ public partial class TilemapEditorWindow
 
     public void LoadModuleData(Dictionary<string, object> moduleData)
     {
+        // Read saved width/height — used to interpret the flat tiles array.
+        int savedWidth  = _planeSpecs.DefaultWidth;
+        int savedHeight = _planeSpecs.DefaultHeight;
+
         if (moduleData.ContainsKey("mapWidth"))
-            TxtWidth.Text = moduleData["mapWidth"].ToString()!;
+        {
+            var w = moduleData["mapWidth"];
+            savedWidth = w is System.Text.Json.JsonElement jw ? jw.GetInt32() : Convert.ToInt32(w);
+            TxtWidth.Text = savedWidth.ToString();
+        }
         else if (moduleData.ContainsKey("width"))
-            TxtWidth.Text = moduleData["width"].ToString()!;
+        {
+            var w = moduleData["width"];
+            savedWidth = w is System.Text.Json.JsonElement jw ? jw.GetInt32() : Convert.ToInt32(w);
+            TxtWidth.Text = savedWidth.ToString();
+        }
 
         if (moduleData.ContainsKey("mapHeight"))
-            TxtHeight.Text = moduleData["mapHeight"].ToString()!;
+        {
+            var h = moduleData["mapHeight"];
+            savedHeight = h is System.Text.Json.JsonElement jh ? jh.GetInt32() : Convert.ToInt32(h);
+            TxtHeight.Text = savedHeight.ToString();
+        }
         else if (moduleData.ContainsKey("height"))
-            TxtHeight.Text = moduleData["height"].ToString()!;
+        {
+            var h = moduleData["height"];
+            savedHeight = h is System.Text.Json.JsonElement jh ? jh.GetInt32() : Convert.ToInt32(h);
+            TxtHeight.Text = savedHeight.ToString();
+        }
 
-        // Load palette slot
+        // Load palette slot.
         if (moduleData.ContainsKey("paletteSlot"))
         {
             var slotObj = moduleData["paletteSlot"];
-            if (slotObj is System.Text.Json.JsonElement jsonSlot)
-                _selectedPaletteSlot = jsonSlot.GetInt32();
-            else
-                _selectedPaletteSlot = Convert.ToInt32(slotObj);
+            _selectedPaletteSlot = slotObj is System.Text.Json.JsonElement jsonSlot
+                ? jsonSlot.GetInt32()
+                : Convert.ToInt32(slotObj);
 
-            // Validate slot index
             if (_currentScene != null && _selectedPaletteSlot >= _currentScene.PaletteSlots.Count)
             {
                 System.Diagnostics.Debug.WriteLine($"WARNING: Loaded palette slot {_selectedPaletteSlot} is out of range, resetting to 0");
                 _selectedPaletteSlot = 0;
             }
 
-            // Update ComboBox selection
             if (_selectedPaletteSlot < CmbPalette.Items.Count)
                 CmbPalette.SelectedIndex = _selectedPaletteSlot;
         }
 
-        // Load map offset
+        // Load map offset.
         if (moduleData.ContainsKey("mapX"))
         {
             var mapXObj = moduleData["mapX"];
-            if (mapXObj is System.Text.Json.JsonElement jsonX)
-                _mapOffsetX = jsonX.GetInt32();
-            else
-                _mapOffsetX = Convert.ToInt32(mapXObj);
+            _mapOffsetX = mapXObj is System.Text.Json.JsonElement jsonX
+                ? jsonX.GetInt32()
+                : Convert.ToInt32(mapXObj);
         }
 
         if (moduleData.ContainsKey("mapY"))
         {
             var mapYObj = moduleData["mapY"];
-            if (mapYObj is System.Text.Json.JsonElement jsonY)
-                _mapOffsetY = jsonY.GetInt32();
-            else
-                _mapOffsetY = Convert.ToInt32(mapYObj);
+            _mapOffsetY = mapYObj is System.Text.Json.JsonElement jsonY
+                ? jsonY.GetInt32()
+                : Convert.ToInt32(mapYObj);
         }
 
         UpdateMapOffset();
 
-        int width = int.Parse(TxtWidth.Text);
-        int height = int.Parse(TxtHeight.Text);
+        // Initialize sparse plane (no fixed allocation needed).
+        _planeData.Initialize(1);
 
-        _planeData.Resize(width, height);
-
+        // Load tileset asset.
         if (moduleData.ContainsKey("tilesAssetId"))
         {
             string assetId = moduleData["tilesAssetId"].ToString()!;
@@ -221,6 +243,7 @@ public partial class TilemapEditorWindow
             }
         }
 
+        // Load tile data.
         if (moduleData.ContainsKey("tiles"))
         {
             var tilesObj = moduleData["tiles"];
@@ -229,79 +252,104 @@ public partial class TilemapEditorWindow
             {
                 if (jsonEl.ValueKind == System.Text.Json.JsonValueKind.Array)
                 {
-                    var currentLayer = _planeData.GetLayer(_currentLayerIndex);
-                    int index = 0;
-
-                    foreach (var item in jsonEl.EnumerateArray())
-                    {
-                        if (index >= currentLayer.Length) break;
-
-                        // New format: object with tileIndex, flipH, flipV, rotation
-                        if (item.ValueKind == System.Text.Json.JsonValueKind.Object)
-                        {
-                            currentLayer[index] = new TileEntry
-                            {
-                                TileIndex = item.TryGetProperty("tileIndex", out var ti) ? ti.GetInt32() : -1,
-                                FlipH = item.TryGetProperty("flipH", out var fh) && fh.GetBoolean(),
-                                FlipV = item.TryGetProperty("flipV", out var fv) && fv.GetBoolean(),
-                                Rotation = item.TryGetProperty("rotation", out var rot) ? rot.GetInt32() : 0
-                            };
-                        }
-                        // Old format: int (backward compat - treat as plain tile index)
-                        else if (item.ValueKind == System.Text.Json.JsonValueKind.Number)
-                        {
-                            int tileIndex = item.GetInt32();
-                            currentLayer[index] = new TileEntry { TileIndex = tileIndex };
-                        }
-
-                        index++;
-                    }
-                    RenderCanvas();
+                    LoadTilesFromJsonArray(jsonEl, savedWidth, savedHeight);
                 }
                 else if (jsonEl.ValueKind == System.Text.Json.JsonValueKind.String)
                 {
                     var base64Data = jsonEl.GetString();
                     if (!string.IsNullOrEmpty(base64Data))
-                        LoadFromBase64(base64Data);
+                        LoadFromBase64(base64Data, savedWidth, savedHeight);
                 }
             }
             else if (tilesObj is object[] objArray)
             {
-                var currentLayer = _planeData.GetLayer(_currentLayerIndex);
-                for (int i = 0; i < Math.Min(objArray.Length, currentLayer.Length); i++)
-                {
-                    // Handle anonymous objects from BtnSave
-                    var obj = objArray[i];
-                    var type = obj.GetType();
-                    var tiProp = type.GetProperty("tileIndex");
-                    var fhProp = type.GetProperty("flipH");
-                    var fvProp = type.GetProperty("flipV");
-                    var rotProp = type.GetProperty("rotation");
-
-                    currentLayer[i] = new TileEntry
-                    {
-                        TileIndex = tiProp != null ? (int)tiProp.GetValue(obj)! : -1,
-                        FlipH = fhProp != null && (bool)fhProp.GetValue(obj)!,
-                        FlipV = fvProp != null && (bool)fvProp.GetValue(obj)!,
-                        Rotation = rotProp != null ? (int)rotProp.GetValue(obj)! : 0
-                    };
-                }
-                RenderCanvas();
+                LoadTilesFromObjectArray(objArray, savedWidth);
             }
         }
         else if (moduleData.ContainsKey("data"))
         {
             var dataObj = moduleData["data"];
             if (dataObj is string base64Data)
-                LoadFromBase64(base64Data);
+                LoadFromBase64(base64Data, savedWidth, savedHeight);
+        }
+
+        RenderCanvas();
+    }
+
+    // ── Tile deserialization helpers ──────────────────────────────────────────
+
+    private void LoadTilesFromJsonArray(System.Text.Json.JsonElement jsonArray, int width, int height)
+    {
+        int index = 0;
+        int maxIndex = width * height;
+
+        foreach (var item in jsonArray.EnumerateArray())
+        {
+            if (index >= maxIndex) break;
+
+            int x = index % width;
+            int y = index / width;
+
+            TileEntry entry;
+
+            if (item.ValueKind == System.Text.Json.JsonValueKind.Object)
+            {
+                entry = new TileEntry
+                {
+                    TileIndex = item.TryGetProperty("tileIndex", out var ti) ? ti.GetInt32() : -1,
+                    FlipH     = item.TryGetProperty("flipH",     out var fh) && fh.GetBoolean(),
+                    FlipV     = item.TryGetProperty("flipV",     out var fv) && fv.GetBoolean(),
+                    Rotation  = item.TryGetProperty("rotation",  out var rot) ? rot.GetInt32() : 0
+                };
+            }
+            else if (item.ValueKind == System.Text.Json.JsonValueKind.Number)
+            {
+                // Legacy format: bare int tile index.
+                entry = new TileEntry { TileIndex = item.GetInt32() };
+            }
+            else
+            {
+                index++;
+                continue;
+            }
+
+            if (!entry.IsEmpty)
+                _planeData.SetTile(_currentLayerIndex, x, y, entry);
+
+            index++;
         }
     }
 
-    private void LoadFromBase64(string base64Data)
+    private void LoadTilesFromObjectArray(object[] objArray, int width)
     {
-        var entries = PlaneSerializer.FromBase64(base64Data, _planeData.Width * _planeData.Height);
-        var currentLayer = _planeData.GetLayer(_currentLayerIndex);
-        Array.Copy(entries, currentLayer, Math.Min(entries.Length, currentLayer.Length));
-        RenderCanvas();
+        for (int i = 0; i < objArray.Length; i++)
+        {
+            int x = i % width;
+            int y = i / width;
+
+            var obj   = objArray[i];
+            var type  = obj.GetType();
+            var tiProp  = type.GetProperty("tileIndex");
+            var fhProp  = type.GetProperty("flipH");
+            var fvProp  = type.GetProperty("flipV");
+            var rotProp = type.GetProperty("rotation");
+
+            var entry = new TileEntry
+            {
+                TileIndex = tiProp  != null ? (int) tiProp.GetValue(obj)!  : -1,
+                FlipH     = fhProp  != null && (bool)fhProp.GetValue(obj)!,
+                FlipV     = fvProp  != null && (bool)fvProp.GetValue(obj)!,
+                Rotation  = rotProp != null ? (int) rotProp.GetValue(obj)! : 0
+            };
+
+            if (!entry.IsEmpty)
+                _planeData.SetTile(_currentLayerIndex, x, y, entry);
+        }
+    }
+
+    private void LoadFromBase64(string base64Data, int width, int height)
+    {
+        var entries = PlaneSerializer.FromBase64(base64Data, width * height);
+        _planeData.LoadLayer(_currentLayerIndex, entries, width, height);
     }
 }

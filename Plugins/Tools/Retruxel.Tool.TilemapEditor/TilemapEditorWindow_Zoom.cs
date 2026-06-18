@@ -104,8 +104,10 @@ public partial class TilemapEditorWindow
             double availW = CanvasScrollViewer.ActualWidth;
             double availH = CanvasScrollViewer.ActualHeight;
             int tileSize = _target.Specs.TileWidth;
-            int mapW = int.Parse(TxtWidth.Text);
-            int mapH = int.Parse(TxtHeight.Text);
+
+            // Use the viewport size when the plane is empty; otherwise use the bounding box.
+            int mapW = _planeData.Width  > 0 ? _planeData.Width  : _planeSpecs.DefaultWidth;
+            int mapH = _planeData.Height > 0 ? _planeData.Height : _planeSpecs.DefaultHeight;
 
             double fitZoom = Math.Min(availW / (mapW * tileSize), availH / (mapH * tileSize));
             SetZoom(fitZoom, isCanvas: true);

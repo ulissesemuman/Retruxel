@@ -959,8 +959,11 @@ public partial class CodeGenerator
             progress?.Report($"INFO: Scene '{scene.SceneName}' generated.");
         }
 
-        if (instancesByModule.ContainsKey("gamevar"))
-            sourceFiles.AddRange(GenerateGameVarsFile(project, instancesByModule["gamevar"], progress));
+        if (instancesByModule.ContainsKey("gamevar") || project.GameVars.Count > 0 || project.EventBindings.Count > 0)
+        {
+            var legacyInstances = instancesByModule.TryGetValue("gamevar", out var gvi) ? gvi : [];
+            sourceFiles.AddRange(GenerateGameVarsFile(project, legacyInstances, progress));
+        }
 
         if (instancesByModule.ContainsKey("text.array"))
             sourceFiles.AddRange(GenerateTextArrayFile(project, instancesByModule["text.array"], progress));

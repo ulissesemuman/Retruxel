@@ -4,16 +4,15 @@ public partial class TilemapEditorWindow
 {
     private void InitializeUI()
     {
+        // The plane is sparse — no fixed width/height allocation needed.
+        // TxtWidth and TxtHeight now show the computed bounding box and are read-only
+        // display fields; the canvas expands automatically as the user paints.
+        _planeData.Initialize(1);
+
+        // Seed the display fields with the viewport size as a reference point.
         var specs = _planeSpecs;
-
-        int mapWidth = specs.DefaultWidth * 2;
-        int mapHeight = specs.DefaultHeight * 2;
-        TxtWidth.Text = mapWidth.ToString();
-        TxtHeight.Text = mapHeight.ToString();
-
-        // Always start with 1 layer — the user can add more freely.
-        // The VramAllocator determines whether there is budget for additional layers.
-        _planeData.Initialize(mapWidth, mapHeight, 1);
+        TxtWidth.Text  = specs.DefaultWidth.ToString();
+        TxtHeight.Text = specs.DefaultHeight.ToString();
 
         PanelLayers.Visibility = System.Windows.Visibility.Visible;
         CmbLayers.Items.Clear();

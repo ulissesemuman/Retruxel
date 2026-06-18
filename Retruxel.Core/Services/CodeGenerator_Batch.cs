@@ -24,60 +24,109 @@ public partial class CodeGenerator
     {
         var files = new List<GeneratedFile>();
 
-        // Collect all GameVar data
-        var vars = gameVarInstances.Select(m =>
+        // Collect vars from both the new GameVars list and legacy module instances
+        var vars = new List<Dictionary<string, object>>();
+
+        foreach (var gv in project.GameVars)
         {
-            var json = m.Serialize();
-            var node = JsonNode.Parse(json) as JsonObject;
-            return new Dictionary<string, object>
+            vars.Add(new Dictionary<string, object>
             {
-                ["name"] = node?["name"]?.GetValue<string>() ?? "myVar",
-                ["type"] = node?["type"]?.GetValue<string>() ?? "int",
-                ["initialValue"] = node?["initialValue"]?.GetValue<string>() ?? "0",
-                ["showInHud"] = node?["showInHud"]?.GetValue<bool>() ?? false
-            };
-        }).ToList();
+                ["name"]         = gv.VariableId,
+                ["type"]         = gv.Type,
+                ["initialValue"] = gv.InitialValue,
+                ["showInHud"]    = gv.ShowInHud
+            });
+        }
 
-        // Check if any var is int or byte
-        var hasIntOrByte = vars.Any(v =>
+        // Legacy: module instances (GameVarModule still supported)
+        foreach (var m in gameVarInstances)
         {
-            var type = v["type"].ToString();
-            return type == "int" || type == "byte";
-        });
+            var node = JsonNode.Parse(m.Serialize()) as JsonObject;
+            var name = node?["name"]?.GetValue<string>() ?? "myVar";
+            if (project.GameVars.Any(g => g.VariableId == name)) continue; // skip duplicates
+            vars.Add(new Dictionary<string, object>
+            {
+                ["name"]         = name,
+                ["type"]         = node?["type"]?.GetValue<string>() ?? "int",
+                ["initialValue"] = node?["initialValue"]?.GetValue<string>() ?? "0",
+                ["showInHud"]    = node?["showInHud"]?.GetValue<bool>() ?? false
+            });
+        }
 
-        // Build variables for template
+        if (vars.Count == 0) return files;
+
+        var hasIntOrByte = vars.Any(v => v["type"].ToString() is "int" or "byte");
+
+        // Build a lookup: variableId → GameVarDefinition (for Reset operation initial value)
+        var varLookup = project.GameVars.ToDictionary(
+            g => g.VariableId,
+            g => g,
+            StringComparer.OrdinalIgnoreCase);
+
+        // Build event bus data from EventBindings
+        var bindings = project.EventBindings;
+        var hasEventBindings = bindings.Count > 0;
+
+        // Collect unique event IDs and assign numeric defines
+        var uniqueEventIds = bindings
+            .Select(b => b.EventId)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .OrderBy(e => e)
+            .Select((eventId, idx) => new Dictionary<string, object>
+            {
+                ["define"] = $"EV_{eventId.ToUpperInvariant()}",
+                ["index"]  = idx
+            })
+            .ToList<object>();
+
+        // Group bindings by eventId for the switch statement
+        var bindingGroups = bindings
+            .GroupBy(b => b.EventId, StringComparer.OrdinalIgnoreCase)
+            .Select(g => new Dictionary<string, object>
+            {
+                ["eventDefine"] = $"EV_{g.Key.ToUpperInvariant()}",
+                ["bindings"] = g.Select(b =>
+                {
+                    varLookup.TryGetValue(b.VariableId, out var varDef);
+                    return (object)new Dictionary<string, object>
+                    {
+                        ["variableName"] = b.VariableId,
+                        ["operation"]    = b.Operation.ToString(),
+                        ["value"]        = b.Value,
+                        ["initialValue"] = varDef?.InitialValue ?? "0",
+                        ["condition"]    = b.Condition ?? string.Empty
+                    };
+                }).ToList<object>()
+            })
+            .ToList<object>();
+
         var variables = new Dictionary<string, object>
         {
-            ["vars"] = vars,
-            ["hasIntOrByte"] = hasIntOrByte
+            ["vars"]             = vars.Cast<object>().ToList(),
+            ["hasIntOrByte"]     = hasIntOrByte,
+            ["hasEventBindings"] = hasEventBindings,
+            ["eventIds"]         = uniqueEventIds,
+            ["bindingGroups"]    = bindingGroups
         };
 
-        // Try to render via ModuleRenderer
-        if (_moduleRenderer.CanRender("gamevar", project.TargetId))
+        var templatePath = Path.Combine(
+            Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location) ?? "",
+            "Plugins", "CodeGens", "gamevar", project.TargetId, "gamevars.c.rtrx");
+
+        if (!File.Exists(templatePath)) return files;
+
+        var template = File.ReadAllText(templatePath);
+        var content  = TemplateEngine.Render(template, variables);
+
+        files.Add(new GeneratedFile
         {
-            // For batch modules, we need a special render path
-            // For now, manually construct the template rendering
-            var key = $"{project.TargetId}::gamevar".ToLowerInvariant();
-            var templatePath = Path.Combine(
-                Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location) ?? "",
-                "Plugins", "CodeGens", "gamevar", project.TargetId, "gamevars.c.rtrx");
+            FileName       = "gamevars.c",
+            Content        = content,
+            FileType       = GeneratedFileType.Source,
+            SourceModuleId = "gamevar"
+        });
 
-            if (File.Exists(templatePath))
-            {
-                var template = File.ReadAllText(templatePath);
-                var content = TemplateEngine.Render(template, variables);
-
-                files.Add(new GeneratedFile
-                {
-                    FileName = "gamevars.c",
-                    Content = content,
-                    FileType = GeneratedFileType.Source,
-                    SourceModuleId = "gamevar"
-                });
-
-                progress?.Report($"INFO: gamevars.c generated with {vars.Count} variable(s).");
-            }
-        }
+        progress?.Report($"INFO: gamevars.c generated — {vars.Count} variable(s), {bindings.Count} event binding(s).");
 
         return files;
     }

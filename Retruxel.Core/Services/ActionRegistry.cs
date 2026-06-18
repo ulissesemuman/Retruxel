@@ -21,18 +21,47 @@ namespace Retruxel.Core.Services;
 public class ActionRegistry
 {
     private readonly Dictionary<string, ActionDefinition> _actions;
-    private readonly Dictionary<string, string> _templatePaths; // actionId::targetId → template path
+    private readonly Dictionary<string, string> _templatePaths;
+    private readonly Dictionary<string, List<EventEmitDef>> _emits; // actionId → emits
 
     private ActionRegistry(
         Dictionary<string, ActionDefinition> actions,
-        Dictionary<string, string> templatePaths)
+        Dictionary<string, string> templatePaths,
+        Dictionary<string, List<EventEmitDef>> emits)
     {
         _actions = actions;
         _templatePaths = templatePaths;
+        _emits = emits;
     }
 
     /// <summary>All discovered actions, keyed by ActionId.</summary>
     public IReadOnlyDictionary<string, ActionDefinition> Actions => _actions;
+
+    /// <summary>
+    /// Returns all events emitted by a given action.
+    /// Used by the editor to populate the event dropdown in the binding UI.
+    /// </summary>
+    public IReadOnlyList<EventEmitDef> GetEmits(string actionId)
+        => _emits.TryGetValue(actionId, out var list) ? list : [];
+
+    /// <summary>
+    /// Returns all events emitted across all active actions in a project.
+    /// Deduplicated by eventId.
+    /// </summary>
+    public IReadOnlyList<EventEmitDef> GetAllEmits(IEnumerable<string> activeActionIds)
+    {
+        var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var result = new List<EventEmitDef>();
+        foreach (var actionId in activeActionIds)
+        {
+            foreach (var emit in GetEmits(actionId))
+            {
+                if (seen.Add(emit.EventId))
+                    result.Add(emit);
+            }
+        }
+        return result;
+    }
 
     public ActionDefinition? GetById(string actionId)
         => _actions.TryGetValue(actionId, out var def) ? def : null;
@@ -82,6 +111,7 @@ public class ActionRegistry
     {
         var actions = new Dictionary<string, ActionDefinition>(StringComparer.OrdinalIgnoreCase);
         var templatePaths = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        var emits = new Dictionary<string, List<EventEmitDef>>(StringComparer.OrdinalIgnoreCase);
 
         var actionsDir = Path.Combine(pluginsPath, "CodeGens", "actions");
         if (!Directory.Exists(actionsDir))
@@ -114,9 +144,15 @@ public class ActionRegistry
                     Scope:        raw.Scope ?? "entity"
                 );
 
-                // Register definition keyed by actionId (all variants share the same definition)
+                // Register definition keyed by actionId
                 if (!actions.ContainsKey(raw.ActionId))
                     actions[raw.ActionId] = def;
+
+                // Register emits
+                if (raw.Emits is { Count: > 0 })
+                    emits[raw.ActionId] = raw.Emits
+                        .Select(e => new EventEmitDef { EventId = e.EventId ?? string.Empty, Label = e.Label ?? e.EventId ?? string.Empty })
+                        .ToList();
 
                 // Register template path keyed by actionId::targetVariant
                 if (templateFile is not null)
@@ -129,7 +165,7 @@ public class ActionRegistry
         }
 
         progress?.Report($"INFO: ActionRegistry — {actions.Count} action(s) discovered.");
-        return new ActionRegistry(actions, templatePaths);
+        return new ActionRegistry(actions, templatePaths, emits);
     }
 
     private static ActionParameterDef[] ParseParameters(List<ActionParameterDefRaw>? raw)
@@ -190,6 +226,13 @@ public class ActionRegistry
         public string? Scope             { get; set; }
         public List<string>? Dependencies { get; set; }
         public List<ActionParameterDefRaw>? Parameters { get; set; }
+        public List<EventEmitRaw>? Emits  { get; set; }
+    }
+
+    private class EventEmitRaw
+    {
+        public string? EventId { get; set; }
+        public string? Label   { get; set; }
     }
 
     private class ActionParameterDefRaw

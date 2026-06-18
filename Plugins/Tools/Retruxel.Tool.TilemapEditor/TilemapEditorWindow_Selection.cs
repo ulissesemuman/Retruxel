@@ -305,16 +305,11 @@ public partial class TilemapEditorWindow
             int targetX = startX + localX;
             int targetY = startY + localY;
 
-            if (targetX >= 0 && targetX < _planeData.Width &&
-                targetY >= 0 && targetY < _planeData.Height)
+            if (targetX >= 0 && targetY >= 0)
             {
-                int index = targetY * _planeData.Width + targetX;
-                var currentLayer = _planeData.GetLayer(_currentLayerIndex);
-                if (index >= 0 && index < currentLayer.Length)
-                {
-                    // Block selection always without flip
-                    currentLayer[index] = new TileEntry { TileIndex = _selectedTileIds[i] };
-                }
+                // Block selection placed without flip — canvas is unbounded.
+                _planeData.SetTile(_currentLayerIndex, targetX, targetY,
+                    new TileEntry { TileIndex = _selectedTileIds[i] });
             }
         }
 

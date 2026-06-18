@@ -11,6 +11,10 @@ namespace Retruxel.Tool.TilemapEditor;
 
 public partial class TilemapEditorWindow
 {
+    // Minimum canvas size in tiles when the plane is empty.
+    // Shows a generous work area even before the first tile is placed.
+    private const int MinCanvasTiles = 4;
+
     private BitmapSource? GetTileSource(TileEntry entry)
         => _tilesetRenderer.ExtractTile(entry);
 
@@ -18,45 +22,45 @@ public partial class TilemapEditorWindow
     {
         PlaneCanvas.Children.Clear();
 
-        int width = int.Parse(TxtWidth.Text);
-        int height = int.Parse(TxtHeight.Text);
         int tileSize = _target.Specs.TileWidth;
-
         double scaledTileSize = tileSize * _canvasZoom;
 
-        PlaneCanvas.Width = width * scaledTileSize;
-        PlaneCanvas.Height = height * scaledTileSize;
+        // Canvas size = bounding box of all placed tiles + comfortable margin,
+        // but at minimum covers the viewport rectangle (so it's always visible).
+        int viewportW = _planeSpecs.DefaultWidth;
+        int viewportH = _planeSpecs.DefaultHeight;
+
+        int extentX = _planeData.Width;
+        int extentY = _planeData.Height;
+
+        // Ensure the canvas is large enough to show the viewport at its current offset,
+        // plus a margin of one screen beyond the extent.
+        int canvasW = System.Math.Max(extentX + viewportW, _mapOffsetX + viewportW + MinCanvasTiles);
+        int canvasH = System.Math.Max(extentY + viewportH, _mapOffsetY + viewportH + MinCanvasTiles);
+
+        // Never shrink below one viewport size.
+        canvasW = System.Math.Max(canvasW, viewportW + MinCanvasTiles);
+        canvasH = System.Math.Max(canvasH, viewportH + MinCanvasTiles);
+
+        PlaneCanvas.Width  = canvasW * scaledTileSize;
+        PlaneCanvas.Height = canvasH * scaledTileSize;
 
         if (_tilesetRenderer.Image != null && _planeData.LayerCount > _currentLayerIndex)
         {
-            var currentLayer = _planeData.GetLayer(_currentLayerIndex);
-            int expectedSize = width * height;
-
-            if (currentLayer.Length != expectedSize)
-            {
-                _planeData.Resize(width, height);
-                currentLayer = _planeData.GetLayer(_currentLayerIndex);
-            }
-
             int maxTileId = _tilesetRenderer.TotalTiles - 1;
             int outOfRangeCount = 0;
 
-            for (int y = 0; y < height; y++)
+            // Sparse iteration — only visit placed tiles.
+            foreach (var (x, y, entry) in _planeData.GetLayerSparse(_currentLayerIndex))
             {
-                for (int x = 0; x < width; x++)
-                {
-                    int index = y * width + x;
-                    if (index < currentLayer.Length)
-                    {
-                        var entry = currentLayer[index];
-                        if (!entry.IsEmpty)
-                        {
-                            if (entry.TileIndex > maxTileId)
-                                outOfRangeCount++;
+                if (x < 0 || y < 0 || x >= canvasW || y >= canvasH) continue;
 
-                            RenderTileAt(x, y, entry, scaledTileSize);
-                        }
-                    }
+                if (!entry.IsEmpty)
+                {
+                    if (entry.TileIndex > maxTileId)
+                        outOfRangeCount++;
+
+                    RenderTileAt(x, y, entry, scaledTileSize);
                 }
             }
 
@@ -79,31 +83,37 @@ public partial class TilemapEditorWindow
             }
         }
 
-        // Grid lines
+        // Grid lines across the full canvas.
         var gridBrush = new SolidColorBrush(Color.FromArgb(38, 255, 255, 255));
         gridBrush.Freeze();
 
-        for (int x = 0; x <= width; x++)
+        for (int x = 0; x <= canvasW; x++)
         {
             PlaneCanvas.Children.Add(new Line
             {
                 X1 = x * scaledTileSize, Y1 = 0,
-                X2 = x * scaledTileSize, Y2 = height * scaledTileSize,
+                X2 = x * scaledTileSize, Y2 = canvasH * scaledTileSize,
                 Stroke = gridBrush, StrokeThickness = 1
             });
         }
 
-        for (int y = 0; y <= height; y++)
+        for (int y = 0; y <= canvasH; y++)
         {
             PlaneCanvas.Children.Add(new Line
             {
-                X1 = 0,                    Y1 = y * scaledTileSize,
-                X2 = width * scaledTileSize, Y2 = y * scaledTileSize,
+                X1 = 0,                     Y1 = y * scaledTileSize,
+                X2 = canvasW * scaledTileSize, Y2 = y * scaledTileSize,
                 Stroke = gridBrush, StrokeThickness = 1
             });
         }
 
         DrawViewportOverlay(scaledTileSize);
+
+        // Keep dimension display in sync with actual bounding box.
+        int displayW = _planeData.Width  > 0 ? _planeData.Width  : viewportW;
+        int displayH = _planeData.Height > 0 ? _planeData.Height : viewportH;
+        TxtWidth.Text  = displayW.ToString();
+        TxtHeight.Text = displayH.ToString();
     }
 
     private void DrawViewportOverlay(double scaledTileSize)
@@ -111,23 +121,23 @@ public partial class TilemapEditorWindow
         int viewportWidth  = _planeSpecs.DefaultWidth;
         int viewportHeight = _planeSpecs.DefaultHeight;
 
-        double rectWidth = viewportWidth * scaledTileSize;
+        double rectWidth  = viewportWidth  * scaledTileSize;
         double rectHeight = viewportHeight * scaledTileSize;
-        double offsetX = _mapOffsetX * scaledTileSize;
-        double offsetY = _mapOffsetY * scaledTileSize;
+        double offsetX    = _mapOffsetX * scaledTileSize;
+        double offsetY    = _mapOffsetY * scaledTileSize;
 
         var viewportRect = new Rectangle
         {
-            Width = rectWidth,
-            Height = rectHeight,
-            Stroke = new SolidColorBrush(Color.FromRgb(0xFF, 0x4D, 0x4D)),
+            Width           = rectWidth,
+            Height          = rectHeight,
+            Stroke          = new SolidColorBrush(Color.FromRgb(0xFF, 0x4D, 0x4D)),
             StrokeThickness = 2,
-            Fill = null,
+            Fill            = null,
             IsHitTestVisible = false
         };
 
         Canvas.SetLeft(viewportRect, offsetX);
-        Canvas.SetTop(viewportRect, offsetY);
+        Canvas.SetTop (viewportRect, offsetY);
         PlaneCanvas.Children.Add(viewportRect);
 
         TxtViewportInfo.Text = $"VIEWPORT: {viewportWidth}×{viewportHeight} | Offset: {_mapOffsetX},{_mapOffsetY}";
@@ -142,10 +152,10 @@ public partial class TilemapEditorWindow
 
         var image = new Image
         {
-            Width = scaledTileSize,
+            Width  = scaledTileSize,
             Height = scaledTileSize,
             Source = source,
-            Stretch = Stretch.Fill
+            Stretch = System.Windows.Media.Stretch.Fill
         };
         RenderOptions.SetBitmapScalingMode(image, BitmapScalingMode.NearestNeighbor);
 
@@ -153,6 +163,8 @@ public partial class TilemapEditorWindow
         Canvas.SetTop (image, y * scaledTileSize);
         PlaneCanvas.Children.Add(image);
     }
+
+    // ── Mouse events ──────────────────────────────────────────────────────────
 
     private void Canvas_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
     {
@@ -164,16 +176,19 @@ public partial class TilemapEditorWindow
 
         _isPainting = true;
         Point position = e.GetPosition(PlaneCanvas);
-        int tileSize = _target.Specs.TileWidth;
-        double scaledTileSize = tileSize * _canvasZoom;
-
-        int tileX = (int)(position.X / scaledTileSize);
-        int tileY = (int)(position.Y / scaledTileSize);
 
         if (_selectedTileIds.Count > 1)
+        {
+            int tileSize = _target.Specs.TileWidth;
+            double scaledTileSize = tileSize * _canvasZoom;
+            int tileX = (int)(position.X / scaledTileSize);
+            int tileY = (int)(position.Y / scaledTileSize);
             PlaceTileBlock(tileX, tileY);
+        }
         else
+        {
             PaintTile(position);
+        }
     }
 
     private void Canvas_MouseMove(object sender, MouseEventArgs e)
@@ -191,10 +206,8 @@ public partial class TilemapEditorWindow
         int tileX = (int)(position.X / scaledTileSize);
         int tileY = (int)(position.Y / scaledTileSize);
 
-        int width = int.Parse(TxtWidth.Text);
-        int height = int.Parse(TxtHeight.Text);
-
-        if (tileX >= 0 && tileX < width && tileY >= 0 && tileY < height)
+        // Show preview for any non-negative canvas position.
+        if (tileX >= 0 && tileY >= 0)
             ShowPaintPreview(tileX, tileY);
         else
             HidePaintPreview();
@@ -215,7 +228,7 @@ public partial class TilemapEditorWindow
     }
 
     private void Canvas_MouseWheel(object sender, MouseWheelEventArgs e)
- => HandleCanvasMouseWheel(e);
+        => HandleCanvasMouseWheel(e);
 
     private void Canvas_MouseDown(object sender, MouseButtonEventArgs e)
     {
@@ -256,16 +269,14 @@ public partial class TilemapEditorWindow
         int tileX = (int)(position.X / scaledTileSize);
         int tileY = (int)(position.Y / scaledTileSize);
 
-        int width = int.Parse(TxtWidth.Text);
-        int height = int.Parse(TxtHeight.Text);
-
-        if (tileX < 0 || tileX >= width || tileY < 0 || tileY >= height) return;
+        // No hard boundary — any non-negative position is valid.
+        if (tileX < 0 || tileY < 0) return;
 
         var entry = new TileEntry
         {
             TileIndex = _selectedTileId,
-            FlipH = _selectedFlipH,
-            FlipV = _selectedFlipV
+            FlipH     = _selectedFlipH,
+            FlipV     = _selectedFlipV
         };
 
         _planeData.SetTile(_currentLayerIndex, tileX, tileY, entry);

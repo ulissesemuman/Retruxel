@@ -119,14 +119,9 @@ public partial class TilemapEditorWindow
                 TxtWidth.Text = width.ToString();
                 TxtHeight.Text = height.ToString();
 
-                _planeData.Resize(width, height);
-
                 var tiles = (TileEntry[])planeData["tiles"];
                 if (tiles.Length > 0)
-                {
-                    var currentLayer = _planeData.GetLayer(_currentLayerIndex);
-                    Array.Copy(tiles, currentLayer, Math.Min(tiles.Length, currentLayer.Length));
-                }
+                    _planeData.LoadLayer(_currentLayerIndex, tiles, width, height);
 
                 RenderCanvas();
 

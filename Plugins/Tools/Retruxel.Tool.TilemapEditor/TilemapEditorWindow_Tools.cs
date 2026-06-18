@@ -110,21 +110,26 @@ public partial class TilemapEditorWindow
                 indexMapping[oldTileIndex] = entry.TileIndex;
             }
 
-            // Apply optimization to current layer
-            var currentLayer = _planeData.GetLayer(_currentLayerIndex);
+            // Apply optimization to current layer using sparse SetTile.
             int remappedCount = 0;
+            var sparseLayer = _planeData.GetLayerSparse(_currentLayerIndex).ToList();
 
-            for (int i = 0; i < currentLayer.Length && i < plane.Count; i++)
+            foreach (var (x, y, existingEntry) in sparseLayer)
             {
-                var entry = currentLayer[i];
-                if (!entry.IsEmpty && indexMapping.ContainsKey(entry.TileIndex))
+                if (!existingEntry.IsEmpty && indexMapping.ContainsKey(existingEntry.TileIndex))
                 {
-                    entry.TileIndex = indexMapping[entry.TileIndex];
-                    entry.FlipH = plane[i].FlipH;
-                    entry.FlipV = plane[i].FlipV;
-                    entry.Rotation = plane[i].Rotation;
-                    currentLayer[i] = entry;
-                    remappedCount++;
+                    // Find the corresponding plane entry by flat index.
+                    int flatIndex = y * _planeData.Width + x;
+                    if (flatIndex < plane.Count)
+                    {
+                        var remapped = existingEntry.Clone();
+                        remapped.TileIndex = indexMapping[existingEntry.TileIndex];
+                        remapped.FlipH     = plane[flatIndex].FlipH;
+                        remapped.FlipV     = plane[flatIndex].FlipV;
+                        remapped.Rotation  = plane[flatIndex].Rotation;
+                        _planeData.SetTile(_currentLayerIndex, x, y, remapped);
+                        remappedCount++;
+                    }
                 }
             }
 
@@ -258,8 +263,13 @@ public partial class TilemapEditorWindow
         {
             try
             {
-                int width = int.Parse(TxtWidth.Text);
-                int height = int.Parse(TxtHeight.Text);
+                int width  = _planeData.Width;
+                int height = _planeData.Height;
+
+                // Fall back to viewport size when the plane is empty.
+                if (width  == 0) width  = _planeSpecs.DefaultWidth;
+                if (height == 0) height = _planeSpecs.DefaultHeight;
+
                 int tileSize = _target.Specs.TileWidth;
 
                 var bitmap = new SKBitmap(width * tileSize, height * tileSize, SKColorType.Bgra8888, SKAlphaType.Premul);
@@ -268,23 +278,14 @@ public partial class TilemapEditorWindow
                 {
                     canvas.Clear(SKColors.Transparent);
 
-                    var currentLayer = _planeData.GetLayer(_currentLayerIndex);
-                    for (int y = 0; y < height; y++)
+                    foreach (var (tx, ty, entry) in _planeData.GetLayerSparse(_currentLayerIndex))
                     {
-                        for (int x = 0; x < width; x++)
-                        {
-                            int index = y * width + x;
-                            if (index < currentLayer.Length)
-                            {
-                                var entry = currentLayer[index];
-                                if (!entry.IsEmpty)
-                                {
-                                    using var tileImage = _tilesetRenderer.ExtractSkTile(entry.TileIndex);
-                                    if (tileImage != null)
-                                        canvas.DrawBitmap(tileImage, x * tileSize, y * tileSize);
-                                }
-                            }
-                        }
+                        if (tx >= width || ty >= height) continue;
+                        if (entry.IsEmpty) continue;
+
+                        using var tileImage = _tilesetRenderer.ExtractSkTile(entry.TileIndex);
+                        if (tileImage != null)
+                            canvas.DrawBitmap(tileImage, tx * tileSize, ty * tileSize);
                     }
                 }
 

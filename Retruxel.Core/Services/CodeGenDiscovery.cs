@@ -58,12 +58,22 @@ internal static class CodeGenDiscovery
             if (!File.Exists(templatePath))
                 return null;
 
+            // Optional asm template
+            string? asmTemplatePath = null;
+            if (!string.IsNullOrEmpty(raw.AsmTemplate))
+            {
+                var asmPath = Path.Combine(dir, raw.AsmTemplate);
+                if (File.Exists(asmPath))
+                    asmTemplatePath = asmPath;
+            }
+
             return new CodeGenManifest
             {
                 ModuleId = raw.ModuleId,
                 TargetId = raw.TargetId,
                 Version = raw.Version ?? "1.0.0",
                 TemplatePath = templatePath,
+                AsmTemplatePath = asmTemplatePath,
                 IsSystemModule = raw.IsSystemModule,
                 IsUserModule = raw.IsUserModule,
                 IsBatchModule = raw.IsBatchModule,
@@ -158,6 +168,7 @@ internal static class CodeGenDiscovery
         public string? TargetId { get; set; }
         public string? Version { get; set; }
         public string? Template { get; set; }
+        public string? AsmTemplate { get; set; }
         public bool IsSystemModule { get; set; } = false;
         public bool IsUserModule { get; set; } = false;
         public bool IsBatchModule { get; set; } = false;

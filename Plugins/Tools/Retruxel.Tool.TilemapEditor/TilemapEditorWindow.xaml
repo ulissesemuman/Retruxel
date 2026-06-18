@@ -427,7 +427,7 @@
                                     </Grid>
                                 </StackPanel>
                                 <!-- METATILE CONTROLS -->
-                                <TextBlock Text="METATILES & BRUSHES"
+                                <TextBlock Text="METATILES &amp; BRUSHES"
                                            Style="{StaticResource TextLabelCaps}"
                                            Foreground="{StaticResource BrushOnSurfaceVariant}"
                                            Margin="0,0,0,6"/>

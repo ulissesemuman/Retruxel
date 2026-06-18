@@ -399,7 +399,21 @@ public class ModuleRenderer
             SourceModuleId = moduleId,
             Content = TemplateEngine.RenderBlock(template, "source", variables)
         };
-    }
+
+        // Optional .asm output when the manifest declares an asmTemplate
+        if (!string.IsNullOrEmpty(manifest.AsmTemplatePath) && File.Exists(manifest.AsmTemplatePath))
+        {
+            var asmTemplate = File.ReadAllText(manifest.AsmTemplatePath);
+            yield return new GeneratedFile
+            {
+                FileName = effectiveSingleton
+                    ? $"{baseName}.asm"
+                    : $"{baseName}_{variables["instanceId"]}.asm",
+                FileType = GeneratedFileType.Assembly,
+                SourceModuleId = moduleId,
+                Content = TemplateEngine.Render(asmTemplate, variables)
+            };
+        }
 
     /// <summary>
     /// Renders a batch module (processes all instances at once).

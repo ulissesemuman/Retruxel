@@ -1,8 +1,10 @@
-
-
 using Retruxel.Core.Interfaces;
+using Retruxel.Core.Services;
+using Retruxel.SDK;
 using System;
 using System.Collections.Generic;
+using System.Linq;
+using System.Windows;
 
 namespace Retruxel.Tool.PixelArtEditor;
 
@@ -17,13 +19,27 @@ public class PixelArtEditorTool : ITool
     public object? Icon => null;
     public string Category => "Graphics";
     public string? Shortcut => "Ctrl+Shift+P";
-    public bool IsStandalone => false;
-    public string? TargetId => null;
+
+    // This editor works inside an active project (palette/assets/targets).
     public bool RequiresProject => true;
+
+    public string? TargetId => null;
+    public bool IsStandalone => false;
 
     public Dictionary<string, object> Execute(Dictionary<string, object> input)
     {
-        // TODO: Implement pixel art editor
-        throw new NotImplementedException("Pixel Art Editor is not yet implemented.");
+        // Open WPF window.
+        // Retruxel's window invoker patterns live in the UI layer; for now we keep it direct.
+        var window = new PixelArtEditorWindow();
+
+        // Minimal defaults. Later we will wire from input/context (project assets, palette, tileset, etc.).
+        window.Owner = Application.Current?.MainWindow;
+        var result = window.ShowDialog();
+
+        return new Dictionary<string, object>
+        {
+            ["ok"] = result == true
+        };
     }
 }
+

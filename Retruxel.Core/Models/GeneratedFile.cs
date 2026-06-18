@@ -56,5 +56,8 @@ public enum GeneratedFileType
     Source,
 
     /// <summary>.h header file</summary>
-    Header
+    Header,
+
+    /// <summary>.asm / .s assembly file — compiled by the target assembler (sdasz80, ca65, etc.)</summary>
+    Assembly
 }

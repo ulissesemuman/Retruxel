@@ -17,6 +17,13 @@ internal class CodeGenManifest
     public string TargetId { get; init; } = "";
     public string Version { get; init; } = "1.0.0";
     public string TemplatePath { get; init; } = "";
+
+    /// <summary>
+    /// Optional path to an .asm.rtrx template.
+    /// When present, ModuleRenderer generates an additional .asm file
+    /// compiled by the target assembler (sdasz80, ca65, etc.).
+    /// </summary>
+    public string? AsmTemplatePath { get; init; }
     public bool IsSystemModule { get; init; } = false;
     public bool IsUserModule { get; init; } = false;
     public bool IsBatchModule { get; init; } = false;

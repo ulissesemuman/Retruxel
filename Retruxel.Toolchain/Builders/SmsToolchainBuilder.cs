@@ -78,7 +78,34 @@ public class SmsToolchainBuilder : IToolchainBuilder
                 .Where(f => f.FileType == GeneratedFileType.Source)
                 .ToList();
 
-            // Step 1 — Compile each .c to .rel
+            var asmFiles = context.SourceFiles
+                .Where(f => f.FileType == GeneratedFileType.Assembly)
+                .ToList();
+
+            var sdaszPath = Path.Combine(ToolchainPath, "compilers", "sdcc", "bin", "sdasz80.exe");
+
+            // Step 1a — Assemble each .asm to .rel
+            foreach (var file in asmFiles)
+            {
+                if (!IncrementalBuildCache.ShouldCompileSource(context, file, srcDirectory, ".rel"))
+                {
+                    progress.Report($"CACHE: assemble skipped - {file.FileName}");
+                    continue;
+                }
+
+                progress.Report($"ASSEMBLE: {file.FileName}");
+                var asmArgs = $"-o {Path.GetFileNameWithoutExtension(file.FileName)}.rel {file.FileName}";
+                var ok = await RunProcessAsync(sdaszPath, asmArgs, srcDirectory, log, progress, suppressWarnings);
+                if (!ok)
+                {
+                    result.Success = false;
+                    result.Log = log;
+                    result.FinishedAt = DateTime.Now;
+                    return result;
+                }
+            }
+
+            // Step 1b — Compile each .c to .rel
             foreach (var file in sourceFiles)
             {
                 if (!IncrementalBuildCache.ShouldCompileSource(context, file, srcDirectory, ".rel"))
@@ -104,7 +131,9 @@ public class SmsToolchainBuilder : IToolchainBuilder
             }
 
             // Step 2 — Link all .rel files into .ihx
-            var relFiles = sourceFiles.Select(f => Path.GetFileNameWithoutExtension(f.FileName) + ".rel");
+            var relFiles = sourceFiles
+                .Concat(asmFiles)
+                .Select(f => Path.GetFileNameWithoutExtension(f.FileName) + ".rel");
             var romName = "output";
             var linkArgs = $"-mz80 --no-std-crt0 --data-loc 0xC000 --sdcccall 1 " +
                            $"-o {romName}.ihx " +

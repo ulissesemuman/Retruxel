@@ -270,7 +270,7 @@ public partial class PixelArtEditorWindow : Window
 
         // set preview image to match pixel data
         ImgSelectedTile.Source = CreateTileBitmapSource();
-        ImgSelectedTile.RenderOptions.BitmapScalingMode = BitmapScalingMode.NearestNeighbor;
+        System.Windows.Media.RenderOptions.SetBitmapScalingMode(ImgSelectedTile, BitmapScalingMode.NearestNeighbor);
 
         TxtTileName.Text = $"tile {0}";
         TxtViewportInfo.Text = $"zoom {_zoom}x";

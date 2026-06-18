@@ -414,6 +414,7 @@ public class ModuleRenderer
                 Content = TemplateEngine.Render(asmTemplate, variables)
             };
         }
+        }
 
     /// <summary>
     /// Renders a batch module (processes all instances at once).

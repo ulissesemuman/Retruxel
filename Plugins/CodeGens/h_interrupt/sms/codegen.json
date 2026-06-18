@@ -1,0 +1,30 @@
+{
+  "moduleId": "h_interrupt",
+  "targetId": "sms",
+  "displayName": "H-Interrupt (Scanline Palette)",
+  "description": "Configures the SMS VDP H-Interrupt to swap palette colors mid-frame, enabling per-scanline gradient effects.",
+  "version": "1.0.0",
+  "template": "h_interrupt.c.rtrx",
+  "variables": {
+    "scanlineInterval": {
+      "from": "module",
+      "path": "scanlineInterval",
+      "default": 8
+    },
+    "numBands": {
+      "from": "module",
+      "path": "numBands",
+      "default": 4
+    },
+    "swapSlot": {
+      "from": "module",
+      "path": "swapSlot",
+      "default": 0
+    },
+    "colorIndex": {
+      "from": "module",
+      "path": "colorIndex",
+      "default": 0
+    }
+  }
+}

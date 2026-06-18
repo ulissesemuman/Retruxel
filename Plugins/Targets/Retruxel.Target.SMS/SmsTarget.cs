@@ -177,7 +177,9 @@ public class SmsTarget : ITarget, IPaletteConverter
             new Retruxel.Modules.Graphics.TextDisplayModule(),
             new Retruxel.Modules.Graphics.FadeInModule(),
             new Retruxel.Modules.Graphics.FadeOutModule(),
-            new Retruxel.Modules.Graphics.SplashModule()
+            new Retruxel.Modules.Graphics.SplashModule(),
+            new Retruxel.Modules.Graphics.ShadowHighlightModule(),
+            new Retruxel.Modules.Graphics.HInterruptModule()
         ];
     }
 

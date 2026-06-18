@@ -1,0 +1,15 @@
+{
+  "moduleId": "shadow_highlight",
+  "targetId": "sms",
+  "displayName": "Shadow/Highlight",
+  "description": "Enables SMS VDP Shadow/Highlight mode, expanding palette from 64 to 192 effective colors. Sprites with color 0x3E darken tiles; sprites with color 0x3F lighten tiles.",
+  "version": "1.0.0",
+  "template": "shadow_highlight.c.rtrx",
+  "variables": {
+    "enabled": {
+      "from": "module",
+      "path": "enabled",
+      "default": true
+    }
+  }
+}

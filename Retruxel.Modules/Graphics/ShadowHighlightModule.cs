@@ -15,9 +15,9 @@ public class ShadowHighlightModule : IGraphicModule
     public string ModuleId    => "shadow_highlight";
     public string DisplayName => "Shadow/Highlight";
     public string Category    => "Effects";
-    public ModuleType Type    => ModuleType.Graphic;
+    public ModuleType Type    => ModuleType.Graphics;
     public string[] Compatibility { get; set; } = ["sms", "gg"];
-    public SingletonPolicy SingletonPolicy => SingletonPolicy.SingletonPerScene;
+    public SingletonPolicy SingletonPolicy => SingletonPolicy.PerScene;
     public ModuleScope DefaultScope => ModuleScope.Scene;
 
     private ShadowHighlightState _state = new();
@@ -52,6 +52,7 @@ public class ShadowHighlightModule : IGraphicModule
     public string GetValidationSample() => "{}";
     public IEnumerable<GeneratedFile> GenerateCode()   => [];
     public IEnumerable<GeneratedAsset> GenerateAssets() => [];
+    public object? CreateEditorViewModel() => null;
 
     private class ShadowHighlightState
     {

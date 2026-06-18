@@ -15,9 +15,9 @@ public class HInterruptModule : IGraphicModule
     public string ModuleId    => "h_interrupt";
     public string DisplayName => "H-Interrupt (Scanline Palette)";
     public string Category    => "Effects";
-    public ModuleType Type    => ModuleType.Graphic;
+    public ModuleType Type    => ModuleType.Graphics;
     public string[] Compatibility { get; set; } = ["sms", "gg"];
-    public SingletonPolicy SingletonPolicy => SingletonPolicy.SingletonPerScene;
+    public SingletonPolicy SingletonPolicy => SingletonPolicy.PerScene;
     public ModuleScope DefaultScope => ModuleScope.Scene;
 
     private HInterruptState _state = new();
@@ -84,6 +84,8 @@ public class HInterruptModule : IGraphicModule
     public string GetValidationSample() => "{}";
     public IEnumerable<GeneratedFile> GenerateCode()   => [];
     public IEnumerable<GeneratedAsset> GenerateAssets() => [];
+
+    public object? CreateEditorViewModel() => null;
 
     private class HInterruptState
     {

@@ -1,45 +1,49 @@
 using Retruxel.Core.Interfaces;
+using Retruxel.Core.Models;
 using Retruxel.Core.Services;
-
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Windows;
 
 namespace Retruxel.Tool.PixelArtEditor;
 
 /// <summary>
 /// Integrated pixel art editor for creating and editing sprites and tiles.
+/// Accepts optional input keys: "assetId", "projectRef", "targetRef", "sceneRef".
 /// </summary>
 public class PixelArtEditorTool : ITool
 {
-    public string ToolId => "retruxel.tool.pixelarteditor";
+    public string ToolId      => "retruxel.tool.pixelarteditor";
     public string DisplayName => "Pixel Art Editor";
-    public string Description => "Create and edit sprites and tiles with an integrated pixel art editor";
-    public object? Icon => null;
-    public string Category => "Graphics";
-    public string? Shortcut => "Ctrl+Shift+P";
-
-    // This editor works inside an active project (palette/assets/targets).
+    public string Description => "Edit sprites and tiles pixel by pixel with hardware-limited palette.";
+    public object? Icon       => null;
+    public string Category    => "Graphics";
+    public string? Shortcut   => "Ctrl+Shift+P";
     public bool RequiresProject => true;
-
-    public string? TargetId => null;
-    public bool IsStandalone => false;
+    public string? TargetId   => null;
+    public bool IsStandalone  => false;
 
     public Dictionary<string, object> Execute(Dictionary<string, object> input)
     {
-        // Open WPF window.
-        // Retruxel's window invoker patterns live in the UI layer; for now we keep it direct.
-        var window = new PixelArtEditorWindow();
+        var target  = input.TryGetValue("targetRef",  out var t) ? t as ITarget        : null;
+        var project = input.TryGetValue("projectRef", out var p) ? p as RetruxelProject : null;
+        var scene   = input.TryGetValue("sceneRef",   out var s) ? s as SceneData       : null;
+        var assetId = input.TryGetValue("assetId",    out var a) ? a as string          : null;
 
-        // Minimal defaults. Later we will wire from input/context (project assets, palette, tileset, etc.).
+        PixelArtEditorWindow window;
+
+        if (target != null && project != null)
+            window = new PixelArtEditorWindow(target, project, scene, assetId);
+        else
+            window = new PixelArtEditorWindow();
+
         window.Owner = Application.Current?.MainWindow;
-        var result = window.ShowDialog();
+        bool ok = window.ShowDialog() == true;
 
-        return new Dictionary<string, object>
-        {
-            ["ok"] = result == true
-        };
+        var result = new Dictionary<string, object> { ["ok"] = ok };
+        if (ok && window.SavedAsset != null)
+            result["savedAsset"] = window.SavedAsset;
+
+        return result;
     }
 }
-

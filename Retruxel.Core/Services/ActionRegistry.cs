@@ -115,7 +115,7 @@ public class ActionRegistry
 
         var actionsDir = Path.Combine(pluginsPath, "CodeGens", "actions");
         if (!Directory.Exists(actionsDir))
-            return new ActionRegistry(actions, templatePaths);
+            return new ActionRegistry(actions, templatePaths, emits);
 
         var opts = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
 
